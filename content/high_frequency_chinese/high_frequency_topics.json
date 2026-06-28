@@ -1,0 +1,3050 @@
+[
+  {
+    "topic_id": "greeting_introduction",
+    "topic_zh": "问候与介绍",
+    "topic_vi": "Chào hỏi và giới thiệu",
+    "level_range": "HSK1-HSK3",
+    "words": [
+      {
+        "zh": "你好",
+        "pinyin": "nǐ hǎo",
+        "vi": "xin chào",
+        "phrases": [
+          {
+            "zh": "你好啊",
+            "pinyin": "nǐ hǎo a",
+            "vi": "chào bạn nhé"
+          },
+          {
+            "zh": "大家好",
+            "pinyin": "dàjiā hǎo",
+            "vi": "chào mọi người"
+          },
+          {
+            "zh": "老师好",
+            "pinyin": "lǎoshī hǎo",
+            "vi": "chào thầy/cô"
+          }
+        ]
+      },
+      {
+        "zh": "认识",
+        "pinyin": "rènshi",
+        "vi": "quen, biết",
+        "phrases": [
+          {
+            "zh": "认识你",
+            "pinyin": "rènshi nǐ",
+            "vi": "quen bạn"
+          },
+          {
+            "zh": "认识一下",
+            "pinyin": "rènshi yíxià",
+            "vi": "làm quen một chút"
+          },
+          {
+            "zh": "认识他",
+            "pinyin": "rènshi tā",
+            "vi": "biết anh ấy/cậu ấy"
+          }
+        ]
+      },
+      {
+        "zh": "介绍",
+        "pinyin": "jièshào",
+        "vi": "giới thiệu",
+        "phrases": [
+          {
+            "zh": "自我介绍",
+            "pinyin": "zìwǒ jièshào",
+            "vi": "giới thiệu bản thân"
+          },
+          {
+            "zh": "简单介绍",
+            "pinyin": "jiǎndān jièshào",
+            "vi": "giới thiệu ngắn gọn"
+          },
+          {
+            "zh": "介绍一下",
+            "pinyin": "jièshào yíxià",
+            "vi": "giới thiệu một chút"
+          }
+        ]
+      },
+      {
+        "zh": "名字",
+        "pinyin": "míngzi",
+        "vi": "tên",
+        "phrases": [
+          {
+            "zh": "我的名字",
+            "pinyin": "wǒ de míngzi",
+            "vi": "tên của tôi"
+          },
+          {
+            "zh": "叫什么",
+            "pinyin": "jiào shénme",
+            "vi": "tên là gì"
+          },
+          {
+            "zh": "写名字",
+            "pinyin": "xiě míngzi",
+            "vi": "viết tên"
+          }
+        ]
+      },
+      {
+        "zh": "来自",
+        "pinyin": "láizì",
+        "vi": "đến từ",
+        "phrases": [
+          {
+            "zh": "来自越南",
+            "pinyin": "láizì Yuènán",
+            "vi": "đến từ Việt Nam"
+          },
+          {
+            "zh": "来自中国",
+            "pinyin": "láizì Zhōngguó",
+            "vi": "đến từ Trung Quốc"
+          },
+          {
+            "zh": "来自哪里",
+            "pinyin": "láizì nǎlǐ",
+            "vi": "đến từ đâu"
+          }
+        ]
+      },
+      {
+        "zh": "国家",
+        "pinyin": "guójiā",
+        "vi": "đất nước, quốc gia",
+        "phrases": [
+          {
+            "zh": "哪个国家",
+            "pinyin": "nǎge guójiā",
+            "vi": "nước nào"
+          },
+          {
+            "zh": "我的国家",
+            "pinyin": "wǒ de guójiā",
+            "vi": "đất nước của tôi"
+          },
+          {
+            "zh": "很多国家",
+            "pinyin": "hěn duō guójiā",
+            "vi": "nhiều quốc gia"
+          }
+        ]
+      },
+      {
+        "zh": "越南",
+        "pinyin": "Yuènán",
+        "vi": "Việt Nam",
+        "phrases": [
+          {
+            "zh": "越南人",
+            "pinyin": "Yuènán rén",
+            "vi": "người Việt Nam"
+          },
+          {
+            "zh": "在越南",
+            "pinyin": "zài Yuènán",
+            "vi": "ở Việt Nam"
+          },
+          {
+            "zh": "去越南",
+            "pinyin": "qù Yuènán",
+            "vi": "đi Việt Nam"
+          }
+        ]
+      },
+      {
+        "zh": "中国",
+        "pinyin": "Zhōngguó",
+        "vi": "Trung Quốc",
+        "phrases": [
+          {
+            "zh": "中国人",
+            "pinyin": "Zhōngguó rén",
+            "vi": "người Trung Quốc"
+          },
+          {
+            "zh": "去中国",
+            "pinyin": "qù Zhōngguó",
+            "vi": "đi Trung Quốc"
+          },
+          {
+            "zh": "中国老师",
+            "pinyin": "Zhōngguó lǎoshī",
+            "vi": "giáo viên người Trung Quốc"
+          }
+        ]
+      },
+      {
+        "zh": "朋友",
+        "pinyin": "péngyou",
+        "vi": "bạn bè",
+        "phrases": [
+          {
+            "zh": "好朋友",
+            "pinyin": "hǎo péngyou",
+            "vi": "bạn thân/bạn tốt"
+          },
+          {
+            "zh": "新朋友",
+            "pinyin": "xīn péngyou",
+            "vi": "bạn mới"
+          },
+          {
+            "zh": "交朋友",
+            "pinyin": "jiāo péngyou",
+            "vi": "kết bạn"
+          }
+        ]
+      },
+      {
+        "zh": "微信",
+        "pinyin": "Wēixìn",
+        "vi": "WeChat",
+        "phrases": [
+          {
+            "zh": "加微信",
+            "pinyin": "jiā Wēixìn",
+            "vi": "kết bạn WeChat"
+          },
+          {
+            "zh": "发微信",
+            "pinyin": "fā Wēixìn",
+            "vi": "nhắn WeChat"
+          },
+          {
+            "zh": "微信号",
+            "pinyin": "Wēixìn hào",
+            "vi": "số WeChat"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "你好，我叫阿明。",
+        "pinyin": "Nǐ hǎo, wǒ jiào Ā Míng.",
+        "vi": "Xin chào, tôi tên là A Minh.",
+        "training_type": "both"
+      },
+      {
+        "zh": "我来自越南，很高兴认识你。",
+        "pinyin": "Wǒ láizì Yuènán, hěn gāoxìng rènshi nǐ.",
+        "vi": "Tôi đến từ Việt Nam, rất vui được làm quen với bạn.",
+        "training_type": "both"
+      },
+      {
+        "zh": "我先做一下自我介绍。",
+        "pinyin": "Wǒ xiān zuò yíxià zìwǒ jièshào.",
+        "vi": "Tôi xin giới thiệu bản thân trước.",
+        "training_type": "both"
+      },
+      {
+        "zh": "可以加你的微信吗？",
+        "pinyin": "Kěyǐ jiā nǐ de Wēixìn ma?",
+        "vi": "Mình có thể kết bạn WeChat với bạn không?",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "job_interview",
+    "topic_zh": "工作面试",
+    "topic_vi": "Phỏng vấn xin việc",
+    "level_range": "HSK3-HSK4",
+    "words": [
+      {
+        "zh": "面试",
+        "pinyin": "miànshì",
+        "vi": "phỏng vấn",
+        "phrases": [
+          {
+            "zh": "参加面试",
+            "pinyin": "cānjiā miànshì",
+            "vi": "tham gia phỏng vấn"
+          },
+          {
+            "zh": "通过面试",
+            "pinyin": "tōngguò miànshì",
+            "vi": "vượt qua phỏng vấn"
+          },
+          {
+            "zh": "面试时间",
+            "pinyin": "miànshì shíjiān",
+            "vi": "thời gian phỏng vấn"
+          }
+        ]
+      },
+      {
+        "zh": "简历",
+        "pinyin": "jiǎnlì",
+        "vi": "CV, hồ sơ xin việc",
+        "phrases": [
+          {
+            "zh": "投简历",
+            "pinyin": "tóu jiǎnlì",
+            "vi": "nộp CV"
+          },
+          {
+            "zh": "改简历",
+            "pinyin": "gǎi jiǎnlì",
+            "vi": "sửa CV"
+          },
+          {
+            "zh": "看简历",
+            "pinyin": "kàn jiǎnlì",
+            "vi": "xem CV"
+          }
+        ]
+      },
+      {
+        "zh": "经验",
+        "pinyin": "jīngyàn",
+        "vi": "kinh nghiệm",
+        "phrases": [
+          {
+            "zh": "工作经验",
+            "pinyin": "gōngzuò jīngyàn",
+            "vi": "kinh nghiệm làm việc"
+          },
+          {
+            "zh": "有经验",
+            "pinyin": "yǒu jīngyàn",
+            "vi": "có kinh nghiệm"
+          },
+          {
+            "zh": "没经验",
+            "pinyin": "méi jīngyàn",
+            "vi": "chưa có kinh nghiệm"
+          }
+        ]
+      },
+      {
+        "zh": "工资",
+        "pinyin": "gōngzī",
+        "vi": "lương",
+        "phrases": [
+          {
+            "zh": "工资多少",
+            "pinyin": "gōngzī duōshao",
+            "vi": "lương bao nhiêu"
+          },
+          {
+            "zh": "发工资",
+            "pinyin": "fā gōngzī",
+            "vi": "trả lương"
+          },
+          {
+            "zh": "涨工资",
+            "pinyin": "zhǎng gōngzī",
+            "vi": "tăng lương"
+          }
+        ]
+      },
+      {
+        "zh": "岗位",
+        "pinyin": "gǎngwèi",
+        "vi": "vị trí công việc",
+        "phrases": [
+          {
+            "zh": "这个岗位",
+            "pinyin": "zhège gǎngwèi",
+            "vi": "vị trí này"
+          },
+          {
+            "zh": "申请岗位",
+            "pinyin": "shēnqǐng gǎngwèi",
+            "vi": "ứng tuyển vị trí"
+          },
+          {
+            "zh": "岗位要求",
+            "pinyin": "gǎngwèi yāoqiú",
+            "vi": "yêu cầu vị trí"
+          }
+        ]
+      },
+      {
+        "zh": "公司",
+        "pinyin": "gōngsī",
+        "vi": "công ty",
+        "phrases": [
+          {
+            "zh": "这家公司",
+            "pinyin": "zhè jiā gōngsī",
+            "vi": "công ty này"
+          },
+          {
+            "zh": "公司地址",
+            "pinyin": "gōngsī dìzhǐ",
+            "vi": "địa chỉ công ty"
+          },
+          {
+            "zh": "公司文化",
+            "pinyin": "gōngsī wénhuà",
+            "vi": "văn hóa công ty"
+          }
+        ]
+      },
+      {
+        "zh": "能力",
+        "pinyin": "nénglì",
+        "vi": "năng lực, khả năng",
+        "phrases": [
+          {
+            "zh": "沟通能力",
+            "pinyin": "gōutōng nénglì",
+            "vi": "khả năng giao tiếp"
+          },
+          {
+            "zh": "学习能力",
+            "pinyin": "xuéxí nénglì",
+            "vi": "khả năng học hỏi"
+          },
+          {
+            "zh": "工作能力",
+            "pinyin": "gōngzuò nénglì",
+            "vi": "năng lực làm việc"
+          }
+        ]
+      },
+      {
+        "zh": "试用",
+        "pinyin": "shìyòng",
+        "vi": "thử việc",
+        "phrases": [
+          {
+            "zh": "试用期",
+            "pinyin": "shìyòng qī",
+            "vi": "thời gian thử việc"
+          },
+          {
+            "zh": "试用工资",
+            "pinyin": "shìyòng gōngzī",
+            "vi": "lương thử việc"
+          },
+          {
+            "zh": "开始试用",
+            "pinyin": "kāishǐ shìyòng",
+            "vi": "bắt đầu thử việc"
+          }
+        ]
+      },
+      {
+        "zh": "通过",
+        "pinyin": "tōngguò",
+        "vi": "được thông qua, vượt qua",
+        "phrases": [
+          {
+            "zh": "通过面试",
+            "pinyin": "tōngguò miànshì",
+            "vi": "đậu phỏng vấn"
+          },
+          {
+            "zh": "通过考试",
+            "pinyin": "tōngguò kǎoshì",
+            "vi": "thi đậu"
+          },
+          {
+            "zh": "没有通过",
+            "pinyin": "méiyǒu tōngguò",
+            "vi": "không đạt"
+          }
+        ]
+      },
+      {
+        "zh": "通知",
+        "pinyin": "tōngzhī",
+        "vi": "thông báo",
+        "phrases": [
+          {
+            "zh": "等通知",
+            "pinyin": "děng tōngzhī",
+            "vi": "chờ thông báo"
+          },
+          {
+            "zh": "收到通知",
+            "pinyin": "shōudào tōngzhī",
+            "vi": "nhận được thông báo"
+          },
+          {
+            "zh": "电话通知",
+            "pinyin": "diànhuà tōngzhī",
+            "vi": "thông báo qua điện thoại"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我明天上午要参加面试。",
+        "pinyin": "Wǒ míngtiān shàngwǔ yào cānjiā miànshì.",
+        "vi": "Sáng mai tôi phải đi phỏng vấn.",
+        "training_type": "both"
+      },
+      {
+        "zh": "请把你的简历发给我。",
+        "pinyin": "Qǐng bǎ nǐ de jiǎnlì fā gěi wǒ.",
+        "vi": "Bạn gửi CV của bạn cho tôi nhé.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这个岗位需要一点工作经验。",
+        "pinyin": "Zhège gǎngwèi xūyào yìdiǎn gōngzuò jīngyàn.",
+        "vi": "Vị trí này cần một chút kinh nghiệm làm việc.",
+        "training_type": "both"
+      },
+      {
+        "zh": "面试通过以后，公司会通知你。",
+        "pinyin": "Miànshì tōngguò yǐhòu, gōngsī huì tōngzhī nǐ.",
+        "vi": "Sau khi phỏng vấn đạt, công ty sẽ thông báo cho bạn.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "classroom_learning",
+    "topic_zh": "课堂学习",
+    "topic_vi": "Học tập trên lớp",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "上课",
+        "pinyin": "shàngkè",
+        "vi": "vào lớp, học trên lớp",
+        "phrases": [
+          {
+            "zh": "开始上课",
+            "pinyin": "kāishǐ shàngkè",
+            "vi": "bắt đầu vào học"
+          },
+          {
+            "zh": "认真上课",
+            "pinyin": "rènzhēn shàngkè",
+            "vi": "học nghiêm túc"
+          },
+          {
+            "zh": "线上上课",
+            "pinyin": "xiànshàng shàngkè",
+            "vi": "học online"
+          }
+        ]
+      },
+      {
+        "zh": "听懂",
+        "pinyin": "tīngdǒng",
+        "vi": "nghe hiểu",
+        "phrases": [
+          {
+            "zh": "听得懂",
+            "pinyin": "tīng de dǒng",
+            "vi": "nghe hiểu được"
+          },
+          {
+            "zh": "没听懂",
+            "pinyin": "méi tīng dǒng",
+            "vi": "chưa nghe hiểu"
+          },
+          {
+            "zh": "完全听懂",
+            "pinyin": "wánquán tīng dǒng",
+            "vi": "hiểu hoàn toàn"
+          }
+        ]
+      },
+      {
+        "zh": "复习",
+        "pinyin": "fùxí",
+        "vi": "ôn tập",
+        "phrases": [
+          {
+            "zh": "复习生词",
+            "pinyin": "fùxí shēngcí",
+            "vi": "ôn từ mới"
+          },
+          {
+            "zh": "课后复习",
+            "pinyin": "kèhòu fùxí",
+            "vi": "ôn sau buổi học"
+          },
+          {
+            "zh": "复习语法",
+            "pinyin": "fùxí yǔfǎ",
+            "vi": "ôn ngữ pháp"
+          }
+        ]
+      },
+      {
+        "zh": "作业",
+        "pinyin": "zuòyè",
+        "vi": "bài tập",
+        "phrases": [
+          {
+            "zh": "写作业",
+            "pinyin": "xiě zuòyè",
+            "vi": "làm bài tập"
+          },
+          {
+            "zh": "交作业",
+            "pinyin": "jiāo zuòyè",
+            "vi": "nộp bài tập"
+          },
+          {
+            "zh": "检查作业",
+            "pinyin": "jiǎnchá zuòyè",
+            "vi": "kiểm tra bài tập"
+          }
+        ]
+      },
+      {
+        "zh": "考试",
+        "pinyin": "kǎoshì",
+        "vi": "kỳ thi, kiểm tra",
+        "phrases": [
+          {
+            "zh": "准备考试",
+            "pinyin": "zhǔnbèi kǎoshì",
+            "vi": "chuẩn bị thi"
+          },
+          {
+            "zh": "通过考试",
+            "pinyin": "tōngguò kǎoshì",
+            "vi": "thi đậu"
+          },
+          {
+            "zh": "考试时间",
+            "pinyin": "kǎoshì shíjiān",
+            "vi": "thời gian thi"
+          }
+        ]
+      },
+      {
+        "zh": "问题",
+        "pinyin": "wèntí",
+        "vi": "câu hỏi, vấn đề",
+        "phrases": [
+          {
+            "zh": "问问题",
+            "pinyin": "wèn wèntí",
+            "vi": "hỏi câu hỏi"
+          },
+          {
+            "zh": "回答问题",
+            "pinyin": "huídá wèntí",
+            "vi": "trả lời câu hỏi"
+          },
+          {
+            "zh": "这个问题",
+            "pinyin": "zhège wèntí",
+            "vi": "câu hỏi này/vấn đề này"
+          }
+        ]
+      },
+      {
+        "zh": "练习",
+        "pinyin": "liànxí",
+        "vi": "luyện tập",
+        "phrases": [
+          {
+            "zh": "口语练习",
+            "pinyin": "kǒuyǔ liànxí",
+            "vi": "luyện nói"
+          },
+          {
+            "zh": "听力练习",
+            "pinyin": "tīnglì liànxí",
+            "vi": "luyện nghe"
+          },
+          {
+            "zh": "多练习",
+            "pinyin": "duō liànxí",
+            "vi": "luyện nhiều hơn"
+          }
+        ]
+      },
+      {
+        "zh": "发音",
+        "pinyin": "fāyīn",
+        "vi": "phát âm",
+        "phrases": [
+          {
+            "zh": "发音标准",
+            "pinyin": "fāyīn biāozhǔn",
+            "vi": "phát âm chuẩn"
+          },
+          {
+            "zh": "纠正发音",
+            "pinyin": "jiūzhèng fāyīn",
+            "vi": "sửa phát âm"
+          },
+          {
+            "zh": "练发音",
+            "pinyin": "liàn fāyīn",
+            "vi": "luyện phát âm"
+          }
+        ]
+      },
+      {
+        "zh": "句子",
+        "pinyin": "jùzi",
+        "vi": "câu",
+        "phrases": [
+          {
+            "zh": "造句子",
+            "pinyin": "zào jùzi",
+            "vi": "đặt câu"
+          },
+          {
+            "zh": "读句子",
+            "pinyin": "dú jùzi",
+            "vi": "đọc câu"
+          },
+          {
+            "zh": "长句子",
+            "pinyin": "cháng jùzi",
+            "vi": "câu dài"
+          }
+        ]
+      },
+      {
+        "zh": "语法",
+        "pinyin": "yǔfǎ",
+        "vi": "ngữ pháp",
+        "phrases": [
+          {
+            "zh": "学语法",
+            "pinyin": "xué yǔfǎ",
+            "vi": "học ngữ pháp"
+          },
+          {
+            "zh": "语法点",
+            "pinyin": "yǔfǎ diǎn",
+            "vi": "điểm ngữ pháp"
+          },
+          {
+            "zh": "语法错",
+            "pinyin": "yǔfǎ cuò",
+            "vi": "sai ngữ pháp"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "老师，这句话我没听懂。",
+        "pinyin": "Lǎoshī, zhè jù huà wǒ méi tīng dǒng.",
+        "vi": "Cô/thầy ơi, câu này em chưa nghe hiểu.",
+        "training_type": "both"
+      },
+      {
+        "zh": "下课以后，我要复习生词。",
+        "pinyin": "Xiàkè yǐhòu, wǒ yào fùxí shēngcí.",
+        "vi": "Sau khi tan học, tôi phải ôn từ mới.",
+        "training_type": "both"
+      },
+      {
+        "zh": "请大家先写作业，再练习发音。",
+        "pinyin": "Qǐng dàjiā xiān xiě zuòyè, zài liànxí fāyīn.",
+        "vi": "Mọi người làm bài tập trước, rồi luyện phát âm nhé.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这个语法点不难，但是要多造句。",
+        "pinyin": "Zhège yǔfǎ diǎn bù nán, dànshì yào duō zào jù.",
+        "vi": "Điểm ngữ pháp này không khó, nhưng cần đặt câu nhiều hơn.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "travel",
+    "topic_zh": "旅游",
+    "topic_vi": "Du lịch",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "护照",
+        "pinyin": "hùzhào",
+        "vi": "hộ chiếu",
+        "phrases": [
+          {
+            "zh": "拿护照",
+            "pinyin": "ná hùzhào",
+            "vi": "lấy hộ chiếu"
+          },
+          {
+            "zh": "看护照",
+            "pinyin": "kàn hùzhào",
+            "vi": "xem hộ chiếu"
+          },
+          {
+            "zh": "护照号码",
+            "pinyin": "hùzhào hàomǎ",
+            "vi": "số hộ chiếu"
+          }
+        ]
+      },
+      {
+        "zh": "酒店",
+        "pinyin": "jiǔdiàn",
+        "vi": "khách sạn",
+        "phrases": [
+          {
+            "zh": "订酒店",
+            "pinyin": "dìng jiǔdiàn",
+            "vi": "đặt khách sạn"
+          },
+          {
+            "zh": "住酒店",
+            "pinyin": "zhù jiǔdiàn",
+            "vi": "ở khách sạn"
+          },
+          {
+            "zh": "酒店地址",
+            "pinyin": "jiǔdiàn dìzhǐ",
+            "vi": "địa chỉ khách sạn"
+          }
+        ]
+      },
+      {
+        "zh": "景点",
+        "pinyin": "jǐngdiǎn",
+        "vi": "địa điểm tham quan",
+        "phrases": [
+          {
+            "zh": "热门景点",
+            "pinyin": "rèmén jǐngdiǎn",
+            "vi": "điểm tham quan nổi tiếng"
+          },
+          {
+            "zh": "去景点",
+            "pinyin": "qù jǐngdiǎn",
+            "vi": "đi điểm tham quan"
+          },
+          {
+            "zh": "景点门口",
+            "pinyin": "jǐngdiǎn ménkǒu",
+            "vi": "cổng điểm tham quan"
+          }
+        ]
+      },
+      {
+        "zh": "门票",
+        "pinyin": "ménpiào",
+        "vi": "vé vào cửa",
+        "phrases": [
+          {
+            "zh": "买门票",
+            "pinyin": "mǎi ménpiào",
+            "vi": "mua vé vào cửa"
+          },
+          {
+            "zh": "门票价格",
+            "pinyin": "ménpiào jiàgé",
+            "vi": "giá vé"
+          },
+          {
+            "zh": "电子门票",
+            "pinyin": "diànzǐ ménpiào",
+            "vi": "vé điện tử"
+          }
+        ]
+      },
+      {
+        "zh": "拍照",
+        "pinyin": "pāizhào",
+        "vi": "chụp ảnh",
+        "phrases": [
+          {
+            "zh": "拍张照",
+            "pinyin": "pāi zhāng zhào",
+            "vi": "chụp một tấm ảnh"
+          },
+          {
+            "zh": "不能拍照",
+            "pinyin": "bùnéng pāizhào",
+            "vi": "không được chụp ảnh"
+          },
+          {
+            "zh": "帮我拍",
+            "pinyin": "bāng wǒ pāi",
+            "vi": "chụp giúp tôi"
+          }
+        ]
+      },
+      {
+        "zh": "地图",
+        "pinyin": "dìtú",
+        "vi": "bản đồ",
+        "phrases": [
+          {
+            "zh": "看地图",
+            "pinyin": "kàn dìtú",
+            "vi": "xem bản đồ"
+          },
+          {
+            "zh": "打开地图",
+            "pinyin": "dǎkāi dìtú",
+            "vi": "mở bản đồ"
+          },
+          {
+            "zh": "地图导航",
+            "pinyin": "dìtú dǎoháng",
+            "vi": "định vị trên bản đồ"
+          }
+        ]
+      },
+      {
+        "zh": "行李",
+        "pinyin": "xíngli",
+        "vi": "hành lý",
+        "phrases": [
+          {
+            "zh": "拿行李",
+            "pinyin": "ná xíngli",
+            "vi": "lấy hành lý"
+          },
+          {
+            "zh": "托运行李",
+            "pinyin": "tuōyùn xíngli",
+            "vi": "ký gửi hành lý"
+          },
+          {
+            "zh": "行李箱",
+            "pinyin": "xínglixiāng",
+            "vi": "vali"
+          }
+        ]
+      },
+      {
+        "zh": "机场",
+        "pinyin": "jīchǎng",
+        "vi": "sân bay",
+        "phrases": [
+          {
+            "zh": "去机场",
+            "pinyin": "qù jīchǎng",
+            "vi": "đi sân bay"
+          },
+          {
+            "zh": "到机场",
+            "pinyin": "dào jīchǎng",
+            "vi": "đến sân bay"
+          },
+          {
+            "zh": "机场出口",
+            "pinyin": "jīchǎng chūkǒu",
+            "vi": "cửa ra sân bay"
+          }
+        ]
+      },
+      {
+        "zh": "预订",
+        "pinyin": "yùdìng",
+        "vi": "đặt trước",
+        "phrases": [
+          {
+            "zh": "预订房间",
+            "pinyin": "yùdìng fángjiān",
+            "vi": "đặt phòng trước"
+          },
+          {
+            "zh": "预订机票",
+            "pinyin": "yùdìng jīpiào",
+            "vi": "đặt vé máy bay"
+          },
+          {
+            "zh": "网上预订",
+            "pinyin": "wǎngshàng yùdìng",
+            "vi": "đặt online"
+          }
+        ]
+      },
+      {
+        "zh": "导游",
+        "pinyin": "dǎoyóu",
+        "vi": "hướng dẫn viên",
+        "phrases": [
+          {
+            "zh": "找导游",
+            "pinyin": "zhǎo dǎoyóu",
+            "vi": "tìm hướng dẫn viên"
+          },
+          {
+            "zh": "中文导游",
+            "pinyin": "Zhōngwén dǎoyóu",
+            "vi": "hướng dẫn viên tiếng Trung"
+          },
+          {
+            "zh": "导游服务",
+            "pinyin": "dǎoyóu fúwù",
+            "vi": "dịch vụ hướng dẫn viên"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我已经在网上预订了酒店。",
+        "pinyin": "Wǒ yǐjīng zài wǎngshàng yùdìng le jiǔdiàn.",
+        "vi": "Tôi đã đặt khách sạn online rồi.",
+        "training_type": "both"
+      },
+      {
+        "zh": "请问这个景点需要买门票吗？",
+        "pinyin": "Qǐngwèn zhège jǐngdiǎn xūyào mǎi ménpiào ma?",
+        "vi": "Cho hỏi điểm tham quan này có cần mua vé không?",
+        "training_type": "both"
+      },
+      {
+        "zh": "你能帮我拍张照吗？",
+        "pinyin": "Nǐ néng bāng wǒ pāi zhāng zhào ma?",
+        "vi": "Bạn có thể chụp giúp tôi một tấm ảnh không?",
+        "training_type": "both"
+      },
+      {
+        "zh": "我们先去机场拿行李。",
+        "pinyin": "Wǒmen xiān qù jīchǎng ná xíngli.",
+        "vi": "Chúng ta đến sân bay lấy hành lý trước.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "ordering_shopping",
+    "topic_zh": "点餐购物",
+    "topic_vi": "Gọi món và mua sắm",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "点餐",
+        "pinyin": "diǎncān",
+        "vi": "gọi món",
+        "phrases": [
+          {
+            "zh": "开始点餐",
+            "pinyin": "kāishǐ diǎncān",
+            "vi": "bắt đầu gọi món"
+          },
+          {
+            "zh": "手机点餐",
+            "pinyin": "shǒujī diǎncān",
+            "vi": "gọi món bằng điện thoại"
+          },
+          {
+            "zh": "点餐码",
+            "pinyin": "diǎncān mǎ",
+            "vi": "mã gọi món"
+          }
+        ]
+      },
+      {
+        "zh": "菜单",
+        "pinyin": "càidān",
+        "vi": "thực đơn",
+        "phrases": [
+          {
+            "zh": "看菜单",
+            "pinyin": "kàn càidān",
+            "vi": "xem thực đơn"
+          },
+          {
+            "zh": "中文菜单",
+            "pinyin": "Zhōngwén càidān",
+            "vi": "thực đơn tiếng Trung"
+          },
+          {
+            "zh": "菜单上",
+            "pinyin": "càidān shàng",
+            "vi": "trên thực đơn"
+          }
+        ]
+      },
+      {
+        "zh": "价格",
+        "pinyin": "jiàgé",
+        "vi": "giá cả",
+        "phrases": [
+          {
+            "zh": "价格多少",
+            "pinyin": "jiàgé duōshao",
+            "vi": "giá bao nhiêu"
+          },
+          {
+            "zh": "价格合适",
+            "pinyin": "jiàgé héshì",
+            "vi": "giá hợp lý"
+          },
+          {
+            "zh": "问价格",
+            "pinyin": "wèn jiàgé",
+            "vi": "hỏi giá"
+          }
+        ]
+      },
+      {
+        "zh": "便宜",
+        "pinyin": "piányi",
+        "vi": "rẻ",
+        "phrases": [
+          {
+            "zh": "很便宜",
+            "pinyin": "hěn piányi",
+            "vi": "rất rẻ"
+          },
+          {
+            "zh": "便宜一点",
+            "pinyin": "piányi yìdiǎn",
+            "vi": "rẻ hơn một chút"
+          },
+          {
+            "zh": "比较便宜",
+            "pinyin": "bǐjiào piányi",
+            "vi": "khá rẻ"
+          }
+        ]
+      },
+      {
+        "zh": "贵",
+        "pinyin": "guì",
+        "vi": "đắt",
+        "phrases": [
+          {
+            "zh": "太贵了",
+            "pinyin": "tài guì le",
+            "vi": "đắt quá"
+          },
+          {
+            "zh": "有点贵",
+            "pinyin": "yǒudiǎn guì",
+            "vi": "hơi đắt"
+          },
+          {
+            "zh": "贵不贵",
+            "pinyin": "guì bu guì",
+            "vi": "có đắt không"
+          }
+        ]
+      },
+      {
+        "zh": "打包",
+        "pinyin": "dǎbāo",
+        "vi": "mang về, gói lại",
+        "phrases": [
+          {
+            "zh": "打包带走",
+            "pinyin": "dǎbāo dàizǒu",
+            "vi": "gói mang đi"
+          },
+          {
+            "zh": "帮我打包",
+            "pinyin": "bāng wǒ dǎbāo",
+            "vi": "gói giúp tôi"
+          },
+          {
+            "zh": "不用打包",
+            "pinyin": "búyòng dǎbāo",
+            "vi": "không cần gói lại"
+          }
+        ]
+      },
+      {
+        "zh": "付款",
+        "pinyin": "fùkuǎn",
+        "vi": "thanh toán",
+        "phrases": [
+          {
+            "zh": "扫码付款",
+            "pinyin": "sǎomǎ fùkuǎn",
+            "vi": "quét mã thanh toán"
+          },
+          {
+            "zh": "现金付款",
+            "pinyin": "xiànjīn fùkuǎn",
+            "vi": "thanh toán tiền mặt"
+          },
+          {
+            "zh": "已经付款",
+            "pinyin": "yǐjīng fùkuǎn",
+            "vi": "đã thanh toán"
+          }
+        ]
+      },
+      {
+        "zh": "找零",
+        "pinyin": "zhǎolíng",
+        "vi": "thối tiền",
+        "phrases": [
+          {
+            "zh": "不用找零",
+            "pinyin": "búyòng zhǎolíng",
+            "vi": "không cần thối lại"
+          },
+          {
+            "zh": "找零多少",
+            "pinyin": "zhǎolíng duōshao",
+            "vi": "thối lại bao nhiêu"
+          },
+          {
+            "zh": "给你找零",
+            "pinyin": "gěi nǐ zhǎolíng",
+            "vi": "thối tiền cho bạn"
+          }
+        ]
+      },
+      {
+        "zh": "推荐",
+        "pinyin": "tuījiàn",
+        "vi": "gợi ý, giới thiệu",
+        "phrases": [
+          {
+            "zh": "推荐一下",
+            "pinyin": "tuījiàn yíxià",
+            "vi": "gợi ý một chút"
+          },
+          {
+            "zh": "推荐菜",
+            "pinyin": "tuījiàn cài",
+            "vi": "món được gợi ý"
+          },
+          {
+            "zh": "店员推荐",
+            "pinyin": "diànyuán tuījiàn",
+            "vi": "nhân viên gợi ý"
+          }
+        ]
+      },
+      {
+        "zh": "折扣",
+        "pinyin": "zhékòu",
+        "vi": "giảm giá",
+        "phrases": [
+          {
+            "zh": "有折扣",
+            "pinyin": "yǒu zhékòu",
+            "vi": "có giảm giá"
+          },
+          {
+            "zh": "打折扣",
+            "pinyin": "dǎ zhékòu",
+            "vi": "giảm giá"
+          },
+          {
+            "zh": "会员折扣",
+            "pinyin": "huìyuán zhékòu",
+            "vi": "giảm giá hội viên"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "请给我看一下菜单。",
+        "pinyin": "Qǐng gěi wǒ kàn yíxià càidān.",
+        "vi": "Cho tôi xem thực đơn một chút.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这个有点贵，可以便宜一点吗？",
+        "pinyin": "Zhège yǒudiǎn guì, kěyǐ piányi yìdiǎn ma?",
+        "vi": "Cái này hơi đắt, có thể bớt một chút không?",
+        "training_type": "both"
+      },
+      {
+        "zh": "我要打包带走，不在这里吃。",
+        "pinyin": "Wǒ yào dǎbāo dàizǒu, bú zài zhèlǐ chī.",
+        "vi": "Tôi muốn gói mang đi, không ăn ở đây.",
+        "training_type": "both"
+      },
+      {
+        "zh": "我可以扫码付款吗？",
+        "pinyin": "Wǒ kěyǐ sǎomǎ fùkuǎn ma?",
+        "vi": "Tôi có thể quét mã thanh toán không?",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "transportation",
+    "topic_zh": "出行交通",
+    "topic_vi": "Đi lại và giao thông",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "出发",
+        "pinyin": "chūfā",
+        "vi": "xuất phát",
+        "phrases": [
+          {
+            "zh": "几点出发",
+            "pinyin": "jǐ diǎn chūfā",
+            "vi": "mấy giờ xuất phát"
+          },
+          {
+            "zh": "马上出发",
+            "pinyin": "mǎshàng chūfā",
+            "vi": "xuất phát ngay"
+          },
+          {
+            "zh": "从这出发",
+            "pinyin": "cóng zhè chūfā",
+            "vi": "xuất phát từ đây"
+          }
+        ]
+      },
+      {
+        "zh": "到达",
+        "pinyin": "dàodá",
+        "vi": "đến nơi",
+        "phrases": [
+          {
+            "zh": "几点到达",
+            "pinyin": "jǐ diǎn dàodá",
+            "vi": "mấy giờ đến"
+          },
+          {
+            "zh": "已经到达",
+            "pinyin": "yǐjīng dàodá",
+            "vi": "đã đến nơi"
+          },
+          {
+            "zh": "到达车站",
+            "pinyin": "dàodá chēzhàn",
+            "vi": "đến bến/ga xe"
+          }
+        ]
+      },
+      {
+        "zh": "打车",
+        "pinyin": "dǎchē",
+        "vi": "gọi xe, bắt taxi",
+        "phrases": [
+          {
+            "zh": "打车去",
+            "pinyin": "dǎchē qù",
+            "vi": "đi bằng taxi/xe công nghệ"
+          },
+          {
+            "zh": "不好打车",
+            "pinyin": "bù hǎo dǎchē",
+            "vi": "khó gọi xe"
+          },
+          {
+            "zh": "打车软件",
+            "pinyin": "dǎchē ruǎnjiàn",
+            "vi": "ứng dụng gọi xe"
+          }
+        ]
+      },
+      {
+        "zh": "地铁",
+        "pinyin": "dìtiě",
+        "vi": "tàu điện ngầm",
+        "phrases": [
+          {
+            "zh": "坐地铁",
+            "pinyin": "zuò dìtiě",
+            "vi": "đi tàu điện ngầm"
+          },
+          {
+            "zh": "地铁站",
+            "pinyin": "dìtiě zhàn",
+            "vi": "ga tàu điện ngầm"
+          },
+          {
+            "zh": "换地铁",
+            "pinyin": "huàn dìtiě",
+            "vi": "đổi tuyến tàu điện ngầm"
+          }
+        ]
+      },
+      {
+        "zh": "公交",
+        "pinyin": "gōngjiāo",
+        "vi": "xe buýt",
+        "phrases": [
+          {
+            "zh": "坐公交",
+            "pinyin": "zuò gōngjiāo",
+            "vi": "đi xe buýt"
+          },
+          {
+            "zh": "公交站",
+            "pinyin": "gōngjiāo zhàn",
+            "vi": "trạm xe buýt"
+          },
+          {
+            "zh": "等公交",
+            "pinyin": "děng gōngjiāo",
+            "vi": "đợi xe buýt"
+          }
+        ]
+      },
+      {
+        "zh": "车站",
+        "pinyin": "chēzhàn",
+        "vi": "bến xe, nhà ga",
+        "phrases": [
+          {
+            "zh": "到车站",
+            "pinyin": "dào chēzhàn",
+            "vi": "đến bến/ga"
+          },
+          {
+            "zh": "车站门口",
+            "pinyin": "chēzhàn ménkǒu",
+            "vi": "cổng bến/ga"
+          },
+          {
+            "zh": "火车站",
+            "pinyin": "huǒchēzhàn",
+            "vi": "ga tàu hỏa"
+          }
+        ]
+      },
+      {
+        "zh": "路口",
+        "pinyin": "lùkǒu",
+        "vi": "ngã rẽ, giao lộ",
+        "phrases": [
+          {
+            "zh": "前面路口",
+            "pinyin": "qiánmiàn lùkǒu",
+            "vi": "giao lộ phía trước"
+          },
+          {
+            "zh": "路口左转",
+            "pinyin": "lùkǒu zuǒzhuǎn",
+            "vi": "rẽ trái ở ngã rẽ"
+          },
+          {
+            "zh": "路口等我",
+            "pinyin": "lùkǒu děng wǒ",
+            "vi": "đợi tôi ở ngã rẽ"
+          }
+        ]
+      },
+      {
+        "zh": "堵车",
+        "pinyin": "dǔchē",
+        "vi": "kẹt xe",
+        "phrases": [
+          {
+            "zh": "今天堵车",
+            "pinyin": "jīntiān dǔchē",
+            "vi": "hôm nay kẹt xe"
+          },
+          {
+            "zh": "有点堵车",
+            "pinyin": "yǒudiǎn dǔchē",
+            "vi": "hơi kẹt xe"
+          },
+          {
+            "zh": "路上堵车",
+            "pinyin": "lùshang dǔchē",
+            "vi": "kẹt xe trên đường"
+          }
+        ]
+      },
+      {
+        "zh": "换乘",
+        "pinyin": "huànchéng",
+        "vi": "chuyển tuyến",
+        "phrases": [
+          {
+            "zh": "需要换乘",
+            "pinyin": "xūyào huànchéng",
+            "vi": "cần chuyển tuyến"
+          },
+          {
+            "zh": "不用换乘",
+            "pinyin": "búyòng huànchéng",
+            "vi": "không cần chuyển tuyến"
+          },
+          {
+            "zh": "换乘一次",
+            "pinyin": "huànchéng yí cì",
+            "vi": "chuyển tuyến một lần"
+          }
+        ]
+      },
+      {
+        "zh": "导航",
+        "pinyin": "dǎoháng",
+        "vi": "chỉ đường, định vị",
+        "phrases": [
+          {
+            "zh": "打开导航",
+            "pinyin": "dǎkāi dǎoháng",
+            "vi": "mở định vị"
+          },
+          {
+            "zh": "跟着导航",
+            "pinyin": "gēnzhe dǎoháng",
+            "vi": "đi theo chỉ đường"
+          },
+          {
+            "zh": "导航错误",
+            "pinyin": "dǎoháng cuòwù",
+            "vi": "định vị sai"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我们几点出发比较合适？",
+        "pinyin": "Wǒmen jǐ diǎn chūfā bǐjiào héshì?",
+        "vi": "Mấy giờ chúng ta xuất phát thì hợp lý?",
+        "training_type": "both"
+      },
+      {
+        "zh": "这里不好打车，我们坐公交吧。",
+        "pinyin": "Zhèlǐ bù hǎo dǎchē, wǒmen zuò gōngjiāo ba.",
+        "vi": "Ở đây khó gọi xe, mình đi xe buýt đi.",
+        "training_type": "both"
+      },
+      {
+        "zh": "前面路口左转，就到地铁站了。",
+        "pinyin": "Qiánmiàn lùkǒu zuǒzhuǎn, jiù dào dìtiě zhàn le.",
+        "vi": "Rẽ trái ở giao lộ phía trước là đến ga tàu điện ngầm.",
+        "training_type": "both"
+      },
+      {
+        "zh": "今天路上堵车，我可能会晚一点到达。",
+        "pinyin": "Jīntiān lùshang dǔchē, wǒ kěnéng huì wǎn yìdiǎn dàodá.",
+        "vi": "Hôm nay đường kẹt xe, có lẽ tôi sẽ đến muộn một chút.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "renting_life",
+    "topic_zh": "租房生活",
+    "topic_vi": "Thuê nhà và sinh hoạt",
+    "level_range": "HSK3-HSK4",
+    "words": [
+      {
+        "zh": "租房",
+        "pinyin": "zūfáng",
+        "vi": "thuê nhà/phòng",
+        "phrases": [
+          {
+            "zh": "想租房",
+            "pinyin": "xiǎng zūfáng",
+            "vi": "muốn thuê nhà"
+          },
+          {
+            "zh": "租房信息",
+            "pinyin": "zūfáng xìnxī",
+            "vi": "thông tin thuê nhà"
+          },
+          {
+            "zh": "租房合同",
+            "pinyin": "zūfáng hétong",
+            "vi": "hợp đồng thuê nhà"
+          }
+        ]
+      },
+      {
+        "zh": "房租",
+        "pinyin": "fángzū",
+        "vi": "tiền thuê nhà",
+        "phrases": [
+          {
+            "zh": "交房租",
+            "pinyin": "jiāo fángzū",
+            "vi": "đóng tiền thuê nhà"
+          },
+          {
+            "zh": "房租多少",
+            "pinyin": "fángzū duōshao",
+            "vi": "tiền thuê bao nhiêu"
+          },
+          {
+            "zh": "涨房租",
+            "pinyin": "zhǎng fángzū",
+            "vi": "tăng tiền thuê"
+          }
+        ]
+      },
+      {
+        "zh": "押金",
+        "pinyin": "yājīn",
+        "vi": "tiền cọc",
+        "phrases": [
+          {
+            "zh": "交押金",
+            "pinyin": "jiāo yājīn",
+            "vi": "đóng tiền cọc"
+          },
+          {
+            "zh": "退押金",
+            "pinyin": "tuì yājīn",
+            "vi": "trả lại tiền cọc"
+          },
+          {
+            "zh": "一个月押金",
+            "pinyin": "yí gè yuè yājīn",
+            "vi": "cọc một tháng"
+          }
+        ]
+      },
+      {
+        "zh": "合同",
+        "pinyin": "hétong",
+        "vi": "hợp đồng",
+        "phrases": [
+          {
+            "zh": "签合同",
+            "pinyin": "qiān hétong",
+            "vi": "ký hợp đồng"
+          },
+          {
+            "zh": "看合同",
+            "pinyin": "kàn hétong",
+            "vi": "xem hợp đồng"
+          },
+          {
+            "zh": "合同到期",
+            "pinyin": "hétong dào qī",
+            "vi": "hợp đồng hết hạn"
+          }
+        ]
+      },
+      {
+        "zh": "房东",
+        "pinyin": "fángdōng",
+        "vi": "chủ nhà",
+        "phrases": [
+          {
+            "zh": "联系房东",
+            "pinyin": "liánxì fángdōng",
+            "vi": "liên hệ chủ nhà"
+          },
+          {
+            "zh": "问房东",
+            "pinyin": "wèn fángdōng",
+            "vi": "hỏi chủ nhà"
+          },
+          {
+            "zh": "房东同意",
+            "pinyin": "fángdōng tóngyì",
+            "vi": "chủ nhà đồng ý"
+          }
+        ]
+      },
+      {
+        "zh": "搬家",
+        "pinyin": "bānjiā",
+        "vi": "chuyển nhà",
+        "phrases": [
+          {
+            "zh": "准备搬家",
+            "pinyin": "zhǔnbèi bānjiā",
+            "vi": "chuẩn bị chuyển nhà"
+          },
+          {
+            "zh": "帮忙搬家",
+            "pinyin": "bāngmáng bānjiā",
+            "vi": "giúp chuyển nhà"
+          },
+          {
+            "zh": "搬家公司",
+            "pinyin": "bānjiā gōngsī",
+            "vi": "công ty chuyển nhà"
+          }
+        ]
+      },
+      {
+        "zh": "水电",
+        "pinyin": "shuǐdiàn",
+        "vi": "điện nước",
+        "phrases": [
+          {
+            "zh": "水电费",
+            "pinyin": "shuǐdiàn fèi",
+            "vi": "tiền điện nước"
+          },
+          {
+            "zh": "交水电",
+            "pinyin": "jiāo shuǐdiàn",
+            "vi": "đóng điện nước"
+          },
+          {
+            "zh": "水电另算",
+            "pinyin": "shuǐdiàn lìng suàn",
+            "vi": "điện nước tính riêng"
+          }
+        ]
+      },
+      {
+        "zh": "网络",
+        "pinyin": "wǎngluò",
+        "vi": "mạng internet",
+        "phrases": [
+          {
+            "zh": "网络不好",
+            "pinyin": "wǎngluò bù hǎo",
+            "vi": "mạng không tốt"
+          },
+          {
+            "zh": "装网络",
+            "pinyin": "zhuāng wǎngluò",
+            "vi": "lắp mạng"
+          },
+          {
+            "zh": "网络费用",
+            "pinyin": "wǎngluò fèiyòng",
+            "vi": "phí internet"
+          }
+        ]
+      },
+      {
+        "zh": "家具",
+        "pinyin": "jiājù",
+        "vi": "nội thất",
+        "phrases": [
+          {
+            "zh": "带家具",
+            "pinyin": "dài jiājù",
+            "vi": "có sẵn nội thất"
+          },
+          {
+            "zh": "买家具",
+            "pinyin": "mǎi jiājù",
+            "vi": "mua nội thất"
+          },
+          {
+            "zh": "家具齐全",
+            "pinyin": "jiājù qíquán",
+            "vi": "đầy đủ nội thất"
+          }
+        ]
+      },
+      {
+        "zh": "维修",
+        "pinyin": "wéixiū",
+        "vi": "sửa chữa",
+        "phrases": [
+          {
+            "zh": "需要维修",
+            "pinyin": "xūyào wéixiū",
+            "vi": "cần sửa"
+          },
+          {
+            "zh": "上门维修",
+            "pinyin": "shàngmén wéixiū",
+            "vi": "đến tận nơi sửa"
+          },
+          {
+            "zh": "维修费用",
+            "pinyin": "wéixiū fèiyòng",
+            "vi": "chi phí sửa chữa"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "这个房间的房租一个月多少钱？",
+        "pinyin": "Zhège fángjiān de fángzū yí gè yuè duōshao qián?",
+        "vi": "Tiền thuê phòng này một tháng bao nhiêu?",
+        "training_type": "both"
+      },
+      {
+        "zh": "签合同以前，我想先看一下房间。",
+        "pinyin": "Qiān hétong yǐqián, wǒ xiǎng xiān kàn yíxià fángjiān.",
+        "vi": "Trước khi ký hợp đồng, tôi muốn xem phòng trước.",
+        "training_type": "both"
+      },
+      {
+        "zh": "水电费是另算的吗？",
+        "pinyin": "Shuǐdiàn fèi shì lìng suàn de ma?",
+        "vi": "Tiền điện nước có tính riêng không?",
+        "training_type": "both"
+      },
+      {
+        "zh": "网络不好，我需要联系房东维修。",
+        "pinyin": "Wǎngluò bù hǎo, wǒ xūyào liánxì fángdōng wéixiū.",
+        "vi": "Mạng không tốt, tôi cần liên hệ chủ nhà để sửa.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "sick_leave",
+    "topic_zh": "生病与请假",
+    "topic_vi": "Bị bệnh và xin nghỉ",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "发烧",
+        "pinyin": "fāshāo",
+        "vi": "sốt",
+        "phrases": [
+          {
+            "zh": "有点发烧",
+            "pinyin": "yǒudiǎn fāshāo",
+            "vi": "hơi sốt"
+          },
+          {
+            "zh": "发烧了",
+            "pinyin": "fāshāo le",
+            "vi": "bị sốt rồi"
+          },
+          {
+            "zh": "高烧不退",
+            "pinyin": "gāoshāo bú tuì",
+            "vi": "sốt cao không hạ"
+          }
+        ]
+      },
+      {
+        "zh": "咳嗽",
+        "pinyin": "késou",
+        "vi": "ho",
+        "phrases": [
+          {
+            "zh": "一直咳嗽",
+            "pinyin": "yìzhí késou",
+            "vi": "ho suốt"
+          },
+          {
+            "zh": "咳嗽很厉害",
+            "pinyin": "késou hěn lìhai",
+            "vi": "ho rất nặng"
+          },
+          {
+            "zh": "有点咳嗽",
+            "pinyin": "yǒudiǎn késou",
+            "vi": "hơi ho"
+          }
+        ]
+      },
+      {
+        "zh": "头疼",
+        "pinyin": "tóuténg",
+        "vi": "đau đầu",
+        "phrases": [
+          {
+            "zh": "有点头疼",
+            "pinyin": "yǒudiǎn tóuténg",
+            "vi": "hơi đau đầu"
+          },
+          {
+            "zh": "头疼得厉害",
+            "pinyin": "tóuténg de lìhai",
+            "vi": "đau đầu dữ dội"
+          },
+          {
+            "zh": "突然头疼",
+            "pinyin": "tūrán tóuténg",
+            "vi": "đột nhiên đau đầu"
+          }
+        ]
+      },
+      {
+        "zh": "药",
+        "pinyin": "yào",
+        "vi": "thuốc",
+        "phrases": [
+          {
+            "zh": "吃药",
+            "pinyin": "chī yào",
+            "vi": "uống thuốc"
+          },
+          {
+            "zh": "买药",
+            "pinyin": "mǎi yào",
+            "vi": "mua thuốc"
+          },
+          {
+            "zh": "感冒药",
+            "pinyin": "gǎnmào yào",
+            "vi": "thuốc cảm"
+          }
+        ]
+      },
+      {
+        "zh": "医院",
+        "pinyin": "yīyuàn",
+        "vi": "bệnh viện",
+        "phrases": [
+          {
+            "zh": "去医院",
+            "pinyin": "qù yīyuàn",
+            "vi": "đi bệnh viện"
+          },
+          {
+            "zh": "在医院",
+            "pinyin": "zài yīyuàn",
+            "vi": "ở bệnh viện"
+          },
+          {
+            "zh": "医院检查",
+            "pinyin": "yīyuàn jiǎnchá",
+            "vi": "khám/kiểm tra ở bệnh viện"
+          }
+        ]
+      },
+      {
+        "zh": "医生",
+        "pinyin": "yīshēng",
+        "vi": "bác sĩ",
+        "phrases": [
+          {
+            "zh": "看医生",
+            "pinyin": "kàn yīshēng",
+            "vi": "đi khám bác sĩ"
+          },
+          {
+            "zh": "问医生",
+            "pinyin": "wèn yīshēng",
+            "vi": "hỏi bác sĩ"
+          },
+          {
+            "zh": "医生建议",
+            "pinyin": "yīshēng jiànyì",
+            "vi": "bác sĩ khuyên"
+          }
+        ]
+      },
+      {
+        "zh": "请假",
+        "pinyin": "qǐngjià",
+        "vi": "xin nghỉ",
+        "phrases": [
+          {
+            "zh": "请一天假",
+            "pinyin": "qǐng yì tiān jià",
+            "vi": "xin nghỉ một ngày"
+          },
+          {
+            "zh": "请半天假",
+            "pinyin": "qǐng bàn tiān jià",
+            "vi": "xin nghỉ nửa ngày"
+          },
+          {
+            "zh": "向谁请假",
+            "pinyin": "xiàng shéi qǐngjià",
+            "vi": "xin nghỉ với ai"
+          }
+        ]
+      },
+      {
+        "zh": "病假",
+        "pinyin": "bìngjià",
+        "vi": "nghỉ bệnh",
+        "phrases": [
+          {
+            "zh": "请病假",
+            "pinyin": "qǐng bìngjià",
+            "vi": "xin nghỉ bệnh"
+          },
+          {
+            "zh": "病假单",
+            "pinyin": "bìngjià dān",
+            "vi": "giấy nghỉ bệnh"
+          },
+          {
+            "zh": "一天病假",
+            "pinyin": "yì tiān bìngjià",
+            "vi": "một ngày nghỉ bệnh"
+          }
+        ]
+      },
+      {
+        "zh": "休息",
+        "pinyin": "xiūxi",
+        "vi": "nghỉ ngơi",
+        "phrases": [
+          {
+            "zh": "好好休息",
+            "pinyin": "hǎohāo xiūxi",
+            "vi": "nghỉ ngơi cho tốt"
+          },
+          {
+            "zh": "休息一天",
+            "pinyin": "xiūxi yì tiān",
+            "vi": "nghỉ một ngày"
+          },
+          {
+            "zh": "需要休息",
+            "pinyin": "xūyào xiūxi",
+            "vi": "cần nghỉ ngơi"
+          }
+        ]
+      },
+      {
+        "zh": "恢复",
+        "pinyin": "huīfù",
+        "vi": "hồi phục",
+        "phrases": [
+          {
+            "zh": "慢慢恢复",
+            "pinyin": "mànmàn huīfù",
+            "vi": "hồi phục dần"
+          },
+          {
+            "zh": "恢复健康",
+            "pinyin": "huīfù jiànkāng",
+            "vi": "hồi phục sức khỏe"
+          },
+          {
+            "zh": "还没恢复",
+            "pinyin": "hái méi huīfù",
+            "vi": "vẫn chưa hồi phục"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我今天有点发烧，想请一天病假。",
+        "pinyin": "Wǒ jīntiān yǒudiǎn fāshāo, xiǎng qǐng yì tiān bìngjià.",
+        "vi": "Hôm nay tôi hơi sốt, muốn xin nghỉ bệnh một ngày.",
+        "training_type": "both"
+      },
+      {
+        "zh": "你咳嗽得很厉害，最好去看医生。",
+        "pinyin": "Nǐ késou de hěn lìhai, zuìhǎo qù kàn yīshēng.",
+        "vi": "Bạn ho khá nặng, tốt nhất nên đi khám bác sĩ.",
+        "training_type": "both"
+      },
+      {
+        "zh": "医生让我回家好好休息。",
+        "pinyin": "Yīshēng ràng wǒ huí jiā hǎohāo xiūxi.",
+        "vi": "Bác sĩ bảo tôi về nhà nghỉ ngơi cho tốt.",
+        "training_type": "both"
+      },
+      {
+        "zh": "我吃了药，现在慢慢恢复了。",
+        "pinyin": "Wǒ chī le yào, xiànzài mànmàn huīfù le.",
+        "vi": "Tôi uống thuốc rồi, bây giờ đang hồi phục dần.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "office_life",
+    "topic_zh": "职场生活",
+    "topic_vi": "Đời sống công sở",
+    "level_range": "HSK3-HSK4",
+    "words": [
+      {
+        "zh": "上班",
+        "pinyin": "shàngbān",
+        "vi": "đi làm",
+        "phrases": [
+          {
+            "zh": "准时上班",
+            "pinyin": "zhǔnshí shàngbān",
+            "vi": "đi làm đúng giờ"
+          },
+          {
+            "zh": "开始上班",
+            "pinyin": "kāishǐ shàngbān",
+            "vi": "bắt đầu đi làm"
+          },
+          {
+            "zh": "上班时间",
+            "pinyin": "shàngbān shíjiān",
+            "vi": "giờ làm việc"
+          }
+        ]
+      },
+      {
+        "zh": "下班",
+        "pinyin": "xiàbān",
+        "vi": "tan làm",
+        "phrases": [
+          {
+            "zh": "几点下班",
+            "pinyin": "jǐ diǎn xiàbān",
+            "vi": "mấy giờ tan làm"
+          },
+          {
+            "zh": "下班以后",
+            "pinyin": "xiàbān yǐhòu",
+            "vi": "sau khi tan làm"
+          },
+          {
+            "zh": "准时下班",
+            "pinyin": "zhǔnshí xiàbān",
+            "vi": "tan làm đúng giờ"
+          }
+        ]
+      },
+      {
+        "zh": "会议",
+        "pinyin": "huìyì",
+        "vi": "cuộc họp",
+        "phrases": [
+          {
+            "zh": "开会议",
+            "pinyin": "kāi huìyì",
+            "vi": "họp"
+          },
+          {
+            "zh": "参加会议",
+            "pinyin": "cānjiā huìyì",
+            "vi": "tham gia họp"
+          },
+          {
+            "zh": "会议时间",
+            "pinyin": "huìyì shíjiān",
+            "vi": "thời gian họp"
+          }
+        ]
+      },
+      {
+        "zh": "同事",
+        "pinyin": "tóngshì",
+        "vi": "đồng nghiệp",
+        "phrases": [
+          {
+            "zh": "新同事",
+            "pinyin": "xīn tóngshì",
+            "vi": "đồng nghiệp mới"
+          },
+          {
+            "zh": "问同事",
+            "pinyin": "wèn tóngshì",
+            "vi": "hỏi đồng nghiệp"
+          },
+          {
+            "zh": "同事帮忙",
+            "pinyin": "tóngshì bāngmáng",
+            "vi": "đồng nghiệp giúp"
+          }
+        ]
+      },
+      {
+        "zh": "任务",
+        "pinyin": "rènwu",
+        "vi": "nhiệm vụ",
+        "phrases": [
+          {
+            "zh": "完成任务",
+            "pinyin": "wánchéng rènwu",
+            "vi": "hoàn thành nhiệm vụ"
+          },
+          {
+            "zh": "安排任务",
+            "pinyin": "ānpái rènwu",
+            "vi": "sắp xếp nhiệm vụ"
+          },
+          {
+            "zh": "今天任务",
+            "pinyin": "jīntiān rènwu",
+            "vi": "nhiệm vụ hôm nay"
+          }
+        ]
+      },
+      {
+        "zh": "加班",
+        "pinyin": "jiābān",
+        "vi": "tăng ca",
+        "phrases": [
+          {
+            "zh": "今晚加班",
+            "pinyin": "jīnwǎn jiābān",
+            "vi": "tối nay tăng ca"
+          },
+          {
+            "zh": "需要加班",
+            "pinyin": "xūyào jiābān",
+            "vi": "cần tăng ca"
+          },
+          {
+            "zh": "不想加班",
+            "pinyin": "bù xiǎng jiābān",
+            "vi": "không muốn tăng ca"
+          }
+        ]
+      },
+      {
+        "zh": "汇报",
+        "pinyin": "huìbào",
+        "vi": "báo cáo",
+        "phrases": [
+          {
+            "zh": "汇报工作",
+            "pinyin": "huìbào gōngzuò",
+            "vi": "báo cáo công việc"
+          },
+          {
+            "zh": "向谁汇报",
+            "pinyin": "xiàng shéi huìbào",
+            "vi": "báo cáo với ai"
+          },
+          {
+            "zh": "简单汇报",
+            "pinyin": "jiǎndān huìbào",
+            "vi": "báo cáo ngắn gọn"
+          }
+        ]
+      },
+      {
+        "zh": "领导",
+        "pinyin": "lǐngdǎo",
+        "vi": "sếp, lãnh đạo",
+        "phrases": [
+          {
+            "zh": "问领导",
+            "pinyin": "wèn lǐngdǎo",
+            "vi": "hỏi sếp"
+          },
+          {
+            "zh": "领导安排",
+            "pinyin": "lǐngdǎo ānpái",
+            "vi": "sếp sắp xếp"
+          },
+          {
+            "zh": "领导同意",
+            "pinyin": "lǐngdǎo tóngyì",
+            "vi": "sếp đồng ý"
+          }
+        ]
+      },
+      {
+        "zh": "客户",
+        "pinyin": "kèhù",
+        "vi": "khách hàng",
+        "phrases": [
+          {
+            "zh": "联系客户",
+            "pinyin": "liánxì kèhù",
+            "vi": "liên hệ khách hàng"
+          },
+          {
+            "zh": "客户要求",
+            "pinyin": "kèhù yāoqiú",
+            "vi": "yêu cầu của khách"
+          },
+          {
+            "zh": "重要客户",
+            "pinyin": "zhòngyào kèhù",
+            "vi": "khách hàng quan trọng"
+          }
+        ]
+      },
+      {
+        "zh": "负责",
+        "pinyin": "fùzé",
+        "vi": "phụ trách",
+        "phrases": [
+          {
+            "zh": "负责销售",
+            "pinyin": "fùzé xiāoshòu",
+            "vi": "phụ trách bán hàng"
+          },
+          {
+            "zh": "谁负责",
+            "pinyin": "shéi fùzé",
+            "vi": "ai phụ trách"
+          },
+          {
+            "zh": "我来负责",
+            "pinyin": "wǒ lái fùzé",
+            "vi": "để tôi phụ trách"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我每天早上九点准时上班。",
+        "pinyin": "Wǒ měitiān zǎoshang jiǔ diǎn zhǔnshí shàngbān.",
+        "vi": "Mỗi sáng tôi đi làm đúng 9 giờ.",
+        "training_type": "both"
+      },
+      {
+        "zh": "下午三点我们要参加一个会议。",
+        "pinyin": "Xiàwǔ sān diǎn wǒmen yào cānjiā yí gè huìyì.",
+        "vi": "Ba giờ chiều chúng ta phải tham gia một cuộc họp.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这个客户由谁负责？",
+        "pinyin": "Zhège kèhù yóu shéi fùzé?",
+        "vi": "Khách hàng này do ai phụ trách?",
+        "training_type": "both"
+      },
+      {
+        "zh": "今天的任务还没完成，可能需要加班。",
+        "pinyin": "Jīntiān de rènwu hái méi wánchéng, kěnéng xūyào jiābān.",
+        "vi": "Nhiệm vụ hôm nay vẫn chưa xong, có thể cần tăng ca.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "factory_workshop",
+    "topic_zh": "工厂车间",
+    "topic_vi": "Nhà máy và xưởng sản xuất",
+    "level_range": "HSK3-HSK4+",
+    "words": [
+      {
+        "zh": "车间",
+        "pinyin": "chējiān",
+        "vi": "xưởng sản xuất",
+        "phrases": [
+          {
+            "zh": "进车间",
+            "pinyin": "jìn chējiān",
+            "vi": "vào xưởng"
+          },
+          {
+            "zh": "车间主任",
+            "pinyin": "chējiān zhǔrèn",
+            "vi": "quản lý xưởng"
+          },
+          {
+            "zh": "车间规定",
+            "pinyin": "chējiān guīdìng",
+            "vi": "quy định xưởng"
+          }
+        ]
+      },
+      {
+        "zh": "机器",
+        "pinyin": "jīqì",
+        "vi": "máy móc",
+        "phrases": [
+          {
+            "zh": "开机器",
+            "pinyin": "kāi jīqì",
+            "vi": "mở/vận hành máy"
+          },
+          {
+            "zh": "机器坏了",
+            "pinyin": "jīqì huài le",
+            "vi": "máy bị hỏng"
+          },
+          {
+            "zh": "检查机器",
+            "pinyin": "jiǎnchá jīqì",
+            "vi": "kiểm tra máy"
+          }
+        ]
+      },
+      {
+        "zh": "产品",
+        "pinyin": "chǎnpǐn",
+        "vi": "sản phẩm",
+        "phrases": [
+          {
+            "zh": "检查产品",
+            "pinyin": "jiǎnchá chǎnpǐn",
+            "vi": "kiểm tra sản phẩm"
+          },
+          {
+            "zh": "产品数量",
+            "pinyin": "chǎnpǐn shùliàng",
+            "vi": "số lượng sản phẩm"
+          },
+          {
+            "zh": "不良产品",
+            "pinyin": "bùliáng chǎnpǐn",
+            "vi": "sản phẩm lỗi"
+          }
+        ]
+      },
+      {
+        "zh": "质量",
+        "pinyin": "zhìliàng",
+        "vi": "chất lượng",
+        "phrases": [
+          {
+            "zh": "质量问题",
+            "pinyin": "zhìliàng wèntí",
+            "vi": "vấn đề chất lượng"
+          },
+          {
+            "zh": "保证质量",
+            "pinyin": "bǎozhèng zhìliàng",
+            "vi": "đảm bảo chất lượng"
+          },
+          {
+            "zh": "质量标准",
+            "pinyin": "zhìliàng biāozhǔn",
+            "vi": "tiêu chuẩn chất lượng"
+          }
+        ]
+      },
+      {
+        "zh": "检查",
+        "pinyin": "jiǎnchá",
+        "vi": "kiểm tra",
+        "phrases": [
+          {
+            "zh": "仔细检查",
+            "pinyin": "zǐxì jiǎnchá",
+            "vi": "kiểm tra kỹ"
+          },
+          {
+            "zh": "每天检查",
+            "pinyin": "měitiān jiǎnchá",
+            "vi": "kiểm tra hằng ngày"
+          },
+          {
+            "zh": "检查一下",
+            "pinyin": "jiǎnchá yíxià",
+            "vi": "kiểm tra một chút"
+          }
+        ]
+      },
+      {
+        "zh": "包装",
+        "pinyin": "bāozhuāng",
+        "vi": "đóng gói, bao bì",
+        "phrases": [
+          {
+            "zh": "开始包装",
+            "pinyin": "kāishǐ bāozhuāng",
+            "vi": "bắt đầu đóng gói"
+          },
+          {
+            "zh": "包装材料",
+            "pinyin": "bāozhuāng cáiliào",
+            "vi": "vật liệu đóng gói"
+          },
+          {
+            "zh": "包装完成",
+            "pinyin": "bāozhuāng wánchéng",
+            "vi": "đóng gói xong"
+          }
+        ]
+      },
+      {
+        "zh": "出货",
+        "pinyin": "chūhuò",
+        "vi": "xuất hàng",
+        "phrases": [
+          {
+            "zh": "今天出货",
+            "pinyin": "jīntiān chūhuò",
+            "vi": "hôm nay xuất hàng"
+          },
+          {
+            "zh": "准备出货",
+            "pinyin": "zhǔnbèi chūhuò",
+            "vi": "chuẩn bị xuất hàng"
+          },
+          {
+            "zh": "出货时间",
+            "pinyin": "chūhuò shíjiān",
+            "vi": "thời gian xuất hàng"
+          }
+        ]
+      },
+      {
+        "zh": "安全",
+        "pinyin": "ānquán",
+        "vi": "an toàn",
+        "phrases": [
+          {
+            "zh": "注意安全",
+            "pinyin": "zhùyì ānquán",
+            "vi": "chú ý an toàn"
+          },
+          {
+            "zh": "安全帽",
+            "pinyin": "ānquán mào",
+            "vi": "mũ bảo hộ"
+          },
+          {
+            "zh": "安全培训",
+            "pinyin": "ānquán péixùn",
+            "vi": "đào tạo an toàn"
+          }
+        ]
+      },
+      {
+        "zh": "工位",
+        "pinyin": "gōngwèi",
+        "vi": "vị trí làm việc",
+        "phrases": [
+          {
+            "zh": "回工位",
+            "pinyin": "huí gōngwèi",
+            "vi": "quay về vị trí làm"
+          },
+          {
+            "zh": "整理工位",
+            "pinyin": "zhěnglǐ gōngwèi",
+            "vi": "sắp xếp chỗ làm"
+          },
+          {
+            "zh": "换工位",
+            "pinyin": "huàn gōngwèi",
+            "vi": "đổi vị trí làm"
+          }
+        ]
+      },
+      {
+        "zh": "夜班",
+        "pinyin": "yèbān",
+        "vi": "ca đêm",
+        "phrases": [
+          {
+            "zh": "上夜班",
+            "pinyin": "shàng yèbān",
+            "vi": "làm ca đêm"
+          },
+          {
+            "zh": "今晚夜班",
+            "pinyin": "jīnwǎn yèbān",
+            "vi": "ca đêm tối nay"
+          },
+          {
+            "zh": "夜班工资",
+            "pinyin": "yèbān gōngzī",
+            "vi": "lương ca đêm"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "进车间以前，请先戴好安全帽。",
+        "pinyin": "Jìn chējiān yǐqián, qǐng xiān dài hǎo ānquán mào.",
+        "vi": "Trước khi vào xưởng, vui lòng đội mũ bảo hộ trước.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这台机器坏了，需要马上检查。",
+        "pinyin": "Zhè tái jīqì huài le, xūyào mǎshàng jiǎnchá.",
+        "vi": "Cái máy này hỏng rồi, cần kiểm tra ngay.",
+        "training_type": "both"
+      },
+      {
+        "zh": "今天要出货，产品质量一定要检查好。",
+        "pinyin": "Jīntiān yào chūhuò, chǎnpǐn zhìliàng yídìng yào jiǎnchá hǎo.",
+        "vi": "Hôm nay phải xuất hàng, chất lượng sản phẩm nhất định phải kiểm tra kỹ.",
+        "training_type": "both"
+      },
+      {
+        "zh": "今晚我上夜班，不能早点下班。",
+        "pinyin": "Jīnwǎn wǒ shàng yèbān, bùnéng zǎodiǎn xiàbān.",
+        "vi": "Tối nay tôi làm ca đêm, không thể tan làm sớm.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "ecommerce_workplace",
+    "topic_zh": "电商职场",
+    "topic_vi": "Công việc thương mại điện tử",
+    "level_range": "HSK3-HSK4+",
+    "words": [
+      {
+        "zh": "店铺",
+        "pinyin": "diànpù",
+        "vi": "gian hàng, shop",
+        "phrases": [
+          {
+            "zh": "管理店铺",
+            "pinyin": "guǎnlǐ diànpù",
+            "vi": "quản lý shop"
+          },
+          {
+            "zh": "店铺首页",
+            "pinyin": "diànpù shǒuyè",
+            "vi": "trang chủ shop"
+          },
+          {
+            "zh": "店铺活动",
+            "pinyin": "diànpù huódòng",
+            "vi": "chương trình của shop"
+          }
+        ]
+      },
+      {
+        "zh": "订单",
+        "pinyin": "dìngdān",
+        "vi": "đơn hàng",
+        "phrases": [
+          {
+            "zh": "处理订单",
+            "pinyin": "chǔlǐ dìngdān",
+            "vi": "xử lý đơn hàng"
+          },
+          {
+            "zh": "取消订单",
+            "pinyin": "qǔxiāo dìngdān",
+            "vi": "hủy đơn hàng"
+          },
+          {
+            "zh": "订单号码",
+            "pinyin": "dìngdān hàomǎ",
+            "vi": "mã đơn hàng"
+          }
+        ]
+      },
+      {
+        "zh": "客服",
+        "pinyin": "kèfú",
+        "vi": "chăm sóc khách hàng",
+        "phrases": [
+          {
+            "zh": "联系客服",
+            "pinyin": "liánxì kèfú",
+            "vi": "liên hệ CSKH"
+          },
+          {
+            "zh": "在线客服",
+            "pinyin": "zàixiàn kèfú",
+            "vi": "CSKH online"
+          },
+          {
+            "zh": "客服回复",
+            "pinyin": "kèfú huífù",
+            "vi": "CSKH trả lời"
+          }
+        ]
+      },
+      {
+        "zh": "直播",
+        "pinyin": "zhíbō",
+        "vi": "livestream",
+        "phrases": [
+          {
+            "zh": "开始直播",
+            "pinyin": "kāishǐ zhíbō",
+            "vi": "bắt đầu livestream"
+          },
+          {
+            "zh": "直播间",
+            "pinyin": "zhíbōjiān",
+            "vi": "phòng livestream"
+          },
+          {
+            "zh": "直播卖货",
+            "pinyin": "zhíbō màihuò",
+            "vi": "bán hàng qua livestream"
+          }
+        ]
+      },
+      {
+        "zh": "发货",
+        "pinyin": "fāhuò",
+        "vi": "gửi hàng",
+        "phrases": [
+          {
+            "zh": "马上发货",
+            "pinyin": "mǎshàng fāhuò",
+            "vi": "gửi hàng ngay"
+          },
+          {
+            "zh": "已经发货",
+            "pinyin": "yǐjīng fāhuò",
+            "vi": "đã gửi hàng"
+          },
+          {
+            "zh": "发货时间",
+            "pinyin": "fāhuò shíjiān",
+            "vi": "thời gian gửi hàng"
+          }
+        ]
+      },
+      {
+        "zh": "退货",
+        "pinyin": "tuìhuò",
+        "vi": "trả hàng",
+        "phrases": [
+          {
+            "zh": "申请退货",
+            "pinyin": "shēnqǐng tuìhuò",
+            "vi": "yêu cầu trả hàng"
+          },
+          {
+            "zh": "退货原因",
+            "pinyin": "tuìhuò yuányīn",
+            "vi": "lý do trả hàng"
+          },
+          {
+            "zh": "不能退货",
+            "pinyin": "bùnéng tuìhuò",
+            "vi": "không được trả hàng"
+          }
+        ]
+      },
+      {
+        "zh": "评价",
+        "pinyin": "píngjià",
+        "vi": "đánh giá",
+        "phrases": [
+          {
+            "zh": "客户评价",
+            "pinyin": "kèhù píngjià",
+            "vi": "đánh giá của khách"
+          },
+          {
+            "zh": "好评价",
+            "pinyin": "hǎo píngjià",
+            "vi": "đánh giá tốt"
+          },
+          {
+            "zh": "差评价",
+            "pinyin": "chà píngjià",
+            "vi": "đánh giá xấu"
+          }
+        ]
+      },
+      {
+        "zh": "库存",
+        "pinyin": "kùcún",
+        "vi": "tồn kho",
+        "phrases": [
+          {
+            "zh": "查看库存",
+            "pinyin": "chákàn kùcún",
+            "vi": "kiểm tra tồn kho"
+          },
+          {
+            "zh": "库存不足",
+            "pinyin": "kùcún bùzú",
+            "vi": "không đủ hàng tồn"
+          },
+          {
+            "zh": "更新库存",
+            "pinyin": "gēngxīn kùcún",
+            "vi": "cập nhật tồn kho"
+          }
+        ]
+      },
+      {
+        "zh": "优惠",
+        "pinyin": "yōuhuì",
+        "vi": "ưu đãi",
+        "phrases": [
+          {
+            "zh": "优惠券",
+            "pinyin": "yōuhuìquàn",
+            "vi": "mã giảm giá"
+          },
+          {
+            "zh": "优惠活动",
+            "pinyin": "yōuhuì huódòng",
+            "vi": "chương trình ưu đãi"
+          },
+          {
+            "zh": "没有优惠",
+            "pinyin": "méiyǒu yōuhuì",
+            "vi": "không có ưu đãi"
+          }
+        ]
+      },
+      {
+        "zh": "数据",
+        "pinyin": "shùjù",
+        "vi": "dữ liệu, số liệu",
+        "phrases": [
+          {
+            "zh": "看数据",
+            "pinyin": "kàn shùjù",
+            "vi": "xem số liệu"
+          },
+          {
+            "zh": "销售数据",
+            "pinyin": "xiāoshòu shùjù",
+            "vi": "số liệu bán hàng"
+          },
+          {
+            "zh": "数据下降",
+            "pinyin": "shùjù xiàjiàng",
+            "vi": "số liệu giảm"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "今天的订单比较多，客服要及时回复。",
+        "pinyin": "Jīntiān de dìngdān bǐjiào duō, kèfú yào jíshí huífù.",
+        "vi": "Hôm nay đơn hàng khá nhiều, CSKH phải trả lời kịp thời.",
+        "training_type": "both"
+      },
+      {
+        "zh": "这个产品库存不足，暂时不能发货。",
+        "pinyin": "Zhège chǎnpǐn kùcún bùzú, zànshí bùnéng fāhuò.",
+        "vi": "Sản phẩm này không đủ hàng tồn, tạm thời chưa thể gửi hàng.",
+        "training_type": "both"
+      },
+      {
+        "zh": "客户想申请退货，你先问一下原因。",
+        "pinyin": "Kèhù xiǎng shēnqǐng tuìhuò, nǐ xiān wèn yíxià yuányīn.",
+        "vi": "Khách muốn yêu cầu trả hàng, bạn hỏi lý do trước nhé.",
+        "training_type": "both"
+      },
+      {
+        "zh": "晚上直播以前，我们要先看销售数据。",
+        "pinyin": "Wǎnshang zhíbō yǐqián, wǒmen yào xiān kàn xiāoshòu shùjù.",
+        "vi": "Trước buổi livestream tối, chúng ta cần xem số liệu bán hàng trước.",
+        "training_type": "both"
+      }
+    ]
+  },
+  {
+    "topic_id": "close_relationships",
+    "topic_zh": "亲密关系",
+    "topic_vi": "Mối quan hệ thân thiết",
+    "level_range": "HSK2-HSK4",
+    "words": [
+      {
+        "zh": "喜欢",
+        "pinyin": "xǐhuan",
+        "vi": "thích",
+        "phrases": [
+          {
+            "zh": "很喜欢",
+            "pinyin": "hěn xǐhuan",
+            "vi": "rất thích"
+          },
+          {
+            "zh": "喜欢你",
+            "pinyin": "xǐhuan nǐ",
+            "vi": "thích bạn/em/anh"
+          },
+          {
+            "zh": "不太喜欢",
+            "pinyin": "bú tài xǐhuan",
+            "vi": "không thích lắm"
+          }
+        ]
+      },
+      {
+        "zh": "关心",
+        "pinyin": "guānxīn",
+        "vi": "quan tâm",
+        "phrases": [
+          {
+            "zh": "关心你",
+            "pinyin": "guānxīn nǐ",
+            "vi": "quan tâm đến bạn"
+          },
+          {
+            "zh": "互相关心",
+            "pinyin": "hùxiāng guānxīn",
+            "vi": "quan tâm lẫn nhau"
+          },
+          {
+            "zh": "没人关心",
+            "pinyin": "méi rén guānxīn",
+            "vi": "không ai quan tâm"
+          }
+        ]
+      },
+      {
+        "zh": "约会",
+        "pinyin": "yuēhuì",
+        "vi": "hẹn hò",
+        "phrases": [
+          {
+            "zh": "一起约会",
+            "pinyin": "yìqǐ yuēhuì",
+            "vi": "cùng đi hẹn hò"
+          },
+          {
+            "zh": "第一次约会",
+            "pinyin": "dì yī cì yuēhuì",
+            "vi": "buổi hẹn đầu tiên"
+          },
+          {
+            "zh": "约会地点",
+            "pinyin": "yuēhuì dìdiǎn",
+            "vi": "địa điểm hẹn"
+          }
+        ]
+      },
+      {
+        "zh": "礼物",
+        "pinyin": "lǐwù",
+        "vi": "quà",
+        "phrases": [
+          {
+            "zh": "送礼物",
+            "pinyin": "sòng lǐwù",
+            "vi": "tặng quà"
+          },
+          {
+            "zh": "生日礼物",
+            "pinyin": "shēngrì lǐwù",
+            "vi": "quà sinh nhật"
+          },
+          {
+            "zh": "准备礼物",
+            "pinyin": "zhǔnbèi lǐwù",
+            "vi": "chuẩn bị quà"
+          }
+        ]
+      },
+      {
+        "zh": "生气",
+        "pinyin": "shēngqì",
+        "vi": "giận",
+        "phrases": [
+          {
+            "zh": "别生气",
+            "pinyin": "bié shēngqì",
+            "vi": "đừng giận"
+          },
+          {
+            "zh": "有点生气",
+            "pinyin": "yǒudiǎn shēngqì",
+            "vi": "hơi giận"
+          },
+          {
+            "zh": "为什么生气",
+            "pinyin": "wèishénme shēngqì",
+            "vi": "tại sao giận"
+          }
+        ]
+      },
+      {
+        "zh": "道歉",
+        "pinyin": "dàoqiàn",
+        "vi": "xin lỗi",
+        "phrases": [
+          {
+            "zh": "向你道歉",
+            "pinyin": "xiàng nǐ dàoqiàn",
+            "vi": "xin lỗi bạn"
+          },
+          {
+            "zh": "主动道歉",
+            "pinyin": "zhǔdòng dàoqiàn",
+            "vi": "chủ động xin lỗi"
+          },
+          {
+            "zh": "接受道歉",
+            "pinyin": "jiēshòu dàoqiàn",
+            "vi": "chấp nhận lời xin lỗi"
+          }
+        ]
+      },
+      {
+        "zh": "信任",
+        "pinyin": "xìnrèn",
+        "vi": "tin tưởng",
+        "phrases": [
+          {
+            "zh": "互相信任",
+            "pinyin": "hùxiāng xìnrèn",
+            "vi": "tin tưởng lẫn nhau"
+          },
+          {
+            "zh": "不够信任",
+            "pinyin": "bú gòu xìnrèn",
+            "vi": "chưa đủ tin tưởng"
+          },
+          {
+            "zh": "值得信任",
+            "pinyin": "zhídé xìnrèn",
+            "vi": "đáng tin"
+          }
+        ]
+      },
+      {
+        "zh": "陪伴",
+        "pinyin": "péibàn",
+        "vi": "ở bên, đồng hành",
+        "phrases": [
+          {
+            "zh": "一直陪伴",
+            "pinyin": "yìzhí péibàn",
+            "vi": "luôn ở bên"
+          },
+          {
+            "zh": "陪伴家人",
+            "pinyin": "péibàn jiārén",
+            "vi": "ở bên gia đình"
+          },
+          {
+            "zh": "需要陪伴",
+            "pinyin": "xūyào péibàn",
+            "vi": "cần sự ở bên"
+          }
+        ]
+      },
+      {
+        "zh": "分手",
+        "pinyin": "fēnshǒu",
+        "vi": "chia tay",
+        "phrases": [
+          {
+            "zh": "想分手",
+            "pinyin": "xiǎng fēnshǒu",
+            "vi": "muốn chia tay"
+          },
+          {
+            "zh": "已经分手",
+            "pinyin": "yǐjīng fēnshǒu",
+            "vi": "đã chia tay"
+          },
+          {
+            "zh": "不要分手",
+            "pinyin": "bú yào fēnshǒu",
+            "vi": "đừng chia tay"
+          }
+        ]
+      },
+      {
+        "zh": "结婚",
+        "pinyin": "jiéhūn",
+        "vi": "kết hôn",
+        "phrases": [
+          {
+            "zh": "准备结婚",
+            "pinyin": "zhǔnbèi jiéhūn",
+            "vi": "chuẩn bị kết hôn"
+          },
+          {
+            "zh": "已经结婚",
+            "pinyin": "yǐjīng jiéhūn",
+            "vi": "đã kết hôn"
+          },
+          {
+            "zh": "结婚以后",
+            "pinyin": "jiéhūn yǐhòu",
+            "vi": "sau khi kết hôn"
+          }
+        ]
+      }
+    ],
+    "sentences": [
+      {
+        "zh": "我很喜欢你，也很关心你。",
+        "pinyin": "Wǒ hěn xǐhuan nǐ, yě hěn guānxīn nǐ.",
+        "vi": "Anh/em rất thích em/anh, và cũng rất quan tâm đến em/anh.",
+        "training_type": "both"
+      },
+      {
+        "zh": "对不起，我刚才不应该让你生气。",
+        "pinyin": "Duìbuqǐ, wǒ gāngcái bù yīnggāi ràng nǐ shēngqì.",
+        "vi": "Xin lỗi, lúc nãy anh/em không nên làm em/anh giận.",
+        "training_type": "both"
+      },
+      {
+        "zh": "两个人在一起，最重要的是互相信任。",
+        "pinyin": "Liǎng gè rén zài yìqǐ, zuì zhòngyào de shì hùxiāng xìnrèn.",
+        "vi": "Hai người ở bên nhau, điều quan trọng nhất là tin tưởng lẫn nhau.",
+        "training_type": "both"
+      },
+      {
+        "zh": "我不想分手，我想继续陪伴你。",
+        "pinyin": "Wǒ bù xiǎng fēnshǒu, wǒ xiǎng jìxù péibàn nǐ.",
+        "vi": "Anh/em không muốn chia tay, anh/em muốn tiếp tục ở bên em/anh.",
+        "training_type": "both"
+      }
+    ]
+  }
+]
