@@ -1485,6 +1485,24 @@ async function copyTextToClipboard(value) {
   }
 }
 
+function showCopyButtonFeedback(button, isVi = state.lang === "vi") {
+  if (!button) return;
+  if (!button.dataset.originalCopyHtml) {
+    button.dataset.originalCopyHtml = button.innerHTML;
+  }
+  if (button.dataset.copyFeedbackTimer) {
+    clearTimeout(Number(button.dataset.copyFeedbackTimer));
+  }
+  button.classList.add("copied");
+  button.textContent = isVi ? "Đã sao chép ✓" : "已复制 ✓";
+  const timer = window.setTimeout(() => {
+    button.classList.remove("copied");
+    button.innerHTML = button.dataset.originalCopyHtml || "";
+    delete button.dataset.copyFeedbackTimer;
+  }, 2000);
+  button.dataset.copyFeedbackTimer = String(timer);
+}
+
 const BACKEND_DISABLED = false;
 
 function backendDisabledMessage() {
@@ -4975,10 +4993,17 @@ async function showTransferInfoModal(planId) {
     isVi ? `Số tiền: ${amount}` : `金额: ${amount}`,
     isVi ? "Nhờ CSKH kiểm tra và kích hoạt VIP giúp em." : "请客服核对并帮我开通 VIP。",
   ].join("\n");
+  const zaloSupportNumber = "0825319378";
   const zaloSupportUrl = "https://zalo.me/0825319378";
   const manualActivationNotice = isVi
     ? "CSKH sẽ kiểm tra và kích hoạt VIP cho bạn sau khi xác nhận giao dịch."
     : "客服核对到账后会为你开通 VIP。";
+  const copySuccessNotice = isVi
+    ? "Đã sao chép. Vui lòng dán vào Zalo và gửi cho CSKH."
+    : "已复制，请粘贴到 Zalo 发送给客服。";
+  const copyFailedNotice = isVi
+    ? "Không thể sao chép tự động. Vui lòng sao chép mã đơn và email để gửi CSKH."
+    : "无法自动复制，请手动复制订单号和邮箱发送给客服。";
 
   modalDiv.querySelector(".transfer-info-modal").innerHTML = `
     <button class="transfer-info-close" id="closeTransferInfoModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
@@ -5051,9 +5076,11 @@ async function showTransferInfoModal(planId) {
     </div>
 
     <div class="transfer-manual-actions">
-      <a class="transfer-zalo-btn" href="${escapeAttr(zaloSupportUrl)}" target="_blank" rel="noopener noreferrer">${isVi ? "Gửi mã đơn qua Zalo" : "通过 Zalo 发送订单号"}</a>
-      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}" data-copy-success="${isVi ? "Đã sao chép tin nhắn kích hoạt" : "已复制激活信息"}">${isVi ? "Sao chép tin nhắn kích hoạt" : "复制激活信息"}</button>
+      <button class="transfer-zalo-btn" type="button" data-open-zalo-support>${isVi ? "Gửi mã đơn qua Zalo" : "通过 Zalo 发送订单号"}</button>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}" data-copy-success="${escapeAttr(copySuccessNotice)}">${isVi ? "Sao chép tin nhắn kích hoạt" : "复制激活信息"}</button>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(zaloSupportNumber)}">${isVi ? "Sao chép số Zalo CSKH" : "复制客服号码"}</button>
     </div>
+    <p class="transfer-zalo-help">${isVi ? "Nếu mở Zalo trên máy tính và thấy mã QR, vui lòng dùng Zalo trên điện thoại để quét mã, hoặc sao chép số CSKH để liên hệ." : "如果电脑端打开 Zalo 后出现二维码，请用手机 Zalo 扫码登录，或复制客服号码添加客服。"}</p>
 
     <div class="transfer-footer-note transfer-footer-note--manual">
       <span>
@@ -5075,14 +5102,26 @@ async function showTransferInfoModal(planId) {
   `;
 
   modalDiv.querySelector("#closeTransferInfoModal").onclick = closeModal;
+  modalDiv.querySelector("[data-open-zalo-support]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const copied = await copyTextToClipboard(activationMessage);
+    if (copied) {
+      showCopyButtonFeedback(button, isVi);
+      showToast(copySuccessNotice);
+    } else {
+      showToast(copyFailedNotice);
+    }
+    window.open(zaloSupportUrl, "_blank", "noopener,noreferrer");
+  });
   modalDiv.querySelectorAll("[data-copy-transfer]").forEach((button) => {
     button.addEventListener("click", async () => {
       const value = button.dataset.copyTransfer;
       const copied = await copyTextToClipboard(value);
       if (copied) {
-        showToast(button.dataset.copySuccess || (isVi ? "Đã sao chép" : "已复制"));
+        showCopyButtonFeedback(button, isVi);
+        showToast(button.dataset.copySuccess || copySuccessNotice);
       } else {
-        showToast(value);
+        showToast(copyFailedNotice);
       }
     });
   });
