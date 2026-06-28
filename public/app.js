@@ -1456,6 +1456,35 @@ function escapeHtml(value) {
   return escapeAttr(value);
 }
 
+async function copyTextToClipboard(value) {
+  const text = String(value || "");
+  if (!text) return false;
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to the legacy copy path below.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
 const BACKEND_DISABLED = false;
 
 function backendDisabledMessage() {
@@ -4934,18 +4963,22 @@ async function showTransferInfoModal(planId) {
   const transferCode = order.transferCode;
   const amount = order.amountLabel;
   const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
-  const activationPlanLabel = normalizedPlanId === "7d" ? "7 ngày" : "30 ngày";
+  const activationPlanLabel = normalizedPlanId === "7d"
+    ? (isVi ? "7 ngày" : "7天")
+    : (isVi ? "30 ngày" : "30天");
   const customerEmail = state.user.email || "";
   const activationMessage = [
-    "Em đã chuyển khoản VIP.",
-    `Email: ${customerEmail}`,
-    `Mã đơn: ${transferCode}`,
-    `Gói: ${activationPlanLabel}`,
-    `Số tiền: ${amount}`,
-    "Nhờ CSKH kiểm tra và kích hoạt VIP giúp em.",
+    isVi ? "Em đã chuyển khoản VIP." : "我已完成 VIP 转账。",
+    isVi ? `Email: ${customerEmail}` : `登录邮箱: ${customerEmail}`,
+    isVi ? `Mã đơn: ${transferCode}` : `订单号: ${transferCode}`,
+    isVi ? `Gói: ${activationPlanLabel}` : `套餐: ${activationPlanLabel}`,
+    isVi ? `Số tiền: ${amount}` : `金额: ${amount}`,
+    isVi ? "Nhờ CSKH kiểm tra và kích hoạt VIP giúp em." : "请客服核对并帮我开通 VIP。",
   ].join("\n");
   const zaloSupportUrl = "https://zalo.me/0825319378";
-  const manualActivationNotice = "CSKH sẽ kiểm tra và kích hoạt VIP cho bạn sau khi xác nhận giao dịch.";
+  const manualActivationNotice = isVi
+    ? "CSKH sẽ kiểm tra và kích hoạt VIP cho bạn sau khi xác nhận giao dịch."
+    : "客服核对到账后会为你开通 VIP。";
 
   modalDiv.querySelector(".transfer-info-modal").innerHTML = `
     <button class="transfer-info-close" id="closeTransferInfoModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
@@ -5007,7 +5040,7 @@ async function showTransferInfoModal(planId) {
           </svg>
           ${isVi ? "Quét mã VietQR để thanh toán nhanh" : "扫码快速付款"}
         </p>
-        <p class="transfer-qr-fallback">Nếu mã QR không hiển thị, vui lòng chuyển khoản thủ công theo thông tin bên trái và ghi đúng nội dung DH.</p>
+        <p class="transfer-qr-fallback">${isVi ? "Nếu mã QR không hiển thị, vui lòng chuyển khoản thủ công theo thông tin bên trái và ghi đúng nội dung DH." : "如果二维码无法显示，请按左侧银行信息手动转账，并填写正确的 DH 备注。"}</p>
         <div class="transfer-status transfer-status-pending" id="transferPaymentStatus">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10" />
@@ -5018,8 +5051,8 @@ async function showTransferInfoModal(planId) {
     </div>
 
     <div class="transfer-manual-actions">
-      <a class="transfer-zalo-btn" href="${escapeAttr(zaloSupportUrl)}" target="_blank" rel="noopener noreferrer">Gửi mã đơn qua Zalo</a>
-      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}">Sao chép tin nhắn kích hoạt</button>
+      <a class="transfer-zalo-btn" href="${escapeAttr(zaloSupportUrl)}" target="_blank" rel="noopener noreferrer">${isVi ? "Gửi mã đơn qua Zalo" : "通过 Zalo 发送订单号"}</a>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}" data-copy-success="${isVi ? "Đã sao chép tin nhắn kích hoạt" : "已复制激活信息"}">${isVi ? "Sao chép tin nhắn kích hoạt" : "复制激活信息"}</button>
     </div>
 
     <div class="transfer-footer-note transfer-footer-note--manual">
@@ -5033,9 +5066,9 @@ async function showTransferInfoModal(planId) {
       <div>
         <p>${manualActivationNotice}</p>
         <ol class="transfer-manual-steps">
-          <li>Bước 1: Chuyển khoản đúng số tiền và nội dung DH.</li>
-          <li>Bước 2: Bấm nút Zalo để gửi mã đơn và email đăng nhập cho CSKH.</li>
-          <li>Bước 3: CSKH kiểm tra giao dịch và kích hoạt VIP cho bạn.</li>
+          <li>${isVi ? "Bước 1: Chuyển khoản đúng số tiền và nội dung DH." : "步骤 1：请按正确金额和 DH 备注完成转账。"}</li>
+          <li>${isVi ? "Bước 2: Bấm nút Zalo để gửi mã đơn và email đăng nhập cho CSKH." : "步骤 2：点击 Zalo 按钮，将订单号和登录邮箱发送给客服。"}</li>
+          <li>${isVi ? "Bước 3: CSKH kiểm tra giao dịch và kích hoạt VIP cho bạn." : "步骤 3：客服核对到账后为你开通 VIP。"}</li>
         </ol>
       </div>
     </div>
@@ -5045,10 +5078,10 @@ async function showTransferInfoModal(planId) {
   modalDiv.querySelectorAll("[data-copy-transfer]").forEach((button) => {
     button.addEventListener("click", async () => {
       const value = button.dataset.copyTransfer;
-      try {
-        await navigator.clipboard.writeText(value);
-        showToast(isVi ? "Đã sao chép" : "已复制");
-      } catch {
+      const copied = await copyTextToClipboard(value);
+      if (copied) {
+        showToast(button.dataset.copySuccess || (isVi ? "Đã sao chép" : "已复制"));
+      } else {
         showToast(value);
       }
     });
