@@ -12056,6 +12056,23 @@ p {
   color: #10a352;
 }
 
+.transfer-qr-area .transfer-status {
+  max-width: 236px;
+  align-items: flex-start;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.transfer-qr-fallback {
+  max-width: 236px;
+  margin: -5px 0 12px;
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 800;
+  text-align: center;
+}
+
 .transfer-qr-image {
   display: block;
   width: 100%;
@@ -12101,6 +12118,41 @@ p {
   cursor: pointer;
 }
 
+.transfer-manual-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 28px 18px;
+}
+
+.transfer-zalo-btn,
+.transfer-copy-activation-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.transfer-zalo-btn {
+  border: 0;
+  background: #0068ff;
+  color: #ffffff;
+}
+
+.transfer-copy-activation-btn {
+  border: 1px solid #bbf7d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
 .transfer-footer-note {
   min-height: 70px;
   background: #f7fafc;
@@ -12132,6 +12184,23 @@ p {
   font-weight: 700;
 }
 
+.transfer-footer-note--manual {
+  align-items: start;
+}
+
+.transfer-manual-steps {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.transfer-manual-steps li + li {
+  margin-top: 4px;
+}
+
 @media (max-width: 620px) {
   .transfer-info-overlay {
     align-items: flex-start;
@@ -12144,6 +12213,11 @@ p {
 
   .transfer-qr-box {
     width: min(100%, 220px);
+  }
+
+  .transfer-manual-actions {
+    grid-template-columns: 1fr;
+    padding: 0 18px 18px;
   }
 }
 

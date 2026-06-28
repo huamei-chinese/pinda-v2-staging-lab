@@ -4933,6 +4933,19 @@ async function showTransferInfoModal(planId) {
   const { order, bank, qrImageUrl } = paymentData;
   const transferCode = order.transferCode;
   const amount = order.amountLabel;
+  const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
+  const activationPlanLabel = normalizedPlanId === "7d" ? "7 ngày" : "30 ngày";
+  const customerEmail = state.user.email || "";
+  const activationMessage = [
+    "Em đã chuyển khoản VIP.",
+    `Email: ${customerEmail}`,
+    `Mã đơn: ${transferCode}`,
+    `Gói: ${activationPlanLabel}`,
+    `Số tiền: ${amount}`,
+    "Nhờ CSKH kiểm tra và kích hoạt VIP giúp em.",
+  ].join("\n");
+  const zaloSupportUrl = "https://zalo.me/0825319378";
+  const manualActivationNotice = "CSKH sẽ kiểm tra và kích hoạt VIP cho bạn sau khi xác nhận giao dịch.";
 
   modalDiv.querySelector(".transfer-info-modal").innerHTML = `
     <button class="transfer-info-close" id="closeTransferInfoModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
@@ -4994,16 +5007,22 @@ async function showTransferInfoModal(planId) {
           </svg>
           ${isVi ? "Quét mã VietQR để thanh toán nhanh" : "扫码快速付款"}
         </p>
+        <p class="transfer-qr-fallback">Nếu mã QR không hiển thị, vui lòng chuyển khoản thủ công theo thông tin bên trái và ghi đúng nội dung DH.</p>
         <div class="transfer-status transfer-status-pending" id="transferPaymentStatus">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10" />
           </svg>
-          ${isVi ? "Đang chờ xác nhận thanh toán..." : "正在等待付款确认..."}
+          ${manualActivationNotice}
         </div>
       </div>
     </div>
 
-    <div class="transfer-footer-note">
+    <div class="transfer-manual-actions">
+      <a class="transfer-zalo-btn" href="${escapeAttr(zaloSupportUrl)}" target="_blank" rel="noopener noreferrer">Gửi mã đơn qua Zalo</a>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}">Sao chép tin nhắn kích hoạt</button>
+    </div>
+
+    <div class="transfer-footer-note transfer-footer-note--manual">
       <span>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9" />
@@ -5011,7 +5030,14 @@ async function showTransferInfoModal(planId) {
           <path d="M12 16h.01" />
         </svg>
       </span>
-      <p>${isVi ? "Vui lòng chuyển khoản đúng số tiền và nội dung để SePay tự động kích hoạt gói Pro trong vài phút." : "请按正确金额和备注转账，SePay 将在几分钟内自动激活 Pro 套餐。"}</p>
+      <div>
+        <p>${manualActivationNotice}</p>
+        <ol class="transfer-manual-steps">
+          <li>Bước 1: Chuyển khoản đúng số tiền và nội dung DH.</li>
+          <li>Bước 2: Bấm nút Zalo để gửi mã đơn và email đăng nhập cho CSKH.</li>
+          <li>Bước 3: CSKH kiểm tra giao dịch và kích hoạt VIP cho bạn.</li>
+        </ol>
+      </div>
     </div>
   `;
 
