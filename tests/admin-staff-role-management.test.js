@@ -1,0 +1,133 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+
+require("ts-node/register/transpile-only");
+
+const { HttpException } = require("@nestjs/common");
+const { AdminService } = require("../src/admin/admin.service");
+
+const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
+
+function createAdminServiceWithDb(db) {
+  return new AdminService(db, {}, {}, {});
+}
+
+test("admin can set a normal user to staff", async () => {
+  const calls = [];
+  const db = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT role, is_active FROM users")) {
+        return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, role")) {
+        return { rows: [{ id: "user-1", role: "user" }] };
+      }
+      if (sql.includes("UPDATE users")) {
+        return {
+          rows: [{
+            id: "user-1",
+            full_name: "Staff One",
+            email: "staff@example.com",
+            role: "staff",
+            is_active: true,
+            current_level: "HSK2",
+            is_premium: false,
+            premium_until: null,
+            vip_plan_id: null,
+            daily_reminder_enabled: true,
+          }],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  const result = await service.updateUserRole("user-1", { role: "staff" }, { "x-admin-user-id": "admin-1" });
+
+  const updateCall = calls.find((call) => call.sql.includes("UPDATE users"));
+  assert.equal(updateCall.params[0], "staff");
+  assert.equal(result.user.role, "staff");
+});
+
+test("staff cannot manage user roles", async () => {
+  const db = {
+    async query(sql) {
+      if (sql.includes("SELECT role, is_active FROM users")) {
+        return { rows: [{ role: "staff", is_active: true }] };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  await assert.rejects(
+    () => service.updateUserRole("user-1", { role: "staff" }, { "x-admin-user-id": "staff-1" }),
+    (error) => error instanceof HttpException && error.getStatus() === 403,
+  );
+});
+
+test("staff can update VIP status but cannot modify admin accounts", async () => {
+  const future = new Date(Date.now() + 7 * 86400000).toISOString();
+  const calls = [];
+  const db = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT role, is_active FROM users")) {
+        return { rows: [{ role: "staff", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, full_name, email, role")) {
+        return { rows: [{
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: "user",
+          is_active: true,
+          current_level: "HSK2",
+        }] };
+      }
+      if (sql.includes("UPDATE users")) {
+        return {
+          rows: [{
+            id: "user-1",
+            full_name: "User One",
+            email: "user@example.com",
+            role: "user",
+            is_active: true,
+            current_level: "HSK2",
+            is_premium: true,
+            premium_until: future,
+            vip_plan_id: "7d",
+            daily_reminder_enabled: true,
+          }],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  const result = await service.updateUser("user-1", {
+    fullName: "User One",
+    email: "user@example.com",
+    role: "user",
+    isActive: true,
+    currentLevel: "HSK2",
+    plan: "PREMIUM",
+    durationDays: 7,
+  }, { "x-admin-user-id": "staff-1" });
+
+  assert.equal(result.user.isPremium, true);
+  assert.equal(result.user.vipPlanId, "7d");
+});
+
+test("frontend exposes staff role controls only for admin console users", () => {
+  assert.match(appSource, /function isStaffAdminUser\(\)/);
+  assert.match(appSource, /function canAccessAdminConsole\(\)/);
+  assert.match(appSource, /class="admin-role-user"/);
+  assert.match(appSource, /api\/admin\/users\/\$\{encodeURIComponent\(userId\)\}\/role/);
+  assert.match(appSource, /admin-console--staff/);
+});

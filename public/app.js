@@ -418,12 +418,12 @@ function readStoredJson(key) {
 
 function readStoredStudentUser() {
   const user = readStoredJson(STUDENT_USER_STORAGE_KEY);
-  return user && user.role !== "admin" ? user : null;
+  return user && !["admin", "staff", "employee"].includes(String(user.role || "").toLowerCase()) ? user : null;
 }
 
 function readStoredAdminUser() {
   const user = readStoredJson(ADMIN_USER_STORAGE_KEY);
-  return user?.role === "admin" ? user : null;
+  return ["admin", "staff", "employee"].includes(String(user?.role || "").toLowerCase()) ? user : null;
 }
 
 function clearLegacyAuthStorage() {
@@ -2792,11 +2792,20 @@ function showRecentActivitiesDrawer() {
 }
 
 function isAdminUser() {
-  return state.adminUser?.role === "admin";
+  return String(state.adminUser?.role || "").toLowerCase() === "admin";
+}
+
+function isStaffAdminUser() {
+  const role = String(state.adminUser?.role || "").toLowerCase();
+  return role === "staff" || role === "employee";
+}
+
+function canAccessAdminConsole() {
+  return isAdminUser() || isStaffAdminUser();
 }
 
 function getAdminUserId() {
-  return isAdminUser() ? state.adminUser.id : "";
+  return canAccessAdminConsole() ? state.adminUser.id : "";
 }
 
 function scrollAppToTop() {
@@ -3021,7 +3030,7 @@ function renderChrome() {
     bottomAccountBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Cá nhân" : "个人";
   }
 
-  const canViewAdmin = !BACKEND_DISABLED && isAdminUser();
+  const canViewAdmin = !BACKEND_DISABLED && canAccessAdminConsole();
   if (navAdmin) {
     navAdmin.textContent = t("admin");
     navAdmin.classList.toggle("hidden", !canViewAdmin);
@@ -3249,7 +3258,7 @@ function renderRoadmap() {
 
 async function loadAdminUsers() {
   const isVi = state.lang === "vi";
-  if (!isAdminUser()) {
+  if (!canAccessAdminConsole()) {
     state.adminStatus = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
     state.adminUsers = [];
     renderAdmin();
@@ -3289,6 +3298,20 @@ function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
   if (plan === "EMPLOYEE") return isVi ? "Nhân viên" : "员工";
   if (plan === "FREE") return isVi ? "Thường" : "Free";
   return plan || "";
+}
+
+function normalizeAdminRole(role) {
+  const normalized = String(role || "").toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  return "user";
+}
+
+function getAdminRoleLabel(role, isVi = state.lang === "vi") {
+  const normalized = normalizeAdminRole(role);
+  if (normalized === "admin") return isVi ? "Quản trị viên cao nhất" : "超级管理员";
+  if (normalized === "staff") return isVi ? "CSKH quản trị" : "客服管理员";
+  return isVi ? "Người dùng thường" : "普通用户";
 }
 
 function findAdminUserById(userId) {
@@ -3331,6 +3354,18 @@ function confirmAdminVipCancel(userId) {
   return window.confirm(isVi
     ? `Xác nhận hủy VIP và đưa ${target} về tài khoản thường?`
     : `确认取消 ${target} 的 VIP 并恢复为普通用户吗？`);
+}
+
+function confirmAdminRoleChange(userId, nextRole) {
+  const user = findAdminUserById(userId);
+  const isVi = state.lang === "vi";
+  const target = user?.email || user?.fullName || userId;
+  const action = nextRole === "staff"
+    ? (isVi ? "đặt làm CSKH quản trị" : "设为客服管理员")
+    : (isVi ? "khôi phục thành người dùng thường" : "恢复为普通用户");
+  return window.confirm(isVi
+    ? `Xác nhận ${action} cho ${target}?`
+    : `确认将 ${target} ${action} 吗？`);
 }
 
 function buildAdminUserPatchPayload(row, extra = {}) {
@@ -3413,8 +3448,13 @@ function buildAdminUserRowsHTML(users, isVi) {
     const vipDisplay = getVipPlanDisplay(user, isVi);
     const duration = hasPremium ? vipDisplay.status : "N/A";
     const expiryInputValue = formatAdminDateInput(user.premiumUntil);
+    const role = normalizeAdminRole(user.role);
+    const canChangeStaffRole = isAdminUser() && role !== "admin";
+    const staffRoleButton = canChangeStaffRole
+      ? `<button class="admin-role-user" type="button" data-next-role="${role === "staff" ? "user" : "staff"}">${role === "staff" ? (isVi ? "Hủy CSKH" : "取消客服管理员") : (isVi ? "Đặt CSKH" : "设为客服管理员")}</button>`
+      : "";
     return `
-      <tr data-user-id="${escapeAttr(user.id)}">
+      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}">
         <td>
           <div class="admin-user-cell">
             ${avatar ? `<img src="${avatar}" alt="${escapeAttr(user.fullName || user.email)}" />` : `<span>${escapeAttr(initials)}</span>`}
@@ -3425,6 +3465,7 @@ function buildAdminUserRowsHTML(users, isVi) {
           </div>
         </td>
         <td>${escapeAttr(user.email || "")}</td>
+        <td><span class="admin-pill role ${role}">${escapeAttr(getAdminRoleLabel(role, isVi))}</span></td>
         <td><span class="admin-pill level">${escapeAttr(currentLevel)}</span></td>
         <td><span class="admin-pill ${plan.toLowerCase()}">${escapeAttr(getAdminUserPlanLabel(plan, isVi))}</span></td>
         <td>
@@ -3444,9 +3485,12 @@ function buildAdminUserRowsHTML(users, isVi) {
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
             </button>
           </div>
+          <div class="admin-row-role-actions">
+            ${staffRoleButton}
+          </div>
           <input type="hidden" data-field="fullName" value="${escapeAttr(user.fullName || "")}" />
           <input type="hidden" data-field="email" value="${escapeAttr(user.email || "")}" />
-          <input type="hidden" data-field="role" value="${escapeAttr(user.role || "student")}" />
+          <input type="hidden" data-field="role" value="${escapeAttr(role)}" />
           <input type="hidden" data-field="currentLevel" value="${escapeAttr(currentLevel)}" />
           <input type="checkbox" data-field="isActive" ${user.isActive ? "checked" : ""} hidden />
         </td>
@@ -3483,7 +3527,7 @@ function updateAdminUsersList() {
 
 function renderAdmin() {
   const isVi = state.lang === "vi";
-  if (!isAdminUser()) {
+  if (!canAccessAdminConsole()) {
     screens.admin.innerHTML = `
       <section class="admin-login-screen">
         <form class="admin-login-card" id="adminLoginForm">
@@ -3513,7 +3557,7 @@ function renderAdmin() {
   const vipRateMeta = isVi
     ? `${premiumStudentUsers.length}/${studentUsers.length} tài khoản đã lên Pro`
     : `${premiumStudentUsers.length}/${studentUsers.length} 个账户已升级 Pro`;
-  const adminTab = state.adminTab || "users";
+  const adminTab = isAdminUser() ? (state.adminTab || "users") : "users";
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
@@ -3535,7 +3579,7 @@ function renderAdmin() {
   };
 
   screens.admin.innerHTML = `
-    <div class="admin-console">
+    <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
         <div class="admin-brand">
           <span>中</span>
@@ -3620,6 +3664,7 @@ function renderAdmin() {
                 <tr>
                   <th>${isVi ? "Họ và tên" : "姓名"}</th>
                   <th>Email</th>
+                  <th>${isVi ? "Vai trò" : "角色"}</th>
                   <th>${isVi ? "Cấp độ" : "等级"}</th>
                   <th>${isVi ? "Gói" : "套餐"}</th>
                   <th>${isVi ? "Thời hạn" : "期限"}</th>
@@ -3758,7 +3803,7 @@ function showModal(type) {
         method: "POST",
         body: JSON.stringify(isLogin ? { email, password } : { fullName, email, password }),
       });
-      if (data.user?.role === "admin") {
+      if (["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
         throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
       }
       state.user = data.user;
@@ -7455,7 +7500,7 @@ function bindEvents() {
       body: JSON.stringify({ email, password }),
     })
       .then((data) => {
-        if (data.user?.role !== "admin") {
+        if (!["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
           throw new Error(state.lang === "vi" ? "Tài khoản này không có quyền admin." : "该账户没有管理员权限。");
         }
         state.adminUser = data.user;
@@ -7713,6 +7758,7 @@ function bindEvents() {
 
     const adminSubscriptionsTabBtn = event.target.closest("#adminSubscriptionsTabBtn");
     if (adminSubscriptionsTabBtn) {
+      if (!isAdminUser()) return;
       state.adminTab = "subscriptions";
       renderAdmin();
       return;
@@ -7720,6 +7766,7 @@ function bindEvents() {
 
     const adminContentTabBtn = event.target.closest("#adminContentTabBtn");
     if (adminContentTabBtn) {
+      if (!isAdminUser()) return;
       state.adminTab = "content";
       renderAdmin();
       loadAdminContentLocks();
@@ -8021,8 +8068,41 @@ function bindEvents() {
       return;
     }
 
+    const adminRoleUser = event.target.closest(".admin-role-user");
+    if (adminRoleUser) {
+      if (!isAdminUser()) {
+        showToast(state.lang === "vi" ? "Bạn không có quyền quản lý nhân viên." : "你没有员工权限管理权限。");
+        return;
+      }
+      const row = adminRoleUser.closest("[data-user-id]");
+      const userId = row.dataset.userId;
+      const nextRole = adminRoleUser.dataset.nextRole === "staff" ? "staff" : "user";
+      if (!confirmAdminRoleChange(userId, nextRole)) return;
+      state.adminStatus = state.lang === "vi" ? "Đang cập nhật vai trò..." : "正在更新角色...";
+      renderAdmin();
+      apiRequest(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
+        method: "PATCH",
+        headers: {
+          "X-Admin-User-Id": getAdminUserId(),
+        },
+        body: JSON.stringify({ role: nextRole }),
+      })
+        .then(() => {
+          showToast(nextRole === "staff"
+            ? (state.lang === "vi" ? "Đã đặt làm CSKH quản trị." : "已设为客服管理员。")
+            : (state.lang === "vi" ? "Đã khôi phục thành người dùng thường." : "已恢复为普通用户。"));
+          return loadAdminUsers();
+        })
+        .catch((error) => {
+          state.adminStatus = error.message;
+          renderAdmin();
+        });
+      return;
+    }
+
     const adminDeleteUser = event.target.closest(".admin-delete-user");
     if (adminDeleteUser) {
+      if (!isAdminUser()) return;
       const row = adminDeleteUser.closest("[data-user-id]");
       showAdminDeleteUserConfirm(row);
       return;

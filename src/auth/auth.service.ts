@@ -13,6 +13,13 @@ export class AuthService {
     return normalized || null;
   }
 
+  private normalizeRole(role: string | null | undefined): 'user' | 'staff' | 'admin' {
+    const normalized = String(role || '').trim().toLowerCase();
+    if (normalized === 'admin') return 'admin';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
+    return 'user';
+  }
+
   private vipPlanName(planId: string | null, lang: 'vi' | 'zh'): string | null {
     if (planId === '7d') return lang === 'vi' ? 'VIP 7 ngày' : '7天VIP';
     if (planId === '30d') return lang === 'vi' ? 'VIP 30 ngày' : '30天VIP';
@@ -44,7 +51,8 @@ export class AuthService {
       row.is_premium && (!premiumUntil || premiumUntil.getTime() > Date.now()),
     );
     const vipPlanId = isPremium ? this.normalizeVipPlanId(row.vip_plan_id) : null;
-    const vipPlan = row.role === 'admin' || row.role === 'employee'
+    const role = this.normalizeRole(row.role);
+    const vipPlan = role === 'admin'
       ? 'ADMIN'
       : isPremium
         ? (vipPlanId || 'PREMIUM')
@@ -53,7 +61,7 @@ export class AuthService {
       id: row.id,
       fullName: row.full_name,
       email: row.email,
-      role: row.role,
+      role,
       isActive: row.is_active,
       currentLevel: row.current_level || 'HSK2',
       avatarUrl: row.avatar_url || '',
@@ -88,8 +96,8 @@ export class AuthService {
 
     try {
       const result = await this.db.query(
-        `INSERT INTO users (full_name, email, password_hash)
-         VALUES ($1, $2, $3)
+        `INSERT INTO users (full_name, email, password_hash, role)
+         VALUES ($1, $2, $3, 'user')
          RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
         [fullName, email, this.hashPassword(password)],
       );

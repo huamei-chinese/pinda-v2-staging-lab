@@ -17515,9 +17515,21 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-pill.premium { background: #c8f7e5; color: #047857; }
 .admin-pill.free { background: #edf2f7; color: #64748b; }
 .admin-pill.employee { background: #dbeafe; color: #1d4ed8; }
+.admin-pill.role { min-width: 78px; }
+.admin-pill.role.user { background: #edf2f7; color: #475569; }
+.admin-pill.role.staff { background: #dbeafe; color: #1d4ed8; }
+.admin-pill.role.admin { background: #fee2e2; color: #b91c1c; }
 .admin-duration strong { color: #0f172a; font-weight: 750; }
 .admin-duration small { display: none; }
 .admin-row-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.admin-row-role-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.admin-role-user { min-height: 32px; border: 0; border-radius: 8px; background: #dbeafe; color: #1d4ed8; padding: 0 10px; font-size: 11px; font-weight: 900; cursor: pointer; }
+.admin-role-user:hover, .admin-role-user:focus-visible { background: #bfdbfe; outline: none; }
+.admin-console--staff #adminSubscriptionsTabBtn,
+.admin-console--staff #adminContentTabBtn,
+.admin-console--staff #adminCreateAccountBtn,
+.admin-console--staff .admin-delete-user,
+.admin-user-role-admin .admin-delete-user { display: none !important; }
 .admin-vip-expiry-input { width: 132px; min-height: 32px; border: 1px solid #dbe4f0; border-radius: 8px; padding: 0 8px; color: #334155; font-size: 12px; font-weight: 750; }
 .admin-set-vip-expiry, .admin-cancel-vip-user { min-height: 32px; border: 0; border-radius: 8px; padding: 0 10px; font-size: 11px; font-weight: 900; cursor: pointer; }
 .admin-set-vip-expiry { background: #e0f2fe; color: #0369a1; }
