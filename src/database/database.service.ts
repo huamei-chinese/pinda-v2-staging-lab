@@ -56,7 +56,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'student',
+        role TEXT NOT NULL DEFAULT 'user',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         current_level TEXT NOT NULL DEFAULT 'HSK2',
         avatar_url TEXT,
@@ -75,6 +75,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS current_level TEXT NOT NULL DEFAULT 'HSK2';
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user';
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;

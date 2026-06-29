@@ -21,6 +21,16 @@ test("admin update can cancel VIP and clear the stored plan id", async () => {
       if (sql.includes("SELECT role, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
+      if (sql.includes("SELECT id, full_name, email, role")) {
+        return { rows: [{
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: "student",
+          is_active: true,
+          current_level: "HSK2",
+        }] };
+      }
       if (sql.includes("UPDATE users")) {
         return {
           rows: [{
@@ -67,6 +77,16 @@ test("admin update can set a future VIP expiry and latest plan id", async () => 
       calls.push({ sql, params });
       if (sql.includes("SELECT role, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, full_name, email, role")) {
+        return { rows: [{
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: "student",
+          is_active: true,
+          current_level: "HSK2",
+        }] };
       }
       if (sql.includes("UPDATE users")) {
         return {

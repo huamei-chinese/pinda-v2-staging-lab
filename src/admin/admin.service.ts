@@ -13,6 +13,13 @@ export class AdminService {
     private readonly authService: AuthService,
   ) {}
 
+  private normalizeRole(role: string | null | undefined): 'user' | 'staff' | 'admin' {
+    const normalized = String(role || '').trim().toLowerCase();
+    if (normalized === 'admin') return 'admin';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
+    return 'user';
+  }
+
   publicUser(row: any) {
     const premiumUntil = row.premium_until ? new Date(row.premium_until) : null;
     const isPremium = Boolean(
@@ -20,13 +27,14 @@ export class AdminService {
     );
 
     const vipPlanId = isPremium ? this.vipPlanIdFromDuration(row.vip_plan_id, 0) : null;
-    const plan = row.role === 'employee' ? 'EMPLOYEE' : isPremium ? (vipPlanId || 'PREMIUM') : 'FREE';
+    const role = this.normalizeRole(row.role);
+    const plan = isPremium ? (vipPlanId || 'PREMIUM') : 'FREE';
 
     return {
       id: row.id,
       fullName: row.full_name,
       email: row.email,
-      role: row.role,
+      role,
       isActive: row.is_active,
       currentLevel: row.current_level || 'HSK2',
       avatarUrl: row.avatar_url || '',
@@ -43,27 +51,43 @@ export class AdminService {
     };
   }
 
-  async isAdminRequest(headers: Record<string, string | string[] | undefined>): Promise<boolean> {
+  private async getAdminRequester(headers: Record<string, string | string[] | undefined>) {
     const adminUserId = headers['x-admin-user-id'];
     const userId = Array.isArray(adminUserId) ? adminUserId[0] : adminUserId;
-    if (!userId) return false;
+    if (!userId) return null;
 
     const result = await this.db.query(
       'SELECT role, is_active FROM users WHERE id = $1',
       [userId],
     );
     const user = result.rows[0];
-    return user?.role === 'admin' && user?.is_active === true;
+    if (!user?.is_active) return null;
+    return { id: userId, role: this.normalizeRole(user.role) };
+  }
+
+  async isAdminRequest(headers: Record<string, string | string[] | undefined>): Promise<boolean> {
+    const requester = await this.getAdminRequester(headers);
+    return requester?.role === 'admin';
   }
 
   private async assertAdmin(headers: Record<string, string | string[] | undefined>) {
-    if (!(await this.isAdminRequest(headers))) {
+    const requester = await this.getAdminRequester(headers);
+    if (requester?.role !== 'admin') {
       throw new HttpException('Vui lòng đăng nhập bằng tài khoản admin.', HttpStatus.UNAUTHORIZED);
     }
+    return requester;
+  }
+
+  private async assertAdminOrStaff(headers: Record<string, string | string[] | undefined>) {
+    const requester = await this.getAdminRequester(headers);
+    if (!requester || !['admin', 'staff'].includes(requester.role)) {
+      throw new HttpException('Vui lòng đăng nhập bằng tài khoản admin.', HttpStatus.UNAUTHORIZED);
+    }
+    return requester;
   }
 
   async getAllUsers(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrStaff(headers);
 
     try {
       const result = await this.db.query(
@@ -73,6 +97,7 @@ export class AdminService {
       );
       return { users: result.rows.map((row) => this.publicUser(row)) };
     } catch (error: any) {
+      if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -111,13 +136,13 @@ export class AdminService {
     const fullName = String(body.fullName || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
-    const role = String(body.role || 'student').trim();
+    const role = this.normalizeRole(body.role || 'user');
     const currentLevel = String(body.currentLevel || 'HSK2').trim().toUpperCase();
     const plan = String(body.plan || 'FREE').trim().toUpperCase();
     const isActive = body.isActive !== false;
     const durationDays = Math.max(0, Number(body.durationDays || 0));
     const isPremium = plan === 'PREMIUM';
-    const roleToSave = plan === 'EMPLOYEE' ? 'employee' : role || 'student';
+    const roleToSave = plan === 'EMPLOYEE' ? 'staff' : role || 'user';
     const premiumUntil = this.calculatePremiumUntil(plan, durationDays);
     const vipPlanId = isPremium ? this.vipPlanIdFromDuration(null, durationDays) : null;
 
@@ -178,11 +203,11 @@ export class AdminService {
     },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    const requester = await this.assertAdminOrStaff(headers);
 
     const fullName = String(body.fullName || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
-    const role = String(body.role || 'student').trim();
+    const requestedRole = this.normalizeRole(body.role || 'user');
     const isActive = body.isActive === true;
     const currentLevel = String(body.currentLevel || 'HSK2').trim().toUpperCase();
     const plan = String(body.plan || '').trim().toUpperCase();
@@ -216,6 +241,35 @@ export class AdminService {
     }
 
     try {
+      const current = await this.db.query(
+        `SELECT id, full_name, email, role, is_active, current_level
+         FROM users
+         WHERE id = $1`,
+        [id],
+      );
+      const currentUser = current.rows[0];
+      if (!currentUser) {
+        throw new HttpException('Kh么ng t矛m th岷 user.', HttpStatus.NOT_FOUND);
+      }
+      const currentRole = this.normalizeRole(currentUser.role);
+      if (requester.role === 'staff') {
+        if (currentRole === 'admin') {
+          throw new HttpException('Staff cannot modify admin accounts.', HttpStatus.FORBIDDEN);
+        }
+        if (
+          requestedRole !== currentRole ||
+          fullName !== String(currentUser.full_name || '').trim() ||
+          email !== String(currentUser.email || '').trim().toLowerCase() ||
+          currentLevel !== String(currentUser.current_level || 'HSK2').trim().toUpperCase() ||
+          isActive !== (currentUser.is_active === true)
+        ) {
+          throw new HttpException('Staff can only update VIP status.', HttpStatus.FORBIDDEN);
+        }
+      }
+      if (currentRole !== 'admin' && requestedRole === 'admin') {
+        throw new HttpException('Cannot set admin role from this endpoint.', HttpStatus.FORBIDDEN);
+      }
+      const roleToSave = currentRole === 'admin' ? currentUser.role : requestedRole;
       const result = await this.db.query(
         `UPDATE users
          SET full_name = $1,
@@ -245,7 +299,7 @@ export class AdminService {
         [
           fullName,
           email,
-          role,
+          roleToSave,
           isActive,
           currentLevel,
           id,
@@ -262,8 +316,52 @@ export class AdminService {
       }
       return { user: this.publicUser(result.rows[0]) };
     } catch (error: any) {
+      if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  async updateUserRole(
+    id: string,
+    body: { role?: string },
+    headers: Record<string, string | string[] | undefined>,
+  ) {
+    const requester = await this.getAdminRequester(headers);
+    if (requester?.role !== 'admin') {
+      throw new HttpException('Only admin can manage staff roles.', requester ? HttpStatus.FORBIDDEN : HttpStatus.UNAUTHORIZED);
+    }
+    const nextRole = this.normalizeRole(body.role);
+
+    if (!['user', 'staff'].includes(nextRole)) {
+      throw new HttpException('Role must be user or staff.', HttpStatus.BAD_REQUEST);
+    }
+    if (String(requester.id) === String(id)) {
+      throw new HttpException('Cannot change your own admin role.', HttpStatus.FORBIDDEN);
+    }
+
+    const current = await this.db.query(
+      `SELECT id, role
+       FROM users
+       WHERE id = $1`,
+      [id],
+    );
+    const currentUser = current.rows[0];
+    if (!currentUser) {
+      throw new HttpException('Kh么ng t矛m th岷 user.', HttpStatus.NOT_FOUND);
+    }
+    if (this.normalizeRole(currentUser.role) === 'admin') {
+      throw new HttpException('Cannot modify admin accounts.', HttpStatus.FORBIDDEN);
+    }
+
+    const result = await this.db.query(
+      `UPDATE users
+       SET role = $1,
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+      [nextRole, id],
+    );
+    return { user: this.publicUser(result.rows[0]) };
   }
 
   async deleteUser(
