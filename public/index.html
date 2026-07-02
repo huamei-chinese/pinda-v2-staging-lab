@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HuaMei - Luyện viết Tiếng Trung</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="mobile.css" media="(max-width: 640px)" />
+  <script type="text/javascript">
+    (function (c, l, a, r, i, t, y) {
+      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+    })(window, document, "clarity", "script", "x7zrlo8d4v");
+  </script>
+</head>
+
+<body>
+  <main id="app" class="app-shell">
+    <!-- Header tạm ẩn
+    <header class="app-top">
+      <div class="app-top-inner">
+        <button id="backBtn" class="icon-btn hidden" type="button" aria-label="Back">‹</button>
+        <div class="brand">
+          <img src="assets/huamei-logo.png" alt="HUAMEI Logo" class="brand-logo" />
+          <div class="brand-copy">
+            <span id="brandSubtitle"></span>
+          </div>
+        </div>
+        <nav class="header-nav" id="headerNav">
+          <button class="nav-item" id="navHskBtn" type="button">Khóa HSK</button>
+          <button class="nav-item" id="navDailyBtn" type="button">Thông dụng</button>
+          <button class="nav-item" id="navVocabBtn" type="button">Bộ từ</button>
+          <button class="nav-item hidden" id="navSubscriptionsBtn" type="button" hidden aria-hidden="true">Gói đăng ký</button>
+          <button class="nav-item hidden" id="navAdminBtn" type="button">Admin</button>
+        </nav>
+        <div class="top-actions">
+          <button id="reviewBtn" class="pill-btn" type="button"></button>
+          <button id="langToggle" class="lang-toggle" type="button">
+            <span class="lang-vi">VI</span>
+            <span class="lang-divider">|</span>
+            <span class="lang-en">CN</span>
+          </button>
+          <button id="loginBtn" class="btn-login" type="button">Đăng nhập</button>
+          <button id="registerBtn" class="btn-register" type="button">Đăng ký</button>
+          <button id="menuToggleBtn" class="menu-toggle-btn" type="button" aria-label="Toggle Menu">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="mobileMenu" class="mobile-dropdown-menu">
+        <nav class="mobile-nav">
+          <button class="mobile-nav-item" id="mobileHskBtn" type="button">Khóa HSK <span class="arrow">›</span></button>
+          <button class="mobile-nav-item" id="mobileDailyBtn" type="button">Thông dụng <span
+              class="arrow">›</span></button>
+          <button class="mobile-nav-item" id="mobileVocabBtn" type="button">Bộ từ <span
+              class="arrow">›</span></button>
+          <button class="mobile-nav-item hidden" id="mobileSubscriptionsBtn" type="button" hidden aria-hidden="true">Gói đăng ký <span
+              class="arrow">›</span></button>
+          <button class="mobile-nav-item hidden" id="mobileAdminBtn" type="button">Admin <span
+              class="arrow">›</span></button>
+        </nav>
+        <div class="mobile-actions">
+          <button id="mobileLoginBtn" class="btn-login" type="button">Đăng nhập</button>
+          <button id="mobileRegisterBtn" class="btn-register" type="button">Đăng ký</button>
+        </div>
+      </div>
+    </header>
+    -->
+
+    <section id="homeScreen" class="screen home-screen"></section>
+    <section id="courseScreen" class="screen course-screen hidden"></section>
+    <section id="practiceScreen" class="screen practice-screen hidden"></section>
+    <section id="completeScreen" class="screen complete-screen hidden"></section>
+    <section id="adminScreen" class="screen admin-screen hidden"></section>
+    <section id="vocabScreen" class="screen vocab-screen hidden"></section>
+    <section id="accountScreen" class="screen account-screen hidden"></section>
+    <section id="subscriptionsScreen" class="screen subscriptions-screen hidden">
+      <iframe
+        class="subscriptions-frame"
+        src="subscriptions.html"
+        title="Quản lý gói đăng ký"
+        loading="lazy"></iframe>
+    </section>
+  </main>
+  <div id="burstLayer" class="burst-layer" aria-hidden="true"></div>
+  <!-- Footer tạm ẩn
+  <footer id="globalFooter" class="redesigned-footer hidden"></footer>
+  -->
+  <nav id="mobileBottomNav" class="mobile-bottom-nav hidden" aria-label="Điều hướng chính">
+    <button id="bottomNavHomeBtn" class="mobile-bottom-nav-item" data-bottom-nav="home" type="button">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M12 3.2 3 11.2V20a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1v-8.8L12 3.2z"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Trang chủ</span>
+    </button>
+    <button id="bottomNavHskBtn" class="mobile-bottom-nav-item" data-bottom-nav="hsk" type="button">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Khóa HSK</span>
+    </button>
+    <button id="bottomNavDailyBtn" class="mobile-bottom-nav-item" data-bottom-nav="daily" type="button">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Giao tiếp</span>
+    </button>
+    <button id="bottomNavVocabBtn" class="mobile-bottom-nav-item" data-bottom-nav="vocab" type="button">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="14" height="18" rx="2"/><path d="M9 4v18"/><path d="M17 8h4v14a2 2 0 0 1-2 2H7"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Bộ từ</span>
+    </button>
+    <button id="bottomNavSubscriptionsBtn" class="mobile-bottom-nav-item hidden" data-bottom-nav="subscriptions" type="button" hidden aria-hidden="true">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10"/><path d="M7 13h5"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Gói</span>
+    </button>
+    <button id="bottomNavAccountBtn" class="mobile-bottom-nav-item" data-bottom-nav="account" type="button">
+      <span class="mobile-bottom-nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>
+        </svg>
+      </span>
+      <span class="mobile-bottom-nav-label">Cá nhân</span>
+    </button>
+  </nav>
+  <script src="practice-rules.js"></script>
+  <script src="practice-answer-rules.js"></script>
+  <script src="speech-config.js"></script>
+  <script src="sound-effects.js"></script>
+  <script src="academic-review-agent.js"></script>
+  <script src="lesson-runtime-rules.js"></script>
+  <script src="lesson-new-format-loader.js"></script>
+  <script src="./HSK2/lesson-hsk2-l1-phrase.js.js"></script>
+  <script src="./HSK2/lesson-hsk2-l1-word.js.js"></script>
+  <script src="lesson-high-frequency-v1-27-topics.js"></script>
+  <script src="lesson-hsk1-word-sentence-audit.js"></script>
+  <script src="lesson-hsk2-word-sentence-audit.js"></script>
+  <script src="lesson-hsk3-word-sentence-audit.js"></script>
+  <script src="lesson-hsk4-word-sentence-audit.js"></script>
+  <script src="lesson-hsk5-word-sentence-audit.js"></script>
+  <script src="lesson-hsk6-word-sentence-audit.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

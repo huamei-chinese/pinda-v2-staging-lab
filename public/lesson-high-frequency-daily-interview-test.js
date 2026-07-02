@@ -1,0 +1,165 @@
+(function (root, factory) {
+  const data = factory();
+  if (typeof module === "object" && module.exports) {
+    module.exports = data;
+  }
+  if (root.registerNewFormatHighFrequencyTopics) {
+    root.registerNewFormatHighFrequencyTopics(data.topics);
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  return {
+    source: "daily_interview_two_module_v2_test_001",
+    topics: [
+      {
+        topic_id: "daily_interview",
+        title: "工作面试",
+        topic: "Phỏng vấn xin việc",
+        id: "daily_interview-word",
+        type: "word",
+        source: "local-v2-two-module-test-package",
+        items: [
+          {
+            id: "daily_interview_word_001",
+            hanzi: "面试",
+            pinyin: "miànshì",
+            vietnamese: "phỏng vấn",
+            audio_normal_path: "audio/daily_interview_v2/word/daily_interview_word_001_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/word/daily_interview_word_001_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+          },
+          {
+            id: "daily_interview_word_002",
+            hanzi: "职位",
+            pinyin: "zhíwèi",
+            vietnamese: "vị trí công việc",
+            audio_normal_path: "audio/daily_interview_v2/word/daily_interview_word_002_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/word/daily_interview_word_002_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+          },
+          {
+            id: "daily_interview_word_003",
+            hanzi: "经验",
+            pinyin: "jīngyàn",
+            vietnamese: "kinh nghiệm",
+            audio_normal_path: "audio/daily_interview_v2/word/daily_interview_word_003_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/word/daily_interview_word_003_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+          },
+          {
+            id: "daily_interview_word_004",
+            hanzi: "简历",
+            pinyin: "jiǎnlì",
+            vietnamese: "sơ yếu lý lịch",
+            audio_normal_path: "audio/daily_interview_v2/word/daily_interview_word_004_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/word/daily_interview_word_004_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+          },
+          {
+            id: "daily_interview_word_005",
+            hanzi: "试用期",
+            pinyin: "shìyòngqī",
+            vietnamese: "thời gian thử việc",
+            audio_normal_path: "audio/daily_interview_v2/word/daily_interview_word_005_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/word/daily_interview_word_005_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+          },
+        ],
+      },
+      {
+        topic_id: "daily_interview",
+        title: "工作面试",
+        topic: "Phỏng vấn xin việc",
+        id: "daily_interview-sentence",
+        type: "sentence",
+        source: "local-v2-two-module-test-package",
+        items: [
+          {
+            id: "daily_interview_sentence_001",
+            hanzi: "请先做一下自我介绍。",
+            pinyin: "Qǐng xiān zuò yíxià zìwǒ jièshào.",
+            vietnamese: "Vui lòng giới thiệu bản thân trước.",
+            audio_normal_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_001_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_001_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+            segments: [
+              { text: "请", pinyin: "qǐng", vietnamese: "xin", segment_type: "功能词块", pos: "功能词" },
+              { text: "先", pinyin: "xiān", vietnamese: "trước", segment_type: "词", pos: "副词" },
+              { text: "做一下", pinyin: "zuò yíxià", vietnamese: "làm một chút", segment_type: "短语", pos: "动词" },
+              { text: "自我介绍", pinyin: "zìwǒ jièshào", vietnamese: "giới thiệu bản thân", segment_type: "短语", pos: "名词" },
+            ],
+          },
+          {
+            id: "daily_interview_sentence_002",
+            hanzi: "我想应聘这个职位。",
+            pinyin: "Wǒ xiǎng yìngpìn zhège zhíwèi.",
+            vietnamese: "Tôi muốn ứng tuyển vị trí này.",
+            audio_normal_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_002_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_002_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+            segments: [
+              { text: "我", pinyin: "wǒ", vietnamese: "tôi", segment_type: "词", pos: "代词" },
+              { text: "想", pinyin: "xiǎng", vietnamese: "muốn", segment_type: "词", pos: "动词" },
+              { text: "应聘", pinyin: "yìngpìn", vietnamese: "ứng tuyển", segment_type: "词", pos: "动词" },
+              { text: "这个职位", pinyin: "zhège zhíwèi", vietnamese: "vị trí này", segment_type: "短语", pos: "名词" },
+            ],
+          },
+          {
+            id: "daily_interview_sentence_003",
+            hanzi: "我有两年工作经验。",
+            pinyin: "Wǒ yǒu liǎng nián gōngzuò jīngyàn.",
+            vietnamese: "Tôi có hai năm kinh nghiệm làm việc.",
+            audio_normal_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_003_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_003_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+            segments: [
+              { text: "我", pinyin: "wǒ", vietnamese: "tôi", segment_type: "词", pos: "代词" },
+              { text: "有", pinyin: "yǒu", vietnamese: "có", segment_type: "词", pos: "动词" },
+              { text: "两年", pinyin: "liǎng nián", vietnamese: "hai năm", segment_type: "短语", pos: "名词" },
+              { text: "工作经验", pinyin: "gōngzuò jīngyàn", vietnamese: "kinh nghiệm làm việc", segment_type: "短语", pos: "名词" },
+            ],
+          },
+          {
+            id: "daily_interview_sentence_004",
+            hanzi: "请问工资是多少？",
+            pinyin: "Qǐngwèn gōngzī shì duōshao?",
+            vietnamese: "Cho tôi hỏi mức lương là bao nhiêu?",
+            audio_normal_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_004_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_004_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+            segments: [
+              { text: "请问", pinyin: "qǐngwèn", vietnamese: "cho tôi hỏi", segment_type: "功能词块", pos: "功能词" },
+              { text: "工资", pinyin: "gōngzī", vietnamese: "lương", segment_type: "词", pos: "名词" },
+              { text: "是", pinyin: "shì", vietnamese: "là", segment_type: "词", pos: "动词" },
+              { text: "多少", pinyin: "duōshao", vietnamese: "bao nhiêu", segment_type: "词", pos: "代词" },
+            ],
+          },
+          {
+            id: "daily_interview_sentence_005",
+            hanzi: "什么时候可以开始上班？",
+            pinyin: "Shénme shíhou kěyǐ kāishǐ shàngbān?",
+            vietnamese: "Khi nào tôi có thể bắt đầu đi làm?",
+            audio_normal_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_005_normal.mp3",
+            audio_slow_path: "audio/daily_interview_v2/sentence/daily_interview_sentence_005_slow.mp3",
+            normal_speed: 1.0,
+            slow_speed: 0.75,
+            segments: [
+              { text: "什么时候", pinyin: "shénme shíhou", vietnamese: "khi nào", segment_type: "短语", pos: "代词" },
+              { text: "可以", pinyin: "kěyǐ", vietnamese: "có thể", segment_type: "词", pos: "动词" },
+              { text: "开始", pinyin: "kāishǐ", vietnamese: "bắt đầu", segment_type: "词", pos: "动词" },
+              { text: "上班", pinyin: "shàngbān", vietnamese: "đi làm", segment_type: "词", pos: "动词" },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+});

@@ -1,0 +1,58 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Repository/tooling state
+.git/
+.codegraph/
+.netlify/
+.tmp-*/
+.worktrees/
+.chrome-julebu-profile/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and cache output
+coverage/
+.cache/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated screenshots and media artifacts
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+!assets/logo.png
+!public/assets/*.png
+!public/assets/*.jpg
+!public/assets/*.jpeg
+!public/assets/*.webp
+!public/assets/*.svg
+video-analysis-frames/
+hsk2-pages/
+
+# Local source materials
+*.pdf
+*.txt
+
+# Deployment scratch folders
+deploy-v1-monday-*/

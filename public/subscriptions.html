@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý gói đăng ký</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="subscriptions.css" />
+</head>
+
+<body>
+  <main class="subscription-page">
+    <header class="subscription-hero">
+      <div>
+        <h1>Quản lý gói đăng ký</h1>
+        <p>Theo dõi doanh thu và tối ưu hóa các gói học tập của LingoBloom.</p>
+      </div>
+      <button class="primary-action" id="addPlanBtn" type="button">
+        <span aria-hidden="true">+</span>
+        Thêm gói mới
+      </button>
+    </header>
+
+    <section class="metric-grid" aria-label="Chỉ số tổng quan">
+      <article class="metric-card">
+        <span class="metric-icon icon-wallet" aria-hidden="true">VN</span>
+        <div>
+          <p>Tổng doanh thu</p>
+          <strong id="totalRevenueMetric">—</strong>
+          <span class="metric-unit">VNĐ</span>
+          <small id="revenueGrowthMetric">—</small>
+        </div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon icon-users" aria-hidden="true">U</span>
+        <div>
+          <p>Gói đang hoạt động</p>
+          <strong><span id="activeUsersMetric">—</span> <em>Users</em></strong>
+          <small id="activeUsersGrowthMetric" class="neutral">—</small>
+        </div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon icon-renew" aria-hidden="true">R</span>
+        <div>
+          <p>Tỷ lệ gia hạn</p>
+          <strong id="renewalRateMetric">—</strong>
+          <small id="renewalStatusMetric" class="stable">—</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel plans-panel">
+        <div class="panel-heading">
+          <div class="panel-title">
+            <span class="title-icon" aria-hidden="true">□</span>
+            <h2>Danh sách gói dịch vụ</h2>
+          </div>
+          <button class="text-action" id="downloadCsvBtn" type="button">Tải CSV</button>
+        </div>
+
+        <div class="plan-table" role="table" aria-label="Danh sách gói dịch vụ">
+          <div class="plan-row plan-head" role="row">
+            <span role="columnheader">Tên gói</span>
+            <span role="columnheader">Giá (VNĐ)</span>
+            <span role="columnheader">Người mua</span>
+            <span role="columnheader">Trạng thái</span>
+            <span role="columnheader">Thao tác</span>
+          </div>
+          <div id="planTableBody"></div>
+        </div>
+      </article>
+
+      <aside class="panel transaction-panel">
+        <div class="panel-heading">
+          <div class="panel-title">
+            <span class="title-icon" aria-hidden="true">↺</span>
+            <h2>Giao dịch gần đây</h2>
+          </div>
+          <span class="today-badge">Mới nhất</span>
+        </div>
+
+        <div class="transaction-list" id="recentTransactionsList">
+          <p class="transaction-empty">Đang tải giao dịch...</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <dialog class="plan-dialog" id="planDialog" aria-labelledby="planDialogTitle">
+    <form id="planDialogForm" method="dialog">
+      <div class="dialog-heading">
+        <h2 id="planDialogTitle">Thêm gói mới</h2>
+        <button class="dialog-close" value="cancel" type="button" aria-label="Đóng">×</button>
+      </div>
+      <label>
+        Mã gói
+        <input id="planIdInput" placeholder="vd: 12m" required pattern="[a-z0-9_-]{2,20}" />
+      </label>
+      <label>
+        Tên gói (Tiếng Việt)
+        <input id="planNameViInput" placeholder="Gói 12 Tháng" required />
+      </label>
+      <label>
+        Tên gói (Tiếng Trung)
+        <input id="planNameZhInput" placeholder="12 个月" required />
+      </label>
+      <label>
+        Thời hạn
+        <span class="duration-input-row">
+          <input id="planDurationInput" type="number" min="1" step="1" placeholder="12" required />
+          <select id="planDurationUnitSelect" aria-label="Đơn vị thời hạn">
+            <option value="months">Tháng</option>
+            <option value="days">Ngày</option>
+          </select>
+        </span>
+      </label>
+      <label>
+        Giá bán (VNĐ)
+        <input id="planAmountInput" inputmode="numeric" placeholder="1.499.000" required />
+      </label>
+      <label>
+        Thứ tự hiển thị
+        <input id="planSortInput" type="number" min="0" step="1" value="1" />
+      </label>
+      <label>
+        Trạng thái
+        <select id="planStatusSelect">
+          <option value="active">Đang bán</option>
+          <option value="hidden">Tạm ẩn</option>
+        </select>
+      </label>
+      <button class="primary-action dialog-submit" type="submit">Lưu gói</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="subscriptions.js"></script>
+</body>
+
+</html>

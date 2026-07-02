@@ -1,0 +1,2249 @@
+{
+  "summary": {
+    "totalLessons": 91,
+    "remediatedLessons": 34,
+    "needsManualReview": 16
+  },
+  "byLevel": {
+    "HSK2": {
+      "total": 15,
+      "remediated": 0,
+      "passReady": 15,
+      "needsManualReview": 0
+    },
+    "HSK3": {
+      "total": 20,
+      "remediated": 0,
+      "passReady": 20,
+      "needsManualReview": 0
+    },
+    "HSK4": {
+      "total": 20,
+      "remediated": 10,
+      "passReady": 10,
+      "needsManualReview": 10
+    },
+    "HSK5": {
+      "total": 36,
+      "remediated": 24,
+      "passReady": 30,
+      "needsManualReview": 6
+    }
+  },
+  "lessons": [
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l1",
+      "lessonNo": 1,
+      "titleZh": "九月去北京旅游最好",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l2",
+      "lessonNo": 2,
+      "titleZh": "我每天六点起床",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l3",
+      "lessonNo": 3,
+      "titleZh": "左边那个红色的是我的",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l4",
+      "lessonNo": 4,
+      "titleZh": "这个工作是他帮我介绍的",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l5",
+      "lessonNo": 5,
+      "titleZh": "就买这件吧",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l6",
+      "lessonNo": 6,
+      "titleZh": "你怎么不吃了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l7",
+      "lessonNo": 7,
+      "titleZh": "你家离公司远吗",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l8",
+      "lessonNo": 8,
+      "titleZh": "让我想想再告诉你",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l9",
+      "lessonNo": 9,
+      "titleZh": "题太多，我没做完",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l10",
+      "lessonNo": 10,
+      "titleZh": "别找了，手机在桌子上呢",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l11",
+      "lessonNo": 11,
+      "titleZh": "他比我大三岁",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l12",
+      "lessonNo": 12,
+      "titleZh": "你穿得太少了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l13",
+      "lessonNo": 13,
+      "titleZh": "门开着呢",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l14",
+      "lessonNo": 14,
+      "titleZh": "你看过那个电影吗",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK2",
+      "lessonId": "hsk2-l15",
+      "lessonNo": 15,
+      "titleZh": "新年就要到了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l1",
+      "lessonNo": 1,
+      "titleZh": "周末你有什么打算",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l2",
+      "lessonNo": 2,
+      "titleZh": "他什么时候回来",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l3",
+      "lessonNo": 3,
+      "titleZh": "桌子上放着很多饮料",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l4",
+      "lessonNo": 4,
+      "titleZh": "她总是笑着跟客人说话",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l5",
+      "lessonNo": 5,
+      "titleZh": "我最近越来越胖了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l6",
+      "lessonNo": 6,
+      "titleZh": "怎么突然找不到了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l7",
+      "lessonNo": 7,
+      "titleZh": "我跟她都认识五年了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l8",
+      "lessonNo": 8,
+      "titleZh": "你去哪儿我就去哪儿",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l9",
+      "lessonNo": 9,
+      "titleZh": "她的汉语说得跟中国人一样好",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l10",
+      "lessonNo": 10,
+      "titleZh": "数学比历史难多了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l11",
+      "lessonNo": 11,
+      "titleZh": "别忘了把空调关了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l12",
+      "lessonNo": 12,
+      "titleZh": "把重要的东西放在我这儿吧",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l13",
+      "lessonNo": 13,
+      "titleZh": "我是走回来的",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l14",
+      "lessonNo": 14,
+      "titleZh": "你把水果拿过来",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l15",
+      "lessonNo": 15,
+      "titleZh": "其他都没什么问题",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l16",
+      "lessonNo": 16,
+      "titleZh": "我现在累得下了班就想睡觉",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l17",
+      "lessonNo": 17,
+      "titleZh": "谁都有办法看好你的病",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l18",
+      "lessonNo": 18,
+      "titleZh": "我相信他们会同意的",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l19",
+      "lessonNo": 19,
+      "titleZh": "你没看出来吗",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK3",
+      "lessonId": "hsk3-l20",
+      "lessonNo": 20,
+      "titleZh": "我被他影响了",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l1",
+      "lessonNo": 1,
+      "titleZh": "简单的爱情",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l2",
+      "lessonNo": 2,
+      "titleZh": "真正的朋友",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l3",
+      "lessonNo": 3,
+      "titleZh": "经理对我印象不错",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l4",
+      "lessonNo": 4,
+      "titleZh": "不要太着急赚钱",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l5",
+      "lessonNo": 5,
+      "titleZh": "只买对的，不买贵的",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l6",
+      "lessonNo": 6,
+      "titleZh": "一分钱一分货",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l7",
+      "lessonNo": 7,
+      "titleZh": "最好的医生是自己",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l8",
+      "lessonNo": 8,
+      "titleZh": "生活中不缺少美",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l9",
+      "lessonNo": 9,
+      "titleZh": "阳光总在风雨后",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l10",
+      "lessonNo": 10,
+      "titleZh": "幸福的标准",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l11",
+      "lessonNo": 11,
+      "titleZh": "读书好，读好书，好读书",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "方式是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "读书是本课重点。"
+      ],
+      "newWords": [
+        "读书",
+        "习惯",
+        "知识",
+        "提高",
+        "选择",
+        "认真",
+        "继续",
+        "理解"
+      ],
+      "newPhrases": [
+        "坚持读书",
+        "养成习惯",
+        "增加知识",
+        "提高水平",
+        "选择好书",
+        "认真学习",
+        "继续阅读",
+        "理解内容"
+      ],
+      "newSentences": [
+        "我每天坚持读书。",
+        "他养成了读书习惯。",
+        "读书能增加知识。",
+        "多读书能提高水平。",
+        "我们要选择好书。",
+        "她一直认真学习。",
+        "下课后我继续阅读。",
+        "我能理解这本书。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l12",
+      "lessonNo": 12,
+      "titleZh": "用心发现世界",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "世界是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "发现是本课重点。"
+      ],
+      "newWords": [
+        "发现",
+        "世界",
+        "用心",
+        "变化",
+        "机会",
+        "经历",
+        "感觉",
+        "相信"
+      ],
+      "newPhrases": [
+        "发现问题",
+        "了解世界",
+        "用心观察",
+        "看到变化",
+        "抓住机会",
+        "一次经历",
+        "新的感觉",
+        "相信自己"
+      ],
+      "newSentences": [
+        "他发现了一个问题。",
+        "旅行能了解世界。",
+        "我们要用心观察。",
+        "我看到了城市的变化。",
+        "年轻人要抓住机会。",
+        "这次经历让我成长。",
+        "这里给我新的感觉。",
+        "请你相信自己。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l13",
+      "lessonNo": 13,
+      "titleZh": "喝着茶看京剧",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "京剧是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "茶是本课重点。"
+      ],
+      "newWords": [
+        "茶",
+        "京剧",
+        "文化",
+        "传统",
+        "味道",
+        "表演",
+        "欣赏",
+        "安静"
+      ],
+      "newPhrases": [
+        "喝茶",
+        "看京剧",
+        "体验文化",
+        "传统艺术",
+        "茶的味道",
+        "京剧表演",
+        "欣赏艺术",
+        "安静地听"
+      ],
+      "newSentences": [
+        "爷爷喜欢喝茶。",
+        "我想去看京剧。",
+        "喝茶也是一种文化。",
+        "京剧是传统艺术。",
+        "这种茶味道很香。",
+        "今晚有京剧表演。",
+        "学生学会欣赏艺术。",
+        "大家安静地听戏。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l14",
+      "lessonNo": 14,
+      "titleZh": "保护地球母亲",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "地球母亲是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "保护地球是本课重点。"
+      ],
+      "newWords": [
+        "保护",
+        "地球",
+        "环境",
+        "污染",
+        "垃圾",
+        "节约",
+        "自然",
+        "责任"
+      ],
+      "newPhrases": [
+        "保护地球",
+        "地球母亲",
+        "保护环境",
+        "减少污染",
+        "扔垃圾",
+        "节约用水",
+        "爱护自然",
+        "共同责任"
+      ],
+      "newSentences": [
+        "我们应该保护地球。",
+        "地球是我们的家。",
+        "保护环境从小事做起。",
+        "工厂要减少污染。",
+        "不要随便扔垃圾。",
+        "请大家节约用水。",
+        "孩子应该爱护自然。",
+        "环保是共同责任。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l15",
+      "lessonNo": 15,
+      "titleZh": "教育孩子的艺术",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "孩子是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "教育是本课重点。"
+      ],
+      "newWords": [
+        "教育",
+        "孩子",
+        "艺术",
+        "鼓励",
+        "批评",
+        "耐心",
+        "成长",
+        "沟通"
+      ],
+      "newPhrases": [
+        "教育孩子",
+        "关心孩子",
+        "教育的艺术",
+        "鼓励学生",
+        "接受批评",
+        "有耐心",
+        "健康成长",
+        "主动沟通"
+      ],
+      "newSentences": [
+        "父母要教育孩子。",
+        "老师很关心孩子。",
+        "教育孩子需要艺术。",
+        "老师常常鼓励学生。",
+        "孩子要学会接受批评。",
+        "教育孩子要有耐心。",
+        "每个孩子都在成长。",
+        "父母要和孩子沟通。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l16",
+      "lessonNo": 16,
+      "titleZh": "生活可以更美好",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "美是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "生活是本课重点。"
+      ],
+      "newWords": [
+        "生活",
+        "美好",
+        "心情",
+        "快乐",
+        "简单",
+        "努力",
+        "改变",
+        "希望"
+      ],
+      "newPhrases": [
+        "热爱生活",
+        "美好生活",
+        "心情不错",
+        "快乐生活",
+        "简单的幸福",
+        "努力工作",
+        "改变习惯",
+        "充满希望"
+      ],
+      "newSentences": [
+        "我们要热爱生活。",
+        "努力会带来美好生活。",
+        "今天我的心情不错。",
+        "她希望快乐生活。",
+        "幸福有时很简单。",
+        "他每天努力工作。",
+        "好习惯能改变生活。",
+        "新的生活充满希望。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l17",
+      "lessonNo": 17,
+      "titleZh": "人与自然",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "保护是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "人与自然是本课重点。"
+      ],
+      "newWords": [
+        "自然",
+        "动物",
+        "植物",
+        "人类",
+        "关系",
+        "空气",
+        "森林",
+        "平衡"
+      ],
+      "newPhrases": [
+        "保护自然",
+        "爱护动物",
+        "观察植物",
+        "人类生活",
+        "密切关系",
+        "新鲜空气",
+        "走进森林",
+        "保持平衡"
+      ],
+      "newSentences": [
+        "我们一起保护自然。",
+        "孩子们应该爱护动物。",
+        "学生在公园观察植物。",
+        "自然影响人类生活。",
+        "人与自然关系密切。",
+        "山里的空气很新鲜。",
+        "我们周末走进森林。",
+        "自然需要保持平衡。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l18",
+      "lessonNo": 18,
+      "titleZh": "科技与世界",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "世界是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "科技是本课重点。"
+      ],
+      "newWords": [
+        "科技",
+        "世界",
+        "网络",
+        "手机",
+        "信息",
+        "方便",
+        "影响",
+        "未来"
+      ],
+      "newPhrases": [
+        "发展科技",
+        "连接世界",
+        "使用网络",
+        "智能手机",
+        "获得信息",
+        "生活方便",
+        "影响生活",
+        "未来世界"
+      ],
+      "newSentences": [
+        "科技改变了世界。",
+        "互联网连接世界。",
+        "学生常常使用网络。",
+        "智能手机很方便。",
+        "我们从网络获得信息。",
+        "科技让生活更方便。",
+        "科技影响我们的生活。",
+        "未来世界会更智能。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l19",
+      "lessonNo": 19,
+      "titleZh": "生活的味道",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "生活是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "生活的味道是本课重点。"
+      ],
+      "newWords": [
+        "味道",
+        "经历",
+        "回忆",
+        "感动",
+        "珍惜",
+        "普通",
+        "温暖",
+        "幸福"
+      ],
+      "newPhrases": [
+        "生活的味道",
+        "难忘经历",
+        "美好回忆",
+        "让人感动",
+        "珍惜现在",
+        "普通日子",
+        "感到温暖",
+        "感到幸福"
+      ],
+      "newSentences": [
+        "每个人都有生活的味道。",
+        "这次旅行是难忘经历。",
+        "老照片带来美好回忆。",
+        "这件小事让我感动。",
+        "我们要珍惜现在。",
+        "普通日子也很重要。",
+        "朋友的话让我温暖。",
+        "一家人在一起很幸福。"
+      ]
+    },
+    {
+      "level": "HSK4",
+      "lessonId": "hsk4-l20",
+      "lessonNo": 20,
+      "titleZh": "路上的风景",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "风景是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "路上是本课重点。"
+      ],
+      "newWords": [
+        "路上",
+        "风景",
+        "旅行",
+        "方向",
+        "出发",
+        "到达",
+        "经过",
+        "心情"
+      ],
+      "newPhrases": [
+        "在路上",
+        "欣赏风景",
+        "独自旅行",
+        "看清方向",
+        "准备出发",
+        "安全到达",
+        "经过小城",
+        "放松心情"
+      ],
+      "newSentences": [
+        "我在路上看见风景。",
+        "我们停车欣赏风景。",
+        "她喜欢独自旅行。",
+        "出发前要看清方向。",
+        "我们明天早上出发。",
+        "火车准时到达。",
+        "汽车经过一座小城。",
+        "旅行能放松心情。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l1",
+      "lessonNo": 1,
+      "titleZh": "爱的细节",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l2",
+      "lessonNo": 2,
+      "titleZh": "留串钥匙给父母",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l3",
+      "lessonNo": 3,
+      "titleZh": "人生有选择，一切可改变",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l4",
+      "lessonNo": 4,
+      "titleZh": "子路背米",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l5",
+      "lessonNo": 5,
+      "titleZh": "济南的泉水",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l6",
+      "lessonNo": 6,
+      "titleZh": "除夕的由来",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l7",
+      "lessonNo": 7,
+      "titleZh": "成语故事两则",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l8",
+      "lessonNo": 8,
+      "titleZh": "朝三暮四的古今义",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l9",
+      "lessonNo": 9,
+      "titleZh": "别样鲁迅",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l10",
+      "lessonNo": 10,
+      "titleZh": "争论的奇迹",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l11",
+      "lessonNo": 11,
+      "titleZh": "闹钟的危害",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l12",
+      "lessonNo": 12,
+      "titleZh": "海外用户玩儿微信",
+      "status": "pass_ready_for_ui",
+      "originalProblem": "",
+      "deletedContent": [],
+      "newWords": [],
+      "newPhrases": [],
+      "newSentences": []
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l13",
+      "lessonNo": 13,
+      "titleZh": "锯掉生活的筐底",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "生活是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "锯掉是本课重点。"
+      ],
+      "newWords": [
+        "生活",
+        "负担",
+        "选择",
+        "放弃",
+        "轻松",
+        "压力",
+        "坚持",
+        "智慧"
+      ],
+      "newPhrases": [
+        "面对生活",
+        "放下负担",
+        "做出选择",
+        "放弃多余的东西",
+        "感到轻松",
+        "减少压力",
+        "坚持到底",
+        "生活智慧"
+      ],
+      "newSentences": [
+        "我们要勇敢面对生活。",
+        "他学会了放下负担。",
+        "关键时刻要做出选择。",
+        "有时放弃也是智慧。",
+        "放下以后我感到轻松。",
+        "运动能减少压力。",
+        "真正重要的事要坚持。",
+        "这个故事充满生活智慧。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l14",
+      "lessonNo": 14,
+      "titleZh": "北京的四合院",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "文化是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "四合院是本课重点。"
+      ],
+      "newWords": [
+        "四合院",
+        "胡同",
+        "传统",
+        "院子",
+        "邻居",
+        "保护",
+        "建筑",
+        "记忆"
+      ],
+      "newPhrases": [
+        "北京四合院",
+        "老胡同",
+        "传统建筑",
+        "宽敞的院子",
+        "老邻居",
+        "保护老房子",
+        "古老建筑",
+        "城市记忆"
+      ],
+      "newSentences": [
+        "北京四合院很有特色。",
+        "老胡同里很安静。",
+        "四合院是传统建筑。",
+        "院子里种着花。",
+        "老邻居常常聊天。",
+        "城市需要保护老房子。",
+        "这种建筑很有历史。",
+        "四合院保存着城市记忆。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l15",
+      "lessonNo": 15,
+      "titleZh": "纸上谈兵",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "判断是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "纸上谈兵是本课重点。"
+      ],
+      "newWords": [
+        "纸上谈兵",
+        "经验",
+        "实际",
+        "失败",
+        "指挥",
+        "判断",
+        "教训",
+        "理论"
+      ],
+      "newPhrases": [
+        "避免纸上谈兵",
+        "积累经验",
+        "结合实际",
+        "经历失败",
+        "指挥军队",
+        "正确判断",
+        "吸取教训",
+        "只懂理论"
+      ],
+      "newSentences": [
+        "做事不能纸上谈兵。",
+        "实践能积累经验。",
+        "计划要结合实际。",
+        "失败以后要总结。",
+        "他没有能力指挥军队。",
+        "我们要学会正确判断。",
+        "这件事给了他教训。",
+        "只懂理论是不够的。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l16",
+      "lessonNo": 16,
+      "titleZh": "体重与节食",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "节食是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "体重是本课重点。"
+      ],
+      "newWords": [
+        "体重",
+        "节食",
+        "减肥",
+        "健康",
+        "营养",
+        "坚持",
+        "方法",
+        "效果"
+      ],
+      "newPhrases": [
+        "控制体重",
+        "合理节食",
+        "科学减肥",
+        "保持健康",
+        "营养均衡",
+        "坚持运动",
+        "正确方法",
+        "效果明显"
+      ],
+      "newSentences": [
+        "她正在控制体重。",
+        "节食也要注意健康。",
+        "科学减肥不能太急。",
+        "运动能保持健康。",
+        "每天饮食要营养均衡。",
+        "他坚持运动三个月。",
+        "减肥要找正确方法。",
+        "这种方法效果明显。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l17",
+      "lessonNo": 17,
+      "titleZh": "在最美好的时刻离开",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "离开是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "美好的时刻是本课重点。"
+      ],
+      "newWords": [
+        "时刻",
+        "离开",
+        "舞台",
+        "掌声",
+        "告别",
+        "选择",
+        "尊重",
+        "回忆"
+      ],
+      "newPhrases": [
+        "美好时刻",
+        "及时离开",
+        "离开舞台",
+        "热烈掌声",
+        "正式告别",
+        "勇敢选择",
+        "尊重决定",
+        "留下回忆"
+      ],
+      "newSentences": [
+        "她记住了那个美好时刻。",
+        "有时需要及时离开。",
+        "演员决定离开舞台。",
+        "观众给了热烈掌声。",
+        "他向朋友正式告别。",
+        "她做了一个勇敢选择。",
+        "我们尊重他的决定。",
+        "美好时刻留下回忆。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l18",
+      "lessonNo": 18,
+      "titleZh": "抽象艺术美不美",
+      "status": "needs_textbook_ocr_review",
+      "evidence": "pdf_text_layer_unavailable_or_partial",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "艺术是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "抽象艺术是本课重点。"
+      ],
+      "newWords": [
+        "抽象",
+        "艺术",
+        "作品",
+        "画展",
+        "理解",
+        "感受",
+        "想象",
+        "审美"
+      ],
+      "newPhrases": [
+        "抽象作品",
+        "欣赏艺术",
+        "艺术作品",
+        "参观画展",
+        "理解作品",
+        "感受美",
+        "发挥想象",
+        "审美能力"
+      ],
+      "newSentences": [
+        "这幅画很抽象。",
+        "欣赏艺术需要耐心。",
+        "这件作品很特别。",
+        "周末我们参观画展。",
+        "我还不能理解这件作品。",
+        "每个人都能感受美。",
+        "抽象画需要发挥想象。",
+        "艺术能提高审美能力。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l19",
+      "lessonNo": 19,
+      "titleZh": "家乡的萝卜饼",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "萝卜饼是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "家乡是本课重点。"
+      ],
+      "newWords": [
+        "家乡",
+        "萝卜",
+        "怀念",
+        "色彩",
+        "清淡",
+        "搅拌",
+        "预防",
+        "趁"
+      ],
+      "newPhrases": [
+        "想念家乡",
+        "三色萝卜",
+        "怀念味道",
+        "色彩丰富",
+        "清淡可口",
+        "搅拌均匀",
+        "预防糊底",
+        "趁热吃"
+      ],
+      "newSentences": [
+        "我常常想念家乡。",
+        "三色萝卜很漂亮。",
+        "他怀念家乡的味道。",
+        "萝卜饼色彩丰富。",
+        "这种菜清淡可口。",
+        "把萝卜丝搅拌均匀。",
+        "放点水可以预防糊底。",
+        "萝卜饼要趁热吃。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l20",
+      "lessonNo": 20,
+      "titleZh": "小人书摊",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "文化是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "小人书摊是本课重点。"
+      ],
+      "newWords": [
+        "小人书",
+        "书摊",
+        "童年",
+        "排队",
+        "故事",
+        "便宜",
+        "热闹",
+        "回忆"
+      ],
+      "newPhrases": [
+        "看小人书",
+        "路边书摊",
+        "童年记忆",
+        "排队租书",
+        "有趣故事",
+        "价格便宜",
+        "书摊热闹",
+        "美好回忆"
+      ],
+      "newSentences": [
+        "小时候我爱看小人书。",
+        "路边书摊很热闹。",
+        "小人书留下童年记忆。",
+        "孩子们排队租书。",
+        "书里有很多有趣故事。",
+        "那时租书很便宜。",
+        "放学后书摊很热闹。",
+        "这些书是美好回忆。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l21",
+      "lessonNo": 21,
+      "titleZh": "汉字叔叔：一个美国人的汉字情缘",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "中国人是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "汉字叔叔是本课重点。"
+      ],
+      "newWords": [
+        "汉字",
+        "叔叔",
+        "情缘",
+        "网站",
+        "资料",
+        "热爱",
+        "坚持",
+        "传播"
+      ],
+      "newPhrases": [
+        "研究汉字",
+        "汉字叔叔",
+        "汉字情缘",
+        "建立网站",
+        "整理资料",
+        "热爱中国文化",
+        "坚持多年",
+        "传播汉字文化"
+      ],
+      "newSentences": [
+        "他一生研究汉字。",
+        "大家叫他汉字叔叔。",
+        "他和汉字有很深的情缘。",
+        "他建立了汉字网站。",
+        "他整理了大量资料。",
+        "他热爱中国文化。",
+        "他坚持研究很多年。",
+        "网站帮助传播汉字文化。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l22",
+      "lessonNo": 22,
+      "titleZh": "阅读与思考",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "思考是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "阅读是本课重点。"
+      ],
+      "newWords": [
+        "阅读",
+        "思考",
+        "观点",
+        "问题",
+        "答案",
+        "判断",
+        "收获",
+        "习惯"
+      ],
+      "newPhrases": [
+        "坚持阅读",
+        "独立思考",
+        "表达观点",
+        "提出问题",
+        "寻找答案",
+        "独立判断",
+        "阅读收获",
+        "阅读习惯"
+      ],
+      "newSentences": [
+        "坚持阅读能开阔眼界。",
+        "阅读以后要独立思考。",
+        "请清楚表达观点。",
+        "好学生会提出问题。",
+        "我们在书中寻找答案。",
+        "思考帮助我们独立判断。",
+        "这本书让我收获很多。",
+        "我想养成阅读习惯。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l23",
+      "lessonNo": 23,
+      "titleZh": "放手",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "爱情是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "放手是本课重点。"
+      ],
+      "newWords": [
+        "放手",
+        "成长",
+        "担心",
+        "独立",
+        "信任",
+        "决定",
+        "责任",
+        "勇气"
+      ],
+      "newPhrases": [
+        "学会放手",
+        "独立成长",
+        "过分担心",
+        "独立生活",
+        "信任孩子",
+        "自己决定",
+        "承担责任",
+        "需要勇气"
+      ],
+      "newSentences": [
+        "父母也要学会放手。",
+        "孩子需要独立成长。",
+        "妈妈总是过分担心。",
+        "大学生要学会独立生活。",
+        "父母应该信任孩子。",
+        "这件事让他自己决定。",
+        "年轻人要承担责任。",
+        "放手也需要勇气。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l24",
+      "lessonNo": 24,
+      "titleZh": "支教行动",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "行动是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "支教是本课重点。"
+      ],
+      "newWords": [
+        "支教",
+        "行动",
+        "山区",
+        "义务",
+        "条件",
+        "坚持",
+        "改变",
+        "感动"
+      ],
+      "newPhrases": [
+        "参加支教",
+        "公益行动",
+        "山区学校",
+        "履行义务",
+        "条件艰苦",
+        "坚持上课",
+        "改变命运",
+        "深受感动"
+      ],
+      "newSentences": [
+        "她去山区参加支教。",
+        "支教是一种公益行动。",
+        "山区学校需要老师。",
+        "帮助别人也是一种义务。",
+        "那里的条件很艰苦。",
+        "老师每天坚持上课。",
+        "教育可以改变命运。",
+        "学生的话让我深受感动。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l25",
+      "lessonNo": 25,
+      "titleZh": "给自己加满水",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "自己是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "加满水是本课重点。"
+      ],
+      "newWords": [
+        "自己",
+        "能量",
+        "压力",
+        "休息",
+        "调整",
+        "情绪",
+        "目标",
+        "平衡"
+      ],
+      "newPhrases": [
+        "照顾自己",
+        "补充能量",
+        "面对压力",
+        "好好休息",
+        "调整状态",
+        "控制情绪",
+        "明确目标",
+        "保持平衡"
+      ],
+      "newSentences": [
+        "忙的时候也要照顾自己。",
+        "休息能补充能量。",
+        "他学会面对压力。",
+        "累了就要好好休息。",
+        "考试前要调整状态。",
+        "他正在学习控制情绪。",
+        "明确目标以后再行动。",
+        "工作和生活要保持平衡。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l26",
+      "lessonNo": 26,
+      "titleZh": "你属于哪一种“忙”",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "忙是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "属于是本课重点。"
+      ],
+      "newWords": [
+        "忙",
+        "据说",
+        "个性",
+        "冒险",
+        "耽误",
+        "至于",
+        "总算",
+        "效率"
+      ],
+      "newPhrases": [
+        "一直很忙",
+        "据说很有效",
+        "很有个性",
+        "喜欢冒险",
+        "耽误时间",
+        "至于费用",
+        "总算明白",
+        "提高效率"
+      ],
+      "newSentences": [
+        "他最近一直很忙。",
+        "据说这个方法很有效。",
+        "这位导演很有个性。",
+        "年轻时他喜欢冒险。",
+        "堵车耽误了时间。",
+        "至于费用，我们再商量。",
+        "他总算明白了原因。",
+        "思考能提高效率。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l27",
+      "lessonNo": 27,
+      "titleZh": "下棋",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "方式是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "下棋是本课重点。"
+      ],
+      "newWords": [
+        "下棋",
+        "象棋",
+        "教练",
+        "答应",
+        "思考",
+        "输",
+        "赢",
+        "耐心"
+      ],
+      "newPhrases": [
+        "和父亲下棋",
+        "学象棋",
+        "象棋教练",
+        "高兴地答应",
+        "认真思考",
+        "输了一盘",
+        "赢得比赛",
+        "需要耐心"
+      ],
+      "newSentences": [
+        "我和父亲下棋。",
+        "他从小学习象棋。",
+        "父亲是一位象棋教练。",
+        "我高兴地答应了。",
+        "下棋时要认真思考。",
+        "我第一盘就输了。",
+        "他最后赢得比赛。",
+        "下棋非常需要耐心。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l28",
+      "lessonNo": 28,
+      "titleZh": "最受欢迎的毕业生",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "受欢迎是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "毕业生是本课重点。"
+      ],
+      "newWords": [
+        "毕业生",
+        "欢迎",
+        "招聘",
+        "能力",
+        "经验",
+        "态度",
+        "合作",
+        "机会"
+      ],
+      "newPhrases": [
+        "优秀毕业生",
+        "受欢迎",
+        "公司招聘",
+        "工作能力",
+        "实习经验",
+        "认真态度",
+        "团队合作",
+        "获得机会"
+      ],
+      "newSentences": [
+        "他是优秀毕业生。",
+        "这样的学生很受欢迎。",
+        "很多公司来学校招聘。",
+        "企业重视工作能力。",
+        "实习经验很重要。",
+        "认真态度让人放心。",
+        "他善于团队合作。",
+        "努力的人会获得机会。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l29",
+      "lessonNo": 29,
+      "titleZh": "培养对手",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "对手是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "培养是本课重点。"
+      ],
+      "newWords": [
+        "培养",
+        "对手",
+        "竞争",
+        "进步",
+        "压力",
+        "目标",
+        "超越",
+        "尊重"
+      ],
+      "newPhrases": [
+        "培养能力",
+        "尊重对手",
+        "公平竞争",
+        "不断进步",
+        "竞争压力",
+        "明确目标",
+        "超越自己",
+        "互相尊重"
+      ],
+      "newSentences": [
+        "竞争能培养能力。",
+        "真正的高手尊重对手。",
+        "公平竞争能促进进步。",
+        "有对手才会不断进步。",
+        "竞争压力让他努力。",
+        "对手让目标更明确。",
+        "最重要的是超越自己。",
+        "对手之间也要互相尊重。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l30",
+      "lessonNo": 30,
+      "titleZh": "竞争让市场更高效",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "市场是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "竞争是本课重点。"
+      ],
+      "newWords": [
+        "竞争",
+        "市场",
+        "高效",
+        "企业",
+        "顾客",
+        "价格",
+        "质量",
+        "创新"
+      ],
+      "newPhrases": [
+        "市场竞争",
+        "了解市场",
+        "高效服务",
+        "企业发展",
+        "服务顾客",
+        "降低价格",
+        "提高质量",
+        "不断创新"
+      ],
+      "newSentences": [
+        "市场竞争越来越激烈。",
+        "企业必须了解市场。",
+        "高效服务能吸引顾客。",
+        "企业发展需要创新。",
+        "商店要认真服务顾客。",
+        "竞争可能降低价格。",
+        "公司努力提高质量。",
+        "没有创新就没有发展。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l31",
+      "lessonNo": 31,
+      "titleZh": "登门槛效应",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "方式是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "门槛效应是本课重点。"
+      ],
+      "newWords": [
+        "门槛",
+        "效应",
+        "请求",
+        "接受",
+        "心理",
+        "逐步",
+        "同意",
+        "影响"
+      ],
+      "newPhrases": [
+        "登门槛",
+        "门槛效应",
+        "提出请求",
+        "容易接受",
+        "心理变化",
+        "逐步提高",
+        "同意帮忙",
+        "影响决定"
+      ],
+      "newSentences": [
+        "先请他登上小门槛。",
+        "这就是门槛效应。",
+        "先提出一个小请求。",
+        "小请求更容易接受。",
+        "人的心理会慢慢变化。",
+        "要求可以逐步提高。",
+        "他同意帮一个小忙。",
+        "第一步会影响决定。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l32",
+      "lessonNo": 32,
+      "titleZh": "身边的环保",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "环保是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "身边是本课重点。"
+      ],
+      "newWords": [
+        "身边",
+        "环保",
+        "资源",
+        "垃圾",
+        "塑料袋",
+        "节约",
+        "习惯",
+        "行动"
+      ],
+      "newPhrases": [
+        "身边小事",
+        "支持环保",
+        "节约资源",
+        "垃圾分类",
+        "少用塑料袋",
+        "节约用电",
+        "环保习惯",
+        "马上行动"
+      ],
+      "newSentences": [
+        "环保可以从身边小事做起。",
+        "越来越多人支持环保。",
+        "我们要节约资源。",
+        "社区开始垃圾分类。",
+        "购物时少用塑料袋。",
+        "离开房间要节约用电。",
+        "好习惯能保护环境。",
+        "环保需要马上行动。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l33",
+      "lessonNo": 33,
+      "titleZh": "以堵治堵—缓解交通有妙招",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "缓解是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "以堵治堵是本课重点。"
+      ],
+      "newWords": [
+        "堵车",
+        "缓解",
+        "交通",
+        "妙招",
+        "拥挤",
+        "高峰",
+        "地铁",
+        "方案"
+      ],
+      "newPhrases": [
+        "早高峰堵车",
+        "缓解交通",
+        "城市交通",
+        "想出妙招",
+        "道路拥挤",
+        "交通高峰",
+        "乘坐地铁",
+        "提出方案"
+      ],
+      "newSentences": [
+        "早高峰经常堵车。",
+        "新办法能缓解交通。",
+        "城市交通压力很大。",
+        "工程师想出一个妙招。",
+        "这条路非常拥挤。",
+        "交通高峰最好坐地铁。",
+        "乘坐地铁比较准时。",
+        "专家提出新的方案。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l34",
+      "lessonNo": 34,
+      "titleZh": "鸟儿的护肤术",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "护肤术是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "鸟儿是本课重点。"
+      ],
+      "newWords": [
+        "鸟儿",
+        "护肤",
+        "羽毛",
+        "阳光",
+        "寄生虫",
+        "行为",
+        "研究",
+        "自然"
+      ],
+      "newPhrases": [
+        "观察鸟儿",
+        "护肤方法",
+        "保护羽毛",
+        "晒太阳",
+        "清除寄生虫",
+        "奇特行为",
+        "研究鸟类",
+        "自然现象"
+      ],
+      "newSentences": [
+        "科学家观察鸟儿。",
+        "鸟儿也有护肤方法。",
+        "鸟儿需要保护羽毛。",
+        "鸟儿喜欢晒太阳。",
+        "晒太阳能清除寄生虫。",
+        "这种行为很奇特。",
+        "他们长期研究鸟类。",
+        "这是有趣的自然现象。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l35",
+      "lessonNo": 35,
+      "titleZh": "植物会出汗",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "出汗是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "植物是本课重点。"
+      ],
+      "newWords": [
+        "植物",
+        "出汗",
+        "水分",
+        "叶子",
+        "温度",
+        "蒸发",
+        "生长",
+        "环境"
+      ],
+      "newPhrases": [
+        "观察植物",
+        "植物出汗",
+        "吸收水分",
+        "绿色叶子",
+        "降低温度",
+        "水分蒸发",
+        "健康生长",
+        "适应环境"
+      ],
+      "newSentences": [
+        "孩子们观察植物。",
+        "植物也会出汗。",
+        "根能吸收水分。",
+        "叶子会散发水分。",
+        "出汗能降低温度。",
+        "阳光下水分蒸发很快。",
+        "植物需要水才能生长。",
+        "植物会适应环境。"
+      ]
+    },
+    {
+      "level": "HSK5",
+      "lessonId": "hsk5-l36",
+      "lessonNo": 36,
+      "titleZh": "老舍与养花",
+      "status": "pass_ready_for_ui",
+      "evidence": "pdf_text_evidence_available",
+      "originalProblem": "模板化、占位化内容或高风险课程，已替换为自然的拼音听打教学链",
+      "deletedContent": [
+        "文化是本课重点。",
+        "学习内容需要方法。",
+        "我们需要理解重点。",
+        "养花是本课重点。"
+      ],
+      "newWords": [
+        "老舍",
+        "养花",
+        "作家",
+        "乐趣",
+        "照顾",
+        "经验",
+        "失败",
+        "热爱"
+      ],
+      "newPhrases": [
+        "老舍先生",
+        "喜欢养花",
+        "著名作家",
+        "生活乐趣",
+        "照顾花草",
+        "养花经验",
+        "经历失败",
+        "热爱生活"
+      ],
+      "newSentences": [
+        "老舍先生喜欢养花。",
+        "养花给他带来快乐。",
+        "老舍是著名作家。",
+        "养花是他的生活乐趣。",
+        "他每天照顾花草。",
+        "他有很多养花经验。",
+        "养花也会经历失败。",
+        "养花表现了他热爱生活。"
+      ]
+    }
+  ]
+}
