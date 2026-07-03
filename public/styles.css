@@ -7786,6 +7786,10 @@ p {
   color: #003d29;
 }
 
+.hero-highlight::after {
+  content: none;
+}
+
 .highlight-line {
   position: absolute;
   left: 0;
