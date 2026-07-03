@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import net from "node:net";
+import tls from "node:tls";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -82,48 +84,6 @@ function repairUtf8Mojibake(value) {
   }
 }
 
-function pronunciationMimeType(value) {
-  const mimeType = String(value || "").split(";")[0].trim().toLowerCase();
-  if (mimeType === "audio/ogg") return "audio/ogg; codecs=opus";
-  if (mimeType === "audio/webm") return "audio/webm; codecs=opus";
-  if (mimeType === "audio/wav" || mimeType === "audio/x-wav") return "audio/wav; codecs=audio/pcm; samplerate=16000";
-  return mimeType || "application/octet-stream";
-}
-
-function mapAzurePronunciationWords(words = []) {
-  return words.map((word) => ({
-    word: word.Word || "",
-    accuracyScore: word.PronunciationAssessment?.AccuracyScore ?? null,
-    errorType: word.PronunciationAssessment?.ErrorType || "None",
-  })).filter((word) => word.word);
-}
-
-function azureCharResults(referenceText, azureWords = [], fallback) {
-  const targetChars = Array.from(normalizeHanzi(referenceText));
-  const results = fallback.charResults.map((item) => ({ ...item }));
-  let cursor = 0;
-  for (const word of azureWords) {
-    const normalizedWord = normalizeHanzi(word.Word || "");
-    if (!normalizedWord) continue;
-    const foundAt = targetChars.join("").indexOf(normalizedWord, cursor);
-    if (foundAt === -1) continue;
-    const assessment = word.PronunciationAssessment || {};
-    const errorType = assessment.ErrorType || "None";
-    const accuracyScore = Number(assessment.AccuracyScore ?? 100);
-    const correct = errorType === "None" && accuracyScore >= 60;
-    for (let offset = 0; offset < normalizedWord.length; offset += 1) {
-      const index = foundAt + offset;
-      if (results[index]) {
-        results[index].correct = correct;
-        results[index].errorType = correct ? "None" : errorType;
-        results[index].accuracyScore = Number.isFinite(accuracyScore) ? accuracyScore : null;
-      }
-    }
-    cursor = foundAt + normalizedWord.length;
-  }
-  return results;
-}
-
 function comparePronunciationFallback(referenceText, recognizedText) {
   const targetChars = Array.from(normalizeHanzi(referenceText));
   const spokenChars = Array.from(normalizeHanzi(recognizedText));
@@ -165,20 +125,11 @@ function comparePronunciationFallback(referenceText, recognizedText) {
 }
 
 function speechAssessmentProvider() {
-  const requested = String(env("SPEECH_ASSESSMENT_PROVIDER") || env("PRONUNCIATION_ASSESSMENT_PROVIDER") || "auto").toLowerCase();
   const hasIflytek = Boolean(env("IFLYTEK_APP_ID") && env("IFLYTEK_API_KEY") && env("IFLYTEK_API_SECRET"));
-  const hasAzure = Boolean(env("AZURE_SPEECH_KEY") && env("AZURE_SPEECH_REGION"));
-  const hasSpeechace = Boolean(env("SPEECHACE_API_KEY"));
-  if (requested === "iflytek") return hasIflytek ? "iflytek" : "";
-  if (requested === "azure") return hasAzure ? "azure" : "";
-  if (requested === "speechace") return hasSpeechace ? "speechace" : "";
-  if (hasSpeechace) return "speechace";
-  if (hasIflytek) return "iflytek";
-  if (hasAzure) return "azure";
-  return "";
+  return hasIflytek ? "iflytek" : "";
 }
 
-function iflytekIseUrl() {
+function iflytekIseAuth() {
   const protocol = (env("IFLYTEK_ISE_PROTOCOL") || "wss").replace(/:$/, "");
   const host = env("IFLYTEK_ISE_HOST") || "ise-api-sg.xf-yun.com";
   const pathname = env("IFLYTEK_ISE_PATH") || "/v2/ise";
@@ -187,7 +138,83 @@ function iflytekIseUrl() {
   const signature = crypto.createHmac("sha256", env("IFLYTEK_API_SECRET")).update(signatureOrigin).digest("base64");
   const authorizationOrigin = `api_key="${env("IFLYTEK_API_KEY")}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
   const authorization = Buffer.from(authorizationOrigin).toString("base64");
-  return `${protocol}://${host}${pathname}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${encodeURIComponent(host)}`;
+  const url = `${protocol}://${host}${pathname}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${encodeURIComponent(host)}`;
+  return { protocol, host, pathname, url };
+}
+
+function iflytekIseUrl() {
+  return iflytekIseAuth().url;
+}
+
+function parseIflytekHandshake(raw) {
+  const [header = "", body = ""] = raw.split(/\r?\n\r?\n/);
+  const statusMatch = header.match(/^HTTP\/\d(?:\.\d)?\s+(\d{3})\s*([^\r\n]*)/i);
+  return {
+    statusCode: Number(statusMatch?.[1] || 0),
+    statusText: (statusMatch?.[2] || "").trim(),
+    body: body.trim(),
+  };
+}
+
+function iflytekHandshakeMessage(response) {
+  let providerMessage = response.body || response.statusText || "Unknown iFLYTEK handshake error";
+  try {
+    const data = JSON.parse(response.body);
+    if (data?.message) providerMessage = String(data.message);
+  } catch {}
+  return `iFLYTEK ISE xac thuc that bai (${response.statusCode}): ${providerMessage}`;
+}
+
+function verifyIflytekHandshake(auth) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(auth.url);
+    if (!["ws:", "wss:"].includes(target.protocol)) {
+      reject(apiError(`IFLYTEK_ISE_PROTOCOL khong hop le: ${auth.protocol}`, 500));
+      return;
+    }
+    const isSecure = target.protocol === "wss:";
+    const port = Number(target.port || (isSecure ? 443 : 80));
+    const key = crypto.randomBytes(16).toString("base64");
+    const request = [
+      `GET ${target.pathname}${target.search} HTTP/1.1`,
+      `Host: ${target.host}`,
+      "Upgrade: websocket",
+      "Connection: Upgrade",
+      `Sec-WebSocket-Key: ${key}`,
+      "Sec-WebSocket-Version: 13",
+      "\r\n",
+    ].join("\r\n");
+    const socket = isSecure
+      ? tls.connect({ host: target.hostname, port, servername: target.hostname })
+      : net.connect({ host: target.hostname, port });
+    let raw = "";
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      try { socket.destroy(); } catch {}
+      if (error) reject(error);
+      else resolve();
+    };
+    const timeout = setTimeout(() => {
+      finish(apiError("iFLYTEK ISE handshake phan hoi qua lau.", 504));
+    }, 10000);
+    socket.on(isSecure ? "secureConnect" : "connect", () => socket.write(request));
+    socket.on("data", (chunk) => {
+      raw += chunk.toString("utf8");
+      if (!raw.includes("\r\n\r\n")) return;
+      const response = parseIflytekHandshake(raw);
+      if (response.statusCode === 101) {
+        finish();
+        return;
+      }
+      finish(apiError(iflytekHandshakeMessage(response), 502));
+    });
+    socket.on("error", (error) => {
+      finish(apiError(`Khong ket noi duoc iFLYTEK ISE: ${error.message}`, 502));
+    });
+  });
 }
 
 function normalizeProviderScore(value) {
@@ -196,6 +223,25 @@ function normalizeProviderScore(value) {
   if (score <= 5) return Math.round(score * 20);
   if (score <= 10) return Math.round(score * 10);
   return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function xmlDecode(value = "") {
+  return String(value || "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+function xmlAttribute(node, names) {
+  for (const name of names) {
+    const match = String(node || "").match(new RegExp(`\\b${name}="([^"]*)"`, "i"));
+    if (match) return xmlDecode(match[1]);
+  }
+  return "";
 }
 
 function pcmPayloadFromAudioBuffer(audioBuffer) {
@@ -221,14 +267,26 @@ function parseIflytekAssessment(messages, referenceText) {
       return "";
     }
   }).join("");
-  const totalMatch = xml.match(/\b(?:total_score|overall_score|score)="([^"]+)"/i);
-  const scoreMatches = [...xml.matchAll(/\b(?:phone_score|tone_score|fluency_score|accuracy_score|dp_message|score)="([^"]+)"/gi)]
+  const resultNode = xml.match(/<(?:read_sentence|sentence|rec_paper)\b[^>]*>/i)?.[0] || "";
+  const totalScore = xmlAttribute(resultNode, ["total_score", "overall_score", "score"]);
+  const scoreMatches = [...xml.matchAll(/\b(?:phone_score|tone_score|fluency_score|accuracy_score|total_score|overall_score|score)="([^"]+)"/gi)]
     .map((match) => normalizeProviderScore(match[1]))
     .filter((score) => score !== null);
-  const score = normalizeProviderScore(totalMatch?.[1])
+  const score = normalizeProviderScore(totalScore)
     ?? (scoreMatches.length ? Math.round(scoreMatches.reduce((sum, item) => sum + item, 0) / scoreMatches.length) : 0);
-  const recognizedMatch = xml.match(/\b(?:content|text)="([^"]+)"/i);
-  const recognizedText = recognizedMatch ? recognizedMatch[1].replace(/&quot;/g, "\"").replace(/&amp;/g, "&") : referenceText;
+  const wordNodes = [...xml.matchAll(/<word\b[^>]*>/gi)].map((match) => match[0]);
+  const words = wordNodes.map((node) => {
+    const word = xmlAttribute(node, ["content", "text", "word"]);
+    const wordScore = normalizeProviderScore(xmlAttribute(node, ["total_score", "phone_score", "tone_score", "score"]));
+    return {
+      word,
+      accuracyScore: wordScore,
+      errorType: wordScore === null || wordScore >= 60 ? "None" : "Pronunciation",
+    };
+  }).filter((word) => word.word);
+  const recognizedText = words.length
+    ? words.map((word) => word.word).join("")
+    : xmlAttribute(resultNode || xml, ["content", "text"]) || referenceText;
   const fallback = comparePronunciationFallback(referenceText, recognizedText || referenceText);
   const charResults = fallback.charResults.map((item) => ({
     ...item,
@@ -236,7 +294,7 @@ function parseIflytekAssessment(messages, referenceText) {
     errorType: item.correct && score >= 60 ? "None" : "Pronunciation",
     accuracyScore: score,
   }));
-  return { provider: "iflytek", recognizedText, score, accuracyScore: score, fluencyScore: null, completenessScore: null, charResults, rawXml: xml };
+  return { provider: "iflytek", recognizedText, score, accuracyScore: score, fluencyScore: null, completenessScore: null, words, charResults, rawXml: xml };
 }
 
 function delay(ms) {
@@ -247,10 +305,12 @@ async function assessWithIflytek(referenceText, audioBuffer) {
   if (typeof WebSocket === "undefined") {
     throw apiError("Node runtime chua ho tro WebSocket de ket noi iFLYTEK.", 503);
   }
+  const auth = iflytekIseAuth();
+  await verifyIflytekHandshake(auth);
   const pcmBuffer = pcmPayloadFromAudioBuffer(audioBuffer);
   const messages = [];
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(iflytekIseUrl());
+    const socket = new WebSocket(auth.url);
     let settled = false;
     const fail = (error) => {
       if (settled) return;
@@ -293,7 +353,7 @@ async function assessWithIflytek(referenceText, audioBuffer) {
           socket.send(JSON.stringify({
             business: {
               cmd: "auw",
-              aus: isFirstAudioFrame ? 1 : isLastAudioFrame ? 4 : 2,
+              aus: isLastAudioFrame ? 4 : isFirstAudioFrame ? 1 : 2,
             },
             data: {
               status: isLastAudioFrame ? 2 : 1,
@@ -332,89 +392,6 @@ async function assessWithIflytek(referenceText, audioBuffer) {
       fail(apiError(`iFLYTEK ISE da dong ket noi truoc khi tra ket qua (${event?.code || "unknown"}).${reason}`, 502));
     });
   });
-}
-
-function speechaceScoreValue(data) {
-  return normalizeProviderScore(
-    data?.text_score?.speechace_score?.pronunciation
-    ?? data?.text_score?.speechace_score?.overall
-    ?? data?.text_score?.quality_score
-    ?? data?.speechace_score?.pronunciation
-    ?? data?.speechace_score?.overall
-    ?? data?.pronunciation_score
-    ?? data?.score,
-  );
-}
-
-function speechaceWords(data) {
-  const words = data?.text_score?.word_score_list || data?.word_score_list || data?.words || [];
-  return Array.isArray(words) ? words.map((word) => {
-    const score = normalizeProviderScore(
-      word?.quality_score
-      ?? word?.phone_score
-      ?? word?.speechace_score?.pronunciation
-      ?? word?.score,
-    );
-    return {
-      word: word?.word || word?.text || "",
-      accuracyScore: score,
-      errorType: score === null || score >= 60 ? "None" : "Pronunciation",
-    };
-  }).filter((word) => word.word) : [];
-}
-
-function speechaceApiKey() {
-  const key = env("SPEECHACE_API_KEY");
-  try {
-    return decodeURIComponent(key);
-  } catch {
-    return key;
-  }
-}
-
-async function assessWithSpeechace(referenceText, audioBuffer, mimeType) {
-  const key = speechaceApiKey();
-  const endpoint = env("SPEECHACE_ENDPOINT") || "https://api.speechace.co/api/scoring/text/v9/json";
-  const dialect = env("SPEECHACE_DIALECT") || "en-us";
-  const userId = env("SPEECHACE_USER_ID") || "huamei-listening";
-  const url = new URL(endpoint);
-  url.searchParams.set("key", key);
-  url.searchParams.set("dialect", dialect);
-  url.searchParams.set("user_id", userId);
-  url.searchParams.set("include_fluency", env("SPEECHACE_INCLUDE_FLUENCY") || "1");
-
-  const form = new FormData();
-  form.append("text", referenceText);
-  form.append("user_audio_file", new Blob([audioBuffer], { type: pronunciationMimeType(mimeType) }), "recording.wav");
-
-  const response = await fetch(url, { method: "POST", body: form });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.status === "error") {
-    throw apiError(data?.message || data?.detail || data?.error || "Khong cham duoc phat am bang Speechace.", response.status || 502);
-  }
-
-  const words = speechaceWords(data);
-  const recognizedText = words.length ? words.map((word) => word.word).join("") : (data?.text || data?.text_score?.text || referenceText);
-  const fallback = comparePronunciationFallback(referenceText, recognizedText || referenceText);
-  const score = speechaceScoreValue(data) ?? fallback.score;
-  const charResults = fallback.charResults.map((item) => ({
-    ...item,
-    correct: item.correct && score >= 60,
-    errorType: item.correct && score >= 60 ? "None" : "Pronunciation",
-    accuracyScore: score,
-  }));
-
-  return {
-    provider: "speechace",
-    recognizedText,
-    score,
-    accuracyScore: score,
-    fluencyScore: normalizeProviderScore(data?.text_score?.speechace_score?.fluency ?? data?.fluency_score),
-    completenessScore: normalizeProviderScore(data?.text_score?.speechace_score?.completeness ?? data?.completeness_score),
-    words,
-    charResults,
-    raw: data,
-  };
 }
 
 function pinyinTones(pinyin) {
@@ -538,51 +515,6 @@ function assessToneAndIntonation(audioBuffer, pinyin) {
   return { toneScore, intonationScore, toneResults };
 }
 
-async function assessWithAzure(referenceText, audioBuffer, mimeType) {
-  const key = env("AZURE_SPEECH_KEY");
-  const region = env("AZURE_SPEECH_REGION");
-  const pronunciationConfig = {
-    ReferenceText: referenceText,
-    GradingSystem: "HundredMark",
-    Granularity: "Word",
-    Dimension: "Comprehensive",
-    EnableMiscue: true,
-  };
-  const endpoint = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=zh-CN&format=detailed`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Ocp-Apim-Subscription-Key": key,
-      "Content-Type": pronunciationMimeType(mimeType),
-      "Pronunciation-Assessment": Buffer.from(JSON.stringify(pronunciationConfig)).toString("base64"),
-      Accept: "application/json",
-    },
-    body: audioBuffer,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw apiError({
-      error: data.error?.message || data.message || "Khong cham duoc phat am bang Azure Speech.",
-      code: "speech_assessment_failed",
-    }, response.status || 502);
-  }
-  const best = data.NBest?.[0] || {};
-  const assessment = best.PronunciationAssessment || {};
-  const recognizedText = best.Display || data.DisplayText || "";
-  const fallback = comparePronunciationFallback(referenceText, recognizedText);
-  const words = best.Words || [];
-  return {
-    provider: "azure",
-    recognizedText,
-    score: Math.round(assessment.PronScore ?? fallback.score),
-    accuracyScore: assessment.AccuracyScore ?? null,
-    fluencyScore: assessment.FluencyScore ?? null,
-    completenessScore: assessment.CompletenessScore ?? null,
-    words: mapAzurePronunciationWords(words),
-    charResults: words.length ? azureCharResults(referenceText, words, fallback) : fallback.charResults,
-  };
-}
-
 async function assessListeningPronunciation(body) {
   const provider = speechAssessmentProvider();
   if (!provider) {
@@ -601,11 +533,7 @@ async function assessListeningPronunciation(body) {
   if (!audioBuffer.length) throw apiError("Audio ghi âm không hợp lệ.", 400);
   if (audioBuffer.length > 8 * 1024 * 1024) throw apiError("Audio ghi âm quá lớn.", 413);
 
-  const result = provider === "iflytek"
-    ? await assessWithIflytek(referenceText, audioBuffer)
-    : provider === "speechace"
-      ? await assessWithSpeechace(referenceText, audioBuffer, body.mimeType)
-      : await assessWithAzure(referenceText, audioBuffer, body.mimeType);
+  const result = await assessWithIflytek(referenceText, audioBuffer);
   return json({ ...result, ...assessToneAndIntonation(audioBuffer, body.pinyin || ""), referenceText });
 }
 
