@@ -961,22 +961,11 @@ body.listening-embedded .main {
 @media (max-width: 900px) {
   .lesson-shell {
     display: block;
+    overflow-x: hidden;
   }
 
   .sidebar {
-    position: static;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  .brand {
-    min-width: max-content;
-    margin-bottom: 0;
-  }
-
-  .side-nav {
-    display: flex;
+    display: none;
   }
 
   .logout {

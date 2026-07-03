@@ -8,8 +8,8 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - One-command acceptance gate:
   - Command: `npm.cmd run acceptance:lab`
-  - Result: safety gate, `137/137` tests, build, dependency audit, temporary local server startup, and `17/17` smoke checks passed.
-- Unit and static test suite: `npm.cmd test` passed `137/137`.
+  - Result: safety gate, `139/139` tests, build, dependency audit, temporary local server startup, and `17/17` smoke checks passed.
+- Unit and static test suite: `npm.cmd test` passed `139/139`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
   - Command: `npm.cmd run safety:lab`
@@ -34,6 +34,8 @@ Scope: V2 staging lab only
   - Desktop HSK level cards stay inside the viewport at 1280 x 720.
   - Mobile HSK2 lesson 1 opens the study part picker instead of a VIP modal in local lab fallback mode.
   - HSK2 word practice accepts pinyin input and reveals the expected memory details without horizontal overflow.
+  - Mobile daily listening detail has no horizontal overflow at 390 x 844.
+  - Mobile daily listening typing drill uses a local lab fallback when the exported client route fails, accepts pinyin input, and advances to the next word.
   - Mobile listening and subscriptions horizontal strips keep touch scrolling while hiding visible scrollbars.
   - Screenshots were captured in the Codex QA session and are not committed to the repo.
 - Database fallback:

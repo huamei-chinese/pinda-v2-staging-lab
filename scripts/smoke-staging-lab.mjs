@@ -71,7 +71,7 @@ const checks = [
     name: "daily listening typing drill",
     path: "/listening-app/typing/ep-001",
     expectedStatus: 200,
-    includes: ["app/typing/%5Bid%5D/page", "bottom-nav"],
+    includes: ["data-listening-typing-fallback", "id=\"typing-answer\"", "bottom-nav"],
   },
   {
     name: "daily listening favorites",

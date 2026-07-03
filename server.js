@@ -579,7 +579,11 @@ async function handleAdminUsers(req, res, url) {
 }
 
 function serveStatic(req, res, url) {
-  const requested = url.pathname === "/" ? "/index.html" : url.pathname;
+  // Local lab fallback for /listening-app/typing/ep-* exported routes.
+  const usesTypingFallback = /^\/listening-app\/typing\/ep-\d+\/?$/.test(url.pathname);
+  const requested = usesTypingFallback
+    ? "/listening-app/typing-detail-fallback.html"
+    : url.pathname === "/" ? "/index.html" : url.pathname;
   const publicRoot = path.join(root, "public");
   const normalized = requested.endsWith("/") ? requested.slice(0, -1) : requested;
   const candidates = path.extname(requested)
