@@ -1,6 +1,6 @@
 # 高频汉语主题模块
 
-素材来源：C:\Users\DELL\Downloads\LuyenVietV3\content\high_frequency_chinese\high_frequency_topics.json
+素材来源：content/high_frequency_chinese/high_frequency_topics.json
 
 | 主题 | 越南语 | 等级 | 生词 | 短语 | 句子 |
 | --- | --- | --- | ---: | ---: | ---: |

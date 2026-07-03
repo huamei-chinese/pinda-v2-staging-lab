@@ -5,8 +5,7 @@ import { pinyin } from "pinyin-pro";
 const root = process.cwd();
 const outputDir = path.join(root, "content", "high_frequency_chinese");
 const localSourcePath = path.join(outputDir, "high_frequency_topics.json");
-const desktopSourcePath = "C:/Users/huame/OneDrive/Desktop/22222/high_frequency_topics.json";
-const sourcePath = process.env.HIGH_FREQUENCY_SOURCE || (fs.existsSync(desktopSourcePath) ? desktopSourcePath : localSourcePath);
+const sourcePath = process.env.HIGH_FREQUENCY_SOURCE || localSourcePath;
 const lessonOutput = path.join(root, "public", "lesson-high-frequency-topics.js");
 
 const colors = [
@@ -375,6 +374,7 @@ function convertTopic(topic, index) {
 }
 
 function writeBrowserPack(topics) {
+  const browserData = JSON.stringify({ source: "high_frequency_topics.json", topics }, null, 2).replace(/\n/g, "\n  ");
   const body = `(function (root, factory) {
   const data = factory();
   if (typeof module === "object" && module.exports) {
@@ -382,7 +382,7 @@ function writeBrowserPack(topics) {
   }
   root.highFrequencyTopics = data.topics;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  return ${JSON.stringify({ source: "high_frequency_topics.json", topics }, null, 2)};
+  return ${browserData};
 });
 `;
   fs.writeFileSync(lessonOutput, body, "utf8");
@@ -391,10 +391,11 @@ function writeBrowserPack(topics) {
 function writeDocs(sourceTopics, convertedTopics, issueMap) {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "high_frequency_topics.json"), JSON.stringify(sourceTopics, null, 2), "utf8");
+  const sourceLabel = path.relative(root, sourcePath).replace(/\\/g, "/");
   const md = [
     "# 高频汉语主题模块",
     "",
-    `素材来源：${sourcePath}`,
+    `素材来源：${sourceLabel}`,
     "",
     "| 主题 | 越南语 | 等级 | 生词 | 短语 | 句子 |",
     "| --- | --- | --- | ---: | ---: | ---: |",
