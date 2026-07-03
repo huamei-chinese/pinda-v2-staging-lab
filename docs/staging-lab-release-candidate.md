@@ -8,7 +8,7 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - One-command acceptance gate:
   - Command: `npm.cmd run acceptance:lab`
-  - Result: safety gate, `137/137` tests, build, dependency audit, temporary local server startup, and `12/12` smoke checks passed.
+  - Result: safety gate, `137/137` tests, build, dependency audit, temporary local server startup, and `17/17` smoke checks passed.
 - Unit and static test suite: `npm.cmd test` passed `137/137`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
@@ -24,8 +24,8 @@ Scope: V2 staging lab only
 - Local HTTP smoke:
   - Command: `npm.cmd run smoke:lab`
   - Base URL: `http://localhost:4173`
-  - Result: `12/12` checks passed.
-  - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, VIP subscriptions surface, and payment-plan database fallback.
+  - Result: `17/17` checks passed.
+  - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, daily listening detail, typing drill, favorites, member gate, review checklist, VIP subscriptions surface, and payment-plan database fallback.
 - Browser QA:
   - Tool: Codex in-app browser.
   - Viewports: 1280 x 720 desktop and 390 x 844 mobile.

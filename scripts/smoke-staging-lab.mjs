@@ -62,6 +62,36 @@ const checks = [
     includes: ["/listening-app/listening/ep-001", "daily-card"],
   },
   {
+    name: "daily listening detail",
+    path: "/listening-app/listening/ep-001",
+    expectedStatus: 200,
+    includes: ["/listening-app/listening-detail.css", "daily-001-main.MP3", "shadow-sentence"],
+  },
+  {
+    name: "daily listening typing drill",
+    path: "/listening-app/typing/ep-001",
+    expectedStatus: 200,
+    includes: ["app/typing/%5Bid%5D/page", "bottom-nav"],
+  },
+  {
+    name: "daily listening favorites",
+    path: "/listening-app/favorites",
+    expectedStatus: 200,
+    includes: ["app/favorites/page", "bottom-nav"],
+  },
+  {
+    name: "daily listening member gate",
+    path: "/listening-app/member",
+    expectedStatus: 200,
+    includes: ["app/member/page", "primary-button"],
+  },
+  {
+    name: "daily listening review checklist",
+    path: "/listening-app/review",
+    expectedStatus: 200,
+    includes: ["app/review/page", "/listening-app/listening/ep-001"],
+  },
+  {
     name: "VIP subscriptions surface",
     path: "/subscriptions.html",
     expectedStatus: 200,
