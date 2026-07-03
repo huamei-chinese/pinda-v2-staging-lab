@@ -994,6 +994,17 @@ body.listening-embedded .main {
     overflow-x: auto;
   }
 
+  .sidebar,
+  .tabs {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .sidebar::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
   .topic-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

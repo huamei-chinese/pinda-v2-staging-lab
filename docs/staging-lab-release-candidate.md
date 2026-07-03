@@ -6,7 +6,7 @@ Scope: V2 staging lab only
 ## Verified
 
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
-- Unit and static test suite: `npm.cmd test` passed `130/130`.
+- Unit and static test suite: `npm.cmd test` passed `132/132`.
 - Build: `npm.cmd run build` exited successfully.
 - Dependency security:
   - Nest packages upgraded to the 11.x line.
@@ -22,9 +22,10 @@ Scope: V2 staging lab only
   - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, VIP subscriptions surface, and payment-plan database fallback.
 - Browser QA:
   - Tool: Codex in-app browser.
-  - Viewport: 1280 x 720.
+  - Viewports: 1280 x 720 desktop and 390 x 844 mobile.
   - Checked learner home, HSK level list, HSK2 lesson 1 entry, HSK2 word practice input, high-frequency topic list, listening dashboard, and subscriptions/admin-gated surface.
   - HSK2 lesson 1 now opens in local lab mode when `DATABASE_URL` is missing, using built-in content lock fallback rules only on localhost.
+  - Mobile listening and subscriptions horizontal strips keep touch scrolling while hiding visible scrollbars.
   - Screenshots were captured in the Codex QA session and are not committed to the repo.
 - Database fallback:
   - `/api/payments/plans` returns `503` when `DATABASE_URL` is not configured.
