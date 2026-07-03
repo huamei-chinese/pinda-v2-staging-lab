@@ -702,6 +702,34 @@ function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
 }
 
+function listeningEpisodeText(episode = {}) {
+  return [
+    episode.type,
+    episode.kind,
+    episode.format,
+    episode.category,
+    episode.categoryZh,
+    episode.title,
+    episode.titleZh,
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function getConversationListeningEpisodes() {
+  const episodes = listeningEpisodes.filter((episode) => {
+    const text = listeningEpisodeText(episode);
+    return /dialogue|conversation|对话|会话|hội thoại|doi thoai|đối thoại/.test(text);
+  });
+  return episodes.length > 0 ? episodes : listeningEpisodes;
+}
+
+function getMonologueListeningEpisodes() {
+  const episodes = listeningEpisodes.filter((episode) => {
+    const text = listeningEpisodeText(episode);
+    return /monologue|solo|独白|短文|演讲|độc thoại|doc thoai|bài ngắn|bai ngan|diễn thuyết|dien thuyet/.test(text);
+  });
+  return episodes.length > 0 ? episodes : listeningEpisodes;
+}
+
 const hskContentTypes = [
   { id: "word", labelVi: "Từ vựng", labelZh: "生词" },
   { id: "sentence", labelVi: "Câu", labelZh: "句子" },
@@ -1871,7 +1899,10 @@ async function apiRequest(path, options = {}) {
     const message = data.error
       || (Array.isArray(data.message) ? data.message[0] : data.message)
       || "Không thể kết nối server.";
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.code = data.code || "";
+    throw error;
   }
   return data;
 }
@@ -5926,8 +5957,8 @@ function renderListeningDashboard() {
   const isVi = state.lang === "vi";
   const topicCards = [
     {
-      titleVi: "Giao tiếp hằng ngày",
-      titleZh: "日常交流",
+      titleVi: "Chủ đề 1",
+      titleZh: "主题 1",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-001",
@@ -5939,8 +5970,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "HSK Listening",
-      titleZh: "HSK 听力",
+      titleVi: "Chủ đề 2",
+      titleZh: "主题 2",
       levelVi: "Trung cấp",
       levelZh: "中级",
       openId: "ep-002",
@@ -5952,8 +5983,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "Phát âm",
-      titleZh: "发音",
+      titleVi: "Chủ đề 3",
+      titleZh: "主题 3",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-003",
@@ -5965,8 +5996,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Du lịch",
-      titleZh: "旅行",
+      titleVi: "Chủ đề 4",
+      titleZh: "主题 4",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-004",
@@ -5978,8 +6009,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "Mua sắm",
-      titleZh: "购物",
+      titleVi: "Chủ đề 5",
+      titleZh: "主题 5",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-004",
@@ -5991,8 +6022,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Công việc",
-      titleZh: "工作",
+      titleVi: "Chủ đề 6",
+      titleZh: "主题 6",
       levelVi: "Trung cấp",
       levelZh: "中级",
       openId: "ep-001",
@@ -6004,8 +6035,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Ẩm thực",
-      titleZh: "美食",
+      titleVi: "Chủ đề 7",
+      titleZh: "主题 7",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-003",
@@ -6435,6 +6466,7 @@ let listeningRepeatTranscript = "";
 let listeningRepeatInterim = "";
 let listeningRepeatScoringDone = false;
 let listeningRepeatScoreTimer = null;
+let listeningRepeatRecognitionAvailable = false;
 let listeningPlaybackRequested = false;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
@@ -6625,6 +6657,18 @@ function renderListeningPronunciationScore(spokenText = getListeningRepeatText()
 
   const result = compareListeningPronunciation(sentence.chinese || "", spokenText);
   const hasSpokenText = Boolean(normalizeHanzi(spokenText));
+  if (!hasSpokenText && !listeningRepeatRecognitionAvailable) {
+    panel.classList.remove("has-score");
+    panel.innerHTML = `<span>${state.lang === "vi"
+      ? "Chưa chấm được bằng trình duyệt này. Hãy mở bằng Chrome hoặc Edge trên localhost/HTTPS, cho phép micro, rồi ghi âm lại."
+      : "当前浏览器暂时无法评分。请使用 Chrome 或 Edge 并允许麦克风后再试。"
+    }</span>`;
+    setListeningRepeatInput(state.lang === "vi"
+      ? "Trình duyệt chưa hỗ trợ nhận dạng giọng nói để chấm điểm."
+      : "当前浏览器不支持语音识别评分。");
+    setListeningRepeatScorePreview(null);
+    return;
+  }
   const scoreClass = result.score >= 85 ? "good" : result.score >= 60 ? "ok" : "low";
   const markedTarget = result.targetChars.map((char, index) => (
     `<b class="${result.matched.has(index) ? "correct" : "wrong"}">${escapeHtml(char)}</b>`
@@ -6787,9 +6831,21 @@ async function scoreListeningRepeatRecording() {
     renderSpecializedPronunciationScore(result);
   } catch (error) {
     console.warn("Specialized pronunciation assessment failed; falling back to browser scoring.", error);
-    showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    if (!isListeningPronunciationApiUnavailableError(error)) {
+      showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    }
     renderListeningPronunciationScore();
   }
+}
+
+function isListeningPronunciationApiUnavailableError(error) {
+  const message = String(error?.message || "");
+  const code = String(error?.code || "");
+  const status = Number(error?.status || 0);
+  return status === 404
+    || status === 503
+    || code === "speech_not_configured"
+    || /pronunciation assessment.*cau hinh|chưa được cấu hình|chua duoc cau hinh|không thể kết nối server|failed to fetch|load failed/i.test(message);
 }
 
 function stopListeningRepeatRecognition() {
@@ -6806,6 +6862,7 @@ function startListeningRepeatRecognition() {
   listeningRepeatTranscript = "";
   listeningRepeatInterim = "";
   listeningRepeatScoringDone = false;
+  listeningRepeatRecognitionAvailable = Boolean(Recognition);
 
   if (!Recognition) {
     clearListeningPronunciationResult(state.lang === "vi"
