@@ -1023,14 +1023,14 @@
           {
             "stage": "sentence",
             "vi": "Mình có thể kết bạn WeChat với bạn không?",
-            "hanzi": "我可以加你的微信吗？",
+            "hanzi": "可以加你的微信吗？",
             "words": [
               {
-                "text": "我可以",
-                "pinyin": "wo ke yi",
-                "tone": "wǒ kě yǐ",
+                "text": "可以",
+                "pinyin": "ke yi",
+                "tone": "kě yǐ",
                 "pos": "verb",
-                "vi": "Tôi có thể"
+                "vi": "có thể"
               },
               {
                 "text": "加",
