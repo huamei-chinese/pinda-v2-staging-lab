@@ -6,6 +6,9 @@ const test = require("node:test");
 const repoRoot = path.join(__dirname, "..");
 const detailCss = fs.readFileSync(path.join(repoRoot, "public", "listening-app", "listening-detail.css"), "utf8");
 const serverSource = fs.readFileSync(path.join(repoRoot, "server.js"), "utf8");
+const appSource = fs.readFileSync(path.join(repoRoot, "public", "app.js"), "utf8");
+const rootIndexHtml = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
+const publicIndexHtml = fs.readFileSync(path.join(repoRoot, "public", "index.html"), "utf8");
 const fallbackPath = path.join(repoRoot, "public", "listening-app", "typing-detail-fallback.html");
 const listeningAppPath = path.join(repoRoot, "public", "listening-app");
 
@@ -64,4 +67,37 @@ test("daily listening audio assets cover the ten exported episodes", () => {
       .filter((name) => name.startsWith(`daily-${episodeId}-keyword-`) && name.endsWith(".mp3")).length;
     assert.equal(keywordAudioCount, expectedKeywordCounts[episodeNumber - 1], `keyword audio count for ep-${episodeId}`);
   }
+});
+
+test("legacy daily listening list routes open the current listening gateway", () => {
+  assert.match(appSource, /function applyRouteFromLocation\(\)/);
+  assert.match(appSource, /pathname === "\/listening-app\/listening"/);
+  assert.match(appSource, /state\.screen = "listening"/);
+  assert.match(appSource, /state\.listeningView = "levels"/);
+  assert.match(appSource, /renderListeningLevelGateway\(options\)/);
+  assert.doesNotMatch(appSource, /renderListeningDashboard\(\);\s*\n\}/);
+  assert.match(appSource, /if \(applyRouteFromLocation\(\)\) \{/);
+});
+
+test("legacy daily listening detail route opens the current package detail page", () => {
+  assert.match(appSource, /const listeningDetailMatch = pathname\.match/);
+  assert.match(appSource, /state\.listeningView = "detail"/);
+  assert.match(appSource, /state\.listeningEpisodeId = episodeId/);
+  assert.match(appSource, /renderListeningDetail\(options\)/);
+  assert.match(appSource, /一个人生活，是自由还是孤单？/);
+  assert.match(appSource, /阿南，你能接受一个人生活吗？/);
+  assert.doesNotMatch(appSource, /为什么老板|老板说/);
+});
+
+test("local lab serves the current SPA for daily listening entry routes", () => {
+  assert.match(serverSource, /usesListeningSpaFallback/);
+  assert.match(serverSource, /\/\^\\\/listening-app\\\/\?\$\/\.test\(url\.pathname\)/);
+  assert.match(serverSource, /\/\^\\\/listening-app\\\/listening\\\/\?\$\/\.test\(url\.pathname\)/);
+  assert.match(serverSource, /\/\^\\\/listening-app\\\/listening\\\/ep-\\d\+\\\/\?\$\/\.test\(url\.pathname\)/);
+  assert.match(serverSource, /usesListeningSpaFallback[\s\S]*\? "\/index\.html"/);
+});
+
+test("SPA entry keeps root asset resolution on deep listening routes", () => {
+  assert.match(rootIndexHtml, /<base href="\/"\s*\/?>/);
+  assert.match(publicIndexHtml, /<base href="\/"\s*\/?>/);
 });

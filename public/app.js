@@ -6177,14 +6177,7 @@ function openListeningLevel(levelId) {
   state.listeningLessonsBackTarget = "levels";
   state.listeningSelectedTopicTitleVi = "";
   state.listeningSelectedTopicTitleZh = "";
-
-  if (String(state.listeningLevelId).startsWith("dialogue")) {
-    state.listeningLessonsBackTarget = "dashboard";
-    state.listeningView = "dashboard";
-  } else {
-    state.listeningLessonsBackTarget = "levels";
-    state.listeningView = "lessons";
-  }
+  state.listeningView = "lessons";
 
   renderListening();
 }
@@ -6209,7 +6202,7 @@ function renderListening(options = {}) {
     renderListeningDetail(options);
     return;
   }
-  renderListeningDashboard();
+  renderListeningLevelGateway(options);
 }
 
 function renderListeningDashboard() {
@@ -11469,6 +11462,49 @@ function renderAll() {
   if (state.screen === "account") renderAccount();
 }
 
+function applyRouteFromLocation() {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const listeningDetailMatch = pathname.match(/^\/listening-app\/listening\/(ep-\d{3})$/);
+
+  if (listeningDetailMatch) {
+    const episodeId = listeningDetailMatch[1];
+    const episodeExists = listeningEpisodes.some((episode) => episode.id === episodeId);
+    if (!episodeExists) return false;
+
+    state.screen = "listening";
+    state.listeningView = "detail";
+    state.listeningEpisodeId = episodeId;
+    state.listeningBackTarget = "levels";
+    state.listeningSeedEpisodeId = "";
+    state.listeningLessonsBackTarget = "levels";
+    state.listeningSelectedTopicTitleVi = "";
+    state.listeningSelectedTopicTitleZh = "";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return true;
+  }
+
+  const isListeningRoute =
+    pathname === "/listening-app" ||
+    pathname === "/listening-app/listening";
+
+  if (isListeningRoute) {
+    state.screen = "listening";
+    state.listeningView = "levels";
+    state.listeningSeedEpisodeId = "";
+    state.listeningLessonsBackTarget = "levels";
+    state.listeningSelectedTopicTitleVi = "";
+    state.listeningSelectedTopicTitleZh = "";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return true;
+  }
+
+  return false;
+}
+
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
@@ -11484,6 +11520,8 @@ function init() {
       if (isAdminUser()) {
         loadAdminUsers();
       }
+    } else if (applyRouteFromLocation()) {
+      return;
     } else {
       setScreen("home");
     }

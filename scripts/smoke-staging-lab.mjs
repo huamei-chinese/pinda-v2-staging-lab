@@ -53,19 +53,19 @@ const checks = [
     name: "daily listening entry",
     path: "/listening-app",
     expectedStatus: 200,
-    includes: ["/listening-app/listening"],
+    includes: ["app.js?v=listening-detail-current-20260704"],
   },
   {
     name: "daily listening list",
     path: "/listening-app/listening",
     expectedStatus: 200,
-    includes: ["/listening-app/listening/ep-001", "daily-card"],
+    includes: ["app.js?v=listening-detail-current-20260704"],
   },
   {
     name: "daily listening detail",
     path: "/listening-app/listening/ep-001",
     expectedStatus: 200,
-    includes: ["/listening-app/listening-detail.css", "daily-001-main.MP3", "shadow-sentence"],
+    includes: ["app.js?v=listening-detail-current-20260704"],
   },
   {
     name: "daily listening typing drill",
