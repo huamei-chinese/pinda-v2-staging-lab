@@ -8,7 +8,9 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
+    "generate:hsk2": "node ./scripts/generate-hsk2-content.mjs",
     "generate:high-frequency": "node ./scripts/generate-high-frequency-content.mjs",
+    "generate:content": "npm run generate:hsk2 && npm run generate:hsk345",
     "generate:hsk345": "node ./scripts/generate-hsk345-content.mjs && node ./scripts/generate-aligned-early-content.mjs && node ./scripts/generate-aligned-next-content.mjs && node ./scripts/generate-aligned-final-content.mjs && node ./scripts/generate-hsk-remediation-content.mjs",
     "test": "node --test ./tests/*.test.js"
   },
