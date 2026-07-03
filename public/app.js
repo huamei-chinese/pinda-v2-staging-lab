@@ -466,6 +466,8 @@ const state = {
   vocabSearchQuery: "",
   vocabFilterTab: "all",
   listeningView: "dashboard",
+  listeningLevelId: "dialogue-so-cap",
+listeningBackTarget: "",
   listeningEpisodeId: "ep-001",
   listeningSentenceIndex: 0,
   listeningVocabPracticeIndex: 0,
@@ -5937,20 +5939,63 @@ function renderListeningLevelGateway(options = {}) {
     </section>
   `, "app-desktop-shell--listening", "listening", options);
 }
+function getListeningLevelInfo(levelId = state.listeningLevelId) {
+  for (const category of listeningCategories) {
+    const level = category.levels.find((item) => item.id === levelId);
+    if (level) return { category, level };
+  }
+  return { category: listeningCategories[0], level: listeningCategories[0].levels[0] };
+}
+
+function getListeningLevelLessons(levelId = state.listeningLevelId) {
+  const isMonologue = String(levelId).startsWith("monologue");
+  const monologues = typeof getMonologueListeningEpisodes === "function" ? getMonologueListeningEpisodes() : [];
+  const source = isMonologue && monologues.length ? monologues : listeningEpisodes;
+
+  const offsetMap = {
+    "dialogue-so-cap": 0,
+    "dialogue-trung-cap": 1,
+    "dialogue-cao-cap": 2,
+    "monologue-dien-thuyet": 0,
+    "monologue-tap-chi": 1,
+    "monologue-tam-ly-hoc": 2,
+  };
+
+  const seedIndex = source.findIndex((episode) => episode.id === state.listeningSeedEpisodeId);
+  const start = seedIndex >= 0 ? seedIndex : (offsetMap[levelId] || 0) * 5;
+
+  return Array.from({ length: 5 }, (_, index) => {
+    const episode = source[(start + index) % source.length] || listeningEpisodes[0];
+
+    return {
+      no: index + 1,
+      episodeId: episode.id,
+      title: `Chủ đề ${index + 1}`,
+      zh: `主题 ${index + 1}`,
+    };
+  });
+}
 
 function openListeningLevel(levelId) {
   state.listeningLevelId = levelId || "dialogue-so-cap";
-  state.listeningView = "dashboard";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
+
+  if (String(levelId).startsWith("dialogue")) {
+    state.listeningView = "dashboard";
+  } else {
+    state.listeningView = "lessons";
+  }
+
   renderListening();
 }
-
-
-
 function renderListening(options = {}) {
   if (state.listeningView === "levels") {
   renderListeningLevelGateway(options);
+  return;
+  }
+  if (state.listeningView === "lessons") {
+  renderListeningLevelLessons(options);
   return;
   }
   if (state.listeningView === "repeat") {
@@ -5972,8 +6017,8 @@ function renderListeningDashboard() {
   const isVi = state.lang === "vi";
   const topicCards = [
     {
-      titleVi: "Giao tiếp hằng ngày",
-      titleZh: "日常交流",
+      titleVi: "Chủ đề 1",
+      titleZh: "主题 1",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-001",
@@ -9694,17 +9739,45 @@ function bindEvents() {
       handleMobilePageBack();
       return;
     }
+    
 
     if (state.screen === "listening") {
+      const listeningTopicOpenBtn = event.target.closest("[data-listening-topic-open]");
+if (listeningTopicOpenBtn) {
+  event.preventDefault();
+  state.listeningEpisodeId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
+  state.listeningBackTarget = "lessons";
+  state.listeningView = "detail";
+  state.listeningSentenceIndex = 0;
+  renderListening();
+  return;
+}
+
+if (event.target.closest("[data-listening-level-back]")) {
+  state.listeningView = "levels";
+  renderListening();
+  return;
+}
       const listeningOpenBtn = event.target.closest("[data-listening-open]");
-      if (listeningOpenBtn) {
-        event.preventDefault();
-        state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
-        state.listeningView = "detail";
-        state.listeningSentenceIndex = 0;
-        renderListening();
-        return;
-      }
+if (listeningOpenBtn) {
+  event.preventDefault();
+
+  if (state.listeningView === "dashboard" && listeningOpenBtn.closest(".listening-topic-card")) {
+    state.listeningSeedEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+    state.listeningLessonsBackTarget = "dashboard";
+    state.listeningView = "lessons";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return;
+  }
+
+  state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+  state.listeningView = "detail";
+  state.listeningSentenceIndex = 0;
+  renderListening();
+  return;
+}
 
       const listeningLevelBtn = event.target.closest("[data-listening-level]");
       if (listeningLevelBtn) {
@@ -9713,10 +9786,11 @@ function bindEvents() {
       }
 
       if (event.target.closest("[data-listening-back]")) {
-        state.listeningView = "dashboard";
-        renderListening();
-        return;
-      }
+  state.listeningView = state.listeningBackTarget === "lessons" ? "lessons" : "dashboard";
+  state.listeningBackTarget = "";
+  renderListening();
+  return;
+}
 
       if (event.target.closest("[data-listening-keyword-close]")) {
   closeListeningKeywordPopup();
