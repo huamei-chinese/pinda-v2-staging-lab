@@ -35,7 +35,8 @@ const expectedGeneratedLessonScripts = [
 
 test('index loads every generated HSK3/4/5 lesson pack before app.js', async () => {
   const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-  const appScriptIndex = indexHtml.indexOf('<script src="app.js"></script>');
+  const appScriptMatch = indexHtml.match(/<script src="app\.js(?:\?[^"]*)?"><\/script>/);
+  const appScriptIndex = appScriptMatch?.index ?? -1;
 
   assert.notEqual(appScriptIndex, -1, 'index.html should load app.js');
 
