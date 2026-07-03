@@ -12856,14 +12856,24 @@ p {
     background: #eef2f6;
     border-radius: 0;
     box-shadow: none;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .app-desktop-shell--course .hsk-lesson-screen,
   .app-desktop-shell--course .daily-course-layout,
   .app-desktop-shell--course .hsk-level-picker {
-    max-width: none;
+    max-width: 100%;
     margin: 0;
+  }
+
+  .app-desktop-shell--course .hsk-level-grid {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-desktop-shell--course .hsk-level-card {
+    min-width: 0;
   }
 
   .app-desktop-shell--account .account-layout {

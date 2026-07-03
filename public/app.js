@@ -2069,7 +2069,12 @@ function hasPremiumAccess() {
 function shouldUseLocalContentLockFallback() {
   const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-  return isLocalHost && state.contentLocksFailed === true && /DATABASE_URL/i.test(String(state.contentLocksError || ""));
+  const errorText = String(state.contentLocksError || "");
+  return isLocalHost && state.contentLocksFailed === true && (
+    /DATABASE_URL/i.test(errorText) ||
+    /Backend/i.test(errorText) ||
+    errorText === backendDisabledMessage()
+  );
 }
 
 function areContentLocksTrusted() {
