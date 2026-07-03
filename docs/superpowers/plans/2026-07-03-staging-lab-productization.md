@@ -15,8 +15,9 @@
 - Repository: `https://github.com/huamei-chinese/pinda-v2-staging-lab.git`
 - Branch: `main`
 - Remote freshness: `git fetch origin` completed, `main` is aligned with `origin/main`
-- Tests: `npm.cmd test` passes 134/134
+- Tests: `npm.cmd test` passes 136/136
 - Build: `npm.cmd run build` passes
+- One-command acceptance gate: `npm.cmd run acceptance:lab` runs safety, tests, build, audit, starts `server.js`, runs smoke, and shuts the local server down.
 - Lab safety gate: `npm.cmd run safety:lab` scans repo text/code files for formal-site paths, live payment keys, SePay secret assignments, and non-placeholder database URLs.
 - Dependency security: Nest packages are on the 11.x line, `multer` is overridden to the patched 2.2.x line, and `npm.cmd audit --audit-level=high` reports `found 0 vulnerabilities`.
 - Production boundary: no deployment to `https://hoctrung.com/`; do not touch `D:\6.20_Pinda_V1\02_Working_Project\pratice_write`.

@@ -6,7 +6,10 @@ Scope: V2 staging lab only
 ## Verified
 
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
-- Unit and static test suite: `npm.cmd test` passed `134/134`.
+- One-command acceptance gate:
+  - Command: `npm.cmd run acceptance:lab`
+  - Result: safety gate, `136/136` tests, build, dependency audit, temporary local server startup, and `12/12` smoke checks passed.
+- Unit and static test suite: `npm.cmd test` passed `136/136`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
   - Command: `npm.cmd run safety:lab`
