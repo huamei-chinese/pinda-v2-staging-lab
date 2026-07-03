@@ -1,0 +1,2238 @@
+/* ============================================================================
+   LUYỆN NGHE — CSS GỘP AN TOÀN
+   ----------------------------------------------------------------------------
+   Mục tiêu:
+   - Dùng 1 file CSS duy nhất để tránh chồng rule.
+   - Giữ selector/class hiện có, không yêu cầu sửa JS/HTML.
+   - Kết hợp giao diện gradient/card hiện đại với hiệu ứng wave/audio-track.
+   - Giữ ảnh hero: assets/listening-hero-banner.png
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@600;700;900&display=swap');
+
+:root {
+  /* Core */
+  --ld-ink: #16182f;
+  --ld-ink-soft: #4b4f6d;
+  --ld-muted: #767c9c;
+  --ld-surface: #ffffff;
+  --ld-surface-tint: #f4f2fc;
+  --ld-surface-sunk: #f7f8fc;
+  --ld-line: #e7e4f6;
+
+  /* Gradient palette */
+  --ld-teal: #0d9488;
+  --ld-teal-deep: #0b6a61;
+  --ld-teal-soft: #cdf5ee;
+
+  --ld-indigo: #4f46e5;
+  --ld-indigo-deep: #362f9c;
+  --ld-indigo-soft: #e3e1fb;
+
+  --ld-rose: #db2777;
+  --ld-rose-deep: #9d174d;
+  --ld-rose-soft: #fbdff0;
+
+  --ld-amber: #f5a524;
+  --ld-amber-deep: #c2760a;
+
+  --ld-sky: #0ea5e9;
+  --ld-violet: #7c3aed;
+
+  /* Alias để tương thích với CSS cũ nếu còn dùng biến jade/gold/vermilion */
+  --ld-jade: var(--ld-teal);
+  --ld-jade-deep: var(--ld-teal-deep);
+  --ld-jade-soft: var(--ld-teal-soft);
+  --ld-vermilion: var(--ld-rose);
+  --ld-vermilion-deep: var(--ld-rose-deep);
+  --ld-vermilion-soft: var(--ld-rose-soft);
+  --ld-gold: var(--ld-amber);
+  --ld-gold-deep: var(--ld-amber-deep);
+  --ld-gold-soft: #fde8b4;
+
+  /* Shadow / radius */
+  --ld-shadow-sm: 0 6px 16px rgba(22, 24, 47, 0.06);
+  --ld-shadow-md: 0 16px 34px rgba(30, 27, 75, 0.12);
+  --ld-shadow-lg: 0 26px 55px rgba(30, 20, 70, 0.22);
+  --ld-card-glow: 0 22px 46px rgba(30, 27, 75, 0.16);
+  --ld-card-hover: 0 30px 62px rgba(30, 27, 75, 0.24);
+
+  --ld-radius: 20px;
+  --ld-radius-sm: 14px;
+
+  /* Fonts */
+  --ld-font-display: 'Fraunces', 'Times New Roman', serif;
+  --ld-font-body: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+  --ld-font-zh-display: 'Noto Serif SC', 'Songti SC', serif;
+  --ld-font-zh-body: 'Noto Sans SC', 'PingFang SC', sans-serif;
+}
+
+/* Chỉ áp dụng font trong module Luyện nghe */
+.listening-screen,
+.listening-detail-screen {
+  --font-display: var(--ld-font-display);
+  --font-zh: var(--ld-font-zh-body);
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 3vw, 40px) 56px;
+  font-family: var(--ld-font-body);
+  color: var(--ld-ink);
+}
+
+.listening-screen::before,
+.listening-detail-screen::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.12), transparent 26%),
+    radial-gradient(circle at 90% 12%, rgba(219, 39, 119, 0.10), transparent 28%),
+    radial-gradient(circle at 70% 88%, rgba(79, 70, 229, 0.10), transparent 30%),
+    linear-gradient(180deg, #fbfbff 0%, #f5f7fb 52%, #f8fbfa 100%);
+  pointer-events: none;
+}
+
+/* ============================================================================
+   1. HERO CHÍNH — dùng ảnh banner, giữ wave nhẹ ở đáy
+   ============================================================================ */
+
+.listening-screen > .listening-hero:not(.listening-hero--sub) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 2048 / 650;
+  min-height: clamp(180px, 31vw, 360px) !important;
+  margin: 0 auto 34px !important;
+  padding: 0 !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(13, 148, 136, 0.18) !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(6, 95, 70, 0.10) 0%,
+      rgba(13, 148, 136, 0.03) 36%,
+      rgba(255, 255, 255, 0.02) 62%,
+      rgba(11, 106, 97, 0.08) 100%
+    ),
+    url("assets/listening-hero-banner.png") center center / cover no-repeat !important;
+  box-shadow:
+    0 26px 58px rgba(13, 148, 136, 0.18),
+    0 10px 26px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
+.listening-screen > .listening-hero:not(.listening-hero--sub)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.54;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.18), transparent 22%),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 58%,
+      transparent 100%
+    );
+}
+
+/* Wave nhỏ ở đáy hero: giữ cảm giác module Luyện nghe nhưng không đè ảnh */
+.listening-screen > .listening-hero:not(.listening-hero--sub)::after {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 14px;
+  z-index: 2;
+  height: 28px;
+  opacity: 0.72;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 28'%3E%3Crect x='0' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='8' y='9' width='3' height='13' rx='1.5' fill='%23ffffff'/%3E%3Crect x='16' y='6' width='3' height='18' rx='1.5' fill='%23ffffff'/%3E%3Crect x='24' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3Crect x='32' y='4' width='3' height='22' rx='1.5' fill='%23ffffff'/%3E%3Crect x='40' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='48' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='56' y='7' width='3' height='17' rx='1.5' fill='%23ffffff'/%3E%3Crect x='64' y='11' width='3' height='9' rx='1.5' fill='%23ffffff'/%3E%3Crect x='72' y='5' width='3' height='21' rx='1.5' fill='%23ffffff'/%3E%3Crect x='80' y='9' width='3' height='13' rx='1.5' fill='%23ffffff'/%3E%3Crect x='88' y='13' width='3' height='6' rx='1.5' fill='%23ffffff'/%3E%3Crect x='96' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='104' y='4' width='3' height='22' rx='1.5' fill='%23ffffff'/%3E%3Crect x='112' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3Crect x='120' y='6' width='3' height='18' rx='1.5' fill='%23ffffff'/%3E%3Crect x='128' y='11' width='3' height='9' rx='1.5' fill='%23ffffff'/%3E%3Crect x='136' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='144' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='152' y='7' width='3' height='17' rx='1.5' fill='%23ffffff'/%3E%3Crect x='160' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 168px 28px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+
+/* Ẩn chữ hero chính để ảnh làm title, nhưng vẫn giữ DOM cho accessibility */
+.listening-screen > .listening-hero:not(.listening-hero--sub) > h1,
+.listening-screen > .listening-hero:not(.listening-hero--sub) > p {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+
+/* ============================================================================
+   2. HERO PHỤ — giữ gradient + wave chuyển động
+   ============================================================================ */
+
+.listening-hero--sub {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-radius: 26px !important;
+  padding: 26px clamp(22px, 4vw, 40px) !important;
+  margin-bottom: 30px !important;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(247, 183, 49, 0.32), transparent 22%),
+    radial-gradient(circle at 18% 86%, rgba(45, 212, 191, 0.24), transparent 28%),
+    linear-gradient(125deg, #0f172a 0%, #312e81 46%, #9d174d 100%) !important;
+  border: none !important;
+  box-shadow:
+    0 28px 64px rgba(15, 23, 42, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.listening-hero--sub::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52%;
+  z-index: 0;
+  opacity: 0.28;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.72) 0 2px,
+    transparent 2px 11px
+  );
+  background-size: 140% 100%;
+  background-position: 0 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 78%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 78%);
+  animation: ld-wave-pan 10s linear infinite;
+  pointer-events: none;
+}
+
+.listening-hero--sub::after {
+  content: "";
+  position: absolute;
+  right: -100px;
+  top: -120px;
+  width: 310px;
+  height: 310px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(247, 183, 49, 0.48) 0 12%, rgba(247, 183, 49, 0.18) 13% 36%, transparent 68%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes ld-wave-pan {
+  to { background-position: -140% 100%; }
+}
+
+.listening-hero--sub > * {
+  position: relative;
+  z-index: 1;
+}
+
+.listening-hero--sub h1 {
+  margin: 0 0 8px !important;
+  font-family: var(--ld-font-display);
+  font-size: clamp(22px, 2.8vw, 31px) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em;
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-text-fill-color: #ffffff;
+  text-shadow: 0 4px 22px rgba(15, 10, 40, 0.28);
+}
+
+.listening-hero--sub p {
+  margin: 0 !important;
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-weight: 600 !important;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.listening-back-btn {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(6px);
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.listening-back-btn:hover {
+  background: #ffffff !important;
+  color: var(--ld-indigo-deep) !important;
+  transform: translateX(-3px) scale(1.06);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+/* ============================================================================
+   3. HAI BOX ĐỐI THOẠI / ĐỘC THOẠI
+   ============================================================================ */
+
+.listening-category-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 24px !important;
+}
+
+.listening-category-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 28px !important;
+  padding: 28px 26px 24px !important;
+  border: 1px solid rgba(226, 232, 240, 0.92) !important;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.listening-category-card--dialogue {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(13, 148, 136, 0.16), transparent 28%),
+    radial-gradient(circle at 10% 90%, rgba(14, 165, 233, 0.10), transparent 28%),
+    linear-gradient(160deg, #ffffff 0%, #f1fffb 48%, #eef8ff 100%) !important;
+}
+
+.listening-category-card--monologue {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(219, 39, 119, 0.14), transparent 28%),
+    radial-gradient(circle at 10% 90%, rgba(124, 58, 237, 0.10), transparent 28%),
+    linear-gradient(160deg, #ffffff 0%, #fff7fb 48%, #f7f3ff 100%) !important;
+}
+
+.listening-category-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 1;
+  height: 7px;
+  border-radius: 28px 28px 0 0;
+}
+
+.listening-category-card--dialogue::before {
+  background: linear-gradient(90deg, #0d9488 0%, #0ea5e9 100%) !important;
+}
+
+.listening-category-card--monologue::before {
+  background: linear-gradient(90deg, #db2777 0%, #7c3aed 100%) !important;
+}
+
+/* Chữ Hán chìm: tạo điểm nhấn nhưng không đè nội dung */
+.listening-category-card::after {
+  position: absolute;
+  right: 22px;
+  bottom: -28px;
+  z-index: 0;
+  font-family: var(--ld-font-zh-display);
+  font-size: 118px;
+  line-height: 1;
+  font-weight: 900;
+  opacity: 0.055;
+  pointer-events: none;
+}
+
+.listening-category-card--dialogue::after {
+  content: "对";
+  color: #0d9488;
+}
+
+.listening-category-card--monologue::after {
+  content: "听";
+  color: #db2777;
+}
+
+.listening-category-card:hover {
+  transform: translateY(-6px) scale(1.006);
+  box-shadow:
+    0 28px 58px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+}
+
+.listening-category-card--dialogue:hover { border-color: rgba(13, 148, 136, 0.34) !important; }
+.listening-category-card--monologue:hover { border-color: rgba(219, 39, 119, 0.34) !important; }
+
+.listening-category-icon,
+.listening-category-card h2,
+.listening-level-list {
+  position: relative;
+  z-index: 2;
+}
+
+.listening-category-icon {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 20px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px !important;
+  margin-bottom: 16px !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 16px 28px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+
+.listening-category-card--dialogue .listening-category-icon {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.30), transparent 28%),
+    linear-gradient(145deg, #14b8a6 0%, #0d9488 100%) !important;
+}
+
+.listening-category-card--monologue .listening-category-icon {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.30), transparent 28%),
+    linear-gradient(145deg, #ec4899 0%, #9d174d 100%) !important;
+}
+
+.listening-category-card h2 {
+  margin: 0 0 18px !important;
+  font-family: var(--ld-font-display);
+  font-size: 23px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em;
+  color: var(--ld-ink) !important;
+}
+
+.listening-level-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.listening-level-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px !important;
+  padding: 0 18px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(226, 232, 240, 0.96) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94)) !important;
+  color: var(--ld-ink) !important;
+  font-weight: 800;
+  font-size: 14.5px;
+  box-shadow:
+    0 7px 16px rgba(15, 23, 42, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  transition: all 0.18s ease;
+}
+
+.listening-level-btn span {
+  position: relative;
+  z-index: 2;
+}
+
+.listening-category-card--dialogue .listening-level-btn svg { color: var(--ld-teal); }
+.listening-category-card--monologue .listening-level-btn svg { color: var(--ld-rose); }
+
+.listening-category-card--dialogue .listening-level-btn:hover {
+  background: linear-gradient(120deg, #0d9488 0%, #0ea5e9 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: translateX(5px);
+  box-shadow: 0 14px 28px rgba(13, 148, 136, 0.20);
+}
+
+.listening-category-card--monologue .listening-level-btn:hover {
+  background: linear-gradient(120deg, #db2777 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: translateX(5px);
+  box-shadow: 0 14px 28px rgba(219, 39, 119, 0.20);
+}
+
+.listening-level-btn:hover svg {
+  color: #ffffff !important;
+}
+
+/* ============================================================================
+   4. DANH SÁCH CHỦ ĐỀ — giữ audio wave bắt mắt
+   ============================================================================ */
+
+.listening-topic-list {
+  display: grid !important;
+  gap: 16px !important;
+  max-width: 820px !important;
+}
+
+.listening-topic-item {
+  position: relative;
+  overflow: hidden;
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) auto !important;
+  align-items: center;
+  gap: 18px !important;
+  min-height: 78px !important;
+  padding: 0 24px !important;
+  border-radius: 26px !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 255, 0.96)) !important;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+
+.listening-topic-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 8% 50%, rgba(255, 255, 255, 0.22), transparent 18%),
+    linear-gradient(105deg, #111827 0%, #312e81 48%, #9d174d 100%) !important;
+  transition: opacity 0.2s ease;
+}
+
+.listening-topic-item:hover::before { opacity: 1; }
+
+/* Đây là phần wave/audio-track cần giữ */
+.listening-topic-item::after {
+  content: "";
+  position: absolute;
+  left: 104px;
+  right: 94px;
+  top: 50%;
+  z-index: 1;
+  height: 26px;
+  transform: translateY(4px);
+  opacity: 0.52;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 28'%3E%3Crect x='0' y='12' width='3' height='7' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='8' y='9' width='3' height='13' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='16' y='6' width='3' height='18' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='24' y='10' width='3' height='11' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='32' y='4' width='3' height='22' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='40' y='8' width='3' height='15' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='48' y='12' width='3' height='7' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='56' y='7' width='3' height='17' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='64' y='11' width='3' height='9' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='72' y='5' width='3' height='21' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='80' y='9' width='3' height='13' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='88' y='13' width='3' height='6' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='96' y='8' width='3' height='15' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='104' y='4' width='3' height='22' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='112' y='10' width='3' height='11' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='120' y='6' width='3' height='18' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='128' y='11' width='3' height='9' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='136' y='8' width='3' height='15' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='144' y='12' width='3' height='7' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='152' y='7' width='3' height='17' rx='1.5' fill='%23cbd5e1'/%3E%3Crect x='160' y='10' width='3' height='11' rx='1.5' fill='%23cbd5e1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 168px 28px;
+  background-position: left center;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 88%, transparent 100%);
+}
+
+.listening-topic-item:hover::after {
+  opacity: 0.68;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 28'%3E%3Crect x='0' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='8' y='9' width='3' height='13' rx='1.5' fill='%23ffffff'/%3E%3Crect x='16' y='6' width='3' height='18' rx='1.5' fill='%23ffffff'/%3E%3Crect x='24' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3Crect x='32' y='4' width='3' height='22' rx='1.5' fill='%23ffffff'/%3E%3Crect x='40' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='48' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='56' y='7' width='3' height='17' rx='1.5' fill='%23ffffff'/%3E%3Crect x='64' y='11' width='3' height='9' rx='1.5' fill='%23ffffff'/%3E%3Crect x='72' y='5' width='3' height='21' rx='1.5' fill='%23ffffff'/%3E%3Crect x='80' y='9' width='3' height='13' rx='1.5' fill='%23ffffff'/%3E%3Crect x='88' y='13' width='3' height='6' rx='1.5' fill='%23ffffff'/%3E%3Crect x='96' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='104' y='4' width='3' height='22' rx='1.5' fill='%23ffffff'/%3E%3Crect x='112' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3Crect x='120' y='6' width='3' height='18' rx='1.5' fill='%23ffffff'/%3E%3Crect x='128' y='11' width='3' height='9' rx='1.5' fill='%23ffffff'/%3E%3Crect x='136' y='8' width='3' height='15' rx='1.5' fill='%23ffffff'/%3E%3Crect x='144' y='12' width='3' height='7' rx='1.5' fill='%23ffffff'/%3E%3Crect x='152' y='7' width='3' height='17' rx='1.5' fill='%23ffffff'/%3E%3Crect x='160' y='10' width='3' height='11' rx='1.5' fill='%23ffffff'/%3E%3C/svg%3E");
+}
+
+.listening-topic-item:hover {
+  transform: translateY(-4px) scale(1.006);
+  box-shadow:
+    0 24px 54px rgba(49, 46, 129, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  border-color: transparent !important;
+}
+
+.listening-topic-play {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff !important;
+  border: 4px solid rgba(255, 255, 255, 0.82);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.34), transparent 28%),
+    linear-gradient(145deg, #ffb547 0%, #ff5c7a 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(255, 92, 122, 0.34),
+    inset 0 -4px 0 rgba(159, 58, 58, 0.18) !important;
+  transition: transform 0.2s ease;
+}
+
+.listening-topic-play::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255, 181, 71, 0.34), rgba(255, 92, 122, 0.18));
+  opacity: 0;
+  transform: scale(0.84);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.listening-topic-item:hover .listening-topic-play {
+  transform: scale(1.04);
+}
+
+.listening-topic-item:hover .listening-topic-play::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.listening-topic-play svg {
+  transform: translateX(1px);
+}
+
+.listening-topic-label {
+  position: relative;
+  z-index: 2;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em;
+  color: #0f172a !important;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.listening-topic-item:hover .listening-topic-label {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+}
+
+.listening-topic-no {
+  position: relative;
+  z-index: 2;
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 8px 16px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+}
+
+.listening-topic-item:hover .listening-topic-no {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff !important;
+  box-shadow: none;
+}
+
+/* ============================================================================
+   5. TRANG CHI TIẾT — layout + card
+   ============================================================================ */
+
+.ld-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.ld-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.ld-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ld-card,
+.ld-function-card,
+.ld-vocab-card,
+.ld-follow-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(251, 252, 255, 0.92)) !important;
+  border: 1px solid rgba(226, 232, 240, 0.92) !important;
+  box-shadow: var(--ld-card-glow) !important;
+}
+
+.ld-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px !important;
+  padding: 24px 24px 26px !important;
+}
+
+.ld-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px !important;
+}
+
+.ld-subtitle-card::before { background: linear-gradient(90deg, var(--ld-indigo), var(--ld-sky)); }
+.ld-transport-card::before { background: linear-gradient(90deg, var(--ld-teal), var(--ld-amber)); }
+.ld-rolling-card::before { background: linear-gradient(90deg, var(--ld-rose), var(--ld-violet)); }
+
+.ld-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ld-card-head::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ld-subtitle-card .ld-card-head::before { background: linear-gradient(135deg, var(--ld-indigo), var(--ld-sky)); }
+.ld-transport-card .ld-card-head::before { background: linear-gradient(135deg, var(--ld-teal), var(--ld-amber)); }
+.ld-rolling-card .ld-card-head::before { background: linear-gradient(135deg, var(--ld-rose), var(--ld-violet)); }
+
+.ld-card-head strong {
+  font-family: var(--ld-font-display);
+  font-size: 16px !important;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ld-ink);
+}
+
+/* ============================================================================
+   6. PHỤ ĐỀ HIỆN TẠI
+   ============================================================================ */
+
+.ld-subtitle-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ld-subtitle-mode-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ld-line);
+  background: var(--ld-surface-tint);
+  color: var(--ld-ink-soft);
+  font-weight: 750;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ld-subtitle-mode-btn:hover {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-indigo), var(--ld-sky));
+  color: #ffffff;
+}
+
+.ld-subtitle-mode-btn.active {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-indigo-deep), var(--ld-indigo));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.28);
+}
+
+.ld-current-subtitle {
+  position: relative;
+  border-radius: 22px !important;
+  padding: 28px 26px !important;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(56, 189, 248, 0.16), transparent 26%),
+    radial-gradient(circle at 88% 80%, rgba(219, 39, 119, 0.12), transparent 24%),
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 100%) !important;
+  border: 1px solid rgba(199, 210, 254, 0.9) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.ld-line-zh {
+  margin: 0 0 8px;
+  font-family: var(--ld-font-zh-display);
+  font-size: clamp(28px, 3.5vw, 38px) !important;
+  font-weight: 800;
+  line-height: 1.28 !important;
+  letter-spacing: -0.01em;
+  background: linear-gradient(100deg, var(--ld-indigo-deep), var(--ld-rose-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ld-line-pinyin {
+  margin: 0 0 10px;
+  color: #4f46e5 !important;
+  font-weight: 800 !important;
+  font-size: 15.5px !important;
+  letter-spacing: 0.01em;
+}
+
+.ld-line-vi {
+  margin: 0;
+  color: #334155 !important;
+  font-weight: 650 !important;
+  font-size: 15px !important;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   7. ĐIỀU KHIỂN AUDIO
+   ============================================================================ */
+
+.ld-transport-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px !important;
+  margin-bottom: 12px;
+}
+
+.ld-transport-row:last-child { margin-bottom: 0; }
+
+.ld-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px !important;
+  padding: 0 18px;
+  border-radius: 15px !important;
+  border: 1px solid var(--ld-line);
+  background: var(--ld-surface);
+  color: var(--ld-ink);
+  font-weight: 850 !important;
+  font-size: 13.5px;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.06);
+  transition: all 0.18s ease;
+}
+
+.ld-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-160%) skewX(-12deg);
+  pointer-events: none;
+}
+
+.ld-btn:hover:not(:disabled)::after {
+  animation: ld-shine 0.75s ease forwards;
+}
+
+@keyframes ld-shine {
+  to { transform: translateX(260%) skewX(-12deg); }
+}
+
+.ld-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--ld-shadow-sm);
+  border-color: var(--ld-indigo-soft);
+}
+
+.ld-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ld-btn--primary {
+  border: none;
+  background:
+    linear-gradient(135deg, #4f46e5 0%, #0ea5e9 100%) !important;
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.34) !important;
+}
+
+.ld-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(120deg, var(--ld-indigo-deep), var(--ld-indigo)) !important;
+  box-shadow: 0 16px 32px rgba(79, 70, 229, 0.38) !important;
+}
+
+.ld-btn--primary.is-playing {
+  background:
+    linear-gradient(135deg, #f59e0b 0%, #db2777 100%) !important;
+  animation: ld-onair-pulse 1.7s ease-out infinite;
+}
+
+@keyframes ld-onair-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.42); }
+  70% { box-shadow: 0 0 0 16px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.ld-btn--stop:hover:not(:disabled) {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-rose), var(--ld-rose-deep));
+  color: #ffffff;
+}
+
+.ld-speed-btn.active {
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, #111827 0%, #312e81 100%) !important;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.26);
+}
+
+/* ============================================================================
+   8. PHỤ ĐỀ CUỘN — active row như track đang phát
+   ============================================================================ */
+
+.ld-rolling-subtitles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ld-rolling-subtitles::-webkit-scrollbar { width: 6px; }
+.ld-rolling-subtitles::-webkit-scrollbar-thumb {
+  background: var(--ld-line);
+  border-radius: 999px;
+}
+
+.ld-rolling-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+  border: 1px solid var(--ld-line);
+  background: var(--ld-surface);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ld-rolling-index {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ld-surface-tint);
+  color: var(--ld-ink-soft);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ld-rolling-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ld-rolling-text strong {
+  font-family: var(--ld-font-zh-body);
+  font-size: 15px;
+  color: var(--ld-ink);
+}
+
+.ld-rolling-text em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ld-indigo-deep);
+  font-weight: 700;
+}
+
+.ld-rolling-text small {
+  font-size: 12px;
+  color: var(--ld-muted);
+}
+
+.ld-rolling-row:hover:not(.active) {
+  border-color: var(--ld-indigo-soft);
+  transform: translateX(3px);
+}
+
+.ld-rolling-row.active {
+  border-color: transparent;
+  background:
+    linear-gradient(100deg, #111827 0%, #312e81 50%, #9d174d 100%) !important;
+  box-shadow:
+    0 16px 32px rgba(49, 46, 129, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  transform: translateX(4px) scale(1.01);
+}
+
+.ld-rolling-row.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--ld-amber);
+  box-shadow: 0 0 12px rgba(245, 165, 36, 0.9);
+}
+
+.ld-rolling-row.active::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 34px;
+  height: 18px;
+  transform: translateY(-50%);
+  opacity: 0.8;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.9) 0 3px,
+      transparent 3px 7px
+    );
+  -webkit-mask-image: linear-gradient(to top, #000 0 55%, transparent 56%);
+  mask-image: linear-gradient(to top, #000 0 55%, transparent 56%);
+}
+
+.ld-rolling-row.active .ld-rolling-index {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.ld-rolling-row.active .ld-rolling-text strong,
+.ld-rolling-row.active .ld-rolling-text em,
+.ld-rolling-row.active .ld-rolling-text small {
+  color: #ffffff;
+}
+
+/* ============================================================================
+   9. THẺ CHỨC NĂNG — Từ vựng / Nói theo
+   ============================================================================ */
+
+.ld-function-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 92px;
+  padding: 18px 42px 18px 20px;
+  border-radius: 24px !important;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ld-function-icon {
+  flex-shrink: 0;
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 18px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  color: #ffffff;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+}
+
+.ld-function-card:nth-of-type(1) .ld-function-icon {
+  background: linear-gradient(150deg, var(--ld-violet), var(--ld-indigo));
+}
+
+.ld-function-card:nth-of-type(2) .ld-function-icon {
+  background: linear-gradient(150deg, var(--ld-amber), var(--ld-rose));
+}
+
+.ld-function-card strong {
+  display: block;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  color: var(--ld-ink);
+}
+
+.ld-function-card small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px !important;
+  color: var(--ld-muted);
+  font-weight: 600;
+}
+
+.ld-function-card::after {
+  content: "\203A";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  color: var(--ld-line);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.ld-function-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: var(--ld-card-hover) !important;
+}
+
+.ld-function-card:nth-of-type(1):hover { border-color: var(--ld-indigo-soft) !important; }
+.ld-function-card:nth-of-type(2):hover { border-color: var(--ld-rose-soft) !important; }
+
+.ld-function-card:hover::after {
+  transform: translateY(-50%) translateX(4px);
+  color: var(--ld-indigo);
+}
+
+/* ============================================================================
+   10. TRANG TỪ VỰNG
+   ============================================================================ */
+
+.ld-vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px !important;
+}
+
+.ld-empty {
+  grid-column: 1 / -1;
+  padding: 40px;
+  text-align: center;
+  border-radius: 18px;
+  border: 1px dashed var(--ld-line);
+  color: var(--ld-muted);
+  font-weight: 600;
+}
+
+.ld-vocab-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px !important;
+  padding: 22px !important;
+  transition: all 0.2s ease;
+}
+
+.ld-vocab-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  border-radius: 24px 24px 0 0;
+}
+
+.ld-vocab-card:nth-child(6n+1)::before { background: linear-gradient(90deg, var(--ld-teal-deep), var(--ld-teal)); }
+.ld-vocab-card:nth-child(6n+2)::before { background: linear-gradient(90deg, var(--ld-indigo-deep), var(--ld-indigo)); }
+.ld-vocab-card:nth-child(6n+3)::before { background: linear-gradient(90deg, var(--ld-amber-deep), var(--ld-amber)); }
+.ld-vocab-card:nth-child(6n+4)::before { background: linear-gradient(90deg, var(--ld-rose-deep), var(--ld-rose)); }
+.ld-vocab-card:nth-child(6n+5)::before { background: linear-gradient(90deg, var(--ld-violet), #a78bfa); }
+.ld-vocab-card:nth-child(6n+6)::before { background: linear-gradient(90deg, var(--ld-sky), #38bdf8); }
+
+.ld-vocab-card::after {
+  content: "词";
+  position: absolute;
+  right: 18px;
+  bottom: 12px;
+  font-family: var(--ld-font-zh-display);
+  font-size: 72px;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.035);
+  pointer-events: none;
+}
+
+.ld-vocab-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: var(--ld-card-hover) !important;
+}
+
+.ld-vocab-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.ld-vocab-hanzi {
+  font-family: var(--ld-font-zh-display);
+  font-size: 32px !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ld-ink);
+}
+
+.ld-vocab-pos {
+  flex-shrink: 0;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  background:
+    linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  color: #3730a3 !important;
+  border: 1px solid rgba(199, 210, 254, 0.9);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.ld-vocab-pinyin {
+  margin: 6px 0 2px;
+  color: var(--ld-teal-deep);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.ld-vocab-vi {
+  margin: 0 0 14px;
+  color: var(--ld-ink-soft);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ld-vocab-audio-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+[data-vocab-play-normal],
+[data-vocab-play-slow] {
+  flex: 1;
+  min-height: 38px;
+  border-radius: 10px;
+  font-weight: 750;
+  font-size: 12.5px;
+  border: 1px solid var(--ld-line);
+  background: var(--ld-surface-tint);
+  color: var(--ld-ink-soft);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+[data-vocab-play-normal]:hover {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-teal), var(--ld-teal-deep));
+  color: #ffffff;
+}
+
+[data-vocab-play-slow]:hover {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-amber), var(--ld-amber-deep));
+  color: #ffffff;
+}
+
+.ld-vocab-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ld-vocab-example {
+  border-left: 3px solid var(--ld-teal);
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, #f8fafc, #ffffff) !important;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.7);
+  padding: 10px 12px;
+}
+
+.ld-example-zh {
+  margin: 0 0 3px;
+  font-family: var(--ld-font-zh-body);
+  color: var(--ld-ink);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ld-example-pinyin {
+  margin: 0 0 3px;
+  color: var(--ld-teal-deep);
+  font-size: 12.5px;
+}
+
+.ld-example-vi {
+  margin: 0;
+  color: var(--ld-muted);
+  font-size: 12.5px;
+}
+
+/* ============================================================================
+   11. TRANG NÓI THEO
+   ============================================================================ */
+
+.ld-follow-card {
+  max-width: 760px !important;
+  border-radius: 30px !important;
+  padding: 34px clamp(22px, 5vw, 48px) !important;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(56, 189, 248, 0.18), transparent 30%),
+    radial-gradient(circle at 88% 78%, rgba(219, 39, 119, 0.16), transparent 28%),
+    linear-gradient(160deg, #ffffff 0%, #f8f7ff 100%) !important;
+}
+
+.ld-follow-progress {
+  display: inline-flex;
+  min-height: 26px;
+  padding: 0 12px;
+  align-items: center;
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, #111827, #312e81) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  font-size: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 22px rgba(49, 46, 129, 0.24);
+}
+
+.ld-follow-zh {
+  font-family: var(--ld-font-zh-display);
+  font-size: clamp(34px, 5vw, 48px) !important;
+  font-weight: 800;
+  line-height: 1.25;
+  background: linear-gradient(100deg, var(--ld-indigo-deep), var(--ld-rose-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-follow-play-sentence]:hover {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ld-sky), var(--ld-indigo));
+  color: #ffffff;
+}
+
+[data-follow-record] {
+  border: none;
+  background: linear-gradient(120deg, var(--ld-rose), var(--ld-rose-deep));
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(219, 39, 119, 0.32);
+}
+
+[data-follow-record]:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 16px 32px rgba(219, 39, 119, 0.42);
+}
+
+#ldFollowFeedback {
+  margin-top: 14px;
+}
+
+.ld-follow-score {
+  display: inline-flex;
+  min-height: 38px !important;
+  padding: 0 20px !important;
+  align-items: center;
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, #10b981, #0d9488) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  margin: 0 0 12px;
+  box-shadow: 0 12px 24px rgba(13, 148, 136, 0.28);
+}
+
+.ld-follow-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  padding: 14px 0;
+  font-family: var(--ld-font-zh-display);
+  font-size: 26px !important;
+}
+
+.ld-char-correct {
+  color: #059669 !important;
+  text-shadow: 0 0 14px rgba(16, 185, 129, 0.28);
+}
+
+.ld-char-wrong {
+  color: #be123c !important;
+  text-decoration: underline wavy var(--ld-rose);
+  text-underline-offset: 4px;
+  text-shadow: 0 0 14px rgba(244, 63, 94, 0.22);
+}
+
+/* ============================================================================
+   12. FOCUS + RESPONSIVE
+   ============================================================================ */
+
+.listening-back-btn:focus-visible,
+.listening-level-btn:focus-visible,
+.listening-topic-item:focus-visible,
+.ld-btn:focus-visible,
+.ld-subtitle-mode-btn:focus-visible,
+.ld-rolling-row:focus-visible,
+.ld-function-card:focus-visible,
+.ld-vocab-card:focus-visible,
+[data-vocab-play-normal]:focus-visible,
+[data-vocab-play-slow]:focus-visible {
+  outline: 3px solid var(--ld-amber);
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  .ld-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .listening-category-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .listening-screen > .listening-hero:not(.listening-hero--sub) {
+    border-radius: 22px !important;
+    aspect-ratio: 16 / 7;
+    min-height: 150px !important;
+    margin-bottom: 22px !important;
+    background-position: center center !important;
+  }
+
+  .listening-hero--sub {
+    padding: 22px 20px !important;
+    border-radius: var(--ld-radius-sm) !important;
+  }
+
+  .listening-hero--sub::after {
+    display: none;
+  }
+
+  .listening-category-card {
+    border-radius: 22px !important;
+  }
+
+  .listening-category-card::before {
+    border-radius: 22px 22px 0 0;
+  }
+
+  .listening-category-card::after {
+    font-size: 88px;
+    right: 16px;
+    bottom: -22px;
+  }
+
+  .listening-topic-item {
+    grid-template-columns: 48px minmax(0, 1fr) auto !important;
+    min-height: 72px !important;
+    gap: 12px !important;
+    padding: 0 14px !important;
+    border-radius: 22px !important;
+  }
+
+  .listening-topic-item::after {
+    display: none !important;
+  }
+
+  .listening-topic-play {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .listening-topic-label {
+    font-size: 15.5px !important;
+  }
+
+  .listening-topic-no {
+    min-height: 30px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  .ld-card {
+    padding: 20px 16px 22px !important;
+    border-radius: 22px !important;
+  }
+
+  .ld-line-zh {
+    font-size: 26px !important;
+  }
+
+  .ld-transport-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ld-btn--primary {
+    grid-column: 1 / -1;
+  }
+
+  .ld-vocab-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .listening-screen,
+  .listening-detail-screen {
+    padding: 18px 14px 40px;
+  }
+
+  .ld-vocab-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ld-follow-feedback {
+    font-size: 22px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listening-hero--sub::before,
+  .ld-btn--primary.is-playing {
+    animation: none !important;
+  }
+
+  .ld-btn:hover:not(:disabled)::after {
+    animation: none !important;
+  }
+
+  .listening-back-btn:hover,
+  .listening-category-card:hover,
+  .listening-level-btn:hover,
+  .listening-topic-item:hover,
+  .listening-topic-item:hover .listening-topic-play,
+  .ld-btn:hover:not(:disabled),
+  .ld-rolling-row:hover:not(.active),
+  .ld-rolling-row.active,
+  .ld-function-card:hover,
+  .ld-vocab-card:hover,
+  [data-follow-record]:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================================
+   LUYỆN NGHE — POLISH PATCH V2
+   ----------------------------------------------------------------------------
+   Cách dùng an toàn:
+   - Dán TOÀN BỘ đoạn này xuống CUỐI file CSS hiện tại, hoặc dùng file full đi kèm.
+   - Không cần sửa HTML/JS.
+   - Mục tiêu: giao diện cao cấp hơn, gọn hơn, ít gắt màu hơn, giữ wave/audio-track.
+   ============================================================================ */
+
+:root {
+  --ld-app-bg-1: #f8fbff;
+  --ld-app-bg-2: #eef6f8;
+  --ld-card-border: rgba(214, 226, 238, 0.86);
+  --ld-card-inner: rgba(255, 255, 255, 0.76);
+  --ld-focus-ring: rgba(245, 165, 36, 0.72);
+  --ld-deep-navy: #111827;
+  --ld-soft-navy: #1e293b;
+  --ld-premium-shadow: 0 24px 58px rgba(15, 23, 42, 0.12);
+  --ld-premium-shadow-hover: 0 34px 78px rgba(15, 23, 42, 0.18);
+}
+
+/* 1) Nền tổng: sáng hơn, sạch hơn, giảm cảm giác xám nặng ở trang chi tiết */
+.listening-screen::before,
+.listening-detail-screen::before {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(20, 184, 166, 0.13), transparent 26%),
+    radial-gradient(circle at 92% 12%, rgba(79, 70, 229, 0.10), transparent 28%),
+    radial-gradient(circle at 82% 88%, rgba(219, 39, 119, 0.08), transparent 30%),
+    linear-gradient(180deg, var(--ld-app-bg-1) 0%, #f4f8fb 46%, var(--ld-app-bg-2) 100%) !important;
+}
+
+.listening-screen,
+.listening-detail-screen {
+  max-width: 1240px;
+}
+
+/* 2) Hero chính: thêm lớp kính nhẹ + shadow mềm, không đè nội dung ảnh */
+.listening-screen > .listening-hero:not(.listening-hero--sub) {
+  border-radius: 34px !important;
+  margin-bottom: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.58) !important;
+  box-shadow:
+    0 32px 72px rgba(13, 148, 136, 0.16),
+    0 14px 32px rgba(15, 23, 42, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+}
+
+.listening-screen > .listening-hero:not(.listening-hero--sub)::before {
+  opacity: 0.38 !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.06), transparent 46%),
+    linear-gradient(115deg, transparent 0%, transparent 44%, rgba(255,255,255,0.20) 50%, transparent 58%, transparent 100%) !important;
+}
+
+.listening-screen > .listening-hero:not(.listening-hero--sub)::after {
+  bottom: 18px !important;
+  opacity: 0.64 !important;
+}
+
+/* 3) Hai box đầu: nhìn giống sản phẩm chính, có nhãn phụ và chiều sâu tốt hơn */
+.listening-category-grid {
+  align-items: stretch;
+}
+
+.listening-category-card {
+  min-height: 360px;
+  padding: 34px 30px 28px !important;
+  border-radius: 32px !important;
+  border: 1px solid var(--ld-card-border) !important;
+  box-shadow: var(--ld-premium-shadow), inset 0 1px 0 rgba(255,255,255,0.88) !important;
+}
+
+.listening-category-card--dialogue {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(20, 184, 166, 0.18), transparent 28%),
+    radial-gradient(circle at 8% 96%, rgba(14, 165, 233, 0.13), transparent 28%),
+    linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #effffb 48%, #eef8ff 100%) !important;
+}
+
+.listening-category-card--monologue {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(236, 72, 153, 0.16), transparent 28%),
+    radial-gradient(circle at 8% 96%, rgba(124, 58, 237, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(255,255,255,0.98) 0%, #fff5fb 48%, #f5f1ff 100%) !important;
+}
+
+.listening-category-card::before {
+  height: 8px !important;
+  border-radius: 32px 32px 0 0 !important;
+}
+
+.listening-category-card::after {
+  bottom: -34px !important;
+  right: 22px !important;
+  font-size: 132px !important;
+  opacity: 0.05 !important;
+}
+
+.listening-category-card h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px !important;
+}
+
+.listening-category-card--dialogue h2::after,
+.listening-category-card--monologue h2::after {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: var(--ld-font-body);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.listening-category-card--dialogue h2::after {
+  content: "3 cấp độ";
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.12);
+  border: 1px solid rgba(20, 184, 166, 0.22);
+}
+
+.listening-category-card--monologue h2::after {
+  content: "3 chủ đề";
+  color: #be185d;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.20);
+}
+
+.listening-category-icon {
+  width: 64px !important;
+  height: 64px !important;
+  border-radius: 22px !important;
+  margin-bottom: 20px !important;
+}
+
+.listening-category-card:hover {
+  transform: translateY(-8px) scale(1.008) !important;
+  box-shadow: var(--ld-premium-shadow-hover), inset 0 1px 0 rgba(255,255,255,0.90) !important;
+}
+
+/* 4) Nút cấp độ: thêm đường sáng bên trong, nhìn có thể bấm hơn */
+.listening-level-btn {
+  position: relative;
+  overflow: hidden;
+  min-height: 60px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  border-radius: 20px !important;
+}
+
+.listening-level-btn::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0));
+  pointer-events: none;
+}
+
+.listening-level-btn svg {
+  position: relative;
+  z-index: 1;
+}
+
+/* 5) Danh sách chủ đề: giảm cảm giác trống, wave rõ nhưng không rối */
+.listening-topic-list {
+  max-width: 900px !important;
+  gap: 18px !important;
+}
+
+.listening-topic-item {
+  min-height: 82px !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(226, 232, 240, 0.86) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96)) !important;
+  box-shadow:
+    0 20px 48px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.92) !important;
+}
+
+.listening-topic-item::after {
+  left: 150px !important;
+  right: 112px !important;
+  opacity: 0.44 !important;
+  transform: translateY(-50%) !important;
+}
+
+.listening-topic-item:hover::after {
+  opacity: 0.70 !important;
+}
+
+.listening-topic-play {
+  width: 54px !important;
+  height: 54px !important;
+  border-width: 5px !important;
+}
+
+.listening-topic-label {
+  padding-right: 18px;
+}
+
+.listening-topic-no {
+  min-width: 58px;
+  justify-content: center;
+}
+
+/* 6) Hero phụ: bớt tối, chữ nổi hơn, giữ wave */
+.listening-hero--sub {
+  border-radius: 30px !important;
+  min-height: 124px;
+  padding: 28px clamp(24px, 4vw, 44px) !important;
+  background:
+    radial-gradient(circle at 92% 22%, rgba(245, 165, 36, 0.36), transparent 18%),
+    radial-gradient(circle at 12% 86%, rgba(56, 189, 248, 0.20), transparent 30%),
+    linear-gradient(120deg, #0f172a 0%, #312e81 46%, #b23a4a 100%) !important;
+}
+
+.listening-hero--sub h1 {
+  line-height: 1.12 !important;
+}
+
+.listening-hero--sub p {
+  font-size: 14.5px !important;
+  color: rgba(255,255,255,0.90) !important;
+}
+
+.listening-back-btn {
+  background: rgba(255,255,255,0.18) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* 7) Trang chi tiết: card gọn, hiện đại, phân tầng rõ */
+.ld-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px) !important;
+  gap: 28px !important;
+}
+
+.ld-main-col {
+  gap: 22px !important;
+}
+
+.ld-side-col {
+  gap: 18px !important;
+}
+
+.ld-card,
+.ld-function-card,
+.ld-vocab-card,
+.ld-follow-card {
+  border: 1px solid rgba(226, 232, 240, 0.86) !important;
+  box-shadow: var(--ld-premium-shadow) !important;
+}
+
+.ld-card {
+  border-radius: 30px !important;
+}
+
+.ld-card::before {
+  height: 7px !important;
+}
+
+.ld-card-head strong {
+  font-family: var(--ld-font-body) !important;
+  font-weight: 900 !important;
+}
+
+.ld-current-subtitle {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 8% 22%, rgba(14, 165, 233, 0.14), transparent 28%),
+    radial-gradient(circle at 92% 78%, rgba(236, 72, 153, 0.10), transparent 26%),
+    linear-gradient(135deg, #f8fbff 0%, #ffffff 100%) !important;
+}
+
+.ld-current-subtitle::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ld-sky), var(--ld-indigo));
+  box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.10);
+}
+
+.ld-line-zh,
+.ld-line-pinyin,
+.ld-line-vi {
+  padding-left: 18px;
+}
+
+.ld-subtitle-mode-btn {
+  min-height: 40px !important;
+  border-radius: 14px !important;
+}
+
+.ld-subtitle-mode-btn.active {
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.26) !important;
+}
+
+.ld-btn {
+  min-height: 48px !important;
+  border-radius: 16px !important;
+}
+
+.ld-rolling-subtitles {
+  max-height: 420px !important;
+  scroll-padding: 12px;
+}
+
+.ld-rolling-row {
+  border-radius: 20px !important;
+}
+
+.ld-function-card {
+  border-radius: 28px !important;
+  min-height: 96px !important;
+}
+
+.ld-function-card:hover {
+  transform: translateY(-6px) scale(1.012) !important;
+}
+
+/* 8) Từ vựng / nói theo: thống nhất hệ thẻ */
+.ld-vocab-card {
+  border-radius: 28px !important;
+}
+
+.ld-follow-card {
+  border-radius: 34px !important;
+}
+
+/* 9) Mobile polish: tránh quá cao và tránh wave đè chữ */
+@media (max-width: 720px) {
+  .listening-screen,
+  .listening-detail-screen {
+    max-width: 100%;
+  }
+
+  .listening-screen > .listening-hero:not(.listening-hero--sub) {
+    border-radius: 24px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .listening-category-card {
+    min-height: auto;
+    padding: 28px 22px 24px !important;
+    border-radius: 24px !important;
+  }
+
+  .listening-category-card h2 {
+    flex-wrap: wrap;
+  }
+
+  .listening-topic-item {
+    min-height: 74px !important;
+    border-radius: 24px !important;
+  }
+
+  .listening-topic-item::after {
+    display: none !important;
+  }
+
+  .ld-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .ld-current-subtitle {
+    min-height: auto;
+  }
+
+  .ld-line-zh,
+  .ld-line-pinyin,
+  .ld-line-vi {
+    padding-left: 0;
+  }
+
+  .ld-current-subtitle::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listening-category-card:hover,
+  .listening-topic-item:hover,
+  .ld-function-card:hover {
+    transform: none !important;
+  }
+}
+.listening-screen {
+  max-width: 1160px !important;
+  padding-top: 20px !important;
+  padding-bottom: 42px !important;
+}
+
+/* Thu nhỏ banner hero Luyện Nghe */
+.listening-screen > .listening-hero:not(.listening-hero--sub) {
+  min-height: clamp(150px, 25vw, 300px) !important;
+  margin-bottom: 28px !important;
+  border-radius: 28px !important;
+  box-shadow:
+    0 24px 54px rgba(13, 148, 136, 0.14),
+    0 10px 24px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+.listening-screen > .listening-hero:not(.listening-hero--sub)::after {
+  bottom: 14px !important;
+  height: 24px !important;
+  opacity: 0.58 !important;
+}
+
+/* Grid 2 box gọn hơn */
+.listening-category-grid {
+  gap: 20px !important;
+}
+
+/* Thu nhỏ 2 box Đối thoại / Độc thoại */
+.listening-category-card {
+  min-height: 300px !important;
+  padding: 26px 24px 22px !important;
+  border-radius: 28px !important;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.88) !important;
+}
+
+.listening-category-card::before {
+  height: 6px !important;
+  border-radius: 28px 28px 0 0 !important;
+}
+
+.listening-category-card::after {
+  font-size: 104px !important;
+  right: 18px !important;
+  bottom: -26px !important;
+}
+
+/* Icon nhỏ hơn */
+.listening-category-icon {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 18px !important;
+  margin-bottom: 14px !important;
+  font-size: 23px !important;
+}
+
+/* Tiêu đề nhỏ hơn nhẹ */
+.listening-category-card h2 {
+  margin-bottom: 16px !important;
+  font-size: 22px !important;
+}
+
+.listening-category-card--dialogue h2::after,
+.listening-category-card--monologue h2::after {
+  min-height: 22px !important;
+  padding: 0 9px !important;
+  font-size: 10.5px !important;
+}
+
+/* Nút cấp độ gọn hơn */
+.listening-level-list {
+  gap: 9px !important;
+}
+
+.listening-level-btn {
+  min-height: 52px !important;
+  padding: 0 16px !important;
+  border-radius: 16px !important;
+  font-size: 13.5px !important;
+}
+
+/* Hover nhẹ hơn để không bị nhảy mạnh */
+.listening-category-card:hover {
+  transform: translateY(-4px) scale(1.004) !important;
+}
+
+/* Tablet */
+@media (max-width: 980px) {
+  .listening-screen {
+    max-width: 100% !important;
+    padding-top: 18px !important;
+  }
+
+  .listening-screen > .listening-hero:not(.listening-hero--sub) {
+    min-height: clamp(140px, 30vw, 260px) !important;
+    margin-bottom: 24px !important;
+  }
+
+  .listening-category-card {
+    min-height: 280px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .listening-screen {
+    padding: 16px 12px 36px !important;
+  }
+
+  .listening-screen > .listening-hero:not(.listening-hero--sub) {
+    min-height: 138px !important;
+    border-radius: 22px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .listening-category-grid {
+    gap: 14px !important;
+  }
+
+  .listening-category-card {
+    min-height: auto !important;
+    padding: 22px 18px 20px !important;
+    border-radius: 22px !important;
+  }
+
+  .listening-category-card::before {
+    border-radius: 22px 22px 0 0 !important;
+  }
+
+  .listening-category-icon {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 16px !important;
+    margin-bottom: 12px !important;
+    font-size: 21px !important;
+  }
+
+  .listening-category-card h2 {
+    font-size: 21px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .listening-level-btn {
+    min-height: 48px !important;
+    border-radius: 15px !important;
+    font-size: 13px !important;
+  }
+}
+/* =========================================================
+   LUYỆN NGHE — BRIGHT WAVE + LIGHT GRADIENT
+   Dán xuống CUỐI file CSS hiện tại
+   ========================================================= */
+
+/* 1. Nền tổng sáng hơn nhẹ */
+.listening-screen::before,
+.listening-detail-screen::before {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(45, 212, 191, 0.18), transparent 28%),
+    radial-gradient(circle at 92% 10%, rgba(96, 165, 250, 0.15), transparent 30%),
+    radial-gradient(circle at 82% 88%, rgba(244, 114, 182, 0.10), transparent 30%),
+    linear-gradient(180deg, #fbfeff 0%, #f4fbff 46%, #effaf8 100%) !important;
+}
+
+/* 2. Banner Luyện Nghe: làm wave trắng sáng hơn, có glow nhẹ */
+.listening-screen > .listening-hero:not(.listening-hero--sub)::after {
+  bottom: 14px !important;
+  height: 28px !important;
+  opacity: 0.9 !important;
+  filter:
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))
+    drop-shadow(0 0 12px rgba(125, 211, 252, 0.45)) !important;
+}
+
+/* Lớp ánh sáng trên banner nhẹ hơn, không làm tối ảnh */
+.listening-screen > .listening-hero:not(.listening-hero--sub)::before {
+  opacity: 0.48 !important;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.22), transparent 24%),
+    radial-gradient(circle at 84% 18%, rgba(255, 255, 255, 0.18), transparent 22%),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(255,255,255,0.26) 50%,
+      transparent 59%,
+      transparent 100%
+    ) !important;
+}
+
+/* 3. Hai box Đối thoại / Độc thoại: gradient sáng hơn */
+.listening-category-card--dialogue {
+  background:
+    radial-gradient(circle at 88% 14%, rgba(20, 184, 166, 0.22), transparent 30%),
+    radial-gradient(circle at 10% 92%, rgba(56, 189, 248, 0.16), transparent 30%),
+    linear-gradient(145deg, #ffffff 0%, #ecfffb 46%, #eaf7ff 100%) !important;
+}
+
+.listening-category-card--monologue {
+  background:
+    radial-gradient(circle at 88% 14%, rgba(244, 114, 182, 0.20), transparent 30%),
+    radial-gradient(circle at 10% 92%, rgba(167, 139, 250, 0.15), transparent 30%),
+    linear-gradient(145deg, #ffffff 0%, #fff3fb 46%, #f3efff 100%) !important;
+}
+
+/* Thanh gradient trên đầu box sáng hơn */
+.listening-category-card--dialogue::before {
+  background: linear-gradient(90deg, #14b8a6 0%, #38bdf8 100%) !important;
+}
+
+.listening-category-card--monologue::before {
+  background: linear-gradient(90deg, #f472b6 0%, #a78bfa 100%) !important;
+}
+
+/* Icon cũng sáng hơn một chút */
+.listening-category-card--dialogue .listening-category-icon {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.42), transparent 30%),
+    linear-gradient(145deg, #2dd4bf 0%, #0d9488 100%) !important;
+}
+
+.listening-category-card--monologue .listening-category-icon {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.42), transparent 30%),
+    linear-gradient(145deg, #f472b6 0%, #be185d 100%) !important;
+}
+
+/* 4. Nút cấp độ: nền trắng sáng hơn */
+.listening-level-btn {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
+  border-color: rgba(210, 225, 236, 0.88) !important;
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.045),
+    inset 0 1px 0 rgba(255,255,255,0.95) !important;
+}
+
+/* Hover gradient sáng hơn nhưng vẫn đủ nổi chữ trắng */
+.listening-category-card--dialogue .listening-level-btn:hover {
+  background: linear-gradient(120deg, #10b981 0%, #38bdf8 100%) !important;
+  box-shadow: 0 14px 28px rgba(14, 165, 233, 0.22) !important;
+}
+
+.listening-category-card--monologue .listening-level-btn:hover {
+  background: linear-gradient(120deg, #ec4899 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 14px 28px rgba(236, 72, 153, 0.20) !important;
+}
+
+/* 5. Wave ở danh sách chủ đề: đổi từ xám sang xanh sáng */
+.listening-topic-item::after {
+  opacity: 0.74 !important;
+  filter:
+    drop-shadow(0 0 4px rgba(125, 211, 252, 0.55))
+    drop-shadow(0 0 8px rgba(45, 212, 191, 0.28)) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 28'%3E%3Crect x='0' y='12' width='3' height='7' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='8' y='9' width='3' height='13' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='16' y='6' width='3' height='18' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='24' y='10' width='3' height='11' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='32' y='4' width='3' height='22' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='40' y='8' width='3' height='15' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='48' y='12' width='3' height='7' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='56' y='7' width='3' height='17' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='64' y='11' width='3' height='9' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='72' y='5' width='3' height='21' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='80' y='9' width='3' height='13' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='88' y='13' width='3' height='6' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='96' y='8' width='3' height='15' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='104' y='4' width='3' height='22' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='112' y='10' width='3' height='11' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='120' y='6' width='3' height='18' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='128' y='11' width='3' height='9' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='136' y='8' width='3' height='15' rx='1.5' fill='%2399f6e4'/%3E%3Crect x='144' y='12' width='3' height='7' rx='1.5' fill='%2367e8f9'/%3E%3Crect x='152' y='7' width='3' height='17' rx='1.5' fill='%237dd3fc'/%3E%3Crect x='160' y='10' width='3' height='11' rx='1.5' fill='%2399f6e4'/%3E%3C/svg%3E") !important;
+}
+
+/* Hover của item chủ đề: gradient sáng hơn bản cũ */
+.listening-topic-item::before {
+  background:
+    radial-gradient(circle at 8% 50%, rgba(255,255,255,0.28), transparent 18%),
+    linear-gradient(105deg, #0f766e 0%, #2563eb 52%, #9333ea 100%) !important;
+}
+
+.listening-topic-item:hover::after {
+  opacity: 0.95 !important;
+  filter:
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.8))
+    drop-shadow(0 0 12px rgba(125, 211, 252, 0.55)) !important;
+}
+
+/* 6. Hero phụ nếu có: wave sáng hơn */
+.listening-hero--sub::before {
+  opacity: 0.42 !important;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.92) 0 2px,
+    rgba(125, 211, 252, 0.55) 2px 4px,
+    transparent 4px 11px
+  ) !important;
+}
+
+/* 7. Mobile: giữ nhẹ, tránh quá chói */
+@media (max-width: 720px) {
+  .listening-screen > .listening-hero:not(.listening-hero--sub)::after {
+    opacity: 0.75 !important;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.55)) !important;
+  }
+
+  .listening-category-card--dialogue {
+    background:
+      radial-gradient(circle at 88% 14%, rgba(20, 184, 166, 0.18), transparent 30%),
+      linear-gradient(145deg, #ffffff 0%, #effffb 100%) !important;
+  }
+
+  .listening-category-card--monologue {
+    background:
+      radial-gradient(circle at 88% 14%, rgba(244, 114, 182, 0.16), transparent 30%),
+      linear-gradient(145deg, #ffffff 0%, #fff5fb 100%) !important;
+  }
+}
