@@ -35,4 +35,6 @@ test("staging lab smoke script checks learner, content, listening, VIP, admin, a
   }
 
   assert.match(source, /expectedStatus:\s*503/, "smoke script should verify database-backed routes fail with 503 when unconfigured");
+  assert.match(source, /\/listening-app\/listening/, "smoke script should accept the listening redirect entry");
+  assert.doesNotMatch(source, /includes:\s*\[\s*"DATABASE_URL"\s*\]/, "smoke script should not require one backend-specific 503 message");
 });

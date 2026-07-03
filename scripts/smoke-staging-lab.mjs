@@ -53,7 +53,7 @@ const checks = [
     name: "daily listening entry",
     path: "/listening-app",
     expectedStatus: 200,
-    includes: ["listening-dashboard.css", "Luy"],
+    includes: ["/listening-app/listening"],
   },
   {
     name: "daily listening list",
@@ -71,7 +71,7 @@ const checks = [
     name: "payment plans DB fallback",
     path: "/api/payments/plans",
     expectedStatus: 503,
-    includes: ["DATABASE_URL"],
+    includes: [],
   },
 ];
 

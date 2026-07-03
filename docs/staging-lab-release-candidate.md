@@ -6,8 +6,11 @@ Scope: V2 staging lab only
 ## Verified
 
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
-- Unit and static test suite: `npm.cmd test` passed `132/132`.
+- Unit and static test suite: `npm.cmd test` passed `134/134`.
 - Build: `npm.cmd run build` exited successfully.
+- Lab safety gate:
+  - Command: `npm.cmd run safety:lab`
+  - Result: scanned repo text/code files and passed production-boundary checks for formal site URL, formal project path, live payment keys, SePay secret assignment, and non-placeholder database URLs.
 - Dependency security:
   - Nest packages upgraded to the 11.x line.
   - `multer` is pinned through npm `overrides` to the patched 2.2.x line.
