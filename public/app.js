@@ -466,6 +466,8 @@ const state = {
   vocabSearchQuery: "",
   vocabFilterTab: "all",
   listeningView: "dashboard",
+  listeningSeedEpisodeId: "",
+listeningLessonsBackTarget: "levels",
   listeningLevelId: "dialogue-so-cap",
 listeningBackTarget: "",
   listeningSelectedTopicTitleVi: "",
@@ -5956,12 +5958,15 @@ function getListeningLevelLessons(levelId = state.listeningLevelId) {
 
   return Array.from({ length: 5 }, (_, index) => {
     const episode = source[(start + index) % source.length] || listeningEpisodes[0];
+    const labelPrefixVi = usesContentLabel ? "Nội dung" : "Chủ đề";
+    const labelPrefixZh = usesContentLabel ? "内容" : "主题";
 
     return {
       no: index + 1,
       episodeId: episode.id,
-      title: `${usesContentLabel ? "Nội dung" : "Chủ đề"} ${index + 1}`,
-      zh: `${usesContentLabel ? "内容" : "主题"} ${index + 1}`,
+      title: `${labelPrefixVi} ${index + 1}`,
+      zh: `${labelPrefixZh} ${index + 1}`,
+      kind: usesContentLabel ? "content" : "topic",
     };
   });
 }
@@ -5999,6 +6004,9 @@ function renderListeningLevelLessons(options = {}) {
         class="listening-lesson-row"
         type="button"
         data-listening-topic-open="${escapeAttr(lesson.episodeId)}"
+        data-listening-row-kind="${escapeAttr(lesson.kind || "content")}"
+        data-listening-topic-title-vi="${escapeAttr(lesson.title)}"
+        data-listening-topic-title-zh="${escapeAttr(lesson.zh)}"
         title="${escapeAttr(episodeTitle)}"
         aria-label="${escapeAttr(`${title}: ${episodeTitle}`)}"
       >
@@ -6029,6 +6037,7 @@ function renderListeningLevelLessons(options = {}) {
 
 function openListeningLevel(levelId) {
   state.listeningLevelId = levelId || "dialogue-so-cap";
+  state.listeningSeedEpisodeId = "";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
   state.listeningSeedEpisodeId = "";
@@ -6036,9 +6045,11 @@ function openListeningLevel(levelId) {
   state.listeningSelectedTopicTitleVi = "";
   state.listeningSelectedTopicTitleZh = "";
 
-  if (String(levelId).startsWith("dialogue")) {
+  if (String(state.listeningLevelId).startsWith("dialogue")) {
+    state.listeningLessonsBackTarget = "dashboard";
     state.listeningView = "dashboard";
   } else {
+    state.listeningLessonsBackTarget = "levels";
     state.listeningView = "lessons";
   }
 
@@ -7362,6 +7373,58 @@ function setListeningRepeatLessonSentence(index) {
   const total = Math.max(1, episode.sentences.length);
   state.listeningSentenceIndex = Math.max(0, Math.min(Number(index) || 0, total - 1));
   resetListeningRepeatAttempt();
+}
+
+function renderListeningLevelLessons(options = {}) {
+  const isVi = state.lang === "vi";
+  const { category, level } = getListeningLevelInfo(state.listeningLevelId);
+  const lessons = getListeningLevelLessons(state.listeningLevelId);
+  const selectedTopicTitle = isVi ? state.listeningSelectedTopicTitleVi : state.listeningSelectedTopicTitleZh;
+  const isSelectedTopicContent = state.listeningLessonsBackTarget === "dashboard" && Boolean(selectedTopicTitle);
+  const isMonologueLevel = String(state.listeningLevelId).startsWith("monologue");
+  const heroTitle = isSelectedTopicContent ? selectedTopicTitle : (isVi ? level.vi : level.zh);
+  const subtitle = isSelectedTopicContent || isMonologueLevel
+    ? `${escapeHtml(isVi ? category.vi : category.zh)} · ${lessons.length} ${isVi ? "nội dung nghe" : "个听力内容"}`
+    : (isVi ? "Chọn chủ đề để bắt đầu luyện nghe" : "选择主题开始听力练习");
+
+  const rowsHTML = lessons.map((lesson) => {
+    const bars = Array.from({ length: 16 }, () => {
+      const h = 8 + Math.round(Math.random() * 22);
+      const d = (Math.random() * 0.8).toFixed(2);
+      return `<i style="--h:${h}px;--d:${d}s"></i>`;
+    }).join("");
+
+    return `
+      <button
+        class="listening-lesson-row"
+        type="button"
+        data-listening-topic-open="${escapeAttr(lesson.episodeId)}"
+        data-listening-row-kind="${escapeAttr(lesson.kind || "content")}"
+        data-listening-topic-title-vi="${escapeAttr(lesson.title)}"
+        data-listening-topic-title-zh="${escapeAttr(lesson.zh)}"
+      >
+        <span class="listening-lesson-play">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <strong>${escapeHtml(isVi ? lesson.title : lesson.zh)}</strong>
+        <span class="listening-lesson-wave" aria-hidden="true">${bars}</span>
+        <em>${lesson.no}</em>
+      </button>
+    `;
+  }).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-lessons-screen">
+      <div class="listening-lessons-hero">
+        <button class="listening-lessons-back" type="button" data-listening-level-back aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
+        <h1>${escapeHtml(heroTitle)}</h1>
+        <p>${subtitle}</p>
+      </div>
+      <div class="listening-lessons-list">
+        ${rowsHTML}
+      </div>
+    </section>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
 }
 
 function renderListeningRepeatLesson(options = {}) {
@@ -9835,9 +9898,40 @@ function bindEvents() {
     
 
     if (state.screen === "listening") {
+const listeningTopicListBtn = event.target.closest("[data-listening-topic-list]");
+if (listeningTopicListBtn) {
+  event.preventDefault();
+
+  state.listeningSeedEpisodeId = listeningTopicListBtn.dataset.listeningTopicList;
+  state.listeningSelectedTopicTitleVi = listeningTopicListBtn.dataset.listeningTopicTitleVi || "";
+  state.listeningSelectedTopicTitleZh = listeningTopicListBtn.dataset.listeningTopicTitleZh || "";
+  state.listeningLessonsBackTarget = "dashboard";
+  state.listeningView = "lessons";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+
+  if (!state.listeningLevelId) {
+    state.listeningLevelId = "dialogue-so-cap";
+  }
+
+  renderListening();
+  return;
+}
       const listeningTopicOpenBtn = event.target.closest("[data-listening-topic-open]");
 if (listeningTopicOpenBtn) {
   event.preventDefault();
+
+  if (state.listeningView === "lessons" && listeningTopicOpenBtn.dataset.listeningRowKind === "topic") {
+    state.listeningSeedEpisodeId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
+    state.listeningSelectedTopicTitleVi = listeningTopicOpenBtn.dataset.listeningTopicTitleVi || "";
+    state.listeningSelectedTopicTitleZh = listeningTopicOpenBtn.dataset.listeningTopicTitleZh || "";
+    state.listeningLessonsBackTarget = "dashboard";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return;
+  }
+
   state.listeningEpisodeId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
   state.listeningBackTarget = "lessons";
   state.listeningView = "detail";
@@ -9847,8 +9941,8 @@ if (listeningTopicOpenBtn) {
 }
 
 if (event.target.closest("[data-listening-level-back]")) {
-  state.listeningView = state.listeningLessonsBackTarget === "dashboard" ? "dashboard" : "levels";
-  state.listeningLessonsBackTarget = "";
+  state.listeningView = "levels";
+  state.listeningLessonsBackTarget = "levels";
   state.listeningSeedEpisodeId = "";
   state.listeningSelectedTopicTitleVi = "";
   state.listeningSelectedTopicTitleZh = "";
