@@ -121,6 +121,28 @@ function normalizeHanzi(value) {
   return String(value || "").replace(/[。？！、，,.!?\s]/g, "");
 }
 
+function repairMojibake(value) {
+  const text = String(value || "");
+  if (!/[ÃÂÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]/.test(text)) return text;
+  const cp1252 = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
+    0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
+    0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
+    0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
+    0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F,
+  };
+  try {
+    const bytes = Array.from(text, (char) => {
+      const code = char.codePointAt(0) || 0;
+      return cp1252[code] ?? (code <= 255 ? code : 0x3F);
+    });
+    const repaired = Buffer.from(bytes).toString("utf8");
+    return repaired.includes("�") ? text : repaired;
+  } catch {
+    return text;
+  }
+}
+
 function pronunciationMimeType(value) {
   const mimeType = String(value || "").split(";")[0].trim().toLowerCase();
   if (mimeType === "audio/ogg") return "audio/ogg; codecs=opus";
@@ -188,8 +210,11 @@ function speechAssessmentProvider() {
   const requested = String(process.env.SPEECH_ASSESSMENT_PROVIDER || process.env.PRONUNCIATION_ASSESSMENT_PROVIDER || "auto").toLowerCase();
   const hasIflytek = Boolean(process.env.IFLYTEK_APP_ID && process.env.IFLYTEK_API_KEY && process.env.IFLYTEK_API_SECRET);
   const hasAzure = Boolean(process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION);
+  const hasSpeechace = Boolean(process.env.SPEECHACE_API_KEY);
   if (requested === "iflytek") return hasIflytek ? "iflytek" : "";
   if (requested === "azure") return hasAzure ? "azure" : "";
+  if (requested === "speechace") return hasSpeechace ? "speechace" : "";
+  if (hasSpeechace) return "speechace";
   if (hasIflytek) return "iflytek";
   if (hasAzure) return "azure";
   return "";
@@ -352,6 +377,210 @@ async function assessWithIflytek(referenceText, audioBuffer) {
   });
 }
 
+function speechaceScoreValue(data) {
+  return normalizeProviderScore(
+    data?.text_score?.speechace_score?.pronunciation
+    ?? data?.text_score?.speechace_score?.overall
+    ?? data?.text_score?.quality_score
+    ?? data?.speechace_score?.pronunciation
+    ?? data?.speechace_score?.overall
+    ?? data?.pronunciation_score
+    ?? data?.score,
+  );
+}
+
+function speechaceWords(data) {
+  const words = data?.text_score?.word_score_list || data?.word_score_list || data?.words || [];
+  return Array.isArray(words) ? words.map((word) => {
+    const score = normalizeProviderScore(
+      word?.quality_score
+      ?? word?.phone_score
+      ?? word?.speechace_score?.pronunciation
+      ?? word?.score,
+    );
+    return {
+      word: word?.word || word?.text || "",
+      accuracyScore: score,
+      errorType: score === null || score >= 60 ? "None" : "Pronunciation",
+    };
+  }).filter((word) => word.word) : [];
+}
+
+function speechaceApiKey() {
+  const key = process.env.SPEECHACE_API_KEY || "";
+  try {
+    return decodeURIComponent(key);
+  } catch {
+    return key;
+  }
+}
+
+async function assessWithSpeechace(referenceText, audioBuffer, mimeType) {
+  const key = speechaceApiKey();
+  const endpoint = process.env.SPEECHACE_ENDPOINT || "https://api.speechace.co/api/scoring/text/v9/json";
+  const dialect = process.env.SPEECHACE_DIALECT || "en-us";
+  const userId = process.env.SPEECHACE_USER_ID || "huamei-listening";
+  const url = new URL(endpoint);
+  url.searchParams.set("key", key);
+  url.searchParams.set("dialect", dialect);
+  url.searchParams.set("user_id", userId);
+  url.searchParams.set("include_fluency", process.env.SPEECHACE_INCLUDE_FLUENCY || "1");
+
+  const form = new FormData();
+  form.append("text", referenceText);
+  form.append("user_audio_file", new Blob([audioBuffer], { type: pronunciationMimeType(mimeType) }), "recording.wav");
+
+  const response = await fetch(url, { method: "POST", body: form });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.status === "error") {
+    throw new Error(data?.message || data?.detail || data?.error || "Khong cham duoc phat am bang Speechace.");
+  }
+
+  const words = speechaceWords(data);
+  const recognizedText = words.length ? words.map((word) => word.word).join("") : (data?.text || data?.text_score?.text || referenceText);
+  const fallback = comparePronunciationFallback(referenceText, recognizedText || referenceText);
+  const score = speechaceScoreValue(data) ?? fallback.score;
+  const charResults = fallback.charResults.map((item) => ({
+    ...item,
+    correct: item.correct && score >= 60,
+    errorType: item.correct && score >= 60 ? "None" : "Pronunciation",
+    accuracyScore: score,
+  }));
+
+  return {
+    provider: "speechace",
+    recognizedText,
+    score,
+    accuracyScore: score,
+    fluencyScore: normalizeProviderScore(data?.text_score?.speechace_score?.fluency ?? data?.fluency_score),
+    completenessScore: normalizeProviderScore(data?.text_score?.speechace_score?.completeness ?? data?.completeness_score),
+    words,
+    charResults,
+    raw: data,
+  };
+}
+
+function pinyinTones(pinyin) {
+  const toneMarks = {
+    ā: 1, á: 2, ǎ: 3, à: 4, ē: 1, é: 2, ě: 3, è: 4, ī: 1, í: 2, ǐ: 3, ì: 4,
+    ō: 1, ó: 2, ǒ: 3, ò: 4, ū: 1, ú: 2, ǔ: 3, ù: 4, ǖ: 1, ǘ: 2, ǚ: 3, ǜ: 4,
+    Ā: 1, Á: 2, Ǎ: 3, À: 4, Ē: 1, É: 2, Ě: 3, È: 4, Ī: 1, Í: 2, Ǐ: 3, Ì: 4,
+    Ō: 1, Ó: 2, Ǒ: 3, Ò: 4, Ū: 1, Ú: 2, Ǔ: 3, Ù: 4, Ǖ: 1, Ǘ: 2, Ǚ: 3, Ǜ: 4,
+  };
+  return String(pinyin || "").split(/[\s,，。！？、]+/).map((token) => {
+    const numeric = token.match(/[1-5]/)?.[0];
+    if (numeric) return Number(numeric) === 5 ? 0 : Number(numeric);
+    for (const char of token) if (toneMarks[char]) return toneMarks[char];
+    return 0;
+  }).filter((tone) => tone >= 0);
+}
+
+function wavPcmSamples(audioBuffer) {
+  if (audioBuffer.subarray(0, 4).toString("ascii") !== "RIFF") return null;
+  let offset = 12;
+  let sampleRate = 16000;
+  let bitsPerSample = 16;
+  let channels = 1;
+  let data = null;
+  while (offset + 8 <= audioBuffer.length) {
+    const chunkId = audioBuffer.subarray(offset, offset + 4).toString("ascii");
+    const chunkSize = audioBuffer.readUInt32LE(offset + 4);
+    const dataStart = offset + 8;
+    if (chunkId === "fmt ") {
+      channels = audioBuffer.readUInt16LE(dataStart + 2) || 1;
+      sampleRate = audioBuffer.readUInt32LE(dataStart + 4) || sampleRate;
+      bitsPerSample = audioBuffer.readUInt16LE(dataStart + 14) || bitsPerSample;
+    }
+    if (chunkId === "data") data = audioBuffer.subarray(dataStart, dataStart + chunkSize);
+    offset = dataStart + chunkSize + (chunkSize % 2);
+  }
+  if (!data || bitsPerSample !== 16) return null;
+  const sampleCount = Math.floor(data.length / 2 / channels);
+  const samples = new Float32Array(sampleCount);
+  for (let index = 0; index < sampleCount; index += 1) {
+    samples[index] = data.readInt16LE(index * channels * 2) / 32768;
+  }
+  return { samples, sampleRate };
+}
+
+function estimatePitch(frame, sampleRate) {
+  let energy = 0;
+  for (const sample of frame) energy += sample * sample;
+  if (energy / frame.length < 0.0004) return null;
+  const minLag = Math.floor(sampleRate / 450);
+  const maxLag = Math.floor(sampleRate / 75);
+  let bestLag = 0;
+  let best = 0;
+  for (let lag = minLag; lag <= maxLag; lag += 1) {
+    let corr = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let index = 0; index + lag < frame.length; index += 1) {
+      const a = frame[index];
+      const b = frame[index + lag];
+      corr += a * b;
+      normA += a * a;
+      normB += b * b;
+    }
+    const score = corr / Math.sqrt((normA || 1) * (normB || 1));
+    if (score > best) {
+      best = score;
+      bestLag = lag;
+    }
+  }
+  return best > 0.35 && bestLag ? sampleRate / bestLag : null;
+}
+
+function pitchContour(audioBuffer) {
+  const wav = wavPcmSamples(audioBuffer);
+  if (!wav) return [];
+  const frameSize = Math.round(wav.sampleRate * 0.04);
+  const hopSize = Math.round(wav.sampleRate * 0.02);
+  const contour = [];
+  for (let start = 0; start + frameSize <= wav.samples.length; start += hopSize) {
+    const pitch = estimatePitch(wav.samples.subarray(start, start + frameSize), wav.sampleRate);
+    if (pitch && pitch >= 75 && pitch <= 450) contour.push(pitch);
+  }
+  return contour;
+}
+
+function toneContourScore(tone, contour) {
+  if (!contour.length) return null;
+  const values = contour.map((pitch) => Math.log2(pitch));
+  const first = values[0];
+  const last = values[values.length - 1];
+  const mid = values[Math.floor(values.length / 2)];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const slope = last - first;
+  const range = max - min;
+  if (tone === 1) return Math.round(Math.max(35, Math.min(100, 100 - Math.abs(slope) * 120 - Math.max(0, range - 0.22) * 80)));
+  if (tone === 2) return Math.round(Math.max(35, Math.min(100, 60 + slope * 180)));
+  if (tone === 3) {
+    const dip = Math.min(first, last) - mid;
+    return Math.round(Math.max(35, Math.min(100, 55 + dip * 220 + Math.max(0, last - mid) * 80)));
+  }
+  if (tone === 4) return Math.round(Math.max(35, Math.min(100, 60 - slope * 180)));
+  return Math.round(Math.max(45, Math.min(85, 72 - range * 25)));
+}
+
+function assessToneAndIntonation(audioBuffer, pinyin) {
+  const tones = pinyinTones(pinyin).filter((tone) => tone > 0);
+  const contour = pitchContour(audioBuffer);
+  if (!tones.length || contour.length < 6) return { toneScore: null, intonationScore: null, toneResults: [] };
+  const segmentLength = contour.length / tones.length;
+  const toneResults = tones.map((tone, index) => {
+    const start = Math.floor(index * segmentLength);
+    const end = Math.max(start + 1, Math.floor((index + 1) * segmentLength));
+    const score = toneContourScore(tone, contour.slice(start, end));
+    return { index, tone, score, correct: Number(score) >= 60 };
+  });
+  const scores = toneResults.map((item) => item.score).filter((score) => Number.isFinite(Number(score)));
+  const toneScore = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : null;
+  const intonationScore = toneScore === null ? null : Math.round((toneScore * 0.75) + (Math.min(100, contour.length * 2) * 0.25));
+  return { toneScore, intonationScore, toneResults };
+}
+
 async function assessWithAzure(referenceText, audioBuffer, mimeType) {
   const key = process.env.AZURE_SPEECH_KEY || "";
   const region = process.env.AZURE_SPEECH_REGION || "";
@@ -402,7 +631,7 @@ async function assessWithAzure(referenceText, audioBuffer, mimeType) {
 
 async function handlePronunciationAssessment(req, res) {
   const body = await readBody(req);
-  const referenceText = String(body.referenceText || "").trim();
+  const referenceText = repairUtf8Mojibake(String(body.referenceText || "")).trim();
   const audioBase64 = String(body.audioBase64 || "");
   if (!referenceText || !audioBase64) {
     sendJson(res, 400, { error: "Thiếu câu gốc hoặc audio ghi âm." });
@@ -417,8 +646,10 @@ async function handlePronunciationAssessment(req, res) {
   try {
     const result = provider === "iflytek"
       ? await assessWithIflytek(referenceText, audioBuffer)
-      : await assessWithAzure(referenceText, audioBuffer, body.mimeType);
-    sendJson(res, 200, { ...result, referenceText });
+      : provider === "speechace"
+        ? await assessWithSpeechace(referenceText, audioBuffer, body.mimeType)
+        : await assessWithAzure(referenceText, audioBuffer, body.mimeType);
+    sendJson(res, 200, { ...result, ...assessToneAndIntonation(audioBuffer, body.pinyin || ""), referenceText });
   } catch (error) {
     sendJson(res, error.status || 502, { error: error.message || "Không chấm được phát âm.", code: "speech_assessment_failed", provider });
   }

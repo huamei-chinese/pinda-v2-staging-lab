@@ -683,6 +683,46 @@ const listeningEpisodes = [
   }),
 ];
 
+function repairUtf8MojibakeText(value) {
+  const text = String(value || "");
+  if (!/[\u00C0-\u00FF\u0100-\u017F\u0192\u02C6\u02DC\u2013-\u201E\u2020-\u2026\u2030\u2039-\u203A\u20AC\u2122]/.test(text)) return value;
+  const cp1252 = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
+    0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
+    0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
+    0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
+    0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F,
+  };
+  try {
+    const bytes = Uint8Array.from(Array.from(text, (char) => {
+      const code = char.codePointAt(0) || 0;
+      return cp1252[code] ?? (code <= 255 ? code : 0x3F);
+    }));
+    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return repaired.includes("\uFFFD") ? value : repaired;
+  } catch {
+    return value;
+  }
+}
+
+function repairListeningTextFields(value) {
+  if (typeof value === "string") return repairUtf8MojibakeText(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      value[index] = repairListeningTextFields(item);
+    });
+    return value;
+  }
+  if (value && typeof value === "object") {
+    Object.keys(value).forEach((key) => {
+      value[key] = repairListeningTextFields(value[key]);
+    });
+  }
+  return value;
+}
+
+listeningEpisodes.forEach(repairListeningTextFields);
+
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
 }
@@ -6612,7 +6652,7 @@ function renderSpecializedPronunciationScore(result) {
       <strong>${score}</strong><span></span>
     </div>
     <div class="listening-pronunciation-lines">
-      <p class="listening-pronunciation-provider"><span>Azure Speech</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
+      <p class="listening-pronunciation-provider"><span>${escapeHtml(result.provider || "Speech")}</span>${metric("Accuracy", result.accuracyScore)}${metric("Tone", result.toneScore)}${metric("Intonation", result.intonationScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
       <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
       <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
     </div>
@@ -6716,6 +6756,7 @@ async function assessListeningPronunciationWithProvider(blob) {
     method: "POST",
     body: JSON.stringify({
       referenceText: sentence.chinese || "",
+      pinyin: sentence.pinyin || "",
       audioBase64,
       mimeType,
     }),
