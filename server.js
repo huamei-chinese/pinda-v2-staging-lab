@@ -812,9 +812,9 @@ async function handleAdminUsers(req, res, url) {
 function serveStatic(req, res, url) {
   // Local lab fallback for /listening-app/typing/ep-* exported routes.
   const usesTypingFallback = /^\/listening-app\/typing\/ep-\d+\/?$/.test(url.pathname);
-  const usesListeningSpaFallback = /^\/listening-app\/?$/.test(url.pathname) ||
-    /^\/listening-app\/listening\/?$/.test(url.pathname) ||
-    /^\/listening-app\/listening\/ep-\d+\/?$/.test(url.pathname);
+  const usesListeningSpaFallback = /^\/listening-app(?:\/index\.html)?\/?$/.test(url.pathname) ||
+    /^\/listening-app\/listening(?:\.html|\/index\.html)?\/?$/.test(url.pathname) ||
+    /^\/listening-app\/listening\/ep-\d+(?:\.html)?\/?$/.test(url.pathname);
   const requested = usesTypingFallback
     ? "/listening-app/typing-detail-fallback.html"
     : usesListeningSpaFallback

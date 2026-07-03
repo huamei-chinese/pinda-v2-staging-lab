@@ -91,9 +91,10 @@ test("legacy daily listening detail route opens the current package detail page"
 
 test("local lab serves the current SPA for daily listening entry routes", () => {
   assert.match(serverSource, /usesListeningSpaFallback/);
-  assert.match(serverSource, /\/\^\\\/listening-app\\\/\?\$\/\.test\(url\.pathname\)/);
-  assert.match(serverSource, /\/\^\\\/listening-app\\\/listening\\\/\?\$\/\.test\(url\.pathname\)/);
-  assert.match(serverSource, /\/\^\\\/listening-app\\\/listening\\\/ep-\\d\+\\\/\?\$\/\.test\(url\.pathname\)/);
+  assert.match(serverSource, /listening-app\(\?:\\\/index\\\.html\)\?/);
+  assert.match(serverSource, /index\\\.html/);
+  assert.match(serverSource, /listening\(\?:\\\.html\|\\\/index\\\.html\)/);
+  assert.match(serverSource, /ep-\\d\+\(\?:\\\.html\)\?/);
   assert.match(serverSource, /usesListeningSpaFallback[\s\S]*\? "\/index\.html"/);
 });
 

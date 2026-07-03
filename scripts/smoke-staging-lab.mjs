@@ -68,6 +68,12 @@ const checks = [
     includes: ["app.js?v=listening-detail-current-20260704"],
   },
   {
+    name: "daily listening legacy detail html",
+    path: "/listening-app/listening/ep-001.html",
+    expectedStatus: 200,
+    includes: ["app.js?v=listening-detail-current-20260704"],
+  },
+  {
     name: "daily listening typing drill",
     path: "/listening-app/typing/ep-001",
     expectedStatus: 200,
