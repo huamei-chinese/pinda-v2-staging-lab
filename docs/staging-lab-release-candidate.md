@@ -8,8 +8,8 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - One-command acceptance gate:
   - Command: `npm.cmd run acceptance:lab`
-  - Result: safety gate, `148/148` tests, build, dependency audit, temporary local server startup, and `18/18` smoke checks passed.
-- Unit and static test suite: `npm.cmd test` passed `148/148`.
+  - Result: safety gate, `150/150` tests, build, dependency audit, temporary local server startup, and `18/18` smoke checks passed.
+- Unit and static test suite: `npm.cmd test` passed `150/150`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
   - Command: `npm.cmd run safety:lab`
@@ -21,6 +21,7 @@ Scope: V2 staging lab only
 - Content generation:
   - `npm.cmd run generate:content` is available for HSK2/3/4/5/remediation content.
   - `npm.cmd run generate:high-frequency` is stable and uses repo-relative high-frequency source paths.
+  - `npm.cmd run validate:high-frequency` verifies the high-frequency generator leaves committed outputs unchanged, then runs the high-frequency content tests.
 - Local HTTP smoke:
   - Command: `npm.cmd run smoke:lab`
   - Base URL: `http://localhost:4173`

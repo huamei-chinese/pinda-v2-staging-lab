@@ -15,7 +15,7 @@
 - Repository: `https://github.com/huamei-chinese/pinda-v2-staging-lab.git`
 - Branch: `main`
 - Remote freshness: `git fetch origin` completed, `main` is aligned with `origin/main`
-- Tests: `npm.cmd test` passes 148/148
+- Tests: `npm.cmd test` passes 150/150
 - Build: `npm.cmd run build` passes
 - One-command acceptance gate: `npm.cmd run acceptance:lab` runs safety, tests, build, audit, starts `server.js`, runs 18 smoke checks, and shuts the local server down.
 - Daily listening intake: `npm.cmd run validate:ajie-listening -- <DocThoai.txt> [DoiThoai.txt]` validates Ajie txt/JSON source files, normalizes monologue/dialogue structures into lab episode objects, and reports `ok: false` for invalid JSON or missing referenced mp3 assets.
@@ -27,8 +27,8 @@
 ## Definition Of Done
 
 - Stable HSK content generation can be run from one command: `npm.cmd run generate:content`.
-- High-frequency content generation remains a separate command until its generator no longer rewrites local absolute paths or creates noisy whole-file diffs.
-- `npm.cmd test` passes 148/148 or the updated full suite passes with a documented new count.
+- High-frequency content generation has a stability validator: `npm.cmd run validate:high-frequency` checks the generator leaves committed outputs unchanged and runs the high-frequency content tests.
+- `npm.cmd test` passes 150/150 or the updated full suite passes with a documented new count.
 - `npm.cmd run build` passes.
 - Browser smoke checks pass for learner entry, HSK content, high-frequency content, daily listening list/detail/typing/favorites/member/review surfaces, admin login surface, VIP/paywall modal surface, and payment modal failure states.
 - No real production database, VIP user, payment key, order data, or `hoctrung.com` deployment is touched.

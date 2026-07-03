@@ -12,6 +12,7 @@
     "generate:high-frequency": "node ./scripts/generate-high-frequency-content.mjs",
     "generate:content": "npm run generate:hsk2 && npm run generate:hsk345",
     "generate:hsk345": "node ./scripts/generate-hsk345-content.mjs && node ./scripts/generate-aligned-early-content.mjs && node ./scripts/generate-aligned-next-content.mjs && node ./scripts/generate-aligned-final-content.mjs && node ./scripts/generate-hsk-remediation-content.mjs",
+    "validate:high-frequency": "node ./scripts/validate-high-frequency-generation.mjs && node --test ./tests/high-frequency-content.test.js ./tests/high-frequency-segments-standard.test.js",
     "acceptance:lab": "node ./scripts/run-staging-lab-acceptance.mjs",
     "safety:lab": "node ./scripts/check-staging-lab-safety.mjs",
     "smoke:lab": "node ./scripts/smoke-staging-lab.mjs",
