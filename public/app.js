@@ -466,6 +466,8 @@ const state = {
   vocabSearchQuery: "",
   vocabFilterTab: "all",
   listeningView: "dashboard",
+  listeningSeedEpisodeId: "",
+listeningLessonsBackTarget: "levels",
   listeningLevelId: "dialogue-so-cap",
 listeningBackTarget: "",
   listeningEpisodeId: "ep-001",
@@ -5978,12 +5980,15 @@ function getListeningLevelLessons(levelId = state.listeningLevelId) {
 
 function openListeningLevel(levelId) {
   state.listeningLevelId = levelId || "dialogue-so-cap";
+  state.listeningSeedEpisodeId = "";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
 
-  if (String(levelId).startsWith("dialogue")) {
+  if (String(state.listeningLevelId).startsWith("dialogue")) {
+    state.listeningLessonsBackTarget = "dashboard";
     state.listeningView = "dashboard";
   } else {
+    state.listeningLessonsBackTarget = "levels";
     state.listeningView = "lessons";
   }
 
@@ -6136,7 +6141,7 @@ function renderListeningDashboard() {
   const allTopicCards = [...topicCards, ...monologueCards];
 
 const cardsHTML = allTopicCards.map((topic) => `
-    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-open="${escapeAttr(topic.openId)}">
+    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-topic-list="${escapeAttr(topic.openId)}">
       <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
       ${topicIconHTML(topic.icon)}
       <span class="listening-topic-chip">${escapeHtml(isVi ? topic.levelVi : topic.levelZh)}</span>
@@ -7269,6 +7274,44 @@ function setListeningRepeatLessonSentence(index) {
   const total = Math.max(1, episode.sentences.length);
   state.listeningSentenceIndex = Math.max(0, Math.min(Number(index) || 0, total - 1));
   resetListeningRepeatAttempt();
+}
+
+function renderListeningLevelLessons(options = {}) {
+  const isVi = state.lang === "vi";
+  const { level } = getListeningLevelInfo(state.listeningLevelId);
+  const lessons = getListeningLevelLessons(state.listeningLevelId);
+
+  const rowsHTML = lessons.map((lesson) => {
+    const bars = Array.from({ length: 16 }, () => {
+      const h = 8 + Math.round(Math.random() * 22);
+      const d = (Math.random() * 0.8).toFixed(2);
+      return `<i style="--h:${h}px;--d:${d}s"></i>`;
+    }).join("");
+
+    return `
+      <button class="listening-lesson-row" type="button" data-listening-topic-open="${escapeAttr(lesson.episodeId)}">
+        <span class="listening-lesson-play">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <strong>${escapeHtml(isVi ? lesson.title : lesson.zh)}</strong>
+        <span class="listening-lesson-wave" aria-hidden="true">${bars}</span>
+        <em>${lesson.no}</em>
+      </button>
+    `;
+  }).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-lessons-screen">
+      <div class="listening-lessons-hero">
+        <button class="listening-lessons-back" type="button" data-listening-level-back aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
+        <h1>${escapeHtml(isVi ? level.vi : level.zh)}</h1>
+        <p>${isVi ? "Chọn chủ đề để bắt đầu luyện nghe" : "选择主题开始听力练习"}</p>
+      </div>
+      <div class="listening-lessons-list">
+        ${rowsHTML}
+      </div>
+    </section>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
 }
 
 function renderListeningRepeatLesson(options = {}) {
@@ -9742,6 +9785,23 @@ function bindEvents() {
     
 
     if (state.screen === "listening") {
+      const listeningTopicListBtn = event.target.closest("[data-listening-topic-list]");
+if (listeningTopicListBtn) {
+  event.preventDefault();
+
+  state.listeningSeedEpisodeId = listeningTopicListBtn.dataset.listeningTopicList;
+  state.listeningLessonsBackTarget = "dashboard";
+  state.listeningView = "lessons";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+
+  if (!state.listeningLevelId) {
+    state.listeningLevelId = "dialogue-so-cap";
+  }
+
+  renderListening();
+  return;
+}
       const listeningTopicOpenBtn = event.target.closest("[data-listening-topic-open]");
 if (listeningTopicOpenBtn) {
   event.preventDefault();
@@ -9754,7 +9814,9 @@ if (listeningTopicOpenBtn) {
 }
 
 if (event.target.closest("[data-listening-level-back]")) {
-  state.listeningView = "levels";
+  state.listeningView = state.listeningLessonsBackTarget || "levels";
+  state.listeningLessonsBackTarget = "levels";
+  state.listeningSeedEpisodeId = "";
   renderListening();
   return;
 }
