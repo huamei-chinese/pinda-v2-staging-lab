@@ -28,6 +28,7 @@ test("staging lab smoke script checks learner, content, listening, VIP, admin, a
     "/listening-app/listening",
     "/listening-app/listening/ep-001",
     "/listening-app/typing/ep-001",
+    "/listening-app/typing/ep-010",
     "/listening-app/favorites",
     "/listening-app/member",
     "/listening-app/review",

@@ -71,7 +71,13 @@ const checks = [
     name: "daily listening typing drill",
     path: "/listening-app/typing/ep-001",
     expectedStatus: 200,
-    includes: ["data-listening-typing-fallback", "id=\"typing-answer\"", "bottom-nav"],
+    includes: ["data-listening-typing-fallback", "id=\"typing-answer\"", "data-answer=\"tong guo\"", "bottom-nav"],
+  },
+  {
+    name: "daily listening typing drill latest episode",
+    path: "/listening-app/typing/ep-010",
+    expectedStatus: 200,
+    includes: ["data-listening-typing-fallback", "id=\"typing-answer\"", "\"ep-010\"", "Yue nan", "bottom-nav"],
   },
   {
     name: "daily listening favorites",

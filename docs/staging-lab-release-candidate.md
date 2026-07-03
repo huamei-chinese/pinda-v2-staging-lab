@@ -8,8 +8,8 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - One-command acceptance gate:
   - Command: `npm.cmd run acceptance:lab`
-  - Result: safety gate, `139/139` tests, build, dependency audit, temporary local server startup, and `17/17` smoke checks passed.
-- Unit and static test suite: `npm.cmd test` passed `139/139`.
+  - Result: safety gate, `145/145` tests, build, dependency audit, temporary local server startup, and `18/18` smoke checks passed.
+- Unit and static test suite: `npm.cmd test` passed `145/145`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
   - Command: `npm.cmd run safety:lab`
@@ -24,8 +24,12 @@ Scope: V2 staging lab only
 - Local HTTP smoke:
   - Command: `npm.cmd run smoke:lab`
   - Base URL: `http://localhost:4173`
-  - Result: `17/17` checks passed.
-  - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, daily listening detail, typing drill, favorites, member gate, review checklist, VIP subscriptions surface, and payment-plan database fallback.
+  - Result: `18/18` checks passed.
+  - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, daily listening detail, typing drill for ep-001 and ep-010, favorites, member gate, review checklist, VIP subscriptions surface, and payment-plan database fallback.
+- Ajie listening source intake:
+  - `scripts/normalize-ajie-listening-files.mjs` validates Ajie txt/JSON files and normalizes monologue or dialogue source data into lab listening episode objects.
+  - Verified against `DocThoai.txt`: one monologue episode can be normalized, but referenced audio files are missing from `public/listening-app`.
+  - Verified against `DoiThoai.txt`: rejected as invalid JSON at line 27, column 28 before import.
 - Browser QA:
   - Tool: Codex in-app browser.
   - Viewports: 1280 x 720 desktop and 390 x 844 mobile.
@@ -44,6 +48,7 @@ Scope: V2 staging lab only
 ## Known Gaps
 
 - HSK2 lesson packs for lessons 2-15 are lab-generated and should be treated as lab content unless replaced with approved textbook-final source.
+- Ajie's `DoiThoai.txt` needs source cleanup before import, and both Ajie files need matching mp3 files before they can become playable listening lessons.
 - This report does not certify production sync readiness.
 
 ## Production Boundary
