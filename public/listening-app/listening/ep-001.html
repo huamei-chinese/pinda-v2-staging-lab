@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HuaMei - Nghe mỗi ngày</title>
+  <link rel="stylesheet" href="/listening-app/listening-detail.css" />
+  <script src="/listening-app/listening-embed.js" defer></script>
+</head>
+<body>
+  <div class="lesson-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/listening-app/listening" aria-label="HuaMei">
+        <span class="brand-flower" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="6"/><ellipse cx="24" cy="9" rx="6" ry="9"/><ellipse cx="24" cy="39" rx="6" ry="9"/><ellipse cx="9" cy="24" rx="9" ry="6"/><ellipse cx="39" cy="24" rx="9" ry="6"/><ellipse cx="13.5" cy="13.5" rx="8" ry="5" transform="rotate(45 13.5 13.5)"/><ellipse cx="34.5" cy="34.5" rx="8" ry="5" transform="rotate(45 34.5 34.5)"/><ellipse cx="34.5" cy="13.5" rx="5" ry="8" transform="rotate(45 34.5 13.5)"/><ellipse cx="13.5" cy="34.5" rx="5" ry="8" transform="rotate(45 13.5 34.5)"/></svg>
+        </span>
+        <span><strong>Hua<span>Mei</span></strong><small>Viết đúng - Nhớ lâu</small></span>
+      </a>
+
+      <nav class="side-nav" aria-label="Điều hướng chính">
+        <a href="/"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Trang chủ</a>
+        <a href="/"><svg viewBox="0 0 24 24"><path d="m3 8 9-4 9 4-9 4z"/><path d="M7 11v5c0 1.4 2.2 3 5 3s5-1.6 5-3v-5"/></svg>Khóa HSK</a>
+        <a href="/"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6-5.4-2.9-5.4 2.9 1-6-4.4-4.3 6.1-.9z"/></svg>Tần suất cao</a>
+        <a class="active" href="/listening-app/listening"><svg viewBox="0 0 24 24"><path d="M4 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a8 8 0 0 1 16 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>Luyện nghe</a>
+        <a href="/"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Bộ từ</a>
+        <a href="/"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Cá nhân</a>
+      </nav>
+
+      <a class="logout" href="/"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 4v16"/></svg>Đăng xuất</a>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="title-row">
+          <a class="back-btn" href="/listening-app/listening" aria-label="Quay lại"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></a>
+          <h1>Nghe mỗi ngày</h1>
+        </div>
+        <div class="top-actions">
+          <div class="lang-switch" aria-label="Ngôn ngữ"><button class="active">VI</button><button>中文</button></div>
+          <div class="streak"><svg viewBox="0 0 24 24"><path d="M13 2S5 8.5 5 15a7 7 0 0 0 14 0c0-3-2-5.5-4-7 .2 2-1 3.3-2 4-1.8-2-1-5-1-10z"/></svg>12 ngày liên tiếp</div>
+          <button class="profile" type="button"><span class="avatar">ML</span><strong>Mai Linh</strong><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        </div>
+      </header>
+
+      <div class="detail-layout">
+        <section class="lesson-content">
+          <article class="hero-card">
+            <div class="hero-copy">
+              <div class="hero-tags"><span>Công việc / Phỏng vấn</span><span>Nghe thử miễn phí</span></div>
+              <h2>Vì sao sếp Trung Quốc nói như vậy</h2>
+              <p>Giọng đọc: 周经理 · khoảng 1 phút tiếng Trung thật</p>
+            </div>
+            <div class="sound-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="hero-headphones" aria-hidden="true">
+              <svg viewBox="0 0 150 150">
+                <path d="M33 83a42 42 0 0 1 84 0" />
+                <rect x="24" y="75" width="31" height="50" rx="15" />
+                <rect x="95" y="75" width="31" height="50" rx="15" />
+                <path d="M103 38c15 5 28 20 32 39" />
+              </svg>
+            </div>
+            <button class="hero-play" type="button" aria-label="Phát"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+          </article>
+
+          <section class="player-card">
+            <div class="player-status">
+              <div class="status-left"><span class="dot"></span><div><strong>Đã tạm dừng</strong><small>Âm thanh thật đã sẵn sàng</small></div></div>
+              <button class="save-btn" type="button"><svg viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/></svg>Lưu</button>
+            </div>
+            <div class="time-row"><span>0:00</span><span>0:29</span></div>
+            <div class="track"><span></span></div>
+            <div class="controls">
+              <button class="control-pill" type="button"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Câu trước</button>
+              <button class="play-main" type="button" aria-label="Phát"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+              <button class="control-pill" type="button">Câu sau<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+              <button class="replay" type="button"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Nghe lại câu này</button>
+            </div>
+          </section>
+
+          <section class="script-card">
+            <div class="script-head">
+              <h2>Nội dung nghe</h2>
+              <div class="subtitle-box">
+                <span>Tùy chọn phụ đề</span>
+                <div><button>Pinyin</button><button class="on">Bật</button><button>Tiếng Việt</button><button>Tắt</button></div>
+              </div>
+            </div>
+            <div class="sentences">
+              <button class="sentence active" type="button"><span>1</span><p><strong>中国老板说“你再想想”，通常不是简单的建议。</strong><small>Zhong guo lao ban shuo ni zai xiang xiang, tong chang bu shi jian dan de jian yi.</small></p><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></button>
+              <button class="sentence" type="button"><span>2</span><p><strong>这句话可能表示方案还不够成熟。</strong><small>Zhe ju hua ke neng biao shi fang an hai bu gou cheng shu.</small></p><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></button>
+              <button class="sentence" type="button"><span>3</span><p><strong>如果老板说“辛苦了”，有时候是在提醒你继续跟进。</strong><small>Ru guo lao ban shuo xin ku le, you shi hou shi zai ti xing ni ji xu gen jin.</small></p><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></button>
+              <button class="sentence" type="button"><span>4</span><p><strong>听懂这些话背后的意思，开会和汇报都会顺利很多。</strong><small>Ting dong zhe xie hua bei hou de yi si, kai hui he hui bao dou hui shun li hen duo.</small></p><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg></button>
+            </div>
+          </section>
+
+          <section class="next-section">
+            <h2>Câu tiếp theo</h2>
+            <div class="next-row">
+              <article><span>2</span><strong>这句话可能表示方案还不够成熟。</strong><small>0:29</small><p>Zhe ju hua ke neng biao shi fang an hai...</p><div><i></i><em>Chưa nghe</em></div></article>
+              <article><span>3</span><strong>如果老板说“辛苦了”，有时候...</strong><small>0:27</small><p>Ru guo lao ban shuo xin ku le, you...</p><div><i></i><em>Chưa nghe</em></div></article>
+              <article><span>4</span><strong>听懂这些话背后的意思，开会和...</strong><small>0:31</small><p>Ting dong zhe xie hua bei hou de yi si...</p><div><i></i><em>Chưa nghe</em></div></article>
+              <button class="next-arrow" type="button" aria-label="Xem thêm"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+            </div>
+          </section>
+        </section>
+
+        <aside class="right-rail">
+          <button class="save-top" type="button"><svg viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/></svg>Lưu</button>
+          <section class="panel words-panel">
+            <h2>Từ trọng điểm</h2>
+            <div class="word-tags">
+              <span>老板</span><span>通常</span><span>建议</span><span>方案</span><span>成熟</span><span>辛苦了</span><span>提醒</span><span>跟进</span><span>顺利</span><span>汇报</span>
+            </div>
+          </section>
+
+          <section class="panel translate-panel">
+            <h2>Xem bản dịch</h2>
+            <p>Xem toàn bộ bản dịch tiếng Việt của bài nghe.</p>
+            <button type="button">Xem toàn bộ bản dịch tiếng Việt</button>
+          </section>
+
+          <section class="panel shadow-panel">
+            <h2>Luyện nhại lại</h2>
+            <p>Nhại lại câu hiện tại để tự kiểm tra phát âm</p>
+            <article class="shadow-sentence">
+              <strong>中国老板说“你再想想”，通常不是简单的建议。</strong>
+              <small>Zhong guo lao ban shuo ni zai xiang xiang, tong chang bu shi jian dan de jian yi.</small>
+              <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg>
+            </article>
+            <div class="record-row">
+              <button class="mic" type="button" aria-label="Ghi âm"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
+              <button class="ready" type="button">Sẵn sàng đọc</button>
+            </div>
+            <label class="manual-entry">
+              <span>Nếu trình duyệt không nhận dạng được, nhập kết quả ở đây để tự chấm điểm</span>
+              <textarea placeholder="Nhập kết quả ở đây..."></textarea>
+            </label>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const lesson = {
+        audioSrc: "/listening-app/audio/main/daily-001-main.MP3",
+        fallbackDuration: 29,
+        sentences: [
+          {
+            zh: "中国老板说“你再想想”，通常不是简单的建议。",
+            pinyin: "Zhong guo lao ban shuo ni zai xiang xiang, tong chang bu shi jian dan de jian yi.",
+            vi: "Khi sếp Trung Quốc nói “em nghĩ thêm đi”, thường đó không chỉ là một lời khuyên đơn giản.",
+            start: 0,
+            end: 7.2,
+          },
+          {
+            zh: "这句话可能表示方案还不够成熟。",
+            pinyin: "Zhe ju hua ke neng biao shi fang an hai bu gou cheng shu.",
+            vi: "Câu này có thể ngụ ý rằng phương án vẫn chưa đủ chín chắn.",
+            start: 7.2,
+            end: 13.6,
+          },
+          {
+            zh: "如果老板说“辛苦了”，有时候是在提醒你继续跟进。",
+            pinyin: "Ru guo lao ban shuo xin ku le, you shi hou shi zai ti xing ni ji xu gen jin.",
+            vi: "Nếu sếp nói “vất vả rồi”, đôi khi là đang nhắc bạn tiếp tục theo sát việc đó.",
+            start: 13.6,
+            end: 21.4,
+          },
+          {
+            zh: "听懂这些话背后的意思，开会和汇报都会顺利很多。",
+            pinyin: "Ting dong zhe xie hua bei hou de yi si, kai hui he hui bao dou hui shun li hen duo.",
+            vi: "Hiểu được ý phía sau những câu này sẽ giúp họp và báo cáo thuận lợi hơn nhiều.",
+            start: 21.4,
+            end: 29,
+          },
+        ],
+        words: ["老板", "通常", "建议", "方案", "成熟", "辛苦了", "提醒", "跟进", "顺利", "汇报"],
+      };
+
+      const audio = new Audio(lesson.audioSrc);
+      audio.preload = "metadata";
+
+      const state = {
+        current: 0,
+        pinyin: true,
+        vietnamese: false,
+        playingSentence: false,
+        saved: localStorage.getItem("huamei-listening-ep-001-saved") === "true",
+        recognition: null,
+      };
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+      const statusTitle = $(".status-left strong");
+      const statusSub = $(".status-left small");
+      const timeStart = $(".time-row span:first-child");
+      const timeEnd = $(".time-row span:last-child");
+      const track = $(".track");
+      const knob = $(".track span");
+      const playButtons = [$(".hero-play"), $(".play-main")].filter(Boolean);
+      const prevBtn = $$(".control-pill")[0];
+      const nextBtn = $$(".control-pill")[1];
+      const replayBtn = $(".replay");
+      const saveButtons = [$(".save-btn"), $(".save-top")].filter(Boolean);
+      const sentenceButtons = $$(".sentence");
+      const nextCards = $$(".next-row article");
+      const nextArrow = $(".next-arrow");
+      const subtitleButtons = $$(".subtitle-box button");
+      const translateButton = $(".translate-panel button");
+      const translatePanel = $(".translate-panel");
+      const shadowSentence = $(".shadow-sentence");
+      const micButton = $(".mic");
+      const readyButton = $(".ready");
+      const manualText = $(".manual-entry textarea");
+      const wordTags = $$(".word-tags span");
+
+      function duration() {
+        return Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : lesson.fallbackDuration;
+      }
+
+      function scaledTime(time) {
+        return (time / lesson.fallbackDuration) * duration();
+      }
+
+      function formatTime(value) {
+        const safeValue = Math.max(0, Math.floor(value || 0));
+        const minutes = Math.floor(safeValue / 60);
+        const seconds = String(safeValue % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function setPlayIcon(isPlaying) {
+        const label = isPlaying ? "Tạm dừng" : "Phát";
+        const path = isPlaying
+          ? '<path d="M8 5h3v14H8z"/><path d="M13 5h3v14h-3z"/>'
+          : '<path d="M8 5v14l11-7z"/>';
+        playButtons.forEach((button) => {
+          button.setAttribute("aria-label", label);
+          button.innerHTML = `<svg viewBox="0 0 24 24">${path}</svg>`;
+          button.classList.toggle("is-playing", isPlaying);
+        });
+      }
+
+      function renderSentenceText() {
+        sentenceButtons.forEach((button, index) => {
+          const item = lesson.sentences[index];
+          if (!item) return;
+          const strong = $("strong", button);
+          const small = $("small", button);
+          if (strong) strong.textContent = item.zh;
+          if (small) {
+            small.textContent = [
+              state.pinyin ? item.pinyin : "",
+              state.vietnamese ? item.vi : "",
+            ].filter(Boolean).join(" · ");
+            small.hidden = !state.pinyin && !state.vietnamese;
+          }
+        });
+      }
+
+      function renderNextCards() {
+        const nextItems = lesson.sentences
+          .map((item, index) => ({ ...item, index }))
+          .filter((item) => item.index !== state.current)
+          .slice(0, 3);
+
+        nextCards.forEach((card, slot) => {
+          const item = nextItems[slot];
+          if (!item) return;
+          $("span", card).textContent = item.index + 1;
+          $("strong", card).textContent = item.zh;
+          $("small", card).textContent = formatTime(scaledTime(item.end - item.start));
+          $("p", card).textContent = item.pinyin;
+          $("em", card).textContent = item.index < state.current ? "Đã nghe" : "Chưa nghe";
+          card.dataset.sentenceIndex = String(item.index);
+        });
+      }
+
+      function renderShadow() {
+        const item = lesson.sentences[state.current];
+        $("strong", shadowSentence).textContent = item.zh;
+        $("small", shadowSentence).textContent = item.pinyin;
+        if (manualText) manualText.placeholder = "Nhập kết quả ở đây...";
+      }
+
+      function renderWords() {
+        wordTags.forEach((tag, index) => {
+          if (lesson.words[index]) tag.textContent = lesson.words[index];
+        });
+      }
+
+      function renderSave() {
+        saveButtons.forEach((button) => {
+          button.classList.toggle("is-saved", state.saved);
+          button.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"/></svg>${state.saved ? "Đã lưu" : "Lưu"}`;
+        });
+      }
+
+      function renderActiveSentence() {
+        sentenceButtons.forEach((button, index) => {
+          button.classList.toggle("active", index === state.current);
+          button.setAttribute("aria-pressed", String(index === state.current));
+        });
+        prevBtn.disabled = state.current === 0;
+        nextBtn.disabled = state.current === lesson.sentences.length - 1;
+        renderNextCards();
+        renderShadow();
+      }
+
+      function updateProgress() {
+        const current = Math.min(audio.currentTime || 0, duration());
+        const percent = Math.max(0, Math.min(100, (current / duration()) * 100));
+        timeStart.textContent = formatTime(current);
+        timeEnd.textContent = formatTime(duration());
+        knob.style.left = `${percent}%`;
+        track.style.setProperty("--progress", `${percent}%`);
+
+        const activeIndex = lesson.sentences.findIndex((item) => {
+          const start = scaledTime(item.start);
+          const end = scaledTime(item.end);
+          return current >= start && current < end;
+        });
+        if (activeIndex >= 0 && activeIndex !== state.current) {
+          state.current = activeIndex;
+          renderActiveSentence();
+        }
+
+        if (state.playingSentence && current >= scaledTime(lesson.sentences[state.current].end)) {
+          audio.pause();
+          state.playingSentence = false;
+        }
+      }
+
+      function updateStatus() {
+        const ready = audio.readyState > 0;
+        statusTitle.textContent = audio.paused ? "Đã tạm dừng" : "Đang phát";
+        statusSub.textContent = ready ? "Âm thanh thật đã sẵn sàng" : "Đang tải âm thanh...";
+        setPlayIcon(!audio.paused);
+      }
+
+      async function playFrom(time, sentenceOnly = false) {
+        state.playingSentence = sentenceOnly;
+        audio.currentTime = Math.max(0, Math.min(time, duration() - 0.1));
+        try {
+          await audio.play();
+        } catch (error) {
+          statusTitle.textContent = "Trình duyệt chặn tự phát";
+          statusSub.textContent = "Bấm nút phát một lần nữa để nghe.";
+        }
+        updateStatus();
+      }
+
+      function togglePlay() {
+        if (audio.paused) {
+          playFrom(audio.currentTime || scaledTime(lesson.sentences[state.current].start), false);
+        } else {
+          audio.pause();
+        }
+      }
+
+      function goToSentence(index, autoplay = false, sentenceOnly = false) {
+        state.current = Math.max(0, Math.min(index, lesson.sentences.length - 1));
+        audio.currentTime = scaledTime(lesson.sentences[state.current].start);
+        renderActiveSentence();
+        updateProgress();
+        if (autoplay) playFrom(audio.currentTime, sentenceOnly);
+      }
+
+      function scorePronunciation(input) {
+        const expected = lesson.sentences[state.current].pinyin.toLowerCase().replace(/[^a-z ]/g, "").split(/\s+/).filter(Boolean);
+        const actual = String(input || "").toLowerCase().replace(/[^a-z ]/g, "").split(/\s+/).filter(Boolean);
+        if (!actual.length) return null;
+        const matched = expected.filter((word) => actual.includes(word)).length;
+        return Math.round((matched / expected.length) * 100);
+      }
+
+      function showScore(input) {
+        const score = scorePronunciation(input);
+        readyButton.textContent = score === null ? "Sẵn sàng đọc" : `Điểm ${score}/100`;
+      }
+
+      function startRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          readyButton.textContent = "Nhập tay để chấm";
+          manualText.focus();
+          return;
+        }
+        if (!state.recognition) {
+          state.recognition = new SpeechRecognition();
+          state.recognition.lang = "zh-CN";
+          state.recognition.interimResults = false;
+          state.recognition.onresult = (event) => {
+            const transcript = event.results?.[0]?.[0]?.transcript || "";
+            manualText.value = transcript;
+            showScore(transcript);
+          };
+          state.recognition.onerror = () => {
+            readyButton.textContent = "Thử lại";
+          };
+          state.recognition.onend = () => {
+            micButton.classList.remove("is-recording");
+          };
+        }
+        micButton.classList.add("is-recording");
+        readyButton.textContent = "Đang nghe...";
+        state.recognition.start();
+      }
+
+      function showTranslation() {
+        let block = $(".translation-list", translatePanel);
+        if (!block) {
+          block = document.createElement("div");
+          block.className = "translation-list";
+          translatePanel.appendChild(block);
+        }
+        const isOpen = !block.hidden;
+        block.hidden = isOpen;
+        translateButton.textContent = isOpen ? "Xem toàn bộ bản dịch tiếng Việt" : "Ẩn bản dịch";
+        block.innerHTML = lesson.sentences
+          .map((item, index) => `<p><strong>${index + 1}.</strong> ${item.vi}</p>`)
+          .join("");
+      }
+
+      audio.addEventListener("loadedmetadata", () => {
+        timeEnd.textContent = formatTime(duration());
+        updateProgress();
+        updateStatus();
+      });
+      audio.addEventListener("timeupdate", updateProgress);
+      audio.addEventListener("play", updateStatus);
+      audio.addEventListener("pause", updateStatus);
+      audio.addEventListener("ended", () => {
+        state.playingSentence = false;
+        updateStatus();
+      });
+      audio.addEventListener("error", () => {
+        statusTitle.textContent = "Không tải được âm thanh";
+        statusSub.textContent = "Kiểm tra file daily-001-main.MP3 trong thư mục audio/main.";
+      });
+
+      playButtons.forEach((button) => button.addEventListener("click", togglePlay));
+      prevBtn.addEventListener("click", () => goToSentence(state.current - 1, false));
+      nextBtn.addEventListener("click", () => goToSentence(state.current + 1, false));
+      replayBtn.addEventListener("click", () => playFrom(scaledTime(lesson.sentences[state.current].start), true));
+      sentenceButtons.forEach((button, index) => button.addEventListener("click", () => goToSentence(index, true, true)));
+      nextCards.forEach((card) => card.addEventListener("click", () => goToSentence(Number(card.dataset.sentenceIndex || 0), true, true)));
+      nextArrow.addEventListener("click", () => goToSentence((state.current + 1) % lesson.sentences.length, false));
+      saveButtons.forEach((button) => button.addEventListener("click", () => {
+        state.saved = !state.saved;
+        localStorage.setItem("huamei-listening-ep-001-saved", String(state.saved));
+        renderSave();
+      }));
+      track.addEventListener("click", (event) => {
+        const rect = track.getBoundingClientRect();
+        audio.currentTime = ((event.clientX - rect.left) / rect.width) * duration();
+        state.playingSentence = false;
+        updateProgress();
+      });
+      subtitleButtons[1]?.addEventListener("click", () => {
+        state.pinyin = !state.pinyin;
+        subtitleButtons[1].classList.toggle("on", state.pinyin);
+        subtitleButtons[1].textContent = state.pinyin ? "Bật" : "Tắt";
+        renderSentenceText();
+      });
+      subtitleButtons[3]?.addEventListener("click", () => {
+        state.vietnamese = !state.vietnamese;
+        subtitleButtons[3].classList.toggle("on", state.vietnamese);
+        subtitleButtons[3].textContent = state.vietnamese ? "Bật" : "Tắt";
+        renderSentenceText();
+      });
+      translateButton.addEventListener("click", showTranslation);
+      micButton.addEventListener("click", startRecognition);
+      readyButton.addEventListener("click", startRecognition);
+      manualText.addEventListener("input", () => showScore(manualText.value));
+      $(".shadow-sentence svg")?.addEventListener("click", () => playFrom(scaledTime(lesson.sentences[state.current].start), true));
+
+      renderSentenceText();
+      renderWords();
+      renderSave();
+      renderActiveSentence();
+      updateProgress();
+      updateStatus();
+    })();
+  </script>
+</body>
+</html>

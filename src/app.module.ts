@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
 import { ContentModule } from './content/content.module';
+import { ListeningModule } from './listening/listening.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ContentModule } from './content/content.module';
     AdminModule,
     PaymentModule,
     ContentModule,
+    ListeningModule,
   ],
 })
 export class AppModule {}

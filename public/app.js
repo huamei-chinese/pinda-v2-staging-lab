@@ -60,6 +60,7 @@ const i18n = {
     account: "Tài khoản",
     admin: "Admin",
     vocab: "Bộ từ",
+    listening: "Luyện nghe",
     subscriptions: "Gói đăng ký",
     homeTab: "Trang chủ",
     dailyTabNav: "Tần suất cao",
@@ -122,6 +123,7 @@ const i18n = {
     account: "我的账户",
     admin: "管理员",
     vocab: "生词本",
+    listening: "听力",
     subscriptions: "订阅套餐",
     homeTab: "首页",
     dailyTabNav: "高频汉语",
@@ -463,6 +465,14 @@ const state = {
   dailyFilterTab: "all",
   vocabSearchQuery: "",
   vocabFilterTab: "all",
+  listeningView: "dashboard",
+  listeningEpisodeId: "ep-001",
+  listeningSentenceIndex: 0,
+  listeningVocabPracticeIndex: 0,
+  listeningPinyinOn: true,
+  listeningVietnameseOn: false,
+  listeningPlaybackRate: [0.75, 1, 1.25, 1.5].includes(Number(localStorage.getItem("v2-listening-rate"))) ? Number(localStorage.getItem("v2-listening-rate")) : 1,
+  listeningSaved: new Set(JSON.parse(localStorage.getItem("v2-listening-saved") || "[]")),
   user: readStoredStudentUser(),
   adminUser: readStoredAdminUser(),
   activities: JSON.parse(localStorage.getItem("v2-activities") || "[]"),
@@ -509,11 +519,174 @@ const screens = {
   complete: $("#completeScreen"),
   admin: $("#adminScreen"),
   vocab: $("#vocabScreen"),
+  listening: $("#listeningScreen"),
   account: $("#accountScreen"),
   subscriptions: $("#subscriptionsScreen"),
 };
 let adminUserSearchTimer = null;
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
+
+function makeSentences(episodeId, rows = []) {
+  return rows.map(([chinese, pinyin, vietnamese, start = 0, end = null], index) => ({
+    id: `${episodeId}-sentence-${String(index + 1).padStart(2, "0")}`,
+    chinese,
+    pinyin,
+    vietnamese,
+    start,
+    end,
+  }));
+}
+
+function makeKeywords(rows = []) {
+  return rows.map(([chinese, pinyin = "", vietnamese = "", partOfSpeechOrExamples = "", examples = []]) => {
+    const partOfSpeech = Array.isArray(partOfSpeechOrExamples) ? "" : partOfSpeechOrExamples;
+    return {
+      chinese,
+      pinyin,
+      vietnamese,
+      partOfSpeech,
+      examples: Array.isArray(partOfSpeechOrExamples) ? partOfSpeechOrExamples : examples,
+    };
+  });
+}
+
+function getListeningDefaultAudioSrc(episodeId) {
+  const episodeNumber = String(episodeId || "").match(/\d+/)?.[0] || "001";
+  const extension = episodeId === "ep-001" ? "MP3" : "mp3";
+  return `/listening-app/audio/main/daily-${episodeNumber}-main.${extension}`;
+}
+
+function getListeningItemDuration(sentences = []) {
+  const lastSentence = sentences[sentences.length - 1];
+  return Math.ceil(lastSentence?.end ?? lastSentence?.start ?? 0);
+}
+
+function buildItem(item) {
+  const sentences = item.sentences || [];
+  return {
+    ...item,
+    titleZh: item.titleZh || item.title,
+    categoryZh: item.categoryZh || item.category,
+    level: item.level || "Trung bình",
+    duration: item.duration ?? getListeningItemDuration(sentences),
+    progress: item.progress ?? 0,
+    audioSrc: item.audioSrc || getListeningDefaultAudioSrc(item.id),
+    description: item.description || item.member_cta || "",
+    sentences,
+    keywords: item.keywords || [],
+  };
+}
+
+const listeningEpisodes = [
+  buildItem({
+    id: "ep-001",
+    title: "为什么你学了 HSK 还是听不懂",
+    category: "热点短文",
+    is_featured_sample: true,
+    speaker: "林老师",
+    sentences: makeSentences("ep-001", [
+      ["最近我有点儿不开心。", "Zuìjìn wǒ yǒudiǎnr bù kāixīn.", "Dạo này tôi hơi không vui.", 0, 3.77],
+      ["我喜欢你", "Wǒ xǐhuān nǐ", "Tôi thích bạn", 3.77, 8.34],
+      ["你吃饭了吗", "nị chi phan lơ ma?", "Bạn đã ăn chưa?", 8.34, 18.38],
+      ["你是不是又在和别人比？", "Nǐ shì bú shì yòu zài hé biérén bǐ?", "Có phải bạn lại đang so sánh mình với người khác không?", 18.38, 22.35],
+      ["可能是吧。看到他们越来越好，我就觉得自己进步得很慢。", "Kěnéng shì ba. Kàndào tāmen yuè lái yuè hǎo, wǒ jiù juéde zìjǐ jìnbù de hěn màn.", "Có lẽ vậy. Thấy họ ngày càng tốt hơn, tôi lại cảm thấy mình tiến bộ rất chậm.", 22.35, 30.65],
+      ["每个人的时间不一样。别人快，不代表你差。", "Měi ge rén de shíjiān bù yíyàng. Biérén kuài, bù dàibiǎo nǐ chà.", "Thời gian của mỗi người không giống nhau. Người khác nhanh không có nghĩa là bạn kém.", 30.65, 39.12],
+      ["可是我还是会着急。", "Kěshì wǒ háishi huì zháojí.", "Nhưng tôi vẫn sẽ sốt ruột.", 39.12, 42.47],
+      ["着急很正常。但你可以先做好今天的事。每天进步一点点，就已经很好了。", "Zháojí hěn zhèngcháng. Dàn nǐ kěyǐ xiān zuò hǎo jīntiān de shì. Měitiān jìnbù yìdiǎndiǎn, jiù yǐjīng hěn hǎo le.", "Sốt ruột là bình thường. Nhưng bạn có thể làm tốt việc hôm nay trước. Mỗi ngày tiến bộ một chút đã rất tốt rồi.", 42.47, 54.61],
+      ["你说得对。我不应该一直看别人。", "Nǐ shuō de duì. Wǒ bù yīnggāi yìzhí kàn biérén.", "Bạn nói đúng. Tôi không nên cứ nhìn người khác mãi.", 54.61, 60.75],
+      ["对。你要相信自己，也要给自己一点时间。", "Duì. Nǐ yào xiāngxìn zìjǐ, yě yào gěi zìjǐ yìdiǎn shíjiān.", "Đúng. Bạn phải tin bản thân, cũng phải cho bản thân thêm một chút thời gian.", 60.75, 68.44],
+    ]),
+    keywords: makeKeywords([
+      ["通过", "tong guo", "vượt qua", "giới từ"],
+      ["真实", "zhen shi", "thật, thực tế", "tính từ"],
+      ["紧张", "jin zhang", "căng thẳng", "tính từ"],
+      ["原因", "yuan yin", "nguyên nhân", "danh từ"],
+      ["努力", "nu li", "cố gắng", "động từ"],
+      ["材料", "cai liao", "tài liệu", "danh từ"],
+      ["省略", "sheng lue", "lược bỏ", "động từ"],
+      ["连读", "lian du", "nối âm", "danh từ"],
+      ["表达", "biao da", "cách diễn đạt", "động từ"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "想继续练真实语速？解锁更多 1 分钟精品听力。",
+    created_at: "2026-06-16",
+    progress: 80,
+  }),
+  buildItem({
+    id: "ep-002",
+    title: "Phân biệt bốn thanh điệu",
+    titleZh: "区分四个声调",
+    category: "Thanh điệu",
+    categoryZh: "声调",
+    level: "Dễ",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-002", [
+      ["妈，麻，马，骂。", "ma1, ma2, ma3, ma4.", "Bốn thanh của âm ma.", 0, 8],
+      ["请再听一遍。", "Qing zai ting yi bian.", "Hãy nghe lại một lần nữa.", 8, 24],
+    ]),
+    keywords: makeKeywords([
+      ["妈", "ma1", "mẹ"],
+      ["麻", "ma2", "tê"],
+      ["马", "ma3", "ngựa"],
+      ["骂", "ma4", "mắng"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练习声调辨音，听得更准。",
+    created_at: "2026-06-16",
+    progress: 60,
+  }),
+  buildItem({
+    id: "ep-003",
+    title: "Âm zh, ch, sh",
+    titleZh: "zh ch sh 发音",
+    category: "Phát âm",
+    categoryZh: "发音",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-003", [
+      ["知，吃，是。", "zhi, chi, shi.", "Ba âm zh, ch, sh.", 0, 9],
+      ["请慢慢跟读。", "Qing man man gen du.", "Hãy đọc theo thật chậm.", 9, 27],
+    ]),
+    keywords: makeKeywords([
+      ["知", "zhi", "biết"],
+      ["吃", "chi", "ăn"],
+      ["是", "shi", "là"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练发音，区分舌尖音。",
+    created_at: "2026-06-16",
+    progress: 65,
+  }),
+  buildItem({
+    id: "ep-004",
+    title: "Nghe câu ngắn",
+    titleZh: "听短句",
+    category: "Giao tiếp",
+    categoryZh: "交流",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-004", [
+      ["请说慢一点儿。", "Qing shuo man yi dianr.", "Xin hãy nói chậm một chút.", 0, 9],
+      ["我没听清楚。", "Wo mei ting qing chu.", "Tôi nghe chưa rõ.", 9, 31],
+    ]),
+    keywords: makeKeywords([
+      ["请", "qing", "xin, mời"],
+      ["慢", "man", "chậm"],
+      ["一点儿", "yi dianr", "một chút"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练短句听力，抓住关键词。",
+    created_at: "2026-06-16",
+    progress: 50,
+  }),
+];
+
+function getListeningEpisode(episodeId = state.listeningEpisodeId) {
+  return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
+}
+
 const hskContentTypes = [
   { id: "word", labelVi: "Từ vựng", labelZh: "生词" },
   { id: "sentence", labelVi: "Câu", labelZh: "句子" },
@@ -2646,6 +2819,7 @@ function saveState() {
   localStorage.setItem("v2-wrong", JSON.stringify([...state.wrong]));
   localStorage.setItem("v2-saved", JSON.stringify([...state.saved]));
   localStorage.setItem("v2-completed", JSON.stringify([...state.completed]));
+  localStorage.setItem("v2-listening-saved", JSON.stringify([...state.listeningSaved]));
   localStorage.setItem("v2-activities", JSON.stringify((state.activities || []).slice(0, 30)));
   if (state.user) localStorage.setItem(STUDENT_USER_STORAGE_KEY, JSON.stringify(state.user));
   else localStorage.removeItem(STUDENT_USER_STORAGE_KEY);
@@ -2879,6 +3053,9 @@ function navigatePrimaryTab(target) {
   } else if (target === "vocab") {
     renderVocab();
     setScreen("vocab");
+  } else if (target === "listening") {
+    renderListening();
+    setScreen("listening");
   } else if (target === "subscriptions") {
     setScreen("subscriptions");
   } else if (target === "account") {
@@ -2911,7 +3088,7 @@ function openDailyTopicFromHome(themeId) {
 function setScreen(name) {
   state.screen = name;
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
-  $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "subscriptions" || name === "account");
+  $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "listening" || name === "subscriptions" || name === "account");
 
   // Footer tạm ẩn
   // renderGlobalFooter();
@@ -2955,19 +3132,21 @@ function setScreen(name) {
   const bottomHsk = $("#bottomNavHskBtn");
   const bottomDaily = $("#bottomNavDailyBtn");
   const bottomVocab = $("#bottomNavVocabBtn");
+  const bottomListening = $("#bottomNavListeningBtn");
   const bottomSubscriptions = $("#bottomNavSubscriptionsBtn");
   const bottomAccount = $("#bottomNavAccountBtn");
-  const showBottomNav = ["home", "course", "vocab", "account"].includes(name);
+  const showBottomNav = ["home", "course", "vocab", "listening", "account"].includes(name);
 
   if (bottomNav) {
     bottomNav.classList.toggle("hidden", !showBottomNav);
     document.body.classList.toggle("has-mobile-bottom-nav", showBottomNav);
   }
-  if (bottomHome && bottomHsk && bottomDaily && bottomVocab && bottomSubscriptions && bottomAccount) {
+  if (bottomHome && bottomHsk && bottomDaily && bottomVocab && bottomListening && bottomSubscriptions && bottomAccount) {
     bottomHome.classList.toggle("active", name === "home");
     bottomHsk.classList.toggle("active", name === "course" && state.module === "hsk");
     bottomDaily.classList.toggle("active", name === "course" && state.module === "daily");
     bottomVocab.classList.toggle("active", name === "vocab");
+    bottomListening.classList.toggle("active", name === "listening");
     bottomSubscriptions.classList.toggle("active", name === "subscriptions");
     bottomAccount.classList.toggle("active", name === "account");
     bottomAccount.classList.toggle("hidden", BACKEND_DISABLED);
@@ -3003,6 +3182,7 @@ function renderChrome() {
   const bottomHskBtn = $("#bottomNavHskBtn");
   const bottomDailyBtn = $("#bottomNavDailyBtn");
   const bottomVocabBtn = $("#bottomNavVocabBtn");
+  const bottomListeningBtn = $("#bottomNavListeningBtn");
   const bottomSubscriptionsBtn = $("#bottomNavSubscriptionsBtn");
   const bottomAccountBtn = $("#bottomNavAccountBtn");
 
@@ -3025,6 +3205,9 @@ function renderChrome() {
   }
   if (bottomVocabBtn) {
     bottomVocabBtn.querySelector(".mobile-bottom-nav-label").textContent = t("vocab");
+  }
+  if (bottomListeningBtn) {
+    bottomListeningBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? t("listening") : "听力";
   }
   if (bottomAccountBtn) {
     bottomAccountBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Cá nhân" : "个人";
@@ -3431,8 +3614,8 @@ function renderAdminUserPaginationHTML(totalPages, currentPage) {
   return `
     <button type="button" data-admin-user-page="${Math.max(1, currentPage - 1)}" ${currentPage <= 1 ? "disabled" : ""}>‹</button>
     ${pages.map((page) => typeof page === "number"
-      ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-user-page="${page}">${page}</button>`
-      : `<span>...</span>`).join("")}
+    ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-user-page="${page}">${page}</button>`
+    : `<span>...</span>`).join("")}
     <button type="button" data-admin-user-page="${Math.min(totalPages, currentPage + 1)}" ${currentPage >= totalPages ? "disabled" : ""}>›</button>
   `;
 }
@@ -5505,6 +5688,7 @@ function renderHomeDesktopModulesHTML(isVi) {
 function getDesktopNavActive() {
   if (state.screen === "home") return "home";
   if (state.screen === "vocab") return "vocab";
+  if (state.screen === "listening") return "listening";
   if (state.screen === "account") return "account";
   if (state.screen === "course") return state.module === "daily" ? "daily" : "hsk";
   return "";
@@ -5516,6 +5700,7 @@ function desktopNavIcon(name) {
     hsk: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5z"/><path d="M6 10.2v5.1c1.7 1.5 3.7 2.2 6 2.2s4.3-.7 6-2.2v-5.1"/><path d="M21 9v5"/></svg>`,
     daily: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h7"/><path d="M7.5 18c2.4-4.3 4.1-8.6 5-13"/><path d="M5 8h9"/><path d="M11 5h4"/><path d="M15 20l3.6-9 3.4 9"/><path d="M16.2 17h4.6"/></svg>`,
     vocab: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 3v18"/><path d="M14 3v18"/></svg>`,
+    listening: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
     account: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
   };
   return icons[name] || "";
@@ -5548,6 +5733,9 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <button type="button" class="${navClass("vocab")}" data-home-nav="vocab">
           <span aria-hidden="true">${desktopNavIcon("vocab")}</span>${t("vocab")}
         </button>
+        <button type="button" class="${navClass("listening")}" data-home-nav="listening">
+          <span aria-hidden="true">${desktopNavIcon("listening")}</span>${isVi ? t("listening") : "听力"}
+        </button>
         <button type="button" class="${navClass("account")}" data-home-nav="account">
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
@@ -5570,6 +5758,7 @@ function renderMobilePageReturnBar(activeNav = "") {
   const labels = {
     hsk: state.lang === "vi" ? "Khóa HSK" : "HSK 课程",
     daily: t("dailyTabNav"),
+    listening: t("listening"),
     vocab: state.lang === "vi" ? "Bộ từ" : "词库",
     account: state.lang === "vi" ? "Cá nhân" : "个人",
   };
@@ -5597,11 +5786,1844 @@ function wrapWithAppDesktopShell(innerHTML, shellClass = "", activeNav = "") {
   `;
 }
 
-function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", activeNav = "") {
+function getAppScrollSnapshot() {
+  return {
+    windowY: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+    appY: document.getElementById("app")?.scrollTop || 0,
+    shellY: document.querySelector(".app-shell:not(.hidden)")?.scrollTop || 0,
+    screenY: document.querySelector(".screen:not(.hidden)")?.scrollTop || 0,
+  };
+}
+
+function restoreAppScrollSnapshot(snapshot = {}) {
+  const restoreNow = () => {
+    window.scrollTo({ top: snapshot.windowY || 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = snapshot.windowY || 0;
+    document.body.scrollTop = snapshot.windowY || 0;
+    document.getElementById("app")?.scrollTo?.({ top: snapshot.appY || 0, left: 0, behavior: "auto" });
+    document.querySelector(".app-shell:not(.hidden)")?.scrollTo?.({ top: snapshot.shellY || 0, left: 0, behavior: "auto" });
+    document.querySelector(".screen:not(.hidden)")?.scrollTo?.({ top: snapshot.screenY || 0, left: 0, behavior: "auto" });
+  };
+  restoreNow();
+  requestAnimationFrame(restoreNow);
+}
+
+function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", activeNav = "", options = {}) {
   const node = screens[screenKey];
   if (!node) return;
+  const scrollSnapshot = options.preserveScroll ? getAppScrollSnapshot() : null;
   node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav);
-  scrollAppToTop();
+  if (scrollSnapshot) restoreAppScrollSnapshot(scrollSnapshot);
+  else scrollAppToTop();
+}
+
+function renderListening(options = {}) {
+  if (state.listeningView === "repeat") {
+    renderListeningRepeatLesson(options);
+    return;
+  }
+  if (state.listeningView === "vocab") {
+    renderListeningVocabLesson(options);
+    return;
+  }
+  if (state.listeningView === "detail") {
+    renderListeningDetail(options);
+    return;
+  }
+  renderListeningDashboard();
+}
+
+function renderListeningDashboard() {
+  const isVi = state.lang === "vi";
+  const topicCards = [
+    {
+      titleVi: "Giao tiếp hằng ngày",
+      titleZh: "日常交流",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-001",
+      progress: 75,
+      minutes: 20,
+      icon: "chat",
+      tone: "green",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "HSK Listening",
+      titleZh: "HSK 听力",
+      levelVi: "Trung cấp",
+      levelZh: "中级",
+      openId: "ep-002",
+      progress: 60,
+      minutes: 30,
+      icon: "book",
+      tone: "blue",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "Phát âm",
+      titleZh: "发音",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-003",
+      progress: 45,
+      minutes: 15,
+      icon: "mic",
+      tone: "purple",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Du lịch",
+      titleZh: "旅行",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-004",
+      progress: 80,
+      minutes: 18,
+      icon: "suitcase",
+      tone: "orange",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "Mua sắm",
+      titleZh: "购物",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-004",
+      progress: 65,
+      minutes: 16,
+      icon: "bag",
+      tone: "red",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Công việc",
+      titleZh: "工作",
+      levelVi: "Trung cấp",
+      levelZh: "中级",
+      openId: "ep-001",
+      progress: 50,
+      minutes: 22,
+      icon: "briefcase",
+      tone: "teal",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Ẩm thực",
+      titleZh: "美食",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-003",
+      progress: 70,
+      minutes: 17,
+      icon: "food",
+      tone: "amber",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+  ];
+  const topicIconHTML = (icon) => {
+    const icons = {
+      chat: `<span class="listening-topic-art listening-topic-art--chat"><i></i><i></i></span>`,
+      book: `<span class="listening-topic-art listening-topic-art--book"><i>HSK</i></span>`,
+      mic: `<span class="listening-topic-art listening-topic-art--mic"><i></i></span>`,
+      suitcase: `<span class="listening-topic-art listening-topic-art--suitcase"><i></i></span>`,
+      bag: `<span class="listening-topic-art listening-topic-art--bag"><i></i></span>`,
+      briefcase: `<span class="listening-topic-art listening-topic-art--briefcase"><i></i></span>`,
+      food: `<span class="listening-topic-art listening-topic-art--food"><i></i></span>`,
+    };
+    return icons[icon] || icons.chat;
+  };
+  const cardsHTML = topicCards.map((topic) => `
+    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-open="${escapeAttr(topic.openId)}">
+      <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
+      ${topicIconHTML(topic.icon)}
+      <span class="listening-topic-chip">${escapeHtml(isVi ? topic.levelVi : topic.levelZh)}</span>
+      <span class="listening-topic-meta">
+        <span>${topic.progress}%</span>
+        <span class="listening-topic-bar"><i style="width:${topic.progress}%"></i></span>
+        <span>${topic.minutes} ${isVi ? "phút" : "分钟"}</span>
+      </span>
+      <span class="listening-topic-action">${escapeHtml(isVi ? topic.actionVi : topic.actionZh)}</span>
+    </button>
+  `).join("");
+  const recommended = listeningEpisodes[0] || {};
+  const listenedMinutes = 512;
+  const targetMinutes = 750;
+  const progressPercent = 68;
+  const userName = state.user?.name || state.user?.fullName || (isVi ? "bạn" : "你");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-spa-layout">
+      <header class="listening-dashboard-topbar">
+        <h1>${isVi ? "Chủ đề nghe" : "听力主题"}</h1>
+        <div class="listening-dashboard-userbar" aria-label="${isVi ? "Thông tin học tập" : "学习信息"}">
+          <div class="listening-stat-pill">
+            <span class="listening-stat-icon listening-stat-icon--coin" aria-hidden="true">★</span>
+            <strong>820</strong>
+            <small>${isVi ? "Điểm tích lũy" : "积分"}</small>
+          </div>
+          <div class="listening-stat-pill">
+            <span class="listening-stat-icon listening-stat-icon--badge" aria-hidden="true">★</span>
+            <strong>HSK 3</strong>
+            <small>${isVi ? "Cấp hiện tại" : "当前级别"}</small>
+          </div>
+          <button class="listening-alert-btn" type="button" aria-label="${isVi ? "Thông báo" : "通知"}">
+            <span aria-hidden="true">!</span>
+          </button>
+          <button class="listening-profile-btn" type="button" data-home-nav="account">
+            <img src="assets/default-guest-avatar.png" alt="" />
+            <span>${isVi ? `Chào ${escapeHtml(userName)}` : `你好 ${escapeHtml(userName)}`}</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="listening-dashboard-main">
+        <div class="listening-dashboard-content">
+      <section class="listening-spa-hero">
+        <div>
+          <h2>${isVi ? "Luyện nghe tiếng Trung" : "中文听力训练"}</h2>
+          <p>${isVi ? "Nghe và nhận diện" : "听懂并识别"}</p>
+          <span class="listening-hero-note">${desktopNavIcon("listening")} ${isVi ? "Nghe nhiều hơn mỗi ngày, tiến bộ từng bước!" : "每天多听一点，稳步进步！"}</span>
+        </div>
+        <div class="listening-hero-art" aria-hidden="true">
+          <span class="listening-hero-wave listening-hero-wave--left"></span>
+          <span class="listening-hero-headphones"><i></i></span>
+          <span class="listening-hero-wave listening-hero-wave--right"></span>
+        </div>
+      </section>
+
+      <section class="listening-spa-section">
+        <div class="listening-section-head">
+          <div class="listening-filter-tabs" role="tablist" aria-label="${isVi ? "Lọc chủ đề" : "筛选主题"}">
+            <button class="active" type="button">${isVi ? "Tất cả" : "全部"}</button>
+            <button type="button">${isVi ? "Sơ cấp" : "初级"}</button>
+            <button type="button">${isVi ? "Trung cấp" : "中级"}</button>
+            <button type="button">${isVi ? "Nâng cao" : "高级"}</button>
+          </div>
+          <button class="listening-sort-btn" type="button">${isVi ? "Mới nhất" : "最新"} <span aria-hidden="true">⌄</span></button>
+        </div>
+        <div class="listening-topic-grid">
+          ${cardsHTML}
+        </div>
+        <p class="listening-tip">${isVi ? "Mẹo: Nghe chủ động, ghi chú từ khóa và lặp lại để cải thiện hiệu quả!" : "提示：主动听，记录关键词并反复练习。"}</p>
+      </section>
+        </div>
+
+        <aside class="listening-dashboard-rail" aria-label="${isVi ? "Tiến độ nghe" : "听力进度"}">
+          <section class="listening-progress-panel">
+            <h2>${isVi ? "Tiến độ nghe" : "听力进度"}</h2>
+            <div class="listening-progress-summary">
+              <div class="listening-progress-ring" style="--listening-progress:${progressPercent}%">
+                <strong>${progressPercent}<span>%</span></strong>
+                <small>${isVi ? "Mục tiêu tháng" : "月目标"}</small>
+              </div>
+              <div class="listening-progress-stats">
+                <span><i class="listening-mini-icon listening-mini-icon--green">${desktopNavIcon("listening")}</i><b>${isVi ? "Bài nghe" : "听力"}</b><strong>34 / 50</strong></span>
+                <span><i class="listening-mini-icon listening-mini-icon--orange">◷</i><b>${isVi ? "Phút đã nghe" : "已听分钟"}</b><strong>${listenedMinutes} / ${targetMinutes}</strong></span>
+                <span><i class="listening-mini-icon listening-mini-icon--blue">✓</i><b>${isVi ? "Hoàn thành" : "已完成"}</b><strong>24</strong></span>
+              </div>
+            </div>
+            <div class="listening-streak">
+              <div><span class="listening-flame" aria-hidden="true"></span><b>${isVi ? "Chuỗi ngày hiện tại" : "当前连续"}</b><strong>12 ${isVi ? "ngày" : "天"}</strong></div>
+              <ol>
+                ${[18, 19, 20, 21, 22, 23].map((day) => `<li><span class="listening-flame" aria-hidden="true"></span><small>${day}</small></li>`).join("")}
+                <li class="muted"><span class="listening-flame" aria-hidden="true"></span><small>${isVi ? "Hôm nay" : "今天"}</small></li>
+              </ol>
+            </div>
+          </section>
+
+          <section class="listening-recommend-panel">
+            <h2>${isVi ? "Bài nghe đề xuất" : "推荐听力"}</h2>
+            <div class="listening-recommend-card">
+              <div class="listening-recommend-cover">
+                <span></span>
+                <button type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}" aria-label="${isVi ? "Phát bài nghe" : "播放"}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              </div>
+              <div class="listening-recommend-copy">
+                <h3>${isVi ? "Hội thoại ở quán cà phê" : "咖啡馆对话"}</h3>
+                <p><span>${isVi ? "Sơ cấp" : "初级"}</span> · 6 ${isVi ? "phút" : "分钟"}</p>
+                <small>${isVi ? "Nghe đoạn hội thoại ngắn giữa nhân viên và khách hàng tại quán cà phê." : "听服务员和顾客的短对话。"}</small>
+                <div class="listening-recommend-progress"><i></i><em>02:15 / 06:00</em></div>
+              </div>
+              <div class="listening-recommend-controls">
+                <button type="button" aria-label="${isVi ? "Bài trước" : "上一首"}">‹</button>
+                <button type="button" aria-label="${isVi ? "Lùi 10 giây" : "后退10秒"}">10</button>
+                <button class="primary" type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}" aria-label="${isVi ? "Phát" : "播放"}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button type="button" aria-label="${isVi ? "Tiến 10 giây" : "前进10秒"}">10</button>
+                <button type="button" aria-label="${isVi ? "Bài tiếp" : "下一首"}">›</button>
+              </div>
+            </div>
+            <button class="listening-all-btn" type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}">${isVi ? "Xem tất cả bài nghe" : "查看全部听力"} <span aria-hidden="true">›</span></button>
+          </section>
+        </aside>
+      </main>
+    </div>
+  `, "app-desktop-shell--listening", "listening");
+}
+
+function listeningFormatTime(value = 0) {
+  const seconds = Math.max(0, Math.floor(value));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function getListeningPlaybackRate(rate = state.listeningPlaybackRate) {
+  const numericRate = Number(rate);
+  return [0.75, 1, 1.25, 1.5].includes(numericRate) ? numericRate : 1;
+}
+
+function applyListeningPlaybackRate(audio = $("#listeningAudio")) {
+  const rate = getListeningPlaybackRate();
+  if (audio) audio.playbackRate = rate;
+  return rate;
+}
+
+function getListeningRateLabel(rate = state.listeningPlaybackRate) {
+  const isVi = state.lang === "vi";
+  const labels = {
+    0.75: isVi ? "Chậm" : "慢",
+    1: isVi ? "Bình thường" : "正常",
+    1.25: isVi ? "Nhanh" : "快",
+    1.5: "1.5x",
+  };
+  return labels[getListeningPlaybackRate(rate)] || (isVi ? "Tốc độ" : "速度");
+}
+
+function setListeningPlaybackRate(rate) {
+  state.listeningPlaybackRate = getListeningPlaybackRate(rate);
+  localStorage.setItem("v2-listening-rate", String(state.listeningPlaybackRate));
+  applyListeningPlaybackRate();
+  document.querySelectorAll("[data-listening-rate]").forEach((button) => {
+    const isActive = Number(button.dataset.listeningRate) === state.listeningPlaybackRate;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  document.querySelectorAll("[data-listening-speed-label]").forEach((node) => {
+    node.textContent = getListeningRateLabel();
+  });
+}
+
+function renderListeningDetail(options = {}) {
+  const isVi = state.lang === "vi";
+  const episode = getListeningEpisode();
+  const currentIndex = Math.min(state.listeningSentenceIndex, episode.sentences.length - 1);
+  const saved = state.listeningSaved.has(episode.id);
+  const completionPercent = Math.max(75, Math.round(((currentIndex + 1) / Math.max(1, episode.sentences.length)) * 100));
+  const activeSentence = episode.sentences[currentIndex] || episode.sentences[0] || {};
+  const userName = state.user?.name || state.user?.fullName || (isVi ? "bạn" : "你");
+  const listeningRateOptions = [
+    { rate: 0.75, labelVi: "Chậm", labelZh: "慢" },
+    { rate: 1, labelVi: "Bình thường", labelZh: "正常" },
+    { rate: 1.25, labelVi: "Nhanh", labelZh: "快" }
+  ];
+  const speedButtonsHTML = listeningRateOptions.map(({ rate, labelVi, labelZh }) => `
+    <button class="${state.listeningPlaybackRate === rate ? "active" : ""}" type="button" data-listening-rate="${rate}" aria-pressed="${state.listeningPlaybackRate === rate ? "true" : "false"}">
+      <span>${isVi ? labelVi : labelZh}</span>
+      <small>${rate}x</small>
+    </button>
+  `).join("");
+  const sentencesHTML = episode.sentences.map((sentence, index) => `
+    <button class="listening-sentence ${index === currentIndex ? "active" : ""}" type="button" data-listening-sentence="${index}">
+      <span>${index + 1}</span>
+      <p>
+        <strong>${escapeHtml(sentence.chinese)}</strong>
+        ${state.listeningPinyinOn ? `<small>${escapeHtml(sentence.pinyin)}</small>` : ""}
+        ${state.listeningVietnameseOn ? `<em>${escapeHtml(sentence.vietnamese)}</em>` : ""}
+      </p>
+      <i aria-hidden="true">${desktopNavIcon("listening")}</i>
+    </button>
+  `).join("");
+  const keywordsHTML = episode.keywords.map((word, index) => {
+    const keywordText = typeof word === "string" ? word : word.chinese || "";
+    const keywordMeta = typeof word === "string" ? "" : [word.pinyin, word.vietnamese].filter(Boolean).join(" · ");
+    return `<button type="button" data-listening-keyword="${index}" title="${escapeAttr(keywordMeta)}">${escapeHtml(keywordText)}</button>`;
+  }).join("");
+  const nextSentencesHTML = episode.sentences
+    .map((sentence, index) => ({ sentence, index }))
+    .filter((item) => item.index !== currentIndex)
+    .slice(0, 3)
+    .map(({ sentence, index }) => `
+      <button class="listening-next-card" type="button" data-listening-sentence="${index}">
+        <span>${index + 1}</span>
+        <strong>${escapeHtml(sentence.chinese)}</strong>
+        <small>${escapeHtml(sentence.pinyin)}</small>
+        <i><b></b>${listeningFormatTime(Math.max(0, (sentence.end || sentence.start || 0) - (sentence.start || 0)))}</i>
+        <em>${isVi ? "ChÆ°a nghe" : "æœªå¬"}</em>
+      </button>
+    `).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-detail-spa">
+      <header class="listening-detail-topbar">
+        <button class="listening-back-btn" type="button" data-listening-back>
+          <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        </button>
+        <h1>${isVi ? "Nghe mỗi ngày" : "每日听力"}</h1>
+        <div class="listening-detail-top-actions">
+          <div class="listening-language-switch" aria-label="${isVi ? "Ngôn ngữ" : "语言"}">
+            <span class="active">VI</span>
+            <span>中文</span>
+          </div>
+          <button class="listening-save-link ${saved ? "saved" : ""}" type="button" data-listening-save>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+            ${saved ? (isVi ? "Đã lưu" : "已收藏") : (isVi ? "Lưu" : "收藏")}
+          </button>
+          <button class="listening-profile-btn" type="button" data-home-nav="account">
+            <img src="assets/default-guest-avatar.png" alt="" />
+            <span>${isVi ? `Chào ${escapeHtml(userName)}` : `你好 ${escapeHtml(userName)}`}</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="listening-detail-hero">
+        <button class="listening-hero-save ${saved ? "saved" : ""}" type="button" data-listening-save>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+          ${saved ? (isVi ? "Đã lưu" : "已收藏") : (isVi ? "Lưu" : "收藏")}
+        </button>
+        <div>
+          <span>${escapeHtml(isVi ? episode.category : episode.categoryZh)}</span>
+          <h2>${escapeHtml(isVi ? episode.title : episode.titleZh)}</h2>
+          <p>${isVi ? "Giọng đọc" : "朗读"}: ${escapeHtml(episode.speaker)} · ${isVi ? "khoảng" : "约"} ${Math.max(1, Math.ceil(episode.duration / 60))} ${isVi ? "phút" : "分钟"} · ${isVi ? "tiếng Trung thật" : "真实中文"}</p>
+        </div>
+        <div class="listening-detail-art" aria-hidden="true">
+          <button class="listening-hero-play" type="button" data-listening-play aria-label="${isVi ? "Phát" : "播放"}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <span class="listening-detail-headphones"></span>
+          <span class="listening-detail-wave"></span>
+        </div>
+      </section>
+
+      <section class="listening-player-card">
+        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="metadata"></audio>
+        <div class="listening-player-status">
+          <div>
+            <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
+            <small id="listeningStatusSub">${episode.audioSrc ? (isVi ? "Âm thanh thật đã sẵn sàng" : "真实音频已准备") : (isVi ? "Chế độ demo không cần file âm thanh" : "演示模式")}</small>
+          </div>
+          <span id="listeningCurrentTime">0:00</span>
+          <div class="listening-waveform" aria-hidden="true"><i></i></div>
+          <span>${listeningFormatTime(episode.duration)}</span>
+        </div>
+        <div class="listening-time-row"><span>0:00</span><span>${listeningFormatTime(episode.duration)}</span></div>
+        <div class="listening-track" data-listening-track><i id="listeningProgress"></i></div>
+        <div class="listening-controls">
+          <div class="listening-speed-menu" aria-label="${isVi ? "Tốc độ nghe" : "播放速度"}">
+            <button class="listening-speed-toggle" type="button" data-listening-speed-toggle aria-haspopup="true" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/><path d="M12 18h.01"/></svg>
+              <span data-listening-speed-label>${getListeningRateLabel()}</span>
+            </button>
+            <div class="listening-speed-options" role="menu">${speedButtonsHTML}</div>
+          </div>
+          <button class="listening-step-btn" type="button" data-listening-prev aria-label="${isVi ? "Câu trước" : "上一句"}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19 4 12l7-7"/><path d="M20 19 13 12l7-7"/></svg>
+            <span>${isVi ? "Câu trước" : "上一句"}</span>
+          </button>
+          <button class="listening-main-play" type="button" data-listening-play aria-label="${isVi ? "Phát" : "播放"}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="listening-step-btn" type="button" data-listening-next aria-label="${isVi ? "Câu sau" : "下一句"}">
+            <span>${isVi ? "Câu sau" : "下一句"}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 5 7 7-7 7"/><path d="m4 5 7 7-7 7"/></svg>
+          </button>
+          <button class="listening-replay-link" type="button" data-listening-replay>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v6h6"/></svg>
+            ${isVi ? "Nghe lại câu này" : "重听本句"}
+          </button>
+        </div>
+      </section>
+
+      <div class="listening-detail-practice-grid">
+        <section class="listening-script-card">
+          <h2 class="listening-script-title">${isVi ? "Nội dung nghe" : "听力内容"}</h2>
+          <div class="listening-script-head">
+            <strong>${isVi ? "Tùy chọn phụ đề" : "字幕选项"}</strong>
+            <div class="listening-subtitle-actions">
+              <button class="${state.listeningPinyinOn ? "active" : ""}" type="button" data-listening-toggle="pinyin">Pinyin</button>
+              <button class="${state.listeningVietnameseOn ? "active" : ""}" type="button" data-listening-toggle="vi">${isVi ? "Tiếng Việt" : "越南语"}</button>
+            </div>
+          </div>
+          <div class="listening-sentence-list">${sentencesHTML}</div>
+          <button class="listening-translation-btn" type="button" data-listening-translation>${state.listeningVietnameseOn ? (isVi ? "Ẩn bản dịch tiếng Việt" : "隐藏越南语翻译") : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译")} <span aria-hidden="true">⌄</span></button>
+        </section>
+        <div class="listening-script-quick-actions" aria-label="${isVi ? "Lối tắt luyện tập" : "练习快捷入口"}">
+          <button type="button" data-listening-jump="vocab">
+            ${desktopNavIcon("vocab")}
+            <span>${isVi ? "Từ vựng" : "词汇"}</span>
+          </button>
+          <button type="button" data-listening-jump="repeat">
+            ${desktopNavIcon("listening")}
+            <span>${isVi ? "Nói theo" : "跟读"}</span>
+          </button>
+        </div>
+        <section class="listening-vocab-practice-panel hidden" id="listeningVocabPracticePanel" aria-live="polite"></section>
+
+        <section class="listening-repeat-card">
+          <div class="listening-keyword-block">
+            <h2>${isVi ? "Từ trọng điểm" : "重点词"}</h2>
+            <div>${keywordsHTML}</div>
+            <article class="listening-keyword-detail hidden" id="listeningKeywordDetail" aria-live="polite"></article>
+          </div>
+          <div class="listening-translation-panel">
+            <h2>${isVi ? "Xem bản dịch" : "查看翻译"}</h2>
+            <p>${isVi ? "Xem toàn bộ bản dịch tiếng Việt của bài nghe." : "查看本课完整越南语翻译。"}</p>
+            <button class="listening-translation-side-btn" type="button" data-listening-translation>${state.listeningVietnameseOn ? (isVi ? "Ẩn bản dịch tiếng Việt" : "隐藏越南语翻译") : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译")}</button>
+          </div>
+          <div class="listening-repeat-box">
+            <h2>${isVi ? "Luyện nhại lại" : "跟读练习"}</h2>
+            <p>${isVi ? "Nhại lại câu hiện tại để tự kiểm tra phát âm" : "跟读当前句子，检查发音。"}</p>
+            <blockquote>
+              <strong>${escapeHtml(activeSentence.chinese || "")}</strong>
+              <small>${escapeHtml(activeSentence.pinyin || "")}</small>
+              <button type="button" data-listening-replay aria-label="${isVi ? "Nghe lại" : "重听"}">${desktopNavIcon("listening")}</button>
+            </blockquote>
+            <div class="listening-pronunciation-result" id="listeningPronunciationResult" aria-live="polite">
+              <span>${isVi ? "Bấm ghi âm, đọc lại câu, rồi bấm dừng để chấm điểm." : "点击录音，跟读句子，再点击停止评分。"}</span>
+            </div>
+            <div class="listening-record-row">
+              <button type="button" data-listening-record aria-label="${isVi ? "Ghi âm" : "录音"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+              </button>
+              <button type="button" data-listening-record>${isVi ? "Sẵn sàng đọc" : "准备朗读"}</button>
+            </div>
+            <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "还没有录音"}</span>
+            </button>
+            <textarea id="listeningRepeatInput" aria-label="${isVi ? "Kết quả đọc" : "朗读结果"}" readonly disabled>${escapeHtml(activeSentence.chinese || "")}</textarea>
+          </div>
+        </section>
+      </div>
+
+      <aside class="listening-keywords-card">
+        <section class="listening-lesson-progress">
+          <h2>${isVi ? "Tiến độ học tập" : "学习进度"}</h2>
+          <div class="listening-lesson-ring" style="--lesson-progress:${completionPercent}%">
+            <strong>${completionPercent}<span>%</span></strong>
+            <small>${isVi ? "Hoàn thành" : "完成"}</small>
+          </div>
+          <ul>
+            <li><span>24 / 32</span>${isVi ? "Bài học đã hoàn thành" : "已完成课程"}</li>
+            <li><span>562 / 1200</span>${isVi ? "Từ vựng đã học" : "已学词汇"}</li>
+            <li><span>512 / 750</span>${isVi ? "Phút đã nghe" : "已听分钟"}</li>
+            <li><span>3 / 10</span>${isVi ? "Đề thi thử đã làm" : "模拟测试"}</li>
+          </ul>
+        </section>
+        <section class="listening-streak-card">
+          <div><span class="listening-flame" aria-hidden="true"></span><b>${isVi ? "Chuỗi ngày hiện tại" : "当前连续"}</b><strong>12 ${isVi ? "ngày" : "天"}</strong></div>
+          <ol>
+            ${[18, 19, 20, 21, 22, 23].map((day) => `<li><span class="listening-flame" aria-hidden="true"></span><small>${day}</small></li>`).join("")}
+            <li class="muted"><span class="listening-flame" aria-hidden="true"></span><small>${isVi ? "Hôm nay" : "今天"}</small></li>
+          </ol>
+        </section>
+        <section class="listening-side-recommend">
+          <h2>${isVi ? "Bài nghe đề xuất" : "推荐听力"}</h2>
+          <div>
+            <span class="listening-side-cover"><button type="button" data-listening-open="ep-004" aria-label="${isVi ? "Phát" : "播放"}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></span>
+            <div>
+              <h3>${isVi ? "Ở nhà hàng" : "在餐厅"}</h3>
+              <p>HSK 3</p>
+              <small>${isVi ? "Luyện nghe - Hội thoại" : "听力 - 对话"} · 15 ${isVi ? "phút" : "分钟"} · ${isVi ? "Trung bình" : "中级"}</small>
+            </div>
+          </div>
+          <button type="button" data-listening-open="ep-004">${isVi ? "Tiếp tục học" : "继续学习"}</button>
+        </section>
+      </aside>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  requestAnimationFrame(() => {
+    bindListeningAudioEvents();
+    syncListeningAudioUi();
+  });
+}
+
+function getListeningAudioDuration(audio, episode) {
+  return Number.isFinite(audio?.duration) && audio.duration > 0 ? audio.duration : episode.duration;
+}
+
+function getListeningSentenceStart(episode, index) {
+  return episode.sentences[Math.max(0, Math.min(index, episode.sentences.length - 1))]?.start || 0;
+}
+
+function getListeningSentenceIndexAtTime(episode, time) {
+  return episode.sentences.reduce((activeIndex, sentence, index) => (
+    sentence.start <= time ? index : activeIndex
+  ), 0);
+}
+
+function setListeningActiveSentence(index) {
+  const episode = getListeningEpisode();
+  const nextIndex = Math.max(0, Math.min(index, episode.sentences.length - 1));
+  state.listeningSentenceIndex = nextIndex;
+  document.querySelectorAll("[data-listening-sentence]").forEach((button) => {
+    button.classList.toggle("active", Number(button.dataset.listeningSentence || 0) === nextIndex);
+  });
+}
+
+let listeningMediaRecorder = null;
+let listeningRecordingStream = null;
+let listeningRecordingChunks = [];
+let listeningRecordingUrl = "";
+let listeningRecordingBlob = null;
+let listeningRecordingAudio = null;
+let listeningRepeatRecognition = null;
+let listeningRepeatTranscript = "";
+let listeningRepeatInterim = "";
+let listeningRepeatScoringDone = false;
+let listeningRepeatScoreTimer = null;
+let listeningPlaybackRequested = false;
+let listeningRepeatSpeechToken = 0;
+let listeningRepeatSpeechState = "idle";
+let listeningRepeatAudioStopTimer = null;
+const listeningSpecializedPronunciationEnabled = true;
+
+function setListeningRepeatInput(value) {
+  const input = $("#listeningRepeatInput");
+  if (input) input.value = value;
+}
+
+function setListeningRepeatScorePreview(score = null) {
+  const preview = $(".listening-repeat-score-preview");
+  if (!preview) return;
+  const strong = preview.querySelector("strong");
+  const label = preview.querySelector("span");
+  const numericScore = Number(score);
+  if (strong) strong.textContent = Number.isFinite(numericScore) ? String(Math.max(0, Math.min(100, Math.round(numericScore)))) : "--";
+  if (label) label.textContent = "";
+}
+
+function setListeningRepeatListenUi(status = listeningRepeatSpeechState) {
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+  const button = $(".listening-repeat-play-large");
+  const label = $("[data-listening-repeat-listen-label]");
+  if (button) {
+    button.classList.toggle("is-playing", isPlaying);
+    button.classList.toggle("is-paused", isPaused);
+    button.setAttribute("aria-pressed", isPlaying ? "true" : "false");
+    button.setAttribute("aria-label", isPlaying
+      ? (state.lang === "vi" ? "Tạm dừng" : "Pause")
+      : (state.lang === "vi" ? "Phát" : "Play"));
+    button.innerHTML = isPlaying
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8z"/><path d="M13 5h3v14h-3z"/></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`;
+  }
+  if (label) {
+    label.textContent = isPlaying
+      ? (state.lang === "vi" ? "Tạm dừng" : "Pause")
+      : isPaused
+        ? (state.lang === "vi" ? "Tiếp tục" : "Resume")
+        : (state.lang === "vi" ? "Nghe lại" : "Replay");
+  }
+}
+
+function stopListeningRepeatListenPlayback() {
+  listeningRepeatSpeechToken += 1;
+  listeningRepeatSpeechState = "idle";
+  if (listeningRepeatAudioStopTimer) {
+    window.clearTimeout(listeningRepeatAudioStopTimer);
+    listeningRepeatAudioStopTimer = null;
+  }
+  const audio = $("#listeningRepeatAudio");
+  if (audio) {
+    audio.pause();
+    audio.ontimeupdate = null;
+    audio.onended = null;
+    audio.onerror = null;
+  }
+  window.speechSynthesis?.cancel();
+  setListeningRepeatListenUi("idle");
+}
+
+function updateListeningRecordingPlaybackUi(enabled = Boolean(listeningRecordingUrl)) {
+  document.querySelectorAll("[data-listening-recording-play]").forEach((button) => {
+    button.disabled = !enabled;
+    button.classList.toggle("has-recording", enabled);
+    const label = button.querySelector("[data-listening-recording-label]");
+    if (label) {
+      label.textContent = enabled
+        ? (state.lang === "vi" ? "Nghe lại ghi âm của bạn" : "重听你的录音")
+        : (state.lang === "vi" ? "Chưa có ghi âm" : "还没有录音");
+    }
+  });
+}
+
+function clearListeningRecordingPlayback() {
+  if (listeningRecordingAudio) {
+    listeningRecordingAudio.pause();
+    listeningRecordingAudio = null;
+  }
+  if (listeningRecordingUrl) URL.revokeObjectURL(listeningRecordingUrl);
+  listeningRecordingUrl = "";
+  listeningRecordingBlob = null;
+  listeningRecordingChunks = [];
+  updateListeningRecordingPlaybackUi(false);
+}
+
+function playListeningRepeatRecording() {
+  if (!listeningRecordingUrl) {
+    showToast(state.lang === "vi" ? "Chưa có ghi âm để nghe lại." : "还没有录音可以重听。");
+    return;
+  }
+  if (listeningRecordingAudio) {
+    listeningRecordingAudio.pause();
+    listeningRecordingAudio = null;
+  }
+  listeningRecordingAudio = new Audio(listeningRecordingUrl);
+  document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.add("is-playing"));
+  listeningRecordingAudio.addEventListener("ended", () => {
+    document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.remove("is-playing"));
+  }, { once: true });
+  listeningRecordingAudio.play().catch(() => {
+    document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.remove("is-playing"));
+    showToast(state.lang === "vi" ? "Không thể phát lại ghi âm này." : "无法播放这段录音。");
+  });
+}
+
+function getListeningRecordingOptions() {
+  if (!window.MediaRecorder?.isTypeSupported) return {};
+  const candidates = [
+    "audio/ogg;codecs=opus",
+    "audio/webm;codecs=opus",
+    "audio/webm",
+  ];
+  const mimeType = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+  return mimeType ? { mimeType } : {};
+}
+
+function getListeningRepeatText() {
+  return `${listeningRepeatTranscript} ${listeningRepeatInterim}`.trim();
+}
+
+function clearListeningPronunciationResult(message = "") {
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+  if (listeningRepeatScoreTimer) {
+    window.clearTimeout(listeningRepeatScoreTimer);
+    listeningRepeatScoreTimer = null;
+  }
+  panel.classList.remove("has-score");
+  panel.innerHTML = message ? `<span>${escapeHtml(message)}</span>` : "";
+  setListeningRepeatScorePreview(null);
+}
+
+function scheduleListeningRepeatScore(delay = 650) {
+  if (listeningRepeatScoringDone) return;
+  if (listeningRepeatScoreTimer) window.clearTimeout(listeningRepeatScoreTimer);
+  listeningRepeatScoreTimer = window.setTimeout(() => {
+    listeningRepeatScoreTimer = null;
+    scoreListeningRepeatRecording();
+  }, delay);
+}
+
+function compareListeningPronunciation(targetText, spokenText) {
+  const targetChars = Array.from(normalizeHanzi(targetText));
+  const spokenChars = Array.from(normalizeHanzi(spokenText));
+  const rows = targetChars.length + 1;
+  const cols = spokenChars.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = targetChars.length - 1; i >= 0; i -= 1) {
+    for (let j = spokenChars.length - 1; j >= 0; j -= 1) {
+      dp[i][j] = targetChars[i] === spokenChars[j]
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  const matched = new Set();
+  let i = 0;
+  let j = 0;
+  while (i < targetChars.length && j < spokenChars.length) {
+    if (targetChars[i] === spokenChars[j]) {
+      matched.add(i);
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i += 1;
+    } else {
+      j += 1;
+    }
+  }
+
+  const score = targetChars.length ? Math.round((matched.size / targetChars.length) * 100) : 0;
+  return { matched, score, spokenText, targetChars };
+}
+
+function renderListeningPronunciationScore(spokenText = getListeningRepeatText()) {
+  if (listeningRepeatScoringDone) return;
+  listeningRepeatScoringDone = true;
+
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+
+  const result = compareListeningPronunciation(sentence.chinese || "", spokenText);
+  const hasSpokenText = Boolean(normalizeHanzi(spokenText));
+  const scoreClass = result.score >= 85 ? "good" : result.score >= 60 ? "ok" : "low";
+  const markedTarget = result.targetChars.map((char, index) => (
+    `<b class="${result.matched.has(index) ? "correct" : "wrong"}">${escapeHtml(char)}</b>`
+  )).join("");
+
+  panel.classList.add("has-score");
+  panel.innerHTML = `
+    <div class="listening-pronunciation-score ${scoreClass}">
+      <strong>${hasSpokenText ? result.score : 0}</strong><span></span>
+    </div>
+    <div class="listening-pronunciation-lines">
+      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget}</em></p>
+      <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(spokenText || (state.lang === "vi" ? "Chưa nhận dạng được giọng đọc." : "没有识别到朗读。"))}</small></p>
+    </div>
+  `;
+
+  setListeningRepeatInput(spokenText || (state.lang === "vi" ? "Chưa nhận dạng được giọng đọc. Hãy thử đọc rõ hơn hoặc kiểm tra quyền micro." : "没有识别到朗读，请再试一次。"));
+  setListeningRepeatScorePreview(hasSpokenText ? result.score : 0);
+}
+
+function renderSpecializedPronunciationScore(result) {
+  listeningRepeatScoringDone = true;
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+  const score = Math.round(Number(result?.score || 0));
+  const scoreClass = score >= 85 ? "good" : score >= 60 ? "ok" : "low";
+  const charResults = Array.isArray(result?.charResults) ? result.charResults : [];
+  const markedTarget = charResults.map((item) => (
+    `<b class="${item.correct ? "correct" : "wrong"}" title="${escapeAttr(item.errorType || "")}">${escapeHtml(item.char || "")}</b>`
+  )).join("");
+  const metric = (label, value) => Number.isFinite(Number(value))
+    ? `<span>${label}: <strong>${Math.round(Number(value))}</strong></span>`
+    : "";
+
+  panel.classList.add("has-score");
+  panel.innerHTML = `
+    <div class="listening-pronunciation-score ${scoreClass}">
+      <strong>${score}</strong><span></span>
+    </div>
+    <div class="listening-pronunciation-lines">
+      <p class="listening-pronunciation-provider"><span>Azure Speech</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
+      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
+      <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
+    </div>
+  `;
+  setListeningRepeatScorePreview(score);
+  setListeningRepeatInput(result.recognizedText || "");
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      const value = String(reader.result || "");
+      resolve(value.includes(",") ? value.split(",").pop() : value);
+    }, { once: true });
+    reader.addEventListener("error", () => reject(reader.error || new Error("Không đọc được audio.")), { once: true });
+    reader.readAsDataURL(blob);
+  });
+}
+
+function encodePcm16Wav(samples, sampleRate) {
+  const bytesPerSample = 2;
+  const blockAlign = bytesPerSample;
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  const view = new DataView(buffer);
+  const writeString = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, samples.length * bytesPerSample, true);
+  let offset = 44;
+  for (const sample of samples) {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    offset += bytesPerSample;
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function downsampleAudioChannel(channelData, sourceRate, targetRate = 16000) {
+  if (sourceRate === targetRate) return channelData;
+  const ratio = sourceRate / targetRate;
+  const length = Math.max(1, Math.round(channelData.length / ratio));
+  const result = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(channelData.length, Math.floor((index + 1) * ratio));
+    let sum = 0;
+    let count = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      sum += channelData[cursor];
+      count += 1;
+    }
+    result[index] = count ? sum / count : channelData[Math.min(start, channelData.length - 1)] || 0;
+  }
+  return result;
+}
+
+async function blobToAssessmentAudio(blob) {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) {
+    return { audioBase64: await blobToBase64(blob), mimeType: blob.type || "audio/webm" };
+  }
+  const context = new AudioContextCtor();
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    const decoded = await context.decodeAudioData(arrayBuffer.slice(0));
+    const channelData = decoded.getChannelData(0);
+    const downsampled = downsampleAudioChannel(channelData, decoded.sampleRate, 16000);
+    const wavBlob = encodePcm16Wav(downsampled, 16000);
+    return { audioBase64: await blobToBase64(wavBlob), mimeType: "audio/wav" };
+  } catch (error) {
+    console.warn("Could not convert recording to WAV; sending original audio blob.", error);
+    return { audioBase64: await blobToBase64(blob), mimeType: blob.type || "audio/webm" };
+  } finally {
+    if (typeof context.close === "function") {
+      context.close().catch(() => {});
+    }
+  }
+}
+
+async function assessListeningPronunciationWithProvider(blob) {
+  if (!blob) throw new Error("Thiếu audio ghi âm.");
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const { audioBase64, mimeType } = await blobToAssessmentAudio(blob);
+  return apiRequest("/api/listening/pronunciation-assessment", {
+    method: "POST",
+    body: JSON.stringify({
+      referenceText: sentence.chinese || "",
+      audioBase64,
+      mimeType,
+    }),
+  });
+}
+
+async function scoreListeningRepeatRecording() {
+  if (!listeningSpecializedPronunciationEnabled || !listeningRecordingBlob) {
+    renderListeningPronunciationScore();
+    return;
+  }
+  clearListeningPronunciationResult(state.lang === "vi" ? "Đang chấm phát âm chuyên dụng..." : "正在进行专业发音评分...");
+  try {
+    const result = await assessListeningPronunciationWithProvider(listeningRecordingBlob);
+    renderSpecializedPronunciationScore(result);
+  } catch (error) {
+    console.warn("Specialized pronunciation assessment failed; falling back to browser scoring.", error);
+    showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    renderListeningPronunciationScore();
+  }
+}
+
+function stopListeningRepeatRecognition() {
+  if (!listeningRepeatRecognition) return;
+  try {
+    listeningRepeatRecognition.stop();
+  } catch {
+    scheduleListeningRepeatScore(0);
+  }
+}
+
+function startListeningRepeatRecognition() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  listeningRepeatTranscript = "";
+  listeningRepeatInterim = "";
+  listeningRepeatScoringDone = false;
+
+  if (!Recognition) {
+    clearListeningPronunciationResult(state.lang === "vi"
+      ? "Trình duyệt chưa hỗ trợ nhận dạng giọng nói để chấm điểm."
+      : "当前浏览器不支持语音识别评分。");
+    return false;
+  }
+
+  try {
+    listeningRepeatRecognition = new Recognition();
+    listeningRepeatRecognition.lang = "zh-CN";
+    listeningRepeatRecognition.continuous = true;
+    listeningRepeatRecognition.interimResults = true;
+    listeningRepeatRecognition.maxAlternatives = 1;
+
+    listeningRepeatRecognition.addEventListener("result", (event) => {
+      let interim = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0]?.transcript || "";
+        if (event.results[index].isFinal) listeningRepeatTranscript += transcript;
+        else interim += transcript;
+      }
+      listeningRepeatInterim = interim;
+      const heard = getListeningRepeatText();
+      if (heard) setListeningRepeatInput(heard);
+    });
+
+    listeningRepeatRecognition.addEventListener("end", () => {
+      if (listeningMediaRecorder?.state !== "recording") scheduleListeningRepeatScore(250);
+    });
+
+    listeningRepeatRecognition.addEventListener("error", () => {
+      if (listeningMediaRecorder?.state !== "recording") scheduleListeningRepeatScore(250);
+    });
+
+    listeningRepeatRecognition.start();
+    return true;
+  } catch {
+    clearListeningPronunciationResult(state.lang === "vi"
+      ? "Không thể bắt đầu nhận dạng giọng nói."
+      : "无法开始语音识别。");
+    return false;
+  }
+}
+
+function refreshListeningActiveSentenceUi() {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const completionPercent = Math.max(75, Math.round(((state.listeningSentenceIndex + 1) / Math.max(1, episode.sentences.length)) * 100));
+
+  setListeningActiveSentence(state.listeningSentenceIndex);
+  const repeatChinese = $(".listening-repeat-box blockquote strong");
+  const repeatPinyin = $(".listening-repeat-box blockquote small");
+  const progressRing = $(".listening-lesson-ring");
+  const progressText = $(".listening-lesson-ring strong");
+
+  if (repeatChinese) repeatChinese.textContent = sentence.chinese || "";
+  if (repeatPinyin) repeatPinyin.textContent = sentence.pinyin || "";
+  if (progressRing) progressRing.style.setProperty("--lesson-progress", `${completionPercent}%`);
+  if (progressText) progressText.innerHTML = `${completionPercent}<span>%</span>`;
+  setListeningRepeatInput(sentence.chinese || "");
+  clearListeningRecordingPlayback();
+  clearListeningPronunciationResult(state.lang === "vi"
+    ? "Bấm ghi âm, đọc lại câu, rồi bấm dừng để chấm điểm."
+    : "点击录音，跟读句子，再点击停止评分。");
+}
+
+function speakListeningSentence(index = state.listeningSentenceIndex) {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[Math.max(0, Math.min(index, episode.sentences.length - 1))];
+  if (!sentence?.chinese) return false;
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ đọc câu này." : "当前浏览器不支持朗读。");
+    return false;
+  }
+
+  const playbackRate = getListeningPlaybackRate();
+  browserSpeakText(sentence.chinese, { stage: "sentence", rate: playbackRate });
+  setListeningPlayIcon(true);
+  showToast(state.lang === "vi" ? "Đang đọc câu hiện tại." : "正在朗读当前句子。");
+  window.setTimeout(() => syncListeningAudioUi(), Math.max(900, Math.min(4500, (sentence.chinese.length * 180) / playbackRate)));
+  return true;
+}
+
+function toggleListeningRepeatSentencePlayback() {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  if (!sentence?.chinese) return false;
+
+  const audio = $("#listeningRepeatAudio");
+
+  if (listeningRepeatSpeechState === "playing") {
+    if (audio && !audio.paused) audio.pause();
+    else window.speechSynthesis.pause();
+    if (listeningRepeatAudioStopTimer) {
+      window.clearTimeout(listeningRepeatAudioStopTimer);
+      listeningRepeatAudioStopTimer = null;
+    }
+    listeningRepeatSpeechState = "paused";
+    setListeningRepeatListenUi("paused");
+    return true;
+  }
+
+  if (listeningRepeatSpeechState === "paused") {
+    if (audio && episode.audioSrc) {
+      const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : (audio.currentTime || 0) + Math.max(1, sentence.chinese.length * 0.35);
+      const remainingMs = Math.max(400, ((endTime - (audio.currentTime || 0)) / getListeningPlaybackRate()) * 1000 + 180);
+      if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
+      listeningRepeatAudioStopTimer = window.setTimeout(() => {
+        audio.pause();
+        audio.currentTime = Number(sentence.start || 0);
+        listeningRepeatSpeechState = "idle";
+        listeningRepeatAudioStopTimer = null;
+        setListeningRepeatListenUi("idle");
+      }, remainingMs);
+      audio.play().catch(() => {
+        listeningRepeatSpeechState = "idle";
+        setListeningRepeatListenUi("idle");
+      });
+    } else {
+      window.speechSynthesis.resume();
+    }
+    listeningRepeatSpeechState = "playing";
+    setListeningRepeatListenUi("playing");
+    return true;
+  }
+
+  const playbackRate = getListeningPlaybackRate();
+  const speechToken = listeningRepeatSpeechToken + 1;
+  listeningRepeatSpeechToken = speechToken;
+  listeningRepeatSpeechState = "playing";
+  setListeningRepeatListenUi("playing");
+
+  if (audio && episode.audioSrc) {
+    const startTime = Number(sentence.start || 0);
+    const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : startTime + Math.max(1, sentence.chinese.length * 0.35);
+    const resetRepeatAudioUi = () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      if (listeningRepeatAudioStopTimer) {
+        window.clearTimeout(listeningRepeatAudioStopTimer);
+        listeningRepeatAudioStopTimer = null;
+      }
+      setListeningRepeatListenUi("idle");
+    };
+    applyListeningPlaybackRate(audio);
+    audio.currentTime = startTime;
+    audio.ontimeupdate = () => {
+      if (audio.currentTime >= endTime) {
+        audio.pause();
+        audio.currentTime = startTime;
+        resetRepeatAudioUi();
+      }
+    };
+    audio.onended = resetRepeatAudioUi;
+    audio.onerror = () => {
+      resetRepeatAudioUi();
+      if (!("speechSynthesis" in window)) {
+        showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
+        return;
+      }
+      listeningRepeatSpeechState = "playing";
+      setListeningRepeatListenUi("playing");
+      browserSpeakText(sentence.chinese, { stage: "sentence", rate: playbackRate, onend: resetRepeatAudioUi, onerror: resetRepeatAudioUi });
+    };
+    if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
+    listeningRepeatAudioStopTimer = window.setTimeout(() => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      audio.pause();
+      audio.currentTime = startTime;
+      resetRepeatAudioUi();
+    }, Math.max(600, ((endTime - startTime) / playbackRate) * 1000 + 180));
+    audio.play().catch(() => {
+      resetRepeatAudioUi();
+      if (!("speechSynthesis" in window)) {
+        showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
+        return;
+      }
+      listeningRepeatSpeechState = "playing";
+      setListeningRepeatListenUi("playing");
+      browserSpeakText(sentence.chinese, {
+        stage: "sentence",
+        rate: playbackRate,
+        onend: resetRepeatAudioUi,
+        onerror: resetRepeatAudioUi,
+      });
+    });
+    return true;
+  }
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "TrÃ¬nh duyá»‡t chÆ°a há»— trá»£ Ä‘á»c cÃ¢u nÃ y." : "å½“å‰æµè§ˆå™¨ä¸æ”¯æŒæœ—è¯»ã€‚");
+    listeningRepeatSpeechState = "idle";
+    setListeningRepeatListenUi("idle");
+    return false;
+  }
+
+  browserSpeakText(sentence.chinese, {
+    stage: "sentence",
+    rate: playbackRate,
+    onend: () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      setListeningRepeatListenUi("idle");
+    },
+    onerror: () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      setListeningRepeatListenUi("idle");
+    },
+  });
+  return true;
+}
+
+function getListeningKeyword(index) {
+  const episode = getListeningEpisode();
+  const keyword = episode.keywords[Math.max(0, Math.min(index, episode.keywords.length - 1))];
+  if (!keyword) return null;
+  return typeof keyword === "string"
+    ? { chinese: keyword, pinyin: "", vietnamese: "", examples: [] }
+    : {
+      chinese: keyword.chinese || "",
+      pinyin: keyword.pinyin || "",
+      vietnamese: keyword.vietnamese || "",
+      partOfSpeech: keyword.partOfSpeech || keyword.pos || keyword.type || "",
+      examples: Array.isArray(keyword.examples) ? keyword.examples : [],
+    };
+}
+
+function getListeningKeywordExamples(keyword = {}) {
+  const word = keyword.chinese || "";
+  const wordPinyin = keyword.pinyin || "";
+  const wordVi = keyword.vietnamese || word;
+  const customExamples = Array.isArray(keyword.examples) ? keyword.examples.filter(Boolean) : [];
+  const fallbackExamples = [
+    {
+      chinese: `我想学习“${word}”这个词。`,
+      pinyin: `Wǒ xiǎng xuéxí “${wordPinyin || word}” zhège cí.`,
+      vietnamese: `Tôi muốn học từ “${wordVi}”.`,
+    },
+    {
+      chinese: `请你再说一遍“${word}”。`,
+      pinyin: `Qǐng nǐ zài shuō yí biàn “${wordPinyin || word}”.`,
+      vietnamese: `Bạn hãy nói lại “${wordVi}” một lần nữa.`,
+    },
+    {
+      chinese: `这个句子里有“${word}”。`,
+      pinyin: `Zhège jùzi lǐ yǒu “${wordPinyin || word}”.`,
+      vietnamese: `Trong câu này có từ “${wordVi}”.`,
+    },
+  ];
+  return [...customExamples, ...fallbackExamples].slice(0, 3);
+}
+
+function normalizeListeningKeywordExample(example, keyword = {}) {
+  if (typeof example === "object" && example) {
+    return {
+      chinese: example.chinese || example.text || "",
+      pinyin: example.pinyin || "",
+      vietnamese: example.vietnamese || example.vi || "",
+    };
+  }
+  const chinese = String(example || "");
+  return {
+    chinese,
+    pinyin: "",
+    vietnamese: keyword.vietnamese ? `${state.lang === "vi" ? "Ví dụ với" : "例句"} ${keyword.chinese}` : "",
+  };
+}
+
+function highlightListeningKeyword(text = "", keyword = "") {
+  if (!keyword || !text.includes(keyword)) return escapeHtml(text);
+  return escapeHtml(text).replaceAll(escapeHtml(keyword), `<mark>${escapeHtml(keyword)}</mark>`);
+}
+
+function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeIndex) {
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.keywords.length);
+  const safeIndex = ((Number(index) || 0) + total) % total;
+  state.listeningVocabPracticeIndex = safeIndex;
+  const keyword = getListeningKeyword(safeIndex);
+  if (!keyword?.chinese) return "";
+
+  const examples = getListeningKeywordExamples(keyword)
+    .map((example) => normalizeListeningKeywordExample(example, keyword));
+  const keywordPartOfSpeech = keyword.partOfSpeech || (state.lang === "vi" ? "Từ trọng điểm" : "重点词");
+  const examplesHTML = examples.map((example, exampleIndex) => `
+    <article class="listening-vocab-example">
+      <span>${state.lang === "vi" ? "Ví dụ" : "例句"} ${exampleIndex + 1}</span>
+      <p>${highlightListeningKeyword(example.chinese, keyword.chinese)}</p>
+      ${example.pinyin ? `<small>${escapeHtml(example.pinyin)}</small>` : ""}
+      ${example.vietnamese ? `<em>${escapeHtml(example.vietnamese)}</em>` : ""}
+      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
+        ${desktopNavIcon("listening")}
+      </button>
+    </article>
+  `).join("");
+  const progress = Math.round(((safeIndex + 1) / total) * 100);
+
+  return `
+    <div class="listening-vocab-practice-progress">
+      <span>${state.lang === "vi" ? "Tiến độ" : "进步"}</span>
+      <i><b style="width:${progress}%"></b></i>
+      <strong>${safeIndex + 1} / ${total} ${state.lang === "vi" ? "từ" : "词"}</strong>
+    </div>
+    <div class="listening-vocab-practice-card">
+      <div class="listening-vocab-practice-kind"><i></i>${state.lang === "vi" ? "Chữ Hán" : "汉字"}<i></i></div>
+      <button class="listening-vocab-practice-speaker" type="button" data-listening-vocab-speak="normal" aria-label="${state.lang === "vi" ? "Nghe từ vựng" : "听词语"}">
+        ${desktopNavIcon("listening")}
+      </button>
+      <strong class="listening-vocab-practice-word">${escapeHtml(keyword.chinese)}</strong>
+      <div class="listening-vocab-practice-meta">
+        <div><span>${state.lang === "vi" ? "Loại từ" : "词类"}</span><b>${escapeHtml(keywordPartOfSpeech)}</b></div>
+        <div><span>pinyin</span><p>${escapeHtml(keyword.pinyin || "—")}</p></div>
+      </div>
+      <div class="listening-vocab-practice-meaning">
+        <span>${state.lang === "vi" ? "Tiếng Việt" : "越南语"}</span>
+        <p>${escapeHtml(keyword.vietnamese || "—")}</p>
+      </div>
+      <div class="listening-vocab-practice-audio">
+        <button type="button" data-listening-vocab-speak="normal">${desktopNavIcon("listening")} ${state.lang === "vi" ? "Nghe bình thường" : "正常听"}</button>
+        <button type="button" data-listening-vocab-speak="slow">${desktopNavIcon("listening")} ${state.lang === "vi" ? "Nghe chậm" : "慢速听"}</button>
+      </div>
+      <div class="listening-vocab-example-list">${examplesHTML}</div>
+      <button class="listening-vocab-next-btn" type="button" data-listening-vocab-next>
+        Next
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderListeningVocabPractice(index = state.listeningVocabPracticeIndex) {
+  const panel = $("#listeningVocabPracticePanel");
+  const html = buildListeningVocabPracticeHTML(index);
+  if (!panel || !html) return;
+  panel.classList.remove("hidden");
+  panel.dataset.keywordIndex = String(state.listeningVocabPracticeIndex);
+  panel.innerHTML = html;
+}
+
+function renderListeningVocabLesson(options = {}) {
+  const isVi = state.lang === "vi";
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-vocab-lesson-screen">
+      <button class="listening-vocab-back-btn" type="button" data-listening-vocab-back aria-label="${isVi ? "Quay lại bài nghe" : "返回听力"}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      </button>
+      <section class="listening-vocab-practice-panel listening-vocab-practice-panel--screen">
+        ${buildListeningVocabPracticeHTML(state.listeningVocabPracticeIndex)}
+      </section>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+}
+
+function resetListeningRepeatAttempt() {
+  stopListeningRepeatListenPlayback();
+  listeningRepeatTranscript = "";
+  listeningRepeatInterim = "";
+  listeningRepeatScoringDone = false;
+  if (listeningRepeatScoreTimer) {
+    window.clearTimeout(listeningRepeatScoreTimer);
+    listeningRepeatScoreTimer = null;
+  }
+  clearListeningRecordingPlayback();
+}
+
+function setListeningRepeatLessonSentence(index) {
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.sentences.length);
+  state.listeningSentenceIndex = Math.max(0, Math.min(Number(index) || 0, total - 1));
+  resetListeningRepeatAttempt();
+}
+
+function renderListeningRepeatLesson(options = {}) {
+  const isVi = state.lang === "vi";
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.sentences.length);
+  const currentIndex = Math.max(0, Math.min(state.listeningSentenceIndex, total - 1));
+  const sentence = episode.sentences[currentIndex] || episode.sentences[0] || {};
+  const progress = Math.round(((currentIndex + 1) / total) * 100);
+  const listenLabel = listeningRepeatSpeechState === "playing"
+    ? (isVi ? "Tạm dừng" : "Pause")
+    : listeningRepeatSpeechState === "paused"
+      ? (isVi ? "Tiếp tục" : "Resume")
+      : (isVi ? "Nghe lại" : "Replay");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-repeat-lesson-screen listening-repeat-lesson-screen--compact">
+      <header class="listening-repeat-lesson-topbar listening-repeat-lesson-topbar--compact">
+        <div class="listening-repeat-title-block">
+          <h1>${isVi ? "Nói theo" : "Shadowing"}</h1>
+          <p>${escapeHtml(isVi ? (episode.category || "Chủ đề bài nghe") : (episode.categoryZh || "Listening topic"))}</p>
+        </div>
+        <div class="listening-repeat-progress listening-repeat-progress--compact">
+          <strong>${isVi ? "Câu" : "Sentence"} ${currentIndex + 1}/${total}</strong>
+          <i><b style="width:${progress}%"></b></i>
+        </div>
+      </header>
+
+      <section class="listening-repeat-workspace listening-repeat-workspace--compact">
+        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+        <div class="listening-repeat-practice-grid">
+          <article class="listening-repeat-listen-card">
+            <span class="listening-repeat-card-chip">${desktopNavIcon("listening")} ${isVi ? "听句子 / Listen" : "Listen"}</span>
+            <div class="listening-repeat-listen-content">
+              <strong>${escapeHtml(sentence.chinese || "")}</strong>
+              <small>${escapeHtml(sentence.pinyin || "")}</small>
+              <em>${escapeHtml(sentence.vietnamese || "")}</em>
+            </div>
+            <div class="listening-repeat-card-actions">
+              <button class="listening-repeat-play-large ${listeningRepeatSpeechState === "playing" ? "is-playing" : ""} ${listeningRepeatSpeechState === "paused" ? "is-paused" : ""}" type="button" data-listening-repeat-current-play aria-pressed="${listeningRepeatSpeechState === "playing" ? "true" : "false"}" aria-label="${escapeAttr(listenLabel)}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+              <button class="listening-repeat-small-audio-btn" type="button" data-listening-repeat-current-play aria-label="${isVi ? "Nghe lại" : "Replay"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v6h6"/></svg>
+              </button>
+            </div>
+            <span class="listening-repeat-hidden-label" data-listening-repeat-listen-label>${escapeHtml(listenLabel)}</span>
+          </article>
+
+          <article class="listening-repeat-shadow-card">
+            <span class="listening-repeat-card-chip">${desktopNavIcon("listening")} ${isVi ? "跟读 / Shadow" : "Shadow"}</span>
+            <div class="listening-repeat-shadow-body">
+              <button class="listening-repeat-mic-large" type="button" data-listening-record>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
+              </button>
+              <strong>Recording...</strong>
+              <div class="listening-repeat-record-wave"><i></i></div>
+              <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "No recording yet"}</span>
+              </button>
+              <textarea id="listeningRepeatInput" readonly disabled>${escapeHtml(sentence.chinese || "")}</textarea>
+            </div>
+          </article>
+
+          <article class="listening-repeat-score-card">
+            <h2><span>3</span>${isVi ? "Chấm điểm và lỗi sai" : "Score and mistakes"}</h2>
+            <div class="listening-repeat-score-layout">
+              <div class="listening-repeat-score-preview"><strong>--</strong><span></span></div>
+              <div id="listeningPronunciationResult" class="listening-pronunciation-result">
+                <span>${isVi ? "Lỗi sai" : "Mistakes"}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="listening-repeat-footer-actions">
+          <button class="listening-repeat-bottom-back" type="button" data-listening-repeat-back>${isVi ? "Trở lại" : "Back"}</button>
+          <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
+            ${isVi ? "Tiếp" : "Next"}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
+  setListeningRepeatListenUi(listeningRepeatSpeechState);
+  return;
+
+  const completedCount = currentIndex;
+  const sentenceCardsHTML = episode.sentences.map((item, index) => `
+    <article class="listening-repeat-list-card ${index === currentIndex ? "active" : ""}">
+      <button class="listening-repeat-list-main" type="button" data-listening-repeat-sentence="${index}">
+        <span>${index + 1}</span>
+        <strong>${escapeHtml(item.chinese || "")}</strong>
+        <small>${escapeHtml(item.pinyin || "")}</small>
+        <em>${escapeHtml(item.vietnamese || "")}</em>
+      </button>
+      <button class="listening-repeat-list-play" type="button" data-listening-repeat-play="${index}" aria-label="${isVi ? "Nghe câu này" : "Listen"}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </article>
+  `).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-repeat-lesson-screen">
+      <header class="listening-repeat-lesson-topbar">
+        <button class="listening-repeat-back-btn" type="button" data-listening-repeat-back>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <span>${isVi ? "Quay trở lại" : "Back"}</span>
+        </button>
+        <h1>${isVi ? "Nói theo" : "Shadowing"}</h1>
+        <div class="listening-repeat-progress">
+          <span>${isVi ? "Tiến độ nội dung:" : "Progress:"}</span>
+          <strong>${currentIndex + 1} / ${total} ${isVi ? "câu" : "sentences"}</strong>
+          <i><b style="width:${progress}%"></b></i>
+        </div>
+      </header>
+
+      <div class="listening-repeat-lesson-layout">
+        <aside class="listening-repeat-sentence-rail">
+          <h2>${isVi ? "Danh sách câu trong nội dung nghe" : "Sentence list"}</h2>
+          <div class="listening-repeat-list">${sentenceCardsHTML}</div>
+          <footer>
+            <span>${isVi ? "Tổng số câu:" : "Total:"} <strong>${total}</strong></span>
+            <span>${isVi ? "Đã hoàn thành:" : "Done:"} <strong>${completedCount}</strong></span>
+          </footer>
+        </aside>
+
+        <section class="listening-repeat-workspace">
+          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">1</div>
+            <div class="listening-repeat-step-control">
+              <button class="listening-repeat-play-large ${listeningRepeatSpeechState === "playing" ? "is-playing" : ""} ${listeningRepeatSpeechState === "paused" ? "is-paused" : ""}" type="button" data-listening-repeat-current-play aria-pressed="${listeningRepeatSpeechState === "playing" ? "true" : "false"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+              <span data-listening-repeat-listen-label>${listeningRepeatSpeechState === "playing" ? (isVi ? "Tạm dừng" : "Pause") : listeningRepeatSpeechState === "paused" ? (isVi ? "Tiếp tục" : "Resume") : (isVi ? "Nghe lại" : "Replay")}</span>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Nghe từng câu" : "Listen sentence by sentence"}</h2>
+              <div class="listening-repeat-reference-wave">
+                <i></i>
+                <span>0:00 / ${listeningFormatTime(Math.max(1, (sentence.end || 0) - (sentence.start || 0)))}</span>
+              </div>
+              <div class="listening-repeat-current-text">
+                <strong>${escapeHtml(sentence.chinese || "")}</strong>
+                <small>${escapeHtml(sentence.pinyin || "")}</small>
+                <em>${escapeHtml(sentence.vietnamese || "")}</em>
+              </div>
+            </div>
+          </div>
+
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">2</div>
+            <div class="listening-repeat-step-control">
+              <button class="listening-repeat-mic-large" type="button" data-listening-record>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
+              </button>
+              <span>${isVi ? "Nhấn để bắt đầu" : "Tap to start"}</span>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Nói theo" : "Repeat"}</h2>
+              <div class="listening-repeat-record-panel">
+                <div class="listening-repeat-record-status">
+                  <span></span>
+                  <strong>${isVi ? "Sẵn sàng ghi âm" : "Ready to record"}</strong>
+                </div>
+                <div class="listening-repeat-record-wave"><i></i></div>
+                <p><b>${isVi ? "Mẹo:" : "Tip:"}</b> ${isVi ? "Nói rõ ràng, đúng ngữ điệu và tốc độ tự nhiên." : "Speak clearly with natural rhythm."}</p>
+                <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "No recording yet"}</span>
+                </button>
+                <textarea id="listeningRepeatInput" readonly disabled>${escapeHtml(sentence.chinese || "")}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">3</div>
+            <div class="listening-repeat-step-control">
+              <div class="listening-repeat-score-preview"><strong>--</strong><span></span></div>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Chấm điểm và lỗi sai" : "Score and mistakes"}</h2>
+              <div id="listeningPronunciationResult" class="listening-pronunciation-result">
+                <span>${isVi ? "Bấm micro để ghi âm. Sau khi dừng, hệ thống sẽ chấm điểm và tô màu chữ sai." : "Record your voice to see score and mistakes."}</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
+            ${isVi ? "Câu tiếp theo" : "Next sentence"}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+          </button>
+        </section>
+      </div>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
+  setListeningRepeatListenUi(listeningRepeatSpeechState);
+}
+
+function renderListeningKeywordDetail(index, button = null) {
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+  const panel = $("#listeningKeywordDetail");
+  if (!panel) return;
+  const examplesHTML = getListeningKeywordExamples(keyword).map((example, exampleIndex) => `
+    <li>
+      <span>${exampleIndex + 1}</span>
+      <p>${escapeHtml(example)}</p>
+    </li>
+  `).join("");
+
+  document.querySelectorAll("[data-listening-keyword]").forEach((node) => node.classList.remove("active"));
+  button?.classList.add("active");
+  panel.classList.remove("hidden");
+  panel.dataset.keywordIndex = String(index);
+  panel.innerHTML = `
+    <div>
+      <span>${state.lang === "vi" ? "Chữ Hán" : "汉字"}</span>
+      <strong>${escapeHtml(keyword.chinese)}</strong>
+    </div>
+    <div>
+      <span>Pinyin</span>
+      <p>${escapeHtml(keyword.pinyin || "—")}</p>
+    </div>
+    <div>
+      <span>${state.lang === "vi" ? "Tiếng Việt" : "越南语"}</span>
+      <p>${escapeHtml(keyword.vietnamese || "—")}</p>
+    </div>
+    <div class="listening-keyword-actions">
+      <button type="button" data-listening-keyword-speak="${index}" data-listening-keyword-rate="normal">
+        ${desktopNavIcon("listening")}
+        ${state.lang === "vi" ? "Nghe thường" : "正常听"}
+      </button>
+      <button type="button" data-listening-keyword-speak="${index}" data-listening-keyword-rate="slow">
+        ${desktopNavIcon("listening")}
+        ${state.lang === "vi" ? "Nghe chậm" : "慢速听"}
+      </button>
+    </div>
+    <div class="listening-keyword-examples">
+      <span>${state.lang === "vi" ? "3 câu ví dụ tiếng Trung" : "3 个中文例句"}</span>
+      <ol>${examplesHTML}</ol>
+    </div>
+  `;
+}
+
+function playListeningKeyword(index, options = {}) {
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ phát âm từ vựng." : "当前浏览器不支持朗读词语。");
+    return;
+  }
+  browserSpeakText(keyword.chinese, { stage: "word", slow: Boolean(options.slow), rate: options.slow ? 0.72 : 0.98 });
+}
+
+function selectListeningKeyword(index, button = null) {
+  renderListeningKeywordDetail(index, button);
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+  const chinese = typeof keyword === "string" ? keyword : keyword?.chinese || "";
+  const pinyin = typeof keyword === "string" ? "" : keyword?.pinyin || "";
+  const vietnamese = typeof keyword === "string" ? "" : keyword?.vietnamese || "";
+  const meta = [pinyin, vietnamese].filter(Boolean).join(" · ");
+  if (meta) showToast(`${chinese}: ${meta}`);
+}
+
+async function startListeningRepeatRecording() {
+  if (listeningMediaRecorder?.state === "recording") {
+    stopListeningRepeatRecognition();
+    listeningMediaRecorder.stop();
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ ghi âm." : "当前浏览器不支持录音。");
+    return;
+  }
+
+  try {
+    listeningRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    clearListeningRecordingPlayback();
+    listeningRecordingChunks = [];
+    listeningMediaRecorder = new MediaRecorder(listeningRecordingStream, getListeningRecordingOptions());
+    document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.add("is-recording"));
+    clearListeningPronunciationResult(state.lang === "vi" ? "Đang nghe bạn đọc..." : "正在听你朗读...");
+    const canScorePronunciation = startListeningRepeatRecognition();
+    showToast(state.lang === "vi" ? "Đang ghi âm, bấm lại để dừng." : "正在录音，再点一次停止。");
+
+    listeningMediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data?.size) listeningRecordingChunks.push(event.data);
+    });
+
+    listeningMediaRecorder.addEventListener("stop", () => {
+      document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
+      listeningRecordingStream?.getTracks().forEach((track) => track.stop());
+      listeningRecordingStream = null;
+      if (listeningRecordingUrl) URL.revokeObjectURL(listeningRecordingUrl);
+      const blob = new Blob(listeningRecordingChunks, { type: listeningMediaRecorder.mimeType || "audio/webm" });
+      listeningRecordingBlob = blob;
+      listeningRecordingUrl = URL.createObjectURL(blob);
+      updateListeningRecordingPlaybackUi(true);
+      scheduleListeningRepeatScore(canScorePronunciation ? 850 : 0);
+      setListeningRepeatInput(state.lang === "vi"
+        ? "Đã ghi âm xong. Bạn có thể nghe lại bằng trình duyệt hoặc ghi lại lần nữa."
+        : "录音完成。你可以重新录一次。");
+      showToast(state.lang === "vi" ? "Đã ghi âm xong." : "录音完成。");
+    }, { once: true });
+
+    listeningMediaRecorder.start();
+  } catch {
+    stopListeningRepeatRecognition();
+    document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
+    listeningRecordingStream?.getTracks().forEach((track) => track.stop());
+    listeningRecordingStream = null;
+    showToast(state.lang === "vi" ? "Không thể mở micro. Hãy kiểm tra quyền trình duyệt." : "无法打开麦克风，请检查浏览器权限。");
+  }
+}
+
+function setListeningPlayIcon(isPlaying) {
+  document.querySelectorAll("[data-listening-play]").forEach((button) => {
+    button.classList.toggle("is-playing", isPlaying);
+    button.innerHTML = isPlaying
+      ? `<svg viewBox="0 0 24 24"><path d="M8 5h3v14H8z"/><path d="M13 5h3v14h-3z"/></svg>`
+      : `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+  });
+}
+
+function setListeningWaveformActive(isPlaying) {
+  document.querySelectorAll(".listening-waveform").forEach((waveform) => {
+    waveform.classList.toggle("is-playing", isPlaying);
+  });
+}
+
+function setListeningPlaybackUi(isPlaying) {
+  const statusTitle = $("#listeningStatusTitle");
+  if (statusTitle) statusTitle.textContent = isPlaying ? (state.lang === "vi" ? "Đang phát" : "播放中") : (state.lang === "vi" ? "Đã tạm dừng" : "已暂停");
+  setListeningPlayIcon(isPlaying);
+  setListeningWaveformActive(isPlaying);
+}
+
+function syncListeningAudioUi() {
+  if (state.screen !== "listening" || state.listeningView !== "detail") return;
+  const episode = getListeningEpisode();
+  const audio = $("#listeningAudio");
+  const statusTitle = $("#listeningStatusTitle");
+  const statusSub = $("#listeningStatusSub");
+  const currentTimeNode = $("#listeningCurrentTime");
+  const progressNode = $("#listeningProgress");
+  applyListeningPlaybackRate(audio);
+  const duration = getListeningAudioDuration(audio, episode);
+  const current = audio ? Math.min(audio.currentTime || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
+  const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
+  if (audio?.ended) listeningPlaybackRequested = false;
+  if (audio && !audio.paused) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
+
+  if (currentTimeNode) currentTimeNode.textContent = listeningFormatTime(current);
+  if (progressNode) progressNode.style.width = `${percent}%`;
+  if (statusTitle) statusTitle.textContent = audio && (!audio.paused || listeningPlaybackRequested) ? (state.lang === "vi" ? "Đang phát" : "播放中") : (state.lang === "vi" ? "Đã tạm dừng" : "已暂停");
+  if (statusSub) {
+    if (audio?.error) {
+      statusSub.textContent = state.lang === "vi" ? "Không thể phát file, có thể dùng giọng đọc trình duyệt." : "无法播放音频，可使用浏览器朗读。";
+    } else if (!episode.audioSrc) {
+      statusSub.textContent = state.lang === "vi" ? "Bài này dùng giọng đọc trình duyệt." : "本课使用浏览器朗读。";
+    } else {
+      statusSub.textContent = state.lang === "vi" ? "Âm thanh thật đã sẵn sàng" : "真实音频已准备";
+    }
+  }
+  const isPlaying = Boolean(audio && (!audio.paused || listeningPlaybackRequested));
+  setListeningPlayIcon(isPlaying);
+  setListeningWaveformActive(isPlaying);
+}
+
+function seekListeningSentence(index, autoplay = false) {
+  const episode = getListeningEpisode();
+  state.listeningSentenceIndex = Math.max(0, Math.min(index, episode.sentences.length - 1));
+  const audio = $("#listeningAudio");
+  const startTime = getListeningSentenceStart(episode, state.listeningSentenceIndex);
+
+  if (autoplay && audio && episode.audioSrc) {
+    listeningPlaybackRequested = true;
+    audio.currentTime = startTime;
+    refreshListeningActiveSentenceUi();
+    setListeningPlaybackUi(true);
+    audio.play()
+      .then(() => {
+        if (!listeningPlaybackRequested) {
+          audio.pause();
+          return;
+        }
+        syncListeningAudioUi();
+      })
+      .catch(() => {
+        if (!listeningPlaybackRequested) {
+          syncListeningAudioUi();
+          return;
+        }
+        if (!speakListeningSentence()) syncListeningAudioUi();
+      });
+    return;
+  }
+
+  if (autoplay && (!audio || !episode.audioSrc)) {
+    refreshListeningActiveSentenceUi();
+    if (!speakListeningSentence()) syncListeningAudioUi();
+    return;
+  }
+
+  renderListeningDetail({ preserveScroll: true });
+  requestAnimationFrame(() => {
+    const audio = $("#listeningAudio");
+    if (audio) audio.currentTime = startTime;
+    syncListeningAudioUi();
+  });
+}
+
+function isListeningPlaybackActive() {
+  const audio = $("#listeningAudio");
+  return Boolean(audio && (!audio.paused || listeningPlaybackRequested));
+}
+
+function toggleListeningPlayback() {
+  const episode = getListeningEpisode();
+  const audio = $("#listeningAudio");
+  if (!audio || !episode.audioSrc) {
+    if (listeningPlaybackRequested) {
+      listeningPlaybackRequested = false;
+      window.speechSynthesis?.cancel?.();
+      setListeningPlaybackUi(false);
+      return;
+    }
+    listeningPlaybackRequested = true;
+    if (!speakListeningSentence()) {
+      listeningPlaybackRequested = false;
+      syncListeningAudioUi();
+    }
+    return;
+  }
+  if (!audio.paused || listeningPlaybackRequested) {
+    listeningPlaybackRequested = false;
+    window.speechSynthesis?.cancel?.();
+    audio.pause();
+    syncListeningAudioUi();
+    return;
+  }
+
+  listeningPlaybackRequested = true;
+  setListeningPlaybackUi(true);
+  audio.play()
+    .then(() => {
+      if (!listeningPlaybackRequested) {
+        audio.pause();
+        return;
+      }
+      syncListeningAudioUi();
+    })
+    .catch(() => {
+      if (!listeningPlaybackRequested) {
+        syncListeningAudioUi();
+        return;
+      }
+      if (!speakListeningSentence()) syncListeningAudioUi();
+    });
+}
+
+function bindListeningAudioEvents() {
+  const audio = $("#listeningAudio");
+  if (audio && audio.dataset.bound !== "1") {
+    audio.dataset.bound = "1";
+    applyListeningPlaybackRate(audio);
+    ["loadedmetadata", "timeupdate", "play", "pause", "ended", "error"].forEach((eventName) => {
+      audio.addEventListener(eventName, syncListeningAudioUi);
+    });
+  } else if (audio) {
+    applyListeningPlaybackRate(audio);
+  }
+
+  const track = $("[data-listening-track]");
+  if (!track || track.dataset.bound === "1") return;
+  track.dataset.bound = "1";
+  track.addEventListener("click", (event) => {
+    const episode = getListeningEpisode();
+    const duration = getListeningAudioDuration(audio, episode);
+    if (!duration) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const nextTime = ratio * duration;
+    if (audio && episode.audioSrc) audio.currentTime = nextTime;
+    setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, nextTime));
+    syncListeningAudioUi();
+  });
 }
 
 function renderHomeDesktopLayoutHTML(isVi) {
@@ -5894,15 +7916,15 @@ function renderHomeMobileTopicsHTML(isVi) {
       </div>
       <div class="home-mobile-topics-list">
         ${topics.map((theme, index) => {
-          const config = getDailyFeaturedThemeConfig(theme);
-          const title = isVi ? config.titleVi : config.titleZh;
-          const zhText = config.zhLabel || theme.zh || title;
-          const pinyin = config.pinyin || "";
-          const itemCount = Array.isArray(theme.items) ? theme.items.length : 0;
-          const minutes = Math.max(2, Math.min(5, Math.ceil(itemCount / 2) + 2));
-          const level = index === 2 ? (isVi ? "Dễ" : "简单") : `HSK ${index % 2 === 0 ? 1 : 2}`;
-          const locked = isDailyThemeLockedForUser(theme.id);
-          return `
+    const config = getDailyFeaturedThemeConfig(theme);
+    const title = isVi ? config.titleVi : config.titleZh;
+    const zhText = config.zhLabel || theme.zh || title;
+    const pinyin = config.pinyin || "";
+    const itemCount = Array.isArray(theme.items) ? theme.items.length : 0;
+    const minutes = Math.max(2, Math.min(5, Math.ceil(itemCount / 2) + 2));
+    const level = index === 2 ? (isVi ? "Dễ" : "简单") : `HSK ${index % 2 === 0 ? 1 : 2}`;
+    const locked = isDailyThemeLockedForUser(theme.id);
+    return `
             <article class="home-mobile-topic-card${locked ? " is-locked" : ""}" data-home-topic="${escapeAttr(theme.id)}" role="button" tabindex="0">
               <span class="home-mobile-topic-index home-mobile-topic-index--${(index % 6) + 1}">${index + 1}</span>
               <img class="home-mobile-topic-cover" src="${escapeAttr(config.cover)}" alt="" loading="lazy" />
@@ -5925,7 +7947,7 @@ function renderHomeMobileTopicsHTML(isVi) {
               <span class="home-mobile-topic-chevron" aria-hidden="true">›</span>
             </article>
           `;
-        }).join("")}
+  }).join("")}
       </div>
     </section>
   `;
@@ -6100,9 +8122,9 @@ function renderHskRemainingLessonsHTML(currentLesson) {
       </div>
       <div class="hsk-lessons-list hsk-lessons-list--remaining">
         ${renderHskLessonListHTML({
-          excludeLessonId: currentLesson.id,
-          emptyMessage: isVi ? "Không còn bài học nào khác trong cấp độ này." : "该等级没有其他课程。",
-        })}
+    excludeLessonId: currentLesson.id,
+    emptyMessage: isVi ? "Không còn bài học nào khác trong cấp độ này." : "该等级没有其他课程。",
+  })}
       </div>
     </section>
   `;
@@ -6567,8 +8589,11 @@ function browserSpeakText(text, options = {}) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = config.lang;
   utterance.voice = preferredChineseVoice || chooseChineseVoice();
-  utterance.rate = config.rate;
+  utterance.rate = Number.isFinite(Number(options.rate)) ? Math.max(0.5, Math.min(2, Number(options.rate))) : config.rate;
   utterance.pitch = config.pitch;
+  if (typeof options.onstart === "function") utterance.onstart = options.onstart;
+  if (typeof options.onend === "function") utterance.onend = options.onend;
+  if (typeof options.onerror === "function") utterance.onerror = options.onerror;
   stopSpeechPlayback();
   window.speechSynthesis?.speak(utterance);
 }
@@ -7519,6 +9544,200 @@ function bindEvents() {
     if (event.target.closest("[data-mobile-page-back]")) {
       handleMobilePageBack();
       return;
+    }
+
+    if (state.screen === "listening") {
+      const listeningOpenBtn = event.target.closest("[data-listening-open]");
+      if (listeningOpenBtn) {
+        event.preventDefault();
+        state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+        state.listeningView = "detail";
+        state.listeningSentenceIndex = 0;
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-back]")) {
+        state.listeningView = "dashboard";
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-vocab-back]")) {
+        state.listeningView = "detail";
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-back]")) {
+        state.listeningView = "detail";
+        renderListening();
+        return;
+      }
+
+      const listeningSpeedToggle = event.target.closest("[data-listening-speed-toggle]");
+      if (listeningSpeedToggle) {
+        const speedMenu = listeningSpeedToggle.closest(".listening-speed-menu");
+        const isOpen = speedMenu?.classList.toggle("open") || false;
+        listeningSpeedToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        return;
+      }
+
+      const listeningRateBtn = event.target.closest("[data-listening-rate]");
+      if (listeningRateBtn) {
+        setListeningPlaybackRate(Number(listeningRateBtn.dataset.listeningRate || 1));
+        const speedMenu = listeningRateBtn.closest(".listening-speed-menu");
+        speedMenu?.classList.remove("open");
+        speedMenu?.querySelector("[data-listening-speed-toggle]")?.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      const listeningSentenceBtn = event.target.closest("[data-listening-sentence]");
+      if (listeningSentenceBtn) {
+        seekListeningSentence(Number(listeningSentenceBtn.dataset.listeningSentence || 0), true);
+        return;
+      }
+
+      const listeningKeywordSpeakBtn = event.target.closest("[data-listening-keyword-speak]");
+      if (listeningKeywordSpeakBtn) {
+        playListeningKeyword(Number(listeningKeywordSpeakBtn.dataset.listeningKeywordSpeak || 0), {
+          slow: listeningKeywordSpeakBtn.dataset.listeningKeywordRate === "slow",
+        });
+        return;
+      }
+
+      const listeningKeywordBtn = event.target.closest("[data-listening-keyword]");
+      if (listeningKeywordBtn) {
+        selectListeningKeyword(Number(listeningKeywordBtn.dataset.listeningKeyword || 0), listeningKeywordBtn);
+        return;
+      }
+
+      const vocabSpeakBtn = event.target.closest("[data-listening-vocab-speak]");
+      if (vocabSpeakBtn) {
+        playListeningKeyword(state.listeningVocabPracticeIndex, {
+          slow: vocabSpeakBtn.dataset.listeningVocabSpeak === "slow",
+        });
+        return;
+      }
+
+      const vocabExampleSpeakBtn = event.target.closest("[data-listening-vocab-example-speak]");
+      if (vocabExampleSpeakBtn) {
+        const keyword = getListeningKeyword(state.listeningVocabPracticeIndex);
+        const examples = getListeningKeywordExamples(keyword).map((example) => normalizeListeningKeywordExample(example, keyword));
+        const example = examples[Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleSpeak || 0)];
+        if (example?.chinese) browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-vocab-next]")) {
+        const episode = getListeningEpisode();
+        state.listeningVocabPracticeIndex = (state.listeningVocabPracticeIndex + 1) % Math.max(1, episode.keywords.length);
+        if (state.listeningView === "vocab") renderListeningVocabLesson({ preserveScroll: true });
+        else renderListeningVocabPractice(state.listeningVocabPracticeIndex);
+        return;
+      }
+
+      const listeningJumpBtn = event.target.closest("[data-listening-jump]");
+      if (listeningJumpBtn) {
+        if (listeningJumpBtn.dataset.listeningJump === "vocab") {
+          state.listeningView = "vocab";
+          renderListening();
+          return;
+        }
+        if (listeningJumpBtn.dataset.listeningJump === "repeat") {
+          resetListeningRepeatAttempt();
+          state.listeningView = "repeat";
+          renderListening();
+          return;
+        }
+        return;
+      }
+
+      const listeningRepeatSentenceBtn = event.target.closest("[data-listening-repeat-sentence]");
+      if (listeningRepeatSentenceBtn) {
+        setListeningRepeatLessonSentence(Number(listeningRepeatSentenceBtn.dataset.listeningRepeatSentence || 0));
+        renderListeningRepeatLesson({ preserveScroll: true });
+        return;
+      }
+
+      const listeningRepeatPlayBtn = event.target.closest("[data-listening-repeat-play]");
+      if (listeningRepeatPlayBtn) {
+        const nextIndex = Number(listeningRepeatPlayBtn.dataset.listeningRepeatPlay || 0);
+        stopListeningRepeatListenPlayback();
+        if (nextIndex !== state.listeningSentenceIndex) {
+          setListeningRepeatLessonSentence(nextIndex);
+          renderListeningRepeatLesson({ preserveScroll: true });
+        }
+        speakListeningSentence(nextIndex);
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-current-play]")) {
+        toggleListeningRepeatSentencePlayback();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-next]")) {
+        const episode = getListeningEpisode();
+        const total = Math.max(1, episode.sentences.length);
+        setListeningRepeatLessonSentence((state.listeningSentenceIndex + 1) % total);
+        renderListeningRepeatLesson({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-play]")) {
+        bindListeningAudioEvents();
+        toggleListeningPlayback();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-prev]")) {
+        seekListeningSentence(state.listeningSentenceIndex - 1, isListeningPlaybackActive());
+        return;
+      }
+
+      if (event.target.closest("[data-listening-next]")) {
+        seekListeningSentence(state.listeningSentenceIndex + 1, isListeningPlaybackActive());
+        return;
+      }
+
+      if (event.target.closest("[data-listening-replay]")) {
+        seekListeningSentence(state.listeningSentenceIndex, true);
+        return;
+      }
+
+      const subtitleToggle = event.target.closest("[data-listening-toggle]");
+      if (subtitleToggle) {
+        if (subtitleToggle.dataset.listeningToggle === "pinyin") state.listeningPinyinOn = !state.listeningPinyinOn;
+        if (subtitleToggle.dataset.listeningToggle === "vi") state.listeningVietnameseOn = !state.listeningVietnameseOn;
+        renderListening({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-translation]")) {
+        state.listeningVietnameseOn = !state.listeningVietnameseOn;
+        renderListening({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-record]")) {
+        startListeningRepeatRecording();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-recording-play]")) {
+        playListeningRepeatRecording();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-save]")) {
+        const episode = getListeningEpisode();
+        if (state.listeningSaved.has(episode.id)) state.listeningSaved.delete(episode.id);
+        else state.listeningSaved.add(episode.id);
+        saveState();
+        renderListening({ preserveScroll: true });
+        return;
+      }
     }
 
     if (event.target.closest("[data-home-login]")) {
@@ -8686,6 +10905,7 @@ function renderAll() {
   if (state.screen === "complete") renderComplete();
   if (state.screen === "admin") renderAdmin();
   if (state.screen === "vocab") renderVocab();
+  if (state.screen === "listening") renderListening();
   if (state.screen === "account") renderAccount();
 }
 

@@ -10,6 +10,26 @@
   schedule = "0 0 * * *"
 
 [[redirects]]
+  from = "/listening-app"
+  to = "/listening-app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/listening-app/"
+  to = "/listening-app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/listening-app/:splat/"
+  to = "/listening-app/:splat.html"
+  status = 200
+
+[[redirects]]
+  from = "/listening-app/:splat"
+  to = "/listening-app/:splat.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HuaMei - Luyện nghe</title>
+  <link rel="stylesheet" href="/listening-app/listening-dashboard.css" />
+  <script src="/listening-app/listening-embed.js" defer></script>
+</head>
+<body>
+  <div class="listen-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/listening-app/" aria-label="HuaMei">
+        <span class="brand-flower" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="6"/><ellipse cx="24" cy="9" rx="6" ry="9"/><ellipse cx="24" cy="39" rx="6" ry="9"/><ellipse cx="9" cy="24" rx="9" ry="6"/><ellipse cx="39" cy="24" rx="9" ry="6"/><ellipse cx="13.5" cy="13.5" rx="8" ry="5" transform="rotate(45 13.5 13.5)"/><ellipse cx="34.5" cy="34.5" rx="8" ry="5" transform="rotate(45 34.5 34.5)"/><ellipse cx="34.5" cy="13.5" rx="5" ry="8" transform="rotate(45 34.5 13.5)"/><ellipse cx="13.5" cy="34.5" rx="5" ry="8" transform="rotate(45 13.5 34.5)"/></svg>
+        </span>
+        <span><strong>Hua<span>Mei</span></strong><small>Viết đúng - Nhớ lâu</small></span>
+      </a>
+
+      <nav class="side-nav" aria-label="Điều hướng chính">
+        <a href="/"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Trang chủ</a>
+        <a href="/"><svg viewBox="0 0 24 24"><path d="m3 8 9-4 9 4-9 4z"/><path d="M7 11v5c0 1.4 2.2 3 5 3s5-1.6 5-3v-5"/></svg>Khóa HSK</a>
+        <a href="/"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6-5.4-2.9-5.4 2.9 1-6-4.4-4.3 6.1-.9z"/></svg>Tần suất cao</a>
+        <a class="active" href="/listening-app/listening"><svg viewBox="0 0 24 24"><path d="M4 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a8 8 0 0 1 16 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>Luyện nghe</a>
+        <a href="/"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Bộ từ</a>
+        <a href="/"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Cá nhân</a>
+      </nav>
+
+      <a class="logout" href="/"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 4v16"/></svg>Đăng xuất</a>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Chọn chủ đề nghe</h1>
+          <p>Luyện nghe theo tình huống, thanh điệu và cấp độ.</p>
+        </div>
+        <div class="top-actions">
+          <div class="lang-switch" aria-label="Ngôn ngữ"><button class="active">VI</button><button>中文</button></div>
+          <div class="streak"><svg viewBox="0 0 24 24"><path d="M13 2S5 8.5 5 15a7 7 0 0 0 14 0c0-3-2-5.5-4-7 .2 2-1 3.3-2 4-1.8-2-1-5-1-10z"/></svg>12 ngày liên tiếp</div>
+          <button class="profile" type="button"><span class="avatar">ML</span><strong>Mai Linh</strong><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        </div>
+      </header>
+
+      <div class="content-grid">
+        <section class="workspace">
+          <article class="daily-card">
+            <div class="headphone-hero" aria-hidden="true">
+              <svg viewBox="0 0 120 120">
+                <path class="band" d="M22 66a38 38 0 0 1 76 0"/>
+                <rect x="14" y="58" width="24" height="42" rx="12"/>
+                <rect x="82" y="58" width="24" height="42" rx="12"/>
+                <path class="shine" d="M28 46c8-18 24-27 43-24"/>
+              </svg>
+            </div>
+            <div class="daily-copy">
+              <h2>Luyện nghe mỗi ngày</h2>
+              <p>Nghe đều mỗi ngày giúp bạn tiến bộ nhanh hơn!</p>
+              <div class="wave" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="daily-progress"><strong>12</strong><span>/ 20</span><small>câu hôm nay</small></div>
+            <div class="daily-actions">
+              <a class="primary-btn" href="/listening-app/listening/ep-001"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Tiếp tục nghe</a>
+              <a class="secondary-btn" href="/listening-app/listening/ep-001"><svg viewBox="0 0 24 24"><path d="M4 13a8 8 0 0 1 16 0"/><path d="M8 13v4M16 13v4"/></svg>Nghe chậm</a>
+            </div>
+          </article>
+
+          <div class="tools-row">
+            <div class="tabs" role="tablist" aria-label="Chủ đề">
+              <button class="active">Tất cả</button><button>Thông dụng</button><button>Thanh điệu</button><button>HSK</button><button>Công việc</button><button>Du lịch</button>
+            </div>
+            <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><input placeholder="Tìm chủ đề nghe..." /></label>
+            <button class="filter" aria-label="Bộ lọc"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+          </div>
+
+          <section>
+            <h2 class="section-title">Chủ đề nghe</h2>
+            <div class="topic-grid">
+              <a class="topic-card green" href="/listening-app/listening/ep-001">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M4 12v3M8 8v8M12 5v14M16 8v8M20 12v3"/></svg></span>
+                <h3>Thanh điệu cơ bản</h3><p class="hanzi">mā má mǎ mà</p><p>mā &nbsp;&nbsp; má &nbsp;&nbsp; mǎ &nbsp;&nbsp; mà</p>
+                <div class="meta">18 câu · Dễ <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:80%"></span></div><div class="card-foot"><span>80%</span><button>Tiếp tục</button></div>
+              </a>
+              <a class="topic-card blue" href="/listening-app/listening/ep-002">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M6 11a6 6 0 1 1 12 0c0 4-4 4-4 7"/><circle cx="14" cy="20" r="1"/></svg></span>
+                <h3>Phân biệt</h3><p class="hanzi sm">ma1 ma2 ma3 ma4</p><p>mā &nbsp;&nbsp; má &nbsp;&nbsp; mǎ &nbsp;&nbsp; mà</p>
+                <div class="meta">16 câu · Dễ <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:60%"></span></div><div class="card-foot"><span>60%</span><button>Luyện</button></div>
+              </a>
+              <a class="topic-card purple" href="/listening-app/listening/ep-003">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M5 16c4-7 10 1 14-6"/><path d="M7 8h10"/></svg></span>
+                <h3>Âm zh / ch / sh</h3><p class="hanzi">知 吃 是</p><p>zhī &nbsp;&nbsp; chī &nbsp;&nbsp; shì</p>
+                <div class="meta">18 câu · Trung bình <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:65%"></span></div><div class="card-foot"><span>65%</span><button>Luyện</button></div>
+              </a>
+              <a class="topic-card orange" href="/listening-app/listening/ep-004">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M4 12a8 6 0 0 1 16 0 8 6 0 0 1-8 6H8l-4 3 1.5-4A6 6 0 0 1 4 12z"/></svg></span>
+                <h3>Nghe câu ngắn</h3><p class="hanzi">请说慢一点儿</p><p>qǐng shuō màn yìdiǎnr</p>
+                <div class="meta">20 câu · Trung bình <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:50%"></span></div><div class="card-foot"><span>50%</span><button>Tiếp tục</button></div>
+              </a>
+              <a class="topic-card green" href="/listening-app/listening/ep-005">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M7 12V7M11 12V4M15 13V6M19 14V9"/><path d="M5 13c4 7 13 7 15 1"/></svg></span>
+                <h3>Chào hỏi</h3><p class="hanzi">你好！</p><p>nǐ hǎo</p>
+                <div class="meta">20 câu · Dễ <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:80%"></span></div><div class="card-foot"><span>80%</span><button>Tiếp tục</button></div>
+              </a>
+              <a class="topic-card blue" href="/listening-app/listening/ep-006">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M9 8V5h6v3M5 13h14"/></svg></span>
+                <h3>Du lịch</h3><p class="hanzi">今天几号？</p><p>jīntiān jǐ hào?</p>
+                <div class="meta">22 câu · Trung bình <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:70%"></span></div><div class="card-foot"><span>70%</span><button>Luyện</button></div>
+              </a>
+              <a class="topic-card red" href="/listening-app/listening/ep-007">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><path d="M4 5h3l2 10h8l3-7H8"/><circle cx="10" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg></span>
+                <h3>Mua sắm</h3><p class="hanzi">多少钱？</p><p>duōshǎo qián?</p>
+                <div class="meta">18 câu · Trung bình <span class="dots"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:55%"></span></div><div class="card-foot"><span>55%</span><button>Luyện</button></div>
+              </a>
+              <a class="topic-card orange" href="/listening-app/listening/ep-008">
+                <span class="topic-icon"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M9 8V6h6v2M8 13h8"/></svg></span>
+                <h3>Công sở</h3><p class="hanzi">会议几点开始？</p><p>huìyì jǐ diǎn kāishǐ?</p>
+                <div class="meta">20 câu · Khó <span class="dots hot"><i></i><i></i><i></i></span></div><div class="bar"><span style="width:40%"></span></div><div class="card-foot"><span>40%</span><button>Luyện</button></div>
+              </a>
+            </div>
+          </section>
+
+          <section class="popular">
+            <h2 class="section-title">Thông dụng</h2>
+            <div class="popular-row">
+              <a href="/listening-app/listening/ep-001"><span class="food"><svg viewBox="0 0 24 24"><path d="M7 3v8M11 3v8M7 7h4M17 3v18"/></svg></span><strong>Ăn uống</strong><small>24 câu</small><button>Luyện</button></a>
+              <a href="/listening-app/listening/ep-002"><span class="home"><svg viewBox="0 0 24 24"><path d="m3 11 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><strong>Thuê nhà</strong><small>18 câu</small><button>Luyện</button></a>
+              <a href="/listening-app/listening/ep-003"><span class="person"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span><strong>Phỏng vấn</strong><small>16 câu</small><button>Luyện</button></a>
+              <a href="/listening-app/listening/ep-004"><span class="bus"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="14" rx="3"/><path d="M8 18v2M16 18v2M5 10h14M8 14h.01M16 14h.01"/></svg></span><strong>Đi lại</strong><small>20 câu</small><button>Luyện</button></a>
+              <a href="/listening-app/listening/ep-005"><span class="school"><svg viewBox="0 0 24 24"><path d="m3 8 9-4 9 4-9 4z"/><path d="M7 11v5c0 1.4 2.2 3 5 3s5-1.6 5-3v-5"/></svg></span><strong>Học trên lớp</strong><small>22 câu</small><button>Luyện</button></a>
+              <a href="/listening-app/listening/ep-006"><span class="family"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 21a6 6 0 0 1 12 0M12 21a5 5 0 0 1 10 0"/></svg></span><strong>Gia đình</strong><small>18 câu</small><button>Luyện</button></a>
+            </div>
+          </section>
+        </section>
+
+        <aside class="right-rail">
+          <section class="panel progress-panel">
+            <h2><span class="mini-icon"><svg viewBox="0 0 24 24"><path d="M4 13h4l2-7 4 12 2-5h4"/></svg></span>Tiến độ nghe</h2>
+            <div class="progress-body">
+              <div class="ring"><span>82%</span><small>Độ chính xác</small></div>
+              <div class="stats">
+                <p><span class="soft green"><svg viewBox="0 0 24 24"><path d="M5 12a7 5 0 1 1 14 0 7 5 0 0 1-7 5H8l-3 2 1-3"/></svg></span><strong>48</strong><small>câu đã nghe</small></p>
+                <p><span class="soft red"><svg viewBox="0 0 24 24"><path d="M5 12v3M9 8v8M13 5v14M17 8v8M21 12v3"/></svg></span><strong>6</strong><small>lỗi thanh điệu</small></p>
+                <p><span class="soft blue"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 8h6M9 12h6"/></svg></span><strong>3</strong><small>chủ đề đang học</small></p>
+              </div>
+            </div>
+            <div class="week">
+              <span>T2<i>✓</i></span><span>T3<i>✓</i></span><span>T4<i>✓</i></span><span>T5<i>✓</i></span><span>T6<i>✓</i></span><span>T7<i class="fire">●</i></span><span>CN<i></i></span>
+            </div>
+          </section>
+
+          <section class="panel next-panel">
+            <div class="panel-head"><h2>Nên luyện tiếp</h2><a href="/listening-app/listening">Xem tất cả</a></div>
+            <article>
+              <span class="topic-icon orange"><svg viewBox="0 0 24 24"><path d="M4 12a8 6 0 0 1 16 0 8 6 0 0 1-8 6H8l-4 3 1.5-4A6 6 0 0 1 4 12z"/></svg></span>
+              <div><h3>Nghe câu ngắn</h3><p class="hanzi">请说慢一点儿</p><p>qǐng shuō màn yìdiǎnr</p></div>
+            </article>
+            <p class="tiny">Tiến độ: 10 / 20 câu</p>
+            <div class="bar orange"><span style="width:50%"></span></div>
+            <a class="start-btn" href="/listening-app/listening/ep-004">Bắt đầu</a>
+          </section>
+
+          <section class="panel tips-panel">
+            <h2><span class="bulb">◇</span>Mẹo nghe hiệu quả</h2>
+            <p><i>✓</i>Nghe chủ động, không chỉ nghe lướt qua.</p>
+            <p><i>✓</i>Ghi chú lại từ mới và nghe lại thường xuyên.</p>
+            <p><i>✓</i>Bắt chước phát âm sau khi nghe.</p>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
