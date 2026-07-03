@@ -15,6 +15,17 @@ export interface AdminPaymentPlan extends PaymentPlan {
 export class PaymentPlansService {
   constructor(private readonly db: DatabaseService) {}
 
+  private readonly publicPlanIds = ['7d', '30d'];
+
+  private normalizePlanId(planId: string): string {
+    const id = String(planId || '').trim().toLowerCase();
+    return id === '1m' ? '30d' : id;
+  }
+
+  private defaultPlan(planId: string): PaymentPlan | null {
+    return DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === planId) || null;
+  }
+
   private mapRow(row: any): AdminPaymentPlan {
     return {
       id: row.id,
@@ -33,23 +44,25 @@ export class PaymentPlansService {
   }
 
   async getPlan(planId: string): Promise<PaymentPlan | null> {
+    const normalizedPlanId = this.normalizePlanId(planId);
     const result = await this.db.query(
       `SELECT id, months, duration_unit, amount, name_vi, name_zh
        FROM payment_plans
        WHERE id = $1 AND is_active = TRUE`,
-      [planId],
+      [normalizedPlanId],
     );
-    return this.mapPlanRow(result.rows[0]);
+    return this.mapPlanRow(result.rows[0]) || this.defaultPlan(normalizedPlanId);
   }
 
   async getPlanById(planId: string): Promise<PaymentPlan | null> {
+    const normalizedPlanId = this.normalizePlanId(planId);
     const result = await this.db.query(
       `SELECT id, months, duration_unit, amount, name_vi, name_zh
        FROM payment_plans
        WHERE id = $1`,
-      [planId],
+      [normalizedPlanId],
     );
-    return this.mapPlanRow(result.rows[0]);
+    return this.mapPlanRow(result.rows[0]) || this.defaultPlan(normalizedPlanId);
   }
 
   private mapPlanRow(row: any): PaymentPlan | null {
@@ -71,16 +84,22 @@ export class PaymentPlansService {
        WHERE is_active = TRUE
        ORDER BY sort_order ASC, created_at ASC`,
     );
-    return result.rows.map((row) => ({
-      id: row.id,
-      months: Number(row.months),
-      durationUnit: normalizeDurationUnit(row.duration_unit),
-      amount: Number(row.amount),
-      sortOrder: Number(row.sort_order),
-      priceLabel: formatVnd(Number(row.amount)),
-      nameVi: row.name_vi,
-      nameZh: row.name_zh,
-    }));
+    const rowsById = new Map(result.rows.map((row) => [row.id, row]));
+    return this.publicPlanIds.map((id, index) => {
+      const row = rowsById.get(id);
+      const fallback = this.defaultPlan(id)!;
+      const amount = Number(row?.amount ?? fallback.amount);
+      return {
+        id,
+        months: Number(row?.months ?? fallback.months),
+        durationUnit: normalizeDurationUnit(row?.duration_unit ?? fallback.durationUnit),
+        amount,
+        sortOrder: Number(row?.sort_order ?? index + 1),
+        priceLabel: formatVnd(amount),
+        nameVi: row?.name_vi ?? fallback.nameVi,
+        nameZh: row?.name_zh ?? fallback.nameZh,
+      };
+    });
   }
 
   async listAllPlans(): Promise<AdminPaymentPlan[]> {

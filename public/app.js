@@ -17,13 +17,13 @@ const i18n = {
     chooseSub: "Học theo giáo trình HSK hoặc luyện các chủ đề giao tiếp thường dùng.",
     hskTitle: "Khóa HSK",
     hskSub: "HSK2 đến HSK5, học theo từng bài trong giáo trình.",
-    dailyTitle: "Tiếng Trung giao tiếp",
+    dailyTitle: "Tiếng Trung tần suất cao",
     dailySub: "Tình huống học tập, công việc và đời sống hằng ngày.",
     enter: "Vào học",
     continue: "Tiếp tục",
     path: "Lộ trình",
     hskCourse: "Chọn cấp độ và bài học HSK",
-    dailyCourse: "Chọn chủ đề tiếng Trung giao tiếp",
+    dailyCourse: "Chọn chủ đề tiếng Trung tần suất cao",
     lesson: "Bài",
     translate: "Việt → Trung",
     dictation: "Nghe viết",
@@ -60,9 +60,10 @@ const i18n = {
     account: "Tài khoản",
     admin: "Admin",
     vocab: "Bộ từ",
+    listening: "Luyện nghe",
     subscriptions: "Gói đăng ký",
     homeTab: "Trang chủ",
-    dailyTabNav: "Thông dụng",
+    dailyTabNav: "Tần suất cao",
   },
   zh: {
     brandSubtitle: "给越南学生使用的中文练习",
@@ -80,7 +81,7 @@ const i18n = {
     hskTitle: "HSK课程",
     hskSub: "HSK2 到 HSK5，按教材第几课排列。",
     dailyTitle: "高频汉语",
-    dailySub: "学习、工作和生活场景里的常用中文。",
+    dailySub: "学习、工作和生活场景里的高频汉语。",
     enter: "进入",
     continue: "继续",
     path: "学习路径",
@@ -122,6 +123,7 @@ const i18n = {
     account: "我的账户",
     admin: "管理员",
     vocab: "生词本",
+    listening: "听力",
     subscriptions: "订阅套餐",
     homeTab: "首页",
     dailyTabNav: "高频汉语",
@@ -383,6 +385,11 @@ function getThemeIcon(visualType) {
 }
 
 const CONTENT_LOCK_ICON_SRC = "assets/content-lock-icon.png";
+const STUDENT_USER_STORAGE_KEY = "huamei_student_user";
+const ADMIN_USER_STORAGE_KEY = "huamei_admin_user";
+const STUDENT_TOKEN_STORAGE_KEY = "huamei_student_token";
+const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
+const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
 
 function renderContentLockIconHTML(size = "md") {
   return `<img class="content-lock-icon content-lock-icon--${size}" src="${CONTENT_LOCK_ICON_SRC}" alt="" aria-hidden="true" />`;
@@ -401,6 +408,29 @@ function iconSvg(name) {
     message: `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.6-4.8A8 8 0 1 1 21 12z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>`,
   };
   return icons[name] || getThemeIcon(name);
+}
+
+function readStoredJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function readStoredStudentUser() {
+  const user = readStoredJson(STUDENT_USER_STORAGE_KEY);
+  return user && !["admin", "staff", "employee"].includes(String(user.role || "").toLowerCase()) ? user : null;
+}
+
+function readStoredAdminUser() {
+  const user = readStoredJson(ADMIN_USER_STORAGE_KEY);
+  return ["admin", "staff", "employee"].includes(String(user?.role || "").toLowerCase()) ? user : null;
+}
+
+function clearLegacyAuthStorage() {
+  localStorage.removeItem("v2-user");
+  LEGACY_AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
 const state = {
@@ -435,7 +465,16 @@ const state = {
   dailyFilterTab: "all",
   vocabSearchQuery: "",
   vocabFilterTab: "all",
-  user: JSON.parse(localStorage.getItem("v2-user") || "null"),
+  listeningView: "dashboard",
+  listeningEpisodeId: "ep-001",
+  listeningSentenceIndex: 0,
+  listeningVocabPracticeIndex: 0,
+  listeningPinyinOn: true,
+  listeningVietnameseOn: false,
+  listeningPlaybackRate: [0.75, 1, 1.25, 1.5].includes(Number(localStorage.getItem("v2-listening-rate"))) ? Number(localStorage.getItem("v2-listening-rate")) : 1,
+  listeningSaved: new Set(JSON.parse(localStorage.getItem("v2-listening-saved") || "[]")),
+  user: readStoredStudentUser(),
+  adminUser: readStoredAdminUser(),
   activities: JSON.parse(localStorage.getItem("v2-activities") || "[]"),
   emailVerificationCode: "",
   emailVerificationStatus: "",
@@ -446,6 +485,10 @@ const state = {
   adminStatus: "",
   adminTab: "users",
   paymentPlans: [],
+  contentLocksReady: false,
+  contentLocksFailed: false,
+  contentLocksError: "",
+  pendingUpgradePlanId: "",
   hskLessonFreeItemLimits: {},
   hskLevelCovers: {},
   dailyLockedThemeIds: new Set(),
@@ -462,6 +505,10 @@ const state = {
   adminUserPlanFilter: "all",
   adminUserPage: 1,
   adminUserPageSize: 9,
+  paymentPlansLoaded: false,
+  paymentBankConfigured: false,
+  paymentPlansPromise: null,
+  activePaymentOrderPlanId: "",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -472,10 +519,174 @@ const screens = {
   complete: $("#completeScreen"),
   admin: $("#adminScreen"),
   vocab: $("#vocabScreen"),
+  listening: $("#listeningScreen"),
   account: $("#accountScreen"),
   subscriptions: $("#subscriptionsScreen"),
 };
+let adminUserSearchTimer = null;
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
+
+function makeSentences(episodeId, rows = []) {
+  return rows.map(([chinese, pinyin, vietnamese, start = 0, end = null], index) => ({
+    id: `${episodeId}-sentence-${String(index + 1).padStart(2, "0")}`,
+    chinese,
+    pinyin,
+    vietnamese,
+    start,
+    end,
+  }));
+}
+
+function makeKeywords(rows = []) {
+  return rows.map(([chinese, pinyin = "", vietnamese = "", partOfSpeechOrExamples = "", examples = []]) => {
+    const partOfSpeech = Array.isArray(partOfSpeechOrExamples) ? "" : partOfSpeechOrExamples;
+    return {
+      chinese,
+      pinyin,
+      vietnamese,
+      partOfSpeech,
+      examples: Array.isArray(partOfSpeechOrExamples) ? partOfSpeechOrExamples : examples,
+    };
+  });
+}
+
+function getListeningDefaultAudioSrc(episodeId) {
+  const episodeNumber = String(episodeId || "").match(/\d+/)?.[0] || "001";
+  const extension = episodeId === "ep-001" ? "MP3" : "mp3";
+  return `/listening-app/audio/main/daily-${episodeNumber}-main.${extension}`;
+}
+
+function getListeningItemDuration(sentences = []) {
+  const lastSentence = sentences[sentences.length - 1];
+  return Math.ceil(lastSentence?.end ?? lastSentence?.start ?? 0);
+}
+
+function buildItem(item) {
+  const sentences = item.sentences || [];
+  return {
+    ...item,
+    titleZh: item.titleZh || item.title,
+    categoryZh: item.categoryZh || item.category,
+    level: item.level || "Trung bình",
+    duration: item.duration ?? getListeningItemDuration(sentences),
+    progress: item.progress ?? 0,
+    audioSrc: item.audioSrc || getListeningDefaultAudioSrc(item.id),
+    description: item.description || item.member_cta || "",
+    sentences,
+    keywords: item.keywords || [],
+  };
+}
+
+const listeningEpisodes = [
+  buildItem({
+    id: "ep-001",
+    title: "为什么你学了 HSK 还是听不懂",
+    category: "热点短文",
+    is_featured_sample: true,
+    speaker: "林老师",
+    sentences: makeSentences("ep-001", [
+      ["最近我有点儿不开心。", "Zuìjìn wǒ yǒudiǎnr bù kāixīn.", "Dạo này tôi hơi không vui.", 0, 3.77],
+      ["我喜欢你", "Wǒ xǐhuān nǐ", "Tôi thích bạn", 3.77, 8.34],
+      ["你吃饭了吗", "nị chi phan lơ ma?", "Bạn đã ăn chưa?", 8.34, 18.38],
+      ["你是不是又在和别人比？", "Nǐ shì bú shì yòu zài hé biérén bǐ?", "Có phải bạn lại đang so sánh mình với người khác không?", 18.38, 22.35],
+      ["可能是吧。看到他们越来越好，我就觉得自己进步得很慢。", "Kěnéng shì ba. Kàndào tāmen yuè lái yuè hǎo, wǒ jiù juéde zìjǐ jìnbù de hěn màn.", "Có lẽ vậy. Thấy họ ngày càng tốt hơn, tôi lại cảm thấy mình tiến bộ rất chậm.", 22.35, 30.65],
+      ["每个人的时间不一样。别人快，不代表你差。", "Měi ge rén de shíjiān bù yíyàng. Biérén kuài, bù dàibiǎo nǐ chà.", "Thời gian của mỗi người không giống nhau. Người khác nhanh không có nghĩa là bạn kém.", 30.65, 39.12],
+      ["可是我还是会着急。", "Kěshì wǒ háishi huì zháojí.", "Nhưng tôi vẫn sẽ sốt ruột.", 39.12, 42.47],
+      ["着急很正常。但你可以先做好今天的事。每天进步一点点，就已经很好了。", "Zháojí hěn zhèngcháng. Dàn nǐ kěyǐ xiān zuò hǎo jīntiān de shì. Měitiān jìnbù yìdiǎndiǎn, jiù yǐjīng hěn hǎo le.", "Sốt ruột là bình thường. Nhưng bạn có thể làm tốt việc hôm nay trước. Mỗi ngày tiến bộ một chút đã rất tốt rồi.", 42.47, 54.61],
+      ["你说得对。我不应该一直看别人。", "Nǐ shuō de duì. Wǒ bù yīnggāi yìzhí kàn biérén.", "Bạn nói đúng. Tôi không nên cứ nhìn người khác mãi.", 54.61, 60.75],
+      ["对。你要相信自己，也要给自己一点时间。", "Duì. Nǐ yào xiāngxìn zìjǐ, yě yào gěi zìjǐ yìdiǎn shíjiān.", "Đúng. Bạn phải tin bản thân, cũng phải cho bản thân thêm một chút thời gian.", 60.75, 68.44],
+    ]),
+    keywords: makeKeywords([
+      ["通过", "tong guo", "vượt qua", "giới từ"],
+      ["真实", "zhen shi", "thật, thực tế", "tính từ"],
+      ["紧张", "jin zhang", "căng thẳng", "tính từ"],
+      ["原因", "yuan yin", "nguyên nhân", "danh từ"],
+      ["努力", "nu li", "cố gắng", "động từ"],
+      ["材料", "cai liao", "tài liệu", "danh từ"],
+      ["省略", "sheng lue", "lược bỏ", "động từ"],
+      ["连读", "lian du", "nối âm", "danh từ"],
+      ["表达", "biao da", "cách diễn đạt", "động từ"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "想继续练真实语速？解锁更多 1 分钟精品听力。",
+    created_at: "2026-06-16",
+    progress: 80,
+  }),
+  buildItem({
+    id: "ep-002",
+    title: "Phân biệt bốn thanh điệu",
+    titleZh: "区分四个声调",
+    category: "Thanh điệu",
+    categoryZh: "声调",
+    level: "Dễ",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-002", [
+      ["妈，麻，马，骂。", "ma1, ma2, ma3, ma4.", "Bốn thanh của âm ma.", 0, 8],
+      ["请再听一遍。", "Qing zai ting yi bian.", "Hãy nghe lại một lần nữa.", 8, 24],
+    ]),
+    keywords: makeKeywords([
+      ["妈", "ma1", "mẹ"],
+      ["麻", "ma2", "tê"],
+      ["马", "ma3", "ngựa"],
+      ["骂", "ma4", "mắng"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练习声调辨音，听得更准。",
+    created_at: "2026-06-16",
+    progress: 60,
+  }),
+  buildItem({
+    id: "ep-003",
+    title: "Âm zh, ch, sh",
+    titleZh: "zh ch sh 发音",
+    category: "Phát âm",
+    categoryZh: "发音",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-003", [
+      ["知，吃，是。", "zhi, chi, shi.", "Ba âm zh, ch, sh.", 0, 9],
+      ["请慢慢跟读。", "Qing man man gen du.", "Hãy đọc theo thật chậm.", 9, 27],
+    ]),
+    keywords: makeKeywords([
+      ["知", "zhi", "biết"],
+      ["吃", "chi", "ăn"],
+      ["是", "shi", "là"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练发音，区分舌尖音。",
+    created_at: "2026-06-16",
+    progress: 65,
+  }),
+  buildItem({
+    id: "ep-004",
+    title: "Nghe câu ngắn",
+    titleZh: "听短句",
+    category: "Giao tiếp",
+    categoryZh: "交流",
+    speaker: "HuaMei",
+    sentences: makeSentences("ep-004", [
+      ["请说慢一点儿。", "Qing shuo man yi dianr.", "Xin hãy nói chậm một chút.", 0, 9],
+      ["我没听清楚。", "Wo mei ting qing chu.", "Tôi nghe chưa rõ.", 9, 31],
+    ]),
+    keywords: makeKeywords([
+      ["请", "qing", "xin, mời"],
+      ["慢", "man", "chậm"],
+      ["一点儿", "yi dianr", "một chút"],
+    ]),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "继续练短句听力，抓住关键词。",
+    created_at: "2026-06-16",
+    progress: 50,
+  }),
+];
+
+function getListeningEpisode(episodeId = state.listeningEpisodeId) {
+  return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
+}
+
 const hskContentTypes = [
   { id: "word", labelVi: "Từ vựng", labelZh: "生词" },
   { id: "sentence", labelVi: "Câu", labelZh: "句子" },
@@ -1113,13 +1324,13 @@ function renderDailyFeaturedThemeIcon(iconType) {
   return icons[iconType] || icons.clock;
 }
 
-function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, config) {
+function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, config, accessStatus = isLocked ? "locked" : "open") {
   const itemCount = Array.isArray(theme.items) ? theme.items.length : 0;
   const buttonLabel = isLocked ? lockedContentCtaText() : (isVi ? "Vào học" : "开始学习");
   const title = isVi ? config.titleVi : config.titleZh;
   const desc = isVi ? config.descVi : config.descZh;
   return `
-      <article class="daily-theme-card daily-theme-card--featured daily-theme-card--${config.tone} ${isLocked ? "locked" : ""}" data-theme="${theme.id}" ${isLocked ? 'data-locked="true"' : ""}>
+      <article class="daily-theme-card daily-theme-card--featured daily-theme-card--${config.tone} access-rule-${accessStatus} ${isLocked ? "locked" : ""}" data-theme="${theme.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <img
           class="daily-theme-cover"
           src="${config.cover}"
@@ -1130,6 +1341,7 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
         <div class="daily-theme-card-time-content">
           <div class="daily-theme-card-time-top">
             <span class="daily-theme-count-badge">${itemCount} ${countLabel}</span>
+            ${accessStatusBadgeHTML(accessStatus)}
           </div>
           <div class="daily-theme-card-time-body">
             <div class="daily-theme-time-title-row">
@@ -1141,8 +1353,8 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
             <p class="daily-theme-time-zh">${config.zhLabel} <span>${config.pinyin}</span></p>
             <p class="daily-theme-desc">${desc}</p>
           </div>
-          <button class="daily-theme-enter-btn" type="button" ${isLocked ? "disabled" : ""}>
-            ${buttonLabel}
+          <button class="daily-theme-enter-btn" type="button">
+            ${isLocked ? lockedAccessButtonText() : buttonLabel}
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>
             </svg>
@@ -1417,6 +1629,53 @@ function escapeHtml(value) {
   return escapeAttr(value);
 }
 
+async function copyTextToClipboard(value) {
+  const text = String(value || "");
+  if (!text) return false;
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to the legacy copy path below.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
+function showCopyButtonFeedback(button, isVi = state.lang === "vi") {
+  if (!button) return;
+  if (!button.dataset.originalCopyHtml) {
+    button.dataset.originalCopyHtml = button.innerHTML;
+  }
+  if (button.dataset.copyFeedbackTimer) {
+    clearTimeout(Number(button.dataset.copyFeedbackTimer));
+  }
+  button.classList.add("copied");
+  button.textContent = isVi ? "Đã sao chép ✓" : "已复制 ✓";
+  const timer = window.setTimeout(() => {
+    button.classList.remove("copied");
+    button.innerHTML = button.dataset.originalCopyHtml || "";
+    delete button.dataset.copyFeedbackTimer;
+  }, 2000);
+  button.dataset.copyFeedbackTimer = String(timer);
+}
+
 const BACKEND_DISABLED = false;
 
 function backendDisabledMessage() {
@@ -1434,6 +1693,48 @@ function planDurationDays(plan) {
   return plan.durationUnit === "days" ? value : value * 30;
 }
 
+const LOCAL_DEFAULT_PAYMENT_PLANS = [
+  {
+    id: "7d",
+    months: 7,
+    durationUnit: "days",
+    amount: 29000,
+    nameVi: "Gói VIP 7 ngày",
+    nameZh: "7天 VIP",
+    sortOrder: 1,
+    priceLabel: "29.000đ",
+  },
+  {
+    id: "30d",
+    months: 30,
+    durationUnit: "days",
+    amount: 129000,
+    nameVi: "Gói VIP 1 tháng",
+    nameZh: "1个月 VIP",
+    sortOrder: 2,
+    priceLabel: "129.000đ",
+  },
+];
+
+function isSevenDayVipPlan(plan) {
+  return plan?.durationUnit === "days" && Number(plan.months) === 7 && Number(plan.amount) === 29000;
+}
+
+function isOneMonthVipPlan(plan) {
+  return plan?.durationUnit === "days" && Number(plan.months) === 30 && Number(plan.amount) === 129000;
+}
+
+function selectUpgradePlansForDisplay(apiPlans = []) {
+  const plans = [...(apiPlans || []), ...LOCAL_DEFAULT_PAYMENT_PLANS];
+  const sevenDay = plans.find((plan) => plan.id === "7d" && isSevenDayVipPlan(plan))
+    || plans.find(isSevenDayVipPlan)
+    || LOCAL_DEFAULT_PAYMENT_PLANS[0];
+  const oneMonth = plans.find((plan) => plan.id === "30d" && isOneMonthVipPlan(plan))
+    || plans.find(isOneMonthVipPlan)
+    || LOCAL_DEFAULT_PAYMENT_PLANS[1];
+  return [sevenDay, oneMonth];
+}
+
 function buildDisplayPlans(apiPlans, isVi) {
   const sorted = [...(apiPlans || [])].sort((a, b) => {
     if (a.sortOrder !== b.sortOrder) return (a.sortOrder || 0) - (b.sortOrder || 0);
@@ -1449,6 +1750,8 @@ function buildDisplayPlans(apiPlans, isVi) {
 
   return sorted.map((plan, index) => {
     const isDayPlan = plan.durationUnit === "days";
+    const isSevenDayVip = isSevenDayVipPlan(plan);
+    const isOneMonthVip = isOneMonthVipPlan(plan);
     const monthly = isDayPlan
       ? Math.round(plan.amount / Math.max(1, plan.months / 30))
       : Math.round(plan.amount / plan.months);
@@ -1460,9 +1763,12 @@ function buildDisplayPlans(apiPlans, isVi) {
 
     let kickerVi;
     let kickerZh;
-    if (isDayPlan) {
-      kickerVi = plan.nameVi;
-      kickerZh = plan.nameZh;
+    if (isOneMonthVip) {
+      kickerVi = "Gói VIP 1 tháng";
+      kickerZh = "1个月 VIP";
+    } else if (isDayPlan) {
+      kickerVi = isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi;
+      kickerZh = isSevenDayVip ? "7天 VIP" : plan.nameZh;
     } else if (plan.months === monthPlans[0]?.months) {
       kickerVi = "Gói cơ bản";
       kickerZh = "基础套餐";
@@ -1475,7 +1781,7 @@ function buildDisplayPlans(apiPlans, isVi) {
     }
 
     const note = isDayPlan
-      ? (isVi ? `${plan.months} ngày` : `${plan.months} 天`)
+      ? (isOneMonthVip ? (isVi ? "/ 30 ngày" : "/ 30天") : (isVi ? `/ ${plan.months} ngày` : `/ ${plan.months}天`))
       : plan.months === 1
         ? (isVi ? "/tháng" : "/月")
         : (isVi ? `Chỉ ~${Math.round(monthly / 1000)}k / tháng` : `仅 ~${Math.round(monthly / 1000)}k / 月`);
@@ -1484,20 +1790,52 @@ function buildDisplayPlans(apiPlans, isVi) {
       id: plan.id,
       nameVi: kickerVi,
       nameZh: kickerZh,
-      durationVi: plan.nameVi,
-      durationZh: plan.nameZh,
-      price: plan.priceLabel || formatPlanPrice(plan.amount),
+      durationVi: isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi),
+      durationZh: isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh),
+      price: isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount))),
       note,
       discount: index === popularIndex && sorted.length > 1 ? (isVi ? "Phổ biến nhất" : "最受欢迎") : "",
       popular: index === popularIndex && sorted.length > 1,
+      isSevenDayVip,
+      isOneMonthVip,
+      actionVi: isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày",
+      actionZh: "开通 VIP",
     };
   });
 }
 
 async function loadPaymentPlans() {
   if (BACKEND_DISABLED) return [];
+  if (state.paymentPlansLoaded) return state.paymentPlans;
+  if (state.paymentPlansPromise) return state.paymentPlansPromise;
+  state.paymentPlansPromise = apiRequest("/api/payments/plans")
+    .then((data) => {
+      state.paymentPlans = data.plans || [];
+      state.paymentBankConfigured = data.bankConfigured === true;
+      state.paymentPlansLoaded = true;
+      return state.paymentPlans;
+    })
+    .finally(() => {
+      state.paymentPlansPromise = null;
+    });
+  return state.paymentPlansPromise;
+}
+
+function prefetchPaymentPlans() {
+  if (BACKEND_DISABLED || state.paymentPlansLoaded || state.paymentPlansPromise) return;
+  loadPaymentPlans().catch((error) => {
+    console.warn("Payment plans prefetch failed; local defaults remain available.", error);
+  });
+}
+
+async function refreshPaymentPlans() {
+  if (BACKEND_DISABLED) return [];
+  state.paymentPlansLoaded = false;
+  state.paymentPlansPromise = null;
   const data = await apiRequest("/api/payments/plans");
   state.paymentPlans = data.plans || [];
+  state.paymentBankConfigured = data.bankConfigured === true;
+  state.paymentPlansLoaded = true;
   return state.paymentPlans;
 }
 
@@ -1523,6 +1861,53 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+function getPaymentOrderErrorMessage(error, isVi = state.lang === "vi") {
+  const message = String(error?.message || "");
+  if (/bank|sepay|ngan hang|ngân hàng|tai khoan|tài khoản/i.test(message)) {
+    return isVi
+      ? "Cấu hình SePay / tài khoản ngân hàng chưa đầy đủ. Vui lòng liên hệ quản trị viên."
+      : "SePay / 银行账户配置未完成，请联系管理员。";
+  }
+  return message || (isVi ? "Không thể tạo đơn thanh toán." : "无法创建支付订单。");
+}
+
+async function refreshCurrentUserStatus(showFailureToast = false) {
+  if (BACKEND_DISABLED || !state.user?.id) return null;
+
+  try {
+    const data = await apiRequest(`/api/users/${encodeURIComponent(state.user.id)}/status`, {
+      headers: {
+        "X-User-Id": state.user.id,
+      },
+    });
+    if (data.user) {
+      state.user = { ...state.user, ...data.user };
+      saveState();
+      return state.user;
+    }
+  } catch (error) {
+    state.user = {
+      ...state.user,
+      isPremium: false,
+      premiumUntil: null,
+      vipStatus: "unknown",
+      vipPlan: "FREE",
+      vipPlanId: null,
+      vipPlanName: null,
+      vipExpiresAt: null,
+      vipRemainingDays: 0,
+    };
+    saveState();
+    console.warn("Could not refresh current user status; locking VIP access.", error);
+    if (showFailureToast) {
+      showToast(state.lang === "vi"
+        ? "Không thể cập nhật trạng thái VIP. Vui lòng tải lại trang."
+        : "无法更新 VIP 状态，请刷新页面。");
+    }
+  }
+  return null;
+}
+
 function formatDateTime(value) {
   if (!value) return "Chưa có";
   return new Intl.DateTimeFormat("vi-VN", {
@@ -1540,6 +1925,13 @@ function formatAdminDate(value) {
     month: "2-digit",
     year: "numeric",
   }).format(date);
+}
+
+function formatAdminDateInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
 }
 
 function formatPremiumExpiry(value, isVi) {
@@ -1614,10 +2006,68 @@ function isActivePremiumUser(user) {
   return Boolean(user?.isPremium && (!premiumUntil || premiumUntil.getTime() > Date.now()));
 }
 
+function normalizeVipPlanId(user) {
+  const planId = String(user?.vipPlanId || user?.vipPlan || user?.plan || "").trim().toLowerCase();
+  if (planId === "7d") return "7d";
+  if (planId === "30d") return "30d";
+  return "";
+}
+
+function formatVipDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function calculateVipRemainingDays(value) {
+  if (!value) return 0;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 0;
+  const remainingMs = date.getTime() - Date.now();
+  return remainingMs > 0 ? Math.ceil(remainingMs / 86400000) : 0;
+}
+
+function getVipPlanDisplay(user, isVi = state.lang === "vi") {
+  const expiresAt = user?.vipExpiresAt || user?.premiumUntil || "";
+  const remainingDays = Number.isFinite(Number(user?.vipRemainingDays))
+    ? Number(user.vipRemainingDays)
+    : calculateVipRemainingDays(expiresAt);
+  const expired = Boolean(user?.isPremium && expiresAt && remainingDays <= 0);
+  if (!isActivePremiumUser(user)) {
+    return {
+      badge: isVi ? "Tài khoản thường" : "普通用户",
+      status: expired ? (isVi ? "Đã hết hạn" : "已过期") : (isVi ? "Chưa mở VIP" : "未开通 VIP"),
+      expiry: expiresAt ? `${isVi ? "Hết hạn:" : "到期："} ${formatVipDate(expiresAt)}` : "",
+      planId: "",
+    };
+  }
+
+  const planId = normalizeVipPlanId(user);
+  const badge = planId === "7d"
+    ? (isVi ? "VIP 7 ngày" : "7天VIP")
+    : planId === "30d"
+      ? (isVi ? "VIP 30 ngày" : "30天VIP")
+      : (user?.vipPlanName && isVi ? user.vipPlanName : user?.vipPlanNameZh || "VIP");
+  return {
+    badge,
+    status: isVi ? `Còn ${remainingDays} ngày` : `剩余 ${remainingDays} 天`,
+    expiry: expiresAt ? `${isVi ? "Hết hạn:" : "到期："} ${formatVipDate(expiresAt)}` : (isVi ? "Chưa mở" : "未开通"),
+    planId,
+  };
+}
+
 function hasPremiumAccess() {
-  if (state.user?.role === "admin") return true;
   if (state.user?.role === "employee") return true;
   return isActivePremiumUser(state.user);
+}
+
+function areContentLocksTrusted() {
+  return state.contentLocksReady === true && state.contentLocksFailed !== true;
 }
 
 function getHskLessonFreeItemLimit(lessonId) {
@@ -1629,16 +2079,132 @@ function getHskLessonFreeItemLimit(lessonId) {
   return Math.floor(value);
 }
 
+function normalizeAccessItemType(contentType = "") {
+  return contentType === "sentence" ? "sentence" : "word";
+}
+
+function parseHskLessonAccessMeta(lessonId) {
+  const directMatch = String(lessonId || "").match(/^hsk([1-6])-l0?(\d+)$/i);
+  if (directMatch) {
+    return {
+      level: Number(directMatch[1]),
+      lessonNo: Number(directMatch[2]),
+    };
+  }
+  for (const [levelKey, lessons] of Object.entries(hskLevels || {})) {
+    const found = (lessons || []).find((lessonItem) => lessonItem.id === lessonId);
+    if (found) {
+      const levelMatch = String(levelKey).match(/HSK([1-6])/i);
+      return {
+        level: Number(levelMatch?.[1] || 0),
+        lessonNo: Number(found.no || 0),
+      };
+    }
+  }
+  return { level: 0, lessonNo: 0 };
+}
+
+function accessRule(status, freeLimit = null) {
+  return { status, freeLimit };
+}
+
+function getHskAccessRule(lessonId, contentType = "word") {
+  const { level, lessonNo } = parseHskLessonAccessMeta(lessonId);
+  const itemType = normalizeAccessItemType(contentType);
+  if (!level || !lessonNo) return accessRule("locked", 0);
+
+  if (level === 1 || level === 2) {
+    if (lessonNo <= 2) return accessRule("open");
+    if (lessonNo === 3) return accessRule("partial", itemType === "sentence" ? 4 : 6);
+    return accessRule("locked", 0);
+  }
+
+  if (level >= 3 && level <= 6) {
+    if (lessonNo <= 2) return accessRule("partial", itemType === "sentence" ? 2 : 6);
+    return accessRule("locked", 0);
+  }
+
+  return accessRule("locked", 0);
+}
+
+function getDailyThemeAccessIndex(themeId) {
+  const index = dailyThemes.findIndex((theme) => theme.id === themeId);
+  if (index >= 0) return index + 1;
+  const idMatch = String(themeId || "").match(/bai0?(\d+)/i);
+  return Number(idMatch?.[1] || 0);
+}
+
+function getDailyThemeAccessRule(themeId, contentType = "word") {
+  const themeIndex = getDailyThemeAccessIndex(themeId);
+  const itemType = normalizeAccessItemType(contentType);
+  if (themeIndex === 1) return accessRule("open");
+  if (themeIndex === 2) return accessRule("partial", itemType === "sentence" ? 2 : 6);
+  if (themeIndex >= 3) return accessRule("locked", 0);
+  return accessRule("locked", 0);
+}
+
+function combineAccessStatuses(statuses = []) {
+  const safeStatuses = statuses.filter(Boolean);
+  if (!safeStatuses.length) return "locked";
+  if (safeStatuses.every((status) => status === "open")) return "open";
+  if (safeStatuses.every((status) => status === "locked")) return "locked";
+  return "partial";
+}
+
+function getHskLessonAccessStatus(lessonId) {
+  if (hasPremiumAccess()) return "open";
+  if (!areContentLocksTrusted()) return "locked";
+  return combineAccessStatuses([
+    getHskAccessRule(lessonId, "word").status,
+    getHskAccessRule(lessonId, "sentence").status,
+  ]);
+}
+
+function getDailyThemeAccessStatus(themeId) {
+  if (hasPremiumAccess()) return "open";
+  if (!areContentLocksTrusted()) return "locked";
+  return combineAccessStatuses([
+    getDailyThemeAccessRule(themeId, "word").status,
+    getDailyThemeAccessRule(themeId, "sentence").status,
+  ]);
+}
+
+function getHskContentTypeAccessStatus(lessonId, contentType) {
+  if (hasPremiumAccess()) return "open";
+  if (!areContentLocksTrusted()) return "locked";
+  return getHskAccessRule(lessonId, contentType).status;
+}
+
+function getDailyContentTypeAccessStatus(themeId, contentType) {
+  if (hasPremiumAccess()) return "open";
+  if (!areContentLocksTrusted()) return "locked";
+  return getDailyThemeAccessRule(themeId, contentType).status;
+}
+
+function accessStatusBadgeHTML(status) {
+  if (status === "partial") {
+    return `<span class="access-rule-badge access-rule-badge--partial">${state.lang === "vi" ? "Miễn phí một phần" : "部分免费"}</span>`;
+  }
+  if (status === "locked") {
+    return `<span class="access-rule-badge access-rule-badge--locked">${renderContentLockIconHTML("inline")} VIP</span>`;
+  }
+  return "";
+}
+
+function lockedAccessButtonText() {
+  return state.lang === "vi" ? "Mở khóa VIP" : "解锁 VIP";
+}
+
 function isHskLessonLockedForUser(lessonId) {
   if (hasPremiumAccess()) return false;
-  const freeLimit = getHskLessonFreeItemLimit(lessonId);
-  if (freeLimit === null) return false;
-  return !canAccessHskLessonItem(lessonId, 0);
+  if (!areContentLocksTrusted()) return true;
+  return getHskLessonAccessStatus(lessonId) === "locked";
 }
 
 function isDailyThemeLockedForUser(themeId) {
   if (hasPremiumAccess()) return false;
-  return state.dailyLockedThemeIds.has(themeId);
+  if (!areContentLocksTrusted()) return true;
+  return getDailyThemeAccessStatus(themeId) === "locked";
 }
 
 function getDailyThemeFreeItemLimit(themeId) {
@@ -1654,25 +2220,28 @@ function canAccessHskLesson(lessonId) {
   return !isHskLessonLockedForUser(lessonId);
 }
 
-function canAccessHskLessonItem(lessonId, itemIndex) {
+function canAccessHskLessonItem(lessonId, itemIndex, contentType = state.hskContentType) {
   if (hasPremiumAccess()) return true;
-  const freeLimit = getHskLessonFreeItemLimit(lessonId);
-  if (freeLimit === null) return true;
-  const sentenceNo = Number(itemIndex) + 1;
-  return sentenceNo <= freeLimit;
+  if (!areContentLocksTrusted()) return false;
+  const rule = getHskAccessRule(lessonId, contentType);
+  if (rule.status === "open") return true;
+  if (rule.status === "locked") return false;
+  const itemNo = Number(itemIndex) + 1;
+  return Number.isFinite(itemNo) && itemNo <= Number(rule.freeLimit || 0);
 }
 
 function canAccessDailyTheme(themeId) {
   return !isDailyThemeLockedForUser(themeId);
 }
 
-function canAccessDailyThemeItem(themeId, itemIndex) {
+function canAccessDailyThemeItem(themeId, itemIndex, contentType = state.dailyContentType) {
   if (hasPremiumAccess()) return true;
-  if (isDailyThemeLockedForUser(themeId)) return false;
-  const freeLimit = getDailyThemeFreeItemLimit(themeId);
-  if (freeLimit === null) return true;
+  if (!areContentLocksTrusted()) return false;
+  const rule = getDailyThemeAccessRule(themeId, contentType);
+  if (rule.status === "open") return true;
+  if (rule.status === "locked") return false;
   const itemNo = Number(itemIndex) + 1;
-  return itemNo <= freeLimit;
+  return Number.isFinite(itemNo) && itemNo <= Number(rule.freeLimit || 0);
 }
 
 function promptHskLessonLocked() {
@@ -1681,27 +2250,26 @@ function promptHskLessonLocked() {
 
 function promptUpgradeLocked() {
   const isVi = state.lang === "vi";
-  if (!state.user) {
-    showToast(isVi ? "Vui lòng đăng nhập để truy cập nội dung này." : "请先登录以访问此内容。");
-    showModal("login");
-    return;
-  }
-  showToast(isVi ? "Nội dung này yêu cầu gói Pro." : "此内容需要 Pro 套餐。");
+  showToast(isVi ? "Nội dung này yêu cầu Gói VIP 7 ngày." : "此内容需要 7天 VIP。");
   showUpgradePlansModal();
 }
 
 function lockedContentCtaText() {
   const isVi = state.lang === "vi";
-  if (!state.user) return isVi ? "Đăng nhập" : "登录";
-  return isVi ? "Yêu cầu Pro" : "需要 Pro";
+  return isVi ? "Gói VIP 7 ngày" : "7天 VIP";
 }
 
 async function loadContentLocks() {
+  state.contentLocksReady = false;
+  state.contentLocksFailed = false;
+  state.contentLocksError = "";
   if (BACKEND_DISABLED) {
     state.hskLessonFreeItemLimits = {};
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
     state.dailyThemeFreeItemLimits = {};
+    state.contentLocksFailed = true;
+    state.contentLocksError = backendDisabledMessage();
     return;
   }
   try {
@@ -1710,6 +2278,9 @@ async function loadContentLocks() {
       apiRequest("/api/content/daily-locks"),
       apiRequest("/api/content/hsk-level-covers"),
     ]);
+    if (!Array.isArray(hskData.lessonLocks) || !Array.isArray(dailyData.themeLocks) || !Array.isArray(dailyData.lockedThemeIds)) {
+      throw new Error("Invalid content lock response");
+    }
     state.hskLessonFreeItemLimits = Object.fromEntries(
       (hskData.lessonLocks || [])
         .map((item) => [item.lessonId, Math.max(0, Number(item.freeItemLimit || 0))])
@@ -1726,11 +2297,17 @@ async function loadContentLocks() {
     state.dailyLockedThemeIds = new Set(
       (dailyData.lockedThemeIds || []).filter((themeId) => !state.dailyThemeFreeItemLimits?.[themeId]),
     );
-  } catch {
+    state.contentLocksReady = true;
+    state.contentLocksFailed = false;
+    state.contentLocksError = "";
+  } catch (error) {
     state.hskLessonFreeItemLimits = {};
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
     state.dailyThemeFreeItemLimits = {};
+    state.contentLocksReady = false;
+    state.contentLocksFailed = true;
+    state.contentLocksError = error?.message || "Failed to load content locks";
   }
 }
 
@@ -1895,7 +2472,7 @@ async function loadAdminContentLocks() {
   state.adminContentStatus = isVi ? "Đang tải cấu hình nội dung..." : "正在加载内容配置...";
   renderAdmin();
   try {
-    const headers = { "X-Admin-User-Id": state.user?.id || "" };
+    const headers = { "X-Admin-User-Id": getAdminUserId() };
     const [hskData, dailyData, coverData] = await Promise.all([
       apiRequest("/api/admin/content/hsk-locks", { headers }),
       apiRequest("/api/admin/content/daily-locks", { headers }),
@@ -1984,17 +2561,6 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
             placeholder="${isVi ? "0 = không giới hạn" : "0 = 不限"}"
             data-admin-content-limit="${escapeAttr(lesson.id)}"
             value="${freeItemLimit > 0 ? freeItemLimit : ""}"
-          />
-        </td>
-        <td>
-          <input
-            class="admin-content-limit-input"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="${isVi ? "VD: 8" : "例：8"}"
-            value="${freeItemLimit > 0 ? freeItemLimit : ""}"
-            data-admin-content-limit="${escapeAttr(lesson.id)}"
           />
         </td>
       </tr>
@@ -2106,7 +2672,7 @@ function renderAdminContentPanelHTML() {
       ${isVi ? "Khóa HSK" : "HSK 课程"}
     </button>
     <button class="admin-content-module-btn ${contentModule === "daily" ? "active" : ""}" type="button" data-admin-content-module="daily">
-      ${isVi ? "Tiếng Trung giao tiếp" : "交际汉语"}
+      ${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}
     </button>
   `;
   const saveBtn = contentModule === "hsk" && hskPanel === "covers"
@@ -2253,10 +2819,15 @@ function saveState() {
   localStorage.setItem("v2-wrong", JSON.stringify([...state.wrong]));
   localStorage.setItem("v2-saved", JSON.stringify([...state.saved]));
   localStorage.setItem("v2-completed", JSON.stringify([...state.completed]));
+  localStorage.setItem("v2-listening-saved", JSON.stringify([...state.listeningSaved]));
   localStorage.setItem("v2-activities", JSON.stringify((state.activities || []).slice(0, 30)));
-  if (state.user) localStorage.setItem("v2-user", JSON.stringify(state.user));
-  else localStorage.removeItem("v2-user");
-  localStorage.removeItem("v2-admin-key");
+  if (state.user) localStorage.setItem(STUDENT_USER_STORAGE_KEY, JSON.stringify(state.user));
+  else localStorage.removeItem(STUDENT_USER_STORAGE_KEY);
+  if (state.adminUser) localStorage.setItem(ADMIN_USER_STORAGE_KEY, JSON.stringify(state.adminUser));
+  else localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
+  localStorage.removeItem(STUDENT_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+  clearLegacyAuthStorage();
 }
 
 function activityUserKey() {
@@ -2395,7 +2966,20 @@ function showRecentActivitiesDrawer() {
 }
 
 function isAdminUser() {
-  return state.user?.role === "admin";
+  return String(state.adminUser?.role || "").toLowerCase() === "admin";
+}
+
+function isStaffAdminUser() {
+  const role = String(state.adminUser?.role || "").toLowerCase();
+  return role === "staff" || role === "employee";
+}
+
+function canAccessAdminConsole() {
+  return isAdminUser() || isStaffAdminUser();
+}
+
+function getAdminUserId() {
+  return canAccessAdminConsole() ? state.adminUser.id : "";
 }
 
 function scrollAppToTop() {
@@ -2434,6 +3018,17 @@ function logoutCurrentUser() {
   return true;
 }
 
+function logoutAdminUser() {
+  if (!state.adminUser) return false;
+  state.adminUser = null;
+  state.adminUsers = [];
+  state.adminStatus = "";
+  saveState();
+  renderChrome();
+  renderAdmin();
+  return true;
+}
+
 function navigatePrimaryTab(target) {
   state.fromRoadmap = false;
   state.dailyPendingThemeId = "";
@@ -2458,6 +3053,9 @@ function navigatePrimaryTab(target) {
   } else if (target === "vocab") {
     renderVocab();
     setScreen("vocab");
+  } else if (target === "listening") {
+    renderListening();
+    setScreen("listening");
   } else if (target === "subscriptions") {
     setScreen("subscriptions");
   } else if (target === "account") {
@@ -2490,7 +3088,7 @@ function openDailyTopicFromHome(themeId) {
 function setScreen(name) {
   state.screen = name;
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
-  $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "subscriptions" || name === "account");
+  $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "listening" || name === "subscriptions" || name === "account");
 
   // Footer tạm ẩn
   // renderGlobalFooter();
@@ -2534,19 +3132,21 @@ function setScreen(name) {
   const bottomHsk = $("#bottomNavHskBtn");
   const bottomDaily = $("#bottomNavDailyBtn");
   const bottomVocab = $("#bottomNavVocabBtn");
+  const bottomListening = $("#bottomNavListeningBtn");
   const bottomSubscriptions = $("#bottomNavSubscriptionsBtn");
   const bottomAccount = $("#bottomNavAccountBtn");
-  const showBottomNav = ["home", "course", "vocab", "account"].includes(name);
+  const showBottomNav = ["home", "course", "vocab", "listening", "account"].includes(name);
 
   if (bottomNav) {
     bottomNav.classList.toggle("hidden", !showBottomNav);
     document.body.classList.toggle("has-mobile-bottom-nav", showBottomNav);
   }
-  if (bottomHome && bottomHsk && bottomDaily && bottomVocab && bottomSubscriptions && bottomAccount) {
+  if (bottomHome && bottomHsk && bottomDaily && bottomVocab && bottomListening && bottomSubscriptions && bottomAccount) {
     bottomHome.classList.toggle("active", name === "home");
     bottomHsk.classList.toggle("active", name === "course" && state.module === "hsk");
     bottomDaily.classList.toggle("active", name === "course" && state.module === "daily");
     bottomVocab.classList.toggle("active", name === "vocab");
+    bottomListening.classList.toggle("active", name === "listening");
     bottomSubscriptions.classList.toggle("active", name === "subscriptions");
     bottomAccount.classList.toggle("active", name === "account");
     bottomAccount.classList.toggle("hidden", BACKEND_DISABLED);
@@ -2582,6 +3182,7 @@ function renderChrome() {
   const bottomHskBtn = $("#bottomNavHskBtn");
   const bottomDailyBtn = $("#bottomNavDailyBtn");
   const bottomVocabBtn = $("#bottomNavVocabBtn");
+  const bottomListeningBtn = $("#bottomNavListeningBtn");
   const bottomSubscriptionsBtn = $("#bottomNavSubscriptionsBtn");
   const bottomAccountBtn = $("#bottomNavAccountBtn");
 
@@ -2605,11 +3206,14 @@ function renderChrome() {
   if (bottomVocabBtn) {
     bottomVocabBtn.querySelector(".mobile-bottom-nav-label").textContent = t("vocab");
   }
+  if (bottomListeningBtn) {
+    bottomListeningBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? t("listening") : "听力";
+  }
   if (bottomAccountBtn) {
     bottomAccountBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Cá nhân" : "个人";
   }
 
-  const canViewAdmin = !BACKEND_DISABLED && isAdminUser();
+  const canViewAdmin = !BACKEND_DISABLED && canAccessAdminConsole();
   if (navAdmin) {
     navAdmin.textContent = t("admin");
     navAdmin.classList.toggle("hidden", !canViewAdmin);
@@ -2837,7 +3441,7 @@ function renderRoadmap() {
 
 async function loadAdminUsers() {
   const isVi = state.lang === "vi";
-  if (!isAdminUser()) {
+  if (!canAccessAdminConsole()) {
     state.adminStatus = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
     state.adminUsers = [];
     renderAdmin();
@@ -2850,7 +3454,7 @@ async function loadAdminUsers() {
     const data = await apiRequest("/api/admin/users", {
       method: "GET",
       headers: {
-        "X-Admin-User-Id": state.user?.id || "",
+        "X-Admin-User-Id": getAdminUserId(),
       },
     });
     state.adminUsers = data.users || [];
@@ -2865,15 +3469,97 @@ async function loadAdminUsers() {
 function getAdminUserPlan(user) {
   if (user?.plan === "EMPLOYEE") return "EMPLOYEE";
   if (user?.role === "employee") return "EMPLOYEE";
-  if (user?.role === "admin" || isActivePremiumUser(user)) return "PREMIUM";
+  if (user?.role === "admin") return "PREMIUM";
+  if (isActivePremiumUser(user)) return normalizeVipPlanId(user) || "PREMIUM";
   return "FREE";
 }
 
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
-  if (plan === "PREMIUM") return "Pro";
+  if (plan === "7d") return isVi ? "VIP 7 ngày" : "VIP 7d";
+  if (plan === "30d") return isVi ? "VIP 30 ngày" : "VIP 30d";
+  if (plan === "PREMIUM") return "VIP";
   if (plan === "EMPLOYEE") return isVi ? "Nhân viên" : "员工";
-  if (plan === "FREE") return isVi ? "Free" : "免费";
+  if (plan === "FREE") return isVi ? "Thường" : "Free";
   return plan || "";
+}
+
+function normalizeAdminRole(role) {
+  const normalized = String(role || "").toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  return "user";
+}
+
+function getAdminRoleLabel(role, isVi = state.lang === "vi") {
+  const normalized = normalizeAdminRole(role);
+  if (normalized === "admin") return isVi ? "Quản trị viên cao nhất" : "超级管理员";
+  if (normalized === "staff") return isVi ? "CSKH quản trị" : "客服管理员";
+  return isVi ? "Người dùng thường" : "普通用户";
+}
+
+function findAdminUserById(userId) {
+  return (state.adminUsers || []).find((user) => String(user.id) === String(userId)) || null;
+}
+
+function confirmAdminVipUpgrade(userId, durationDays) {
+  const user = findAdminUserById(userId);
+  const isVi = state.lang === "vi";
+  const hasPremium = isActivePremiumUser(user);
+  const planLabel = durationDays === 30
+    ? (isVi ? "VIP 30 ngày" : "30天 VIP")
+    : (isVi ? "VIP 7 ngày" : "7天 VIP");
+  const target = user?.email || user?.fullName || userId;
+  const currentExpiry = user?.premiumUntil ? formatAdminDate(user.premiumUntil) : "";
+  const existingVipNote = hasPremium
+    ? (isVi
+      ? `\n\nTài khoản này đang có existing VIP đến ${currentExpiry}. Lần mở này sẽ gia hạn từ ngày hết hạn hiện tại.`
+      : `\n\n该账号已有 existing VIP，到期日 ${currentExpiry}。本次开通会从当前到期日继续延长。`)
+    : "";
+  const message = isVi
+    ? `Xác nhận mở ${planLabel} cho ${target}?${existingVipNote}`
+    : `确认给 ${target} 开通 ${planLabel} 吗？${existingVipNote}`;
+  return window.confirm(message);
+}
+
+function confirmAdminVipExpiryUpdate(userId, dateValue) {
+  const user = findAdminUserById(userId);
+  const isVi = state.lang === "vi";
+  const target = user?.email || user?.fullName || userId;
+  return window.confirm(isVi
+    ? `Xác nhận đặt ngày hết hạn VIP của ${target} thành ${dateValue}?`
+    : `确认把 ${target} 的 VIP 到期日期设置为 ${dateValue} 吗？`);
+}
+
+function confirmAdminVipCancel(userId) {
+  const user = findAdminUserById(userId);
+  const isVi = state.lang === "vi";
+  const target = user?.email || user?.fullName || userId;
+  return window.confirm(isVi
+    ? `Xác nhận hủy VIP và đưa ${target} về tài khoản thường?`
+    : `确认取消 ${target} 的 VIP 并恢复为普通用户吗？`);
+}
+
+function confirmAdminRoleChange(userId, nextRole) {
+  const user = findAdminUserById(userId);
+  const isVi = state.lang === "vi";
+  const target = user?.email || user?.fullName || userId;
+  const action = nextRole === "staff"
+    ? (isVi ? "đặt làm CSKH quản trị" : "设为客服管理员")
+    : (isVi ? "khôi phục thành người dùng thường" : "恢复为普通用户");
+  return window.confirm(isVi
+    ? `Xác nhận ${action} cho ${target}?`
+    : `确认将 ${target} ${action} 吗？`);
+}
+
+function buildAdminUserPatchPayload(row, extra = {}) {
+  return {
+    fullName: row.querySelector('[data-field="fullName"]').value.trim(),
+    email: row.querySelector('[data-field="email"]').value.trim(),
+    role: row.querySelector('[data-field="role"]').value,
+    currentLevel: row.querySelector('[data-field="currentLevel"]')?.value || "HSK2",
+    isActive: row.querySelector('[data-field="isActive"]').checked,
+    ...extra,
+  };
 }
 
 function getFilteredAdminUsers() {
@@ -2928,8 +3614,8 @@ function renderAdminUserPaginationHTML(totalPages, currentPage) {
   return `
     <button type="button" data-admin-user-page="${Math.max(1, currentPage - 1)}" ${currentPage <= 1 ? "disabled" : ""}>‹</button>
     ${pages.map((page) => typeof page === "number"
-      ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-user-page="${page}">${page}</button>`
-      : `<span>...</span>`).join("")}
+    ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-user-page="${page}">${page}</button>`
+    : `<span>...</span>`).join("")}
     <button type="button" data-admin-user-page="${Math.min(totalPages, currentPage + 1)}" ${currentPage >= totalPages ? "disabled" : ""}>›</button>
   `;
 }
@@ -2942,9 +3628,16 @@ function buildAdminUserRowsHTML(users, isVi) {
     const hasPremium = isActivePremiumUser(user);
     const plan = getAdminUserPlan(user);
     const displayDuration = hasPremium ? formatAdminDate(user.premiumUntil) : "N/A";
-    const duration = user.isPremium ? (isVi ? "Không giới hạn" : "不限") : index % 2 === 0 ? (isVi ? "90 ngày" : "90 天") : "N/A";
+    const vipDisplay = getVipPlanDisplay(user, isVi);
+    const duration = hasPremium ? vipDisplay.status : "N/A";
+    const expiryInputValue = formatAdminDateInput(user.premiumUntil);
+    const role = normalizeAdminRole(user.role);
+    const canChangeStaffRole = isAdminUser() && role !== "admin";
+    const staffRoleButton = canChangeStaffRole
+      ? `<button class="admin-role-user" type="button" data-next-role="${role === "staff" ? "user" : "staff"}">${role === "staff" ? (isVi ? "Hủy CSKH" : "取消客服管理员") : (isVi ? "Đặt CSKH" : "设为客服管理员")}</button>`
+      : "";
     return `
-      <tr data-user-id="${escapeAttr(user.id)}">
+      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}">
         <td>
           <div class="admin-user-cell">
             ${avatar ? `<img src="${avatar}" alt="${escapeAttr(user.fullName || user.email)}" />` : `<span>${escapeAttr(initials)}</span>`}
@@ -2955,23 +3648,32 @@ function buildAdminUserRowsHTML(users, isVi) {
           </div>
         </td>
         <td>${escapeAttr(user.email || "")}</td>
+        <td><span class="admin-pill role ${role}">${escapeAttr(getAdminRoleLabel(role, isVi))}</span></td>
         <td><span class="admin-pill level">${escapeAttr(currentLevel)}</span></td>
         <td><span class="admin-pill ${plan.toLowerCase()}">${escapeAttr(getAdminUserPlanLabel(plan, isVi))}</span></td>
         <td>
           <div class="admin-duration">
             <strong>${displayDuration}</strong>
-            ${duration !== "N/A" ? `<small>${isVi ? "Hết hạn: 12/12/2024" : "到期：2024/12/12"}</small>` : ""}
+            ${duration !== "N/A" ? `<small>${escapeAttr(duration)}</small>` : ""}
           </div>
         </td>
         <td>
           <div class="admin-row-actions">
+            <button class="admin-vip-user" type="button" data-vip-days="7" aria-label="VIP 7 days">VIP 7d</button>
+            <button class="admin-vip-user" type="button" data-vip-days="30" aria-label="VIP 30 days">VIP 30d</button>
+            <input class="admin-vip-expiry-input" type="date" value="${escapeAttr(expiryInputValue)}" aria-label="${isVi ? "Ngày hết hạn VIP" : "VIP 到期日期"}" />
+            <button class="admin-set-vip-expiry" type="button">${isVi ? "Đặt hạn" : "设到期"}</button>
+            <button class="admin-cancel-vip-user" type="button">${isVi ? "Hủy VIP" : "取消VIP"}</button>
             <button class="admin-delete-user" type="button" aria-label="${isVi ? "Xóa" : "删除"}">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
             </button>
           </div>
+          <div class="admin-row-role-actions">
+            ${staffRoleButton}
+          </div>
           <input type="hidden" data-field="fullName" value="${escapeAttr(user.fullName || "")}" />
           <input type="hidden" data-field="email" value="${escapeAttr(user.email || "")}" />
-          <input type="hidden" data-field="role" value="${escapeAttr(user.role || "student")}" />
+          <input type="hidden" data-field="role" value="${escapeAttr(role)}" />
           <input type="hidden" data-field="currentLevel" value="${escapeAttr(currentLevel)}" />
           <input type="checkbox" data-field="isActive" ${user.isActive ? "checked" : ""} hidden />
         </td>
@@ -3008,7 +3710,7 @@ function updateAdminUsersList() {
 
 function renderAdmin() {
   const isVi = state.lang === "vi";
-  if (!isAdminUser()) {
+  if (!canAccessAdminConsole()) {
     screens.admin.innerHTML = `
       <section class="admin-login-screen">
         <form class="admin-login-card" id="adminLoginForm">
@@ -3038,7 +3740,7 @@ function renderAdmin() {
   const vipRateMeta = isVi
     ? `${premiumStudentUsers.length}/${studentUsers.length} tài khoản đã lên Pro`
     : `${premiumStudentUsers.length}/${studentUsers.length} 个账户已升级 Pro`;
-  const adminTab = state.adminTab || "users";
+  const adminTab = isAdminUser() ? (state.adminTab || "users") : "users";
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
@@ -3060,7 +3762,7 @@ function renderAdmin() {
   };
 
   screens.admin.innerHTML = `
-    <div class="admin-console">
+    <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
         <div class="admin-brand">
           <span>中</span>
@@ -3077,6 +3779,10 @@ function renderAdmin() {
         </nav>
         
         <div class="admin-sidebar-foot">
+          <button class="admin-language-btn" id="adminLogoutBtn" type="button">
+            <span>${t("logout")}</span>
+            <strong>${isVi ? "Admin" : "管理员"}</strong>
+          </button>
           <button class="admin-language-btn" id="adminLanguageBtn" type="button">
             <span>${isVi ? "Ngôn ngữ" : "语言"}</span>
             <strong>${isVi ? "Tiếng Việt / 中文" : "中文 / Tiếng Việt"}</strong>
@@ -3125,6 +3831,7 @@ function renderAdmin() {
               <option value="PREMIUM" ${planFilter === "PREMIUM" ? "selected" : ""}>Pro</option>
               <option value="EMPLOYEE" ${planFilter === "EMPLOYEE" ? "selected" : ""}>${isVi ? "Nhân viên" : "员工"}</option>
             </select>
+            <button id="adminRefreshBtn" class="admin-filter-refresh" type="button">${isVi ? "Làm mới" : "刷新"}</button>
           </div>
           <aside class="admin-vip-card">
             <span>${isVi ? "Tỷ lệ chuyển đổi VIP" : "VIP 转化率"}</span>
@@ -3140,6 +3847,7 @@ function renderAdmin() {
                 <tr>
                   <th>${isVi ? "Họ và tên" : "姓名"}</th>
                   <th>Email</th>
+                  <th>${isVi ? "Vai trò" : "角色"}</th>
                   <th>${isVi ? "Cấp độ" : "等级"}</th>
                   <th>${isVi ? "Gói" : "套餐"}</th>
                   <th>${isVi ? "Thời hạn" : "期限"}</th>
@@ -3185,7 +3893,9 @@ function showModal(type) {
   modalDiv.innerHTML = `
     <div class="auth-modal-content">
       <button class="auth-modal-close" id="closeAuthModal" type="button">&times;</button>
-      <div class="auth-modal-logo">中</div>
+      <div class="auth-modal-logo auth-modal-logo--brand">
+        <img src="/assets/huamei-logo.png" alt="HuaMei" />
+      </div>
       <h2>${isLogin ? (isVi ? "Đăng nhập" : "登录") : (isVi ? "Đăng ký tài khoản" : "注册账户")}</h2>
       <p class="auth-modal-sub">${isLogin ? (isVi ? "Chào mừng bạn quay trở lại!" : "欢迎回来！") : (isVi ? "Bắt đầu hành trình học tiếng Trung ngay hôm nay." : "立即开始您的中文学习之旅。")}</p>
       
@@ -3193,18 +3903,28 @@ function showModal(type) {
         ${!isLogin ? `
         <div class="form-group">
           <label for="authName">${isVi ? "Họ và tên" : "姓名"}</label>
-          <input type="text" id="authName" placeholder="${isVi ? "" : "张三"}" required />
+          <input type="text" id="authName"  required />
         </div>
         ` : ""}
         <div class="form-group">
           <label for="authEmail">Email</label>
-          <input type="email" id="authEmail" placeholder="huamei@gmail.com" required />
+          <input type="email" id="authEmail"  required />
         </div>
         <div class="form-group">
           <label for="authPassword">${isVi ? "Mật khẩu" : "密码"}</label>
-          <input type="password" id="authPassword" placeholder="••••••••" required />
+          <div class="password-input-row">
+            <input type="password" id="authPassword" required />
+            <button class="password-toggle-btn" type="button" data-toggle-password="authPassword">${isVi ? "Hiện" : "显示"}</button>
+          </div>
         </div>
         ${!isLogin ? `
+        <div class="form-group">
+          <label for="authConfirmPassword">${isVi ? "Nhập lại mật khẩu" : "确认密码"}</label>
+          <div class="password-input-row">
+            <input type="password" id="authConfirmPassword" required />
+            <button class="password-toggle-btn" type="button" data-toggle-password="authConfirmPassword">${isVi ? "Hiện" : "显示"}</button>
+          </div>
+        </div>
         <div class="form-group checkbox-group">
           <input type="checkbox" id="authTerms" required />
           <label for="authTerms">${isVi ? "Tôi đồng ý với các điều khoản dịch vụ" : "我同意服务条款"}</label>
@@ -3224,12 +3944,23 @@ function showModal(type) {
   document.body.appendChild(modalDiv);
 
   document.getElementById("closeAuthModal").onclick = () => modalDiv.remove();
-  modalDiv.onclick = (e) => { if (e.target === modalDiv) modalDiv.remove(); };
 
   document.getElementById("authSwitchBtn").onclick = () => {
     modalDiv.remove();
     showModal(isLogin ? "register" : "login");
   };
+
+  modalDiv.querySelectorAll("[data-toggle-password]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = modalDiv.querySelector(`#${button.dataset.togglePassword}`);
+      if (!input) return;
+      const showPassword = input.type === "password";
+      input.type = showPassword ? "text" : "password";
+      button.textContent = showPassword
+        ? (isVi ? "Ẩn" : "隐藏")
+        : (isVi ? "Hiện" : "显示");
+    });
+  });
 
   document.getElementById("authForm").onsubmit = async (e) => {
     e.preventDefault();
@@ -3237,10 +3968,16 @@ function showModal(type) {
     const submitBtn = modalDiv.querySelector(".btn-auth-submit");
     const email = document.getElementById("authEmail").value.trim();
     const password = document.getElementById("authPassword").value;
+    const confirmPassword = document.getElementById("authConfirmPassword")?.value || "";
     const fullName = document.getElementById("authName")?.value.trim();
 
     message.textContent = "";
     message.className = "auth-form-message";
+    if (!isLogin && password !== confirmPassword) {
+      message.textContent = isVi ? "Mật khẩu nhập lại không khớp" : "两次输入的密码不一致";
+      message.classList.add("error");
+      return;
+    }
     submitBtn.disabled = true;
     submitBtn.textContent = isLogin ? (isVi ? "Đang đăng nhập..." : "正在登录...") : (isVi ? "Đang đăng ký..." : "正在注册...");
 
@@ -3249,6 +3986,9 @@ function showModal(type) {
         method: "POST",
         body: JSON.stringify(isLogin ? { email, password } : { fullName, email, password }),
       });
+      if (["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
+        throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
+      }
       state.user = data.user;
       saveState();
       loadContentLocks().then(() => {
@@ -3257,7 +3997,12 @@ function showModal(type) {
       });
       message.textContent = isLogin ? (isVi ? "Đăng nhập thành công." : "登录成功。") : (isVi ? "Đăng ký thành công." : "注册成功。");
       message.classList.add("success");
-      setTimeout(() => modalDiv.remove(), 500);
+      const pendingPlanId = state.pendingUpgradePlanId;
+      state.pendingUpgradePlanId = "";
+      setTimeout(() => {
+        modalDiv.remove();
+        if (pendingPlanId) showTransferInfoModal(pendingPlanId);
+      }, 500);
     } catch (error) {
       message.textContent = error.message;
       message.classList.add("error");
@@ -3574,7 +4319,7 @@ function showAdminCreateAccountModal() {
     try {
       const data = await apiRequest("/api/admin/users", {
         method: "POST",
-        headers: { "X-Admin-User-Id": state.user?.id || "" },
+        headers: { "X-Admin-User-Id": getAdminUserId() },
         body: JSON.stringify(payload),
       });
       state.adminUsers = [data.user, ...state.adminUsers.filter((user) => user.id !== data.user.id)];
@@ -3643,7 +4388,7 @@ function showAdminDeleteUserConfirm(row) {
       await apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: "DELETE",
         headers: {
-          "X-Admin-User-Id": state.user?.id || "",
+          "X-Admin-User-Id": getAdminUserId(),
         },
       });
       state.adminUsers = state.adminUsers.filter((user) => user.id !== userId);
@@ -3887,8 +4632,10 @@ function renderAccount() {
   const email = state.user.email || "";
   const joinedDate = state.user.createdAt ? formatDateTime(state.user.createdAt) : (isVi ? "Chưa có dữ liệu" : "暂无数据");
   const joinedLabel = formatAccountJoinedLabel(state.user.createdAt, isVi);
-  const currentLevel = state.user.currentLevel || state.level || "HSK2";
+  const selectedLevel = state.user.currentLevel || state.level || "HSK2";
+  const currentLevel = hskLevels[selectedLevel] ? selectedLevel : "HSK2";
   const hasPremium = hasPremiumAccess();
+  const vipDisplay = getVipPlanDisplay(state.user, isVi);
   const avatarUrl = getAccountAvatarUrl();
   const dailyReminderEnabled = state.user.dailyReminderEnabled !== false;
   const studyDays = Math.max(1, Math.floor((Date.now() - new Date(state.user.createdAt || Date.now()).getTime()) / 86400000) + 1);
@@ -3899,10 +4646,13 @@ function renderAccount() {
   const updatedLabel = state.user.updatedAt ? formatDateTime(state.user.updatedAt) : joinedDate;
   const levelBadgeLabel = currentLevel.replace(/^HSK/i, "HSK ");
   const completedCount = state.completed?.size || 7;
-  const savedCount = state.saved?.size || 128;
-  const levelTotalLessons = hskLevels[currentLevel]?.length || 18;
-  const levelCompletedLessons = Math.min(levelTotalLessons, Math.max(1, completedCount));
-  const levelProgressPercent = Math.min(100, Math.max(8, Math.round((levelCompletedLessons / Math.max(1, levelTotalLessons)) * 100)));
+  const savedCount = state.saved?.size ?? 0;
+  const levelLessons = hskLevels[currentLevel] || [];
+  const levelTotalLessons = levelLessons.length;
+  const levelCompletedLessons = levelLessons.filter((lessonItem) => state.completed?.has(lessonItem.id)).length;
+  const levelProgressPercent = levelTotalLessons > 0
+    ? Math.min(100, Math.round((levelCompletedLessons / levelTotalLessons) * 100))
+    : 0;
   const securityText = isVi
     ? "Thông tin của bạn được mã hóa và bảo vệ tuyệt đối."
     : "你的信息已加密并受到保护。";
@@ -3965,8 +4715,9 @@ function renderAccount() {
           <p>${isVi ? "Học viên tích cực" : "积极学员"}</p>
           <div class="account-badges">
             <span>${escapeAttr(levelBadgeLabel)}</span>
-            <span class="account-badge-pro">${hasPremium ? (isVi ? "Pro" : "Pro") : (isVi ? "Gói Free" : "Free 套餐")}</span>
+            <span class="account-badge-pro">${escapeHtml(vipDisplay.badge)}</span>
           </div>
+          <p class="account-vip-meta">${escapeHtml(vipDisplay.status)}${vipDisplay.expiry ? ` · ${escapeHtml(vipDisplay.expiry)}` : ""}</p>
           <div class="account-profile-metrics account-desktop-only">
             <article>
               <span class="account-metric-icon account-metric-icon--calendar" aria-hidden="true">
@@ -3974,13 +4725,6 @@ function renderAccount() {
               </span>
               <small>${isVi ? "Ngày học" : "学习天数"}</small>
               <strong>${studyDays} ${isVi ? "ngày" : "天"}</strong>
-            </article>
-            <article>
-              <span class="account-metric-icon account-metric-icon--target" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M22 12h-3"/></svg>
-              </span>
-              <small>${isVi ? "Độ chính xác" : "准确率"}</small>
-              <strong>92%</strong>
             </article>
             <article>
               <span class="account-metric-icon account-metric-icon--book" aria-hidden="true">
@@ -4212,13 +4956,13 @@ function showUpgradePlansModal() {
     <div class="upgrade-plans-modal">
       <button class="upgrade-plans-close" id="closeUpgradePlansModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
       <div class="upgrade-plans-heading">
-        <span class="upgrade-mobile-pill">PRO</span>
-        <h2>${isVi ? "Nâng tầm trải nghiệm học tập cùng" : "升级你的学习体验"}<br>HuaMei<span> Pro</span></h2>
-        <h3>${isVi ? "Học tập không giới hạn" : "无限学习"}</h3>
-        <p>${isVi ? "Mở khóa toàn bộ tính năng và lộ trình học tập chuyên sâu để làm chủ tiếng Trung nhanh hơn." : "解锁全部功能和深度学习路线，更快掌握中文。"}</p>
+        <span class="upgrade-mobile-pill">VIP</span>
+        <h2>${isVi ? "Gói VIP 7 ngày" : "7天 VIP"}</h2>
+        <h3>${isVi ? "29.000đ / 7 ngày" : "29.000đ / 7天"}</h3>
+        <p>${isVi ? "Chọn gói VIP phù hợp. Nếu chưa đăng nhập, hệ thống sẽ yêu cầu đăng nhập trước khi thanh toán." : "选择适合的 VIP 套餐。未登录时，点击开通后会先进入登录/注册流程。"}</p>
       </div>
       <div class="upgrade-plans-grid">
-        <p class="upgrade-plans-loading">${isVi ? "Đang tải bảng giá..." : "正在加载价格..."}</p>
+        <p class="upgrade-plans-loading">${isVi ? "Đang chuẩn bị bảng giá..." : "正在准备价格..."}</p>
       </div>
     </div>
   `;
@@ -4230,23 +4974,44 @@ function showUpgradePlansModal() {
     if (event.target === modalDiv) closeModal();
   };
 
+  const setUpgradePlanButtonLoading = (planTarget, loading) => {
+    const card = planTarget?.closest?.("[data-upgrade-plan-card]") || planTarget;
+    const button = card?.querySelector?.("[data-upgrade-plan]") || (planTarget?.matches?.("[data-upgrade-plan]") ? planTarget : null);
+    if (!button) return;
+    if (loading) {
+      button.disabled = true;
+      button.classList.add("loading");
+      button.dataset.originalText = button.textContent.trim();
+      button.textContent = isVi ? "Đang mở..." : "正在打开...";
+    } else if (button.dataset.originalText) {
+      button.disabled = false;
+      button.classList.remove("loading");
+      button.textContent = button.dataset.originalText;
+      delete button.dataset.originalText;
+    } else {
+      button.disabled = false;
+      button.classList.remove("loading");
+    }
+  };
+
   const bindPlanSelection = (plans) => {
-    const selectPlan = (planId) => {
+    const selectPlan = (planId, planTarget) => {
       if (!planId) return;
+      setUpgradePlanButtonLoading(planTarget, true);
       closeModal();
       showTransferInfoModal(planId);
     };
     modalDiv.addEventListener("click", (event) => {
       const planTarget = event.target.closest("[data-upgrade-plan], [data-upgrade-plan-card]");
       if (!planTarget || !modalDiv.contains(planTarget)) return;
-      selectPlan(planTarget.dataset.upgradePlan || planTarget.dataset.upgradePlanCard);
+      selectPlan(planTarget.dataset.upgradePlan || planTarget.dataset.upgradePlanCard, planTarget);
     });
     modalDiv.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       const planTarget = event.target.closest("[data-upgrade-plan-card]");
       if (!planTarget || !modalDiv.contains(planTarget)) return;
       event.preventDefault();
-      selectPlan(planTarget.dataset.upgradePlanCard);
+      selectPlan(planTarget.dataset.upgradePlanCard, planTarget);
     });
   };
 
@@ -4254,6 +5019,7 @@ function showUpgradePlansModal() {
     const grid = modalDiv.querySelector(".upgrade-plans-grid");
     if (!grid) return;
     grid.classList.toggle("upgrade-plans-grid--single", plans.length === 1);
+    modalDiv.querySelector(".upgrade-mobile-benefits")?.remove();
     grid.innerHTML = plans.map((plan) => `
       <article class="upgrade-plan-card ${plan.popular ? "popular" : ""}" data-upgrade-plan-card="${escapeAttr(plan.id)}" role="button" tabindex="0">
         ${plan.discount ? `<div class="upgrade-popular-badge">${escapeAttr(plan.discount)}</div>` : ""}
@@ -4275,7 +5041,7 @@ function showUpgradePlansModal() {
           `).join("")}
         </ul>
         <button class="upgrade-plan-action" type="button" data-upgrade-plan="${escapeAttr(plan.id)}">
-          ${isVi ? "Bắt đầu ngay" : "立即开始"}
+          ${escapeAttr(isVi ? plan.actionVi : plan.actionZh)}
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14" />
             <path d="M13 6l6 6-6 6" />
@@ -4305,36 +5071,38 @@ function showUpgradePlansModal() {
       </ul>
     `;
     modalDiv.querySelector(".upgrade-plans-modal").appendChild(mobileBenefits);
-    bindPlanSelection(plans);
   };
+
+  bindPlanSelection();
+  renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
 
   loadPaymentPlans()
     .then((apiPlans) => {
-      const plans = buildDisplayPlans(apiPlans, isVi);
+      const plans = buildDisplayPlans(selectUpgradePlansForDisplay(apiPlans), isVi);
       if (!plans.length) {
         const grid = modalDiv.querySelector(".upgrade-plans-grid");
         if (grid) {
-          grid.innerHTML = `<p class="upgrade-plans-loading">${isVi ? "Chưa có gói đăng ký nào." : "暂无订阅套餐。"}</p>`;
+          renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
         }
         return;
       }
       renderPlans(plans);
     })
     .catch((error) => {
-      const grid = modalDiv.querySelector(".upgrade-plans-grid");
-      if (grid) {
-        grid.innerHTML = `<p class="upgrade-plans-loading">${escapeAttr(error.message || (isVi ? "Không thể tải bảng giá." : "无法加载价格。"))}</p>`;
-      }
+      console.warn("Payment plans API failed; using local defaults.", error);
+      renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
     });
 }
 
 async function showTransferInfoModal(planId) {
   const isVi = state.lang === "vi";
+  if (state.activePaymentOrderPlanId) return;
   const existing = document.getElementById("transferInfoModal");
   if (existing) existing.remove();
 
   if (!state.user) {
-    showToast(isVi ? "Vui lòng đăng nhập để nâng cấp Pro" : "请先登录以升级 Pro");
+    state.pendingUpgradePlanId = planId || "";
+    showToast(isVi ? "Vui lòng đăng nhập để đăng ký Gói VIP 7 ngày" : "请先登录以开通 7天 VIP");
     showModal("login");
     return;
   }
@@ -4342,6 +5110,7 @@ async function showTransferInfoModal(planId) {
     showToast(isVi ? "Gói thanh toán không hợp lệ" : "套餐无效");
     return;
   }
+  state.activePaymentOrderPlanId = planId;
 
   const modalDiv = document.createElement("div");
   modalDiv.id = "transferInfoModal";
@@ -4356,7 +5125,7 @@ async function showTransferInfoModal(planId) {
         </svg>
       </div>
       <h2>${isVi ? "Thông tin chuyển khoản" : "转账信息"}</h2>
-      <p class="transfer-subtitle">${isVi ? "Đang tạo đơn thanh toán..." : "正在创建支付订单..."}</p>
+      <p class="transfer-subtitle">${isVi ? "Đang tạo mã thanh toán..." : "正在生成付款二维码..."}</p>
       <div class="transfer-loading-state">
         <div class="transfer-status transfer-status-pending">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -4364,14 +5133,18 @@ async function showTransferInfoModal(planId) {
           </svg>
           ${isVi ? "Vui lòng chờ trong giây lát" : "请稍候"}
         </div>
+        <p class="transfer-slow-network-message" id="transferSlowNetworkMessage"></p>
       </div>
     </div>
   `;
   document.body.appendChild(modalDiv);
 
   let pollTimer = null;
+  let slowNetworkTimer = null;
   const closeModal = () => {
     if (pollTimer) clearInterval(pollTimer);
+    if (slowNetworkTimer) clearTimeout(slowNetworkTimer);
+    state.activePaymentOrderPlanId = "";
     modalDiv.remove();
   };
   modalDiv.querySelector("#closeTransferInfoModal").onclick = closeModal;
@@ -4381,6 +5154,14 @@ async function showTransferInfoModal(planId) {
 
   let paymentData;
   try {
+    slowNetworkTimer = setTimeout(() => {
+      const slowMessage = modalDiv.querySelector("#transferSlowNetworkMessage");
+      if (slowMessage) {
+        slowMessage.textContent = isVi
+          ? "Mạng hơi chậm, vui lòng chờ hoặc thử lại"
+          : "网络较慢，请稍等或重试";
+      }
+    }, 5000);
     paymentData = await apiRequest("/api/payments/orders", {
       method: "POST",
       body: JSON.stringify({
@@ -4389,19 +5170,68 @@ async function showTransferInfoModal(planId) {
         planId,
       }),
     });
+    if (slowNetworkTimer) clearTimeout(slowNetworkTimer);
   } catch (error) {
+    if (slowNetworkTimer) clearTimeout(slowNetworkTimer);
     modalDiv.querySelector(".transfer-subtitle").textContent = isVi
       ? "Không thể tạo đơn thanh toán"
       : "无法创建支付订单";
     modalDiv.querySelector(".transfer-loading-state").innerHTML = `
-      <p class="transfer-error-text">${escapeAttr(error.message)}</p>
+      <p class="transfer-error-text">${escapeAttr(getPaymentOrderErrorMessage(error, isVi))}</p>
+      <button id="retryTransferOrderBtn" class="transfer-retry-btn" type="button" data-retry-payment-order="${escapeAttr(planId)}">${isVi ? "Thử lại" : "重试"}</button>
     `;
+    modalDiv.querySelector("[data-retry-payment-order]")?.addEventListener("click", () => {
+      state.activePaymentOrderPlanId = "";
+      closeModal();
+      showTransferInfoModal(planId);
+    });
+    return;
+  }
+
+  if (paymentData.bankConfigured === false || !paymentData.bank?.accountNumber) {
+    if (slowNetworkTimer) clearTimeout(slowNetworkTimer);
+    modalDiv.querySelector(".transfer-subtitle").textContent = isVi
+      ? "Chưa thể hiển thị thông tin chuyển khoản"
+      : "暂时无法显示转账信息";
+    modalDiv.querySelector(".transfer-loading-state").innerHTML = `
+      <p class="transfer-error-text">${escapeAttr(getPaymentOrderErrorMessage(new Error("bankConfigured=false"), isVi))}</p>
+      <button id="retryTransferOrderBtn" class="transfer-retry-btn" type="button" data-retry-payment-order="${escapeAttr(planId)}">${isVi ? "Thử lại" : "重试"}</button>
+    `;
+    modalDiv.querySelector("[data-retry-payment-order]")?.addEventListener("click", () => {
+      state.activePaymentOrderPlanId = "";
+      closeModal();
+      showTransferInfoModal(planId);
+    });
     return;
   }
 
   const { order, bank, qrImageUrl } = paymentData;
   const transferCode = order.transferCode;
   const amount = order.amountLabel;
+  const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
+  const activationPlanLabel = normalizedPlanId === "7d"
+    ? (isVi ? "7 ngày" : "7天")
+    : (isVi ? "30 ngày" : "30天");
+  const customerEmail = state.user.email || "";
+  const activationMessage = [
+    isVi ? "Em đã chuyển khoản VIP." : "我已完成 VIP 转账。",
+    isVi ? `Email: ${customerEmail}` : `登录邮箱: ${customerEmail}`,
+    isVi ? `Mã đơn: ${transferCode}` : `订单号: ${transferCode}`,
+    isVi ? `Gói: ${activationPlanLabel}` : `套餐: ${activationPlanLabel}`,
+    isVi ? `Số tiền: ${amount}` : `金额: ${amount}`,
+    isVi ? "Nhờ CSKH kiểm tra và kích hoạt VIP giúp em." : "请客服核对并帮我开通 VIP。",
+  ].join("\n");
+  const zaloSupportNumber = "0825319378";
+  const zaloSupportUrl = "https://zalo.me/0825319378";
+  const manualActivationNotice = isVi
+    ? "CSKH sẽ kiểm tra và kích hoạt VIP cho bạn sau khi xác nhận giao dịch."
+    : "客服核对到账后会为你开通 VIP。";
+  const copySuccessNotice = isVi
+    ? "Đã sao chép. Vui lòng dán vào Zalo và gửi cho CSKH."
+    : "已复制，请粘贴到 Zalo 发送给客服。";
+  const copyFailedNotice = isVi
+    ? "Không thể sao chép tự động. Vui lòng sao chép mã đơn và email để gửi CSKH."
+    : "无法自动复制，请手动复制订单号和邮箱发送给客服。";
 
   modalDiv.querySelector(".transfer-info-modal").innerHTML = `
     <button class="transfer-info-close" id="closeTransferInfoModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
@@ -4463,16 +5293,24 @@ async function showTransferInfoModal(planId) {
           </svg>
           ${isVi ? "Quét mã VietQR để thanh toán nhanh" : "扫码快速付款"}
         </p>
+        <p class="transfer-qr-fallback">${isVi ? "Nếu mã QR không hiển thị, vui lòng chuyển khoản thủ công theo thông tin bên trái và ghi đúng nội dung DH." : "如果二维码无法显示，请按左侧银行信息手动转账，并填写正确的 DH 备注。"}</p>
         <div class="transfer-status transfer-status-pending" id="transferPaymentStatus">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2h12M6 22h12M8 2c0 5 8 5 8 10s-8 5-8 10" />
           </svg>
-          ${isVi ? "Đang chờ thanh toán..." : "等待付款..."}
+          ${manualActivationNotice}
         </div>
       </div>
     </div>
 
-    <div class="transfer-footer-note">
+    <div class="transfer-manual-actions">
+      <button class="transfer-zalo-btn" type="button" data-open-zalo-support>${isVi ? "Gửi mã đơn qua Zalo" : "通过 Zalo 发送订单号"}</button>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(activationMessage)}" data-copy-success="${escapeAttr(copySuccessNotice)}">${isVi ? "Sao chép tin nhắn kích hoạt" : "复制激活信息"}</button>
+      <button class="transfer-copy-activation-btn" type="button" data-copy-transfer="${escapeAttr(zaloSupportNumber)}">${isVi ? "Sao chép số Zalo CSKH" : "复制客服号码"}</button>
+    </div>
+    <p class="transfer-zalo-help">${isVi ? "Nếu mở Zalo trên máy tính và thấy mã QR, vui lòng dùng Zalo trên điện thoại để quét mã, hoặc sao chép số CSKH để liên hệ." : "如果电脑端打开 Zalo 后出现二维码，请用手机 Zalo 扫码登录，或复制客服号码添加客服。"}</p>
+
+    <div class="transfer-footer-note transfer-footer-note--manual">
       <span>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9" />
@@ -4480,19 +5318,38 @@ async function showTransferInfoModal(planId) {
           <path d="M12 16h.01" />
         </svg>
       </span>
-      <p>${isVi ? "Vui lòng chuyển khoản đúng số tiền và nội dung để SePay tự động kích hoạt gói Pro trong vài phút." : "请按正确金额和备注转账，SePay 将在几分钟内自动激活 Pro 套餐。"}</p>
+      <div>
+        <p>${manualActivationNotice}</p>
+        <ol class="transfer-manual-steps">
+          <li>${isVi ? "Bước 1: Chuyển khoản đúng số tiền và nội dung DH." : "步骤 1：请按正确金额和 DH 备注完成转账。"}</li>
+          <li>${isVi ? "Bước 2: Bấm nút Zalo để gửi mã đơn và email đăng nhập cho CSKH." : "步骤 2：点击 Zalo 按钮，将订单号和登录邮箱发送给客服。"}</li>
+          <li>${isVi ? "Bước 3: CSKH kiểm tra giao dịch và kích hoạt VIP cho bạn." : "步骤 3：客服核对到账后为你开通 VIP。"}</li>
+        </ol>
+      </div>
     </div>
   `;
 
   modalDiv.querySelector("#closeTransferInfoModal").onclick = closeModal;
+  modalDiv.querySelector("[data-open-zalo-support]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const copied = await copyTextToClipboard(activationMessage);
+    if (copied) {
+      showCopyButtonFeedback(button, isVi);
+      showToast(copySuccessNotice);
+    } else {
+      showToast(copyFailedNotice);
+    }
+    window.open(zaloSupportUrl, "_blank", "noopener,noreferrer");
+  });
   modalDiv.querySelectorAll("[data-copy-transfer]").forEach((button) => {
     button.addEventListener("click", async () => {
       const value = button.dataset.copyTransfer;
-      try {
-        await navigator.clipboard.writeText(value);
-        showToast(isVi ? "Đã sao chép" : "已复制");
-      } catch {
-        showToast(value);
+      const copied = await copyTextToClipboard(value);
+      if (copied) {
+        showCopyButtonFeedback(button, isVi);
+        showToast(button.dataset.copySuccess || copySuccessNotice);
+      } else {
+        showToast(copyFailedNotice);
       }
     });
   });
@@ -4504,9 +5361,18 @@ async function showTransferInfoModal(planId) {
       );
       if (statusData.order.status === "paid") {
         if (pollTimer) clearInterval(pollTimer);
+        const statusEl = modalDiv.querySelector("#transferPaymentStatus");
+        if (statusEl) {
+          statusEl.className = "transfer-status transfer-status-success";
+          statusEl.innerHTML = isVi ? "VIP đã được mở" : "VIP 已开通";
+        }
         state.user.isPremium = statusData.premium.isPremium;
         state.user.premiumUntil = statusData.premium.premiumUntil;
+        state.user.vipExpiresAt = statusData.premium.premiumUntil;
+        state.user.vipPlanId = statusData.order?.planId || order.planId || state.user.vipPlanId || null;
+        state.user.vipRemainingDays = calculateVipRemainingDays(state.user.vipExpiresAt);
         saveState();
+        await refreshCurrentUserStatus(true);
         renderChrome();
 
         const planName = isVi
@@ -4790,7 +5656,7 @@ function renderHomeDesktopModulesHTML(isVi) {
         <img class="home-desktop-module-cover" src="assets/home-module-daily-pc.png" alt="" onerror="this.src='assets/home-module-daily.png'" />
         <div class="home-desktop-module-content">
           <div>
-            <h3>${isVi ? "Thông dụng" : "常见的"}</h3>
+            <h3>${isVi ? "Tần suất cao" : "高频汉语"}</h3>
             <p>${isVi ? "Luyện nói & viết" : "听说读写"}</p>
           </div>
           <button type="button" class="home-desktop-module-btn" data-home-module="daily">
@@ -4822,6 +5688,7 @@ function renderHomeDesktopModulesHTML(isVi) {
 function getDesktopNavActive() {
   if (state.screen === "home") return "home";
   if (state.screen === "vocab") return "vocab";
+  if (state.screen === "listening") return "listening";
   if (state.screen === "account") return "account";
   if (state.screen === "course") return state.module === "daily" ? "daily" : "hsk";
   return "";
@@ -4833,6 +5700,7 @@ function desktopNavIcon(name) {
     hsk: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5z"/><path d="M6 10.2v5.1c1.7 1.5 3.7 2.2 6 2.2s4.3-.7 6-2.2v-5.1"/><path d="M21 9v5"/></svg>`,
     daily: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h7"/><path d="M7.5 18c2.4-4.3 4.1-8.6 5-13"/><path d="M5 8h9"/><path d="M11 5h4"/><path d="M15 20l3.6-9 3.4 9"/><path d="M16.2 17h4.6"/></svg>`,
     vocab: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 3v18"/><path d="M14 3v18"/></svg>`,
+    listening: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
     account: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
   };
   return icons[name] || "";
@@ -4865,6 +5733,9 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <button type="button" class="${navClass("vocab")}" data-home-nav="vocab">
           <span aria-hidden="true">${desktopNavIcon("vocab")}</span>${t("vocab")}
         </button>
+        <button type="button" class="${navClass("listening")}" data-home-nav="listening">
+          <span aria-hidden="true">${desktopNavIcon("listening")}</span>${isVi ? t("listening") : "听力"}
+        </button>
         <button type="button" class="${navClass("account")}" data-home-nav="account">
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
@@ -4887,6 +5758,7 @@ function renderMobilePageReturnBar(activeNav = "") {
   const labels = {
     hsk: state.lang === "vi" ? "Khóa HSK" : "HSK 课程",
     daily: t("dailyTabNav"),
+    listening: t("listening"),
     vocab: state.lang === "vi" ? "Bộ từ" : "词库",
     account: state.lang === "vi" ? "Cá nhân" : "个人",
   };
@@ -4914,11 +5786,1844 @@ function wrapWithAppDesktopShell(innerHTML, shellClass = "", activeNav = "") {
   `;
 }
 
-function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", activeNav = "") {
+function getAppScrollSnapshot() {
+  return {
+    windowY: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+    appY: document.getElementById("app")?.scrollTop || 0,
+    shellY: document.querySelector(".app-shell:not(.hidden)")?.scrollTop || 0,
+    screenY: document.querySelector(".screen:not(.hidden)")?.scrollTop || 0,
+  };
+}
+
+function restoreAppScrollSnapshot(snapshot = {}) {
+  const restoreNow = () => {
+    window.scrollTo({ top: snapshot.windowY || 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = snapshot.windowY || 0;
+    document.body.scrollTop = snapshot.windowY || 0;
+    document.getElementById("app")?.scrollTo?.({ top: snapshot.appY || 0, left: 0, behavior: "auto" });
+    document.querySelector(".app-shell:not(.hidden)")?.scrollTo?.({ top: snapshot.shellY || 0, left: 0, behavior: "auto" });
+    document.querySelector(".screen:not(.hidden)")?.scrollTo?.({ top: snapshot.screenY || 0, left: 0, behavior: "auto" });
+  };
+  restoreNow();
+  requestAnimationFrame(restoreNow);
+}
+
+function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", activeNav = "", options = {}) {
   const node = screens[screenKey];
   if (!node) return;
+  const scrollSnapshot = options.preserveScroll ? getAppScrollSnapshot() : null;
   node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav);
-  scrollAppToTop();
+  if (scrollSnapshot) restoreAppScrollSnapshot(scrollSnapshot);
+  else scrollAppToTop();
+}
+
+function renderListening(options = {}) {
+  if (state.listeningView === "repeat") {
+    renderListeningRepeatLesson(options);
+    return;
+  }
+  if (state.listeningView === "vocab") {
+    renderListeningVocabLesson(options);
+    return;
+  }
+  if (state.listeningView === "detail") {
+    renderListeningDetail(options);
+    return;
+  }
+  renderListeningDashboard();
+}
+
+function renderListeningDashboard() {
+  const isVi = state.lang === "vi";
+  const topicCards = [
+    {
+      titleVi: "Giao tiếp hằng ngày",
+      titleZh: "日常交流",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-001",
+      progress: 75,
+      minutes: 20,
+      icon: "chat",
+      tone: "green",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "HSK Listening",
+      titleZh: "HSK 听力",
+      levelVi: "Trung cấp",
+      levelZh: "中级",
+      openId: "ep-002",
+      progress: 60,
+      minutes: 30,
+      icon: "book",
+      tone: "blue",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "Phát âm",
+      titleZh: "发音",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-003",
+      progress: 45,
+      minutes: 15,
+      icon: "mic",
+      tone: "purple",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Du lịch",
+      titleZh: "旅行",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-004",
+      progress: 80,
+      minutes: 18,
+      icon: "suitcase",
+      tone: "orange",
+      actionVi: "Tiếp tục",
+      actionZh: "继续",
+    },
+    {
+      titleVi: "Mua sắm",
+      titleZh: "购物",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-004",
+      progress: 65,
+      minutes: 16,
+      icon: "bag",
+      tone: "red",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Công việc",
+      titleZh: "工作",
+      levelVi: "Trung cấp",
+      levelZh: "中级",
+      openId: "ep-001",
+      progress: 50,
+      minutes: 22,
+      icon: "briefcase",
+      tone: "teal",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+    {
+      titleVi: "Ẩm thực",
+      titleZh: "美食",
+      levelVi: "Sơ cấp",
+      levelZh: "初级",
+      openId: "ep-003",
+      progress: 70,
+      minutes: 17,
+      icon: "food",
+      tone: "amber",
+      actionVi: "Bắt đầu nghe",
+      actionZh: "开始听",
+    },
+  ];
+  const topicIconHTML = (icon) => {
+    const icons = {
+      chat: `<span class="listening-topic-art listening-topic-art--chat"><i></i><i></i></span>`,
+      book: `<span class="listening-topic-art listening-topic-art--book"><i>HSK</i></span>`,
+      mic: `<span class="listening-topic-art listening-topic-art--mic"><i></i></span>`,
+      suitcase: `<span class="listening-topic-art listening-topic-art--suitcase"><i></i></span>`,
+      bag: `<span class="listening-topic-art listening-topic-art--bag"><i></i></span>`,
+      briefcase: `<span class="listening-topic-art listening-topic-art--briefcase"><i></i></span>`,
+      food: `<span class="listening-topic-art listening-topic-art--food"><i></i></span>`,
+    };
+    return icons[icon] || icons.chat;
+  };
+  const cardsHTML = topicCards.map((topic) => `
+    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-open="${escapeAttr(topic.openId)}">
+      <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
+      ${topicIconHTML(topic.icon)}
+      <span class="listening-topic-chip">${escapeHtml(isVi ? topic.levelVi : topic.levelZh)}</span>
+      <span class="listening-topic-meta">
+        <span>${topic.progress}%</span>
+        <span class="listening-topic-bar"><i style="width:${topic.progress}%"></i></span>
+        <span>${topic.minutes} ${isVi ? "phút" : "分钟"}</span>
+      </span>
+      <span class="listening-topic-action">${escapeHtml(isVi ? topic.actionVi : topic.actionZh)}</span>
+    </button>
+  `).join("");
+  const recommended = listeningEpisodes[0] || {};
+  const listenedMinutes = 512;
+  const targetMinutes = 750;
+  const progressPercent = 68;
+  const userName = state.user?.name || state.user?.fullName || (isVi ? "bạn" : "你");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-spa-layout">
+      <header class="listening-dashboard-topbar">
+        <h1>${isVi ? "Chủ đề nghe" : "听力主题"}</h1>
+        <div class="listening-dashboard-userbar" aria-label="${isVi ? "Thông tin học tập" : "学习信息"}">
+          <div class="listening-stat-pill">
+            <span class="listening-stat-icon listening-stat-icon--coin" aria-hidden="true">★</span>
+            <strong>820</strong>
+            <small>${isVi ? "Điểm tích lũy" : "积分"}</small>
+          </div>
+          <div class="listening-stat-pill">
+            <span class="listening-stat-icon listening-stat-icon--badge" aria-hidden="true">★</span>
+            <strong>HSK 3</strong>
+            <small>${isVi ? "Cấp hiện tại" : "当前级别"}</small>
+          </div>
+          <button class="listening-alert-btn" type="button" aria-label="${isVi ? "Thông báo" : "通知"}">
+            <span aria-hidden="true">!</span>
+          </button>
+          <button class="listening-profile-btn" type="button" data-home-nav="account">
+            <img src="assets/default-guest-avatar.png" alt="" />
+            <span>${isVi ? `Chào ${escapeHtml(userName)}` : `你好 ${escapeHtml(userName)}`}</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="listening-dashboard-main">
+        <div class="listening-dashboard-content">
+      <section class="listening-spa-hero">
+        <div>
+          <h2>${isVi ? "Luyện nghe tiếng Trung" : "中文听力训练"}</h2>
+          <p>${isVi ? "Nghe và nhận diện" : "听懂并识别"}</p>
+          <span class="listening-hero-note">${desktopNavIcon("listening")} ${isVi ? "Nghe nhiều hơn mỗi ngày, tiến bộ từng bước!" : "每天多听一点，稳步进步！"}</span>
+        </div>
+        <div class="listening-hero-art" aria-hidden="true">
+          <span class="listening-hero-wave listening-hero-wave--left"></span>
+          <span class="listening-hero-headphones"><i></i></span>
+          <span class="listening-hero-wave listening-hero-wave--right"></span>
+        </div>
+      </section>
+
+      <section class="listening-spa-section">
+        <div class="listening-section-head">
+          <div class="listening-filter-tabs" role="tablist" aria-label="${isVi ? "Lọc chủ đề" : "筛选主题"}">
+            <button class="active" type="button">${isVi ? "Tất cả" : "全部"}</button>
+            <button type="button">${isVi ? "Sơ cấp" : "初级"}</button>
+            <button type="button">${isVi ? "Trung cấp" : "中级"}</button>
+            <button type="button">${isVi ? "Nâng cao" : "高级"}</button>
+          </div>
+          <button class="listening-sort-btn" type="button">${isVi ? "Mới nhất" : "最新"} <span aria-hidden="true">⌄</span></button>
+        </div>
+        <div class="listening-topic-grid">
+          ${cardsHTML}
+        </div>
+        <p class="listening-tip">${isVi ? "Mẹo: Nghe chủ động, ghi chú từ khóa và lặp lại để cải thiện hiệu quả!" : "提示：主动听，记录关键词并反复练习。"}</p>
+      </section>
+        </div>
+
+        <aside class="listening-dashboard-rail" aria-label="${isVi ? "Tiến độ nghe" : "听力进度"}">
+          <section class="listening-progress-panel">
+            <h2>${isVi ? "Tiến độ nghe" : "听力进度"}</h2>
+            <div class="listening-progress-summary">
+              <div class="listening-progress-ring" style="--listening-progress:${progressPercent}%">
+                <strong>${progressPercent}<span>%</span></strong>
+                <small>${isVi ? "Mục tiêu tháng" : "月目标"}</small>
+              </div>
+              <div class="listening-progress-stats">
+                <span><i class="listening-mini-icon listening-mini-icon--green">${desktopNavIcon("listening")}</i><b>${isVi ? "Bài nghe" : "听力"}</b><strong>34 / 50</strong></span>
+                <span><i class="listening-mini-icon listening-mini-icon--orange">◷</i><b>${isVi ? "Phút đã nghe" : "已听分钟"}</b><strong>${listenedMinutes} / ${targetMinutes}</strong></span>
+                <span><i class="listening-mini-icon listening-mini-icon--blue">✓</i><b>${isVi ? "Hoàn thành" : "已完成"}</b><strong>24</strong></span>
+              </div>
+            </div>
+            <div class="listening-streak">
+              <div><span class="listening-flame" aria-hidden="true"></span><b>${isVi ? "Chuỗi ngày hiện tại" : "当前连续"}</b><strong>12 ${isVi ? "ngày" : "天"}</strong></div>
+              <ol>
+                ${[18, 19, 20, 21, 22, 23].map((day) => `<li><span class="listening-flame" aria-hidden="true"></span><small>${day}</small></li>`).join("")}
+                <li class="muted"><span class="listening-flame" aria-hidden="true"></span><small>${isVi ? "Hôm nay" : "今天"}</small></li>
+              </ol>
+            </div>
+          </section>
+
+          <section class="listening-recommend-panel">
+            <h2>${isVi ? "Bài nghe đề xuất" : "推荐听力"}</h2>
+            <div class="listening-recommend-card">
+              <div class="listening-recommend-cover">
+                <span></span>
+                <button type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}" aria-label="${isVi ? "Phát bài nghe" : "播放"}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+              </div>
+              <div class="listening-recommend-copy">
+                <h3>${isVi ? "Hội thoại ở quán cà phê" : "咖啡馆对话"}</h3>
+                <p><span>${isVi ? "Sơ cấp" : "初级"}</span> · 6 ${isVi ? "phút" : "分钟"}</p>
+                <small>${isVi ? "Nghe đoạn hội thoại ngắn giữa nhân viên và khách hàng tại quán cà phê." : "听服务员和顾客的短对话。"}</small>
+                <div class="listening-recommend-progress"><i></i><em>02:15 / 06:00</em></div>
+              </div>
+              <div class="listening-recommend-controls">
+                <button type="button" aria-label="${isVi ? "Bài trước" : "上一首"}">‹</button>
+                <button type="button" aria-label="${isVi ? "Lùi 10 giây" : "后退10秒"}">10</button>
+                <button class="primary" type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}" aria-label="${isVi ? "Phát" : "播放"}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button type="button" aria-label="${isVi ? "Tiến 10 giây" : "前进10秒"}">10</button>
+                <button type="button" aria-label="${isVi ? "Bài tiếp" : "下一首"}">›</button>
+              </div>
+            </div>
+            <button class="listening-all-btn" type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}">${isVi ? "Xem tất cả bài nghe" : "查看全部听力"} <span aria-hidden="true">›</span></button>
+          </section>
+        </aside>
+      </main>
+    </div>
+  `, "app-desktop-shell--listening", "listening");
+}
+
+function listeningFormatTime(value = 0) {
+  const seconds = Math.max(0, Math.floor(value));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function getListeningPlaybackRate(rate = state.listeningPlaybackRate) {
+  const numericRate = Number(rate);
+  return [0.75, 1, 1.25, 1.5].includes(numericRate) ? numericRate : 1;
+}
+
+function applyListeningPlaybackRate(audio = $("#listeningAudio")) {
+  const rate = getListeningPlaybackRate();
+  if (audio) audio.playbackRate = rate;
+  return rate;
+}
+
+function getListeningRateLabel(rate = state.listeningPlaybackRate) {
+  const isVi = state.lang === "vi";
+  const labels = {
+    0.75: isVi ? "Chậm" : "慢",
+    1: isVi ? "Bình thường" : "正常",
+    1.25: isVi ? "Nhanh" : "快",
+    1.5: "1.5x",
+  };
+  return labels[getListeningPlaybackRate(rate)] || (isVi ? "Tốc độ" : "速度");
+}
+
+function setListeningPlaybackRate(rate) {
+  state.listeningPlaybackRate = getListeningPlaybackRate(rate);
+  localStorage.setItem("v2-listening-rate", String(state.listeningPlaybackRate));
+  applyListeningPlaybackRate();
+  document.querySelectorAll("[data-listening-rate]").forEach((button) => {
+    const isActive = Number(button.dataset.listeningRate) === state.listeningPlaybackRate;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  document.querySelectorAll("[data-listening-speed-label]").forEach((node) => {
+    node.textContent = getListeningRateLabel();
+  });
+}
+
+function renderListeningDetail(options = {}) {
+  const isVi = state.lang === "vi";
+  const episode = getListeningEpisode();
+  const currentIndex = Math.min(state.listeningSentenceIndex, episode.sentences.length - 1);
+  const saved = state.listeningSaved.has(episode.id);
+  const completionPercent = Math.max(75, Math.round(((currentIndex + 1) / Math.max(1, episode.sentences.length)) * 100));
+  const activeSentence = episode.sentences[currentIndex] || episode.sentences[0] || {};
+  const userName = state.user?.name || state.user?.fullName || (isVi ? "bạn" : "你");
+  const listeningRateOptions = [
+    { rate: 0.75, labelVi: "Chậm", labelZh: "慢" },
+    { rate: 1, labelVi: "Bình thường", labelZh: "正常" },
+    { rate: 1.25, labelVi: "Nhanh", labelZh: "快" }
+  ];
+  const speedButtonsHTML = listeningRateOptions.map(({ rate, labelVi, labelZh }) => `
+    <button class="${state.listeningPlaybackRate === rate ? "active" : ""}" type="button" data-listening-rate="${rate}" aria-pressed="${state.listeningPlaybackRate === rate ? "true" : "false"}">
+      <span>${isVi ? labelVi : labelZh}</span>
+      <small>${rate}x</small>
+    </button>
+  `).join("");
+  const sentencesHTML = episode.sentences.map((sentence, index) => `
+    <button class="listening-sentence ${index === currentIndex ? "active" : ""}" type="button" data-listening-sentence="${index}">
+      <span>${index + 1}</span>
+      <p>
+        <strong>${escapeHtml(sentence.chinese)}</strong>
+        ${state.listeningPinyinOn ? `<small>${escapeHtml(sentence.pinyin)}</small>` : ""}
+        ${state.listeningVietnameseOn ? `<em>${escapeHtml(sentence.vietnamese)}</em>` : ""}
+      </p>
+      <i aria-hidden="true">${desktopNavIcon("listening")}</i>
+    </button>
+  `).join("");
+  const keywordsHTML = episode.keywords.map((word, index) => {
+    const keywordText = typeof word === "string" ? word : word.chinese || "";
+    const keywordMeta = typeof word === "string" ? "" : [word.pinyin, word.vietnamese].filter(Boolean).join(" · ");
+    return `<button type="button" data-listening-keyword="${index}" title="${escapeAttr(keywordMeta)}">${escapeHtml(keywordText)}</button>`;
+  }).join("");
+  const nextSentencesHTML = episode.sentences
+    .map((sentence, index) => ({ sentence, index }))
+    .filter((item) => item.index !== currentIndex)
+    .slice(0, 3)
+    .map(({ sentence, index }) => `
+      <button class="listening-next-card" type="button" data-listening-sentence="${index}">
+        <span>${index + 1}</span>
+        <strong>${escapeHtml(sentence.chinese)}</strong>
+        <small>${escapeHtml(sentence.pinyin)}</small>
+        <i><b></b>${listeningFormatTime(Math.max(0, (sentence.end || sentence.start || 0) - (sentence.start || 0)))}</i>
+        <em>${isVi ? "ChÆ°a nghe" : "æœªå¬"}</em>
+      </button>
+    `).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-detail-spa">
+      <header class="listening-detail-topbar">
+        <button class="listening-back-btn" type="button" data-listening-back>
+          <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        </button>
+        <h1>${isVi ? "Nghe mỗi ngày" : "每日听力"}</h1>
+        <div class="listening-detail-top-actions">
+          <div class="listening-language-switch" aria-label="${isVi ? "Ngôn ngữ" : "语言"}">
+            <span class="active">VI</span>
+            <span>中文</span>
+          </div>
+          <button class="listening-save-link ${saved ? "saved" : ""}" type="button" data-listening-save>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+            ${saved ? (isVi ? "Đã lưu" : "已收藏") : (isVi ? "Lưu" : "收藏")}
+          </button>
+          <button class="listening-profile-btn" type="button" data-home-nav="account">
+            <img src="assets/default-guest-avatar.png" alt="" />
+            <span>${isVi ? `Chào ${escapeHtml(userName)}` : `你好 ${escapeHtml(userName)}`}</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="listening-detail-hero">
+        <button class="listening-hero-save ${saved ? "saved" : ""}" type="button" data-listening-save>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+          ${saved ? (isVi ? "Đã lưu" : "已收藏") : (isVi ? "Lưu" : "收藏")}
+        </button>
+        <div>
+          <span>${escapeHtml(isVi ? episode.category : episode.categoryZh)}</span>
+          <h2>${escapeHtml(isVi ? episode.title : episode.titleZh)}</h2>
+          <p>${isVi ? "Giọng đọc" : "朗读"}: ${escapeHtml(episode.speaker)} · ${isVi ? "khoảng" : "约"} ${Math.max(1, Math.ceil(episode.duration / 60))} ${isVi ? "phút" : "分钟"} · ${isVi ? "tiếng Trung thật" : "真实中文"}</p>
+        </div>
+        <div class="listening-detail-art" aria-hidden="true">
+          <button class="listening-hero-play" type="button" data-listening-play aria-label="${isVi ? "Phát" : "播放"}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <span class="listening-detail-headphones"></span>
+          <span class="listening-detail-wave"></span>
+        </div>
+      </section>
+
+      <section class="listening-player-card">
+        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="metadata"></audio>
+        <div class="listening-player-status">
+          <div>
+            <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
+            <small id="listeningStatusSub">${episode.audioSrc ? (isVi ? "Âm thanh thật đã sẵn sàng" : "真实音频已准备") : (isVi ? "Chế độ demo không cần file âm thanh" : "演示模式")}</small>
+          </div>
+          <span id="listeningCurrentTime">0:00</span>
+          <div class="listening-waveform" aria-hidden="true"><i></i></div>
+          <span>${listeningFormatTime(episode.duration)}</span>
+        </div>
+        <div class="listening-time-row"><span>0:00</span><span>${listeningFormatTime(episode.duration)}</span></div>
+        <div class="listening-track" data-listening-track><i id="listeningProgress"></i></div>
+        <div class="listening-controls">
+          <div class="listening-speed-menu" aria-label="${isVi ? "Tốc độ nghe" : "播放速度"}">
+            <button class="listening-speed-toggle" type="button" data-listening-speed-toggle aria-haspopup="true" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/><path d="M12 18h.01"/></svg>
+              <span data-listening-speed-label>${getListeningRateLabel()}</span>
+            </button>
+            <div class="listening-speed-options" role="menu">${speedButtonsHTML}</div>
+          </div>
+          <button class="listening-step-btn" type="button" data-listening-prev aria-label="${isVi ? "Câu trước" : "上一句"}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19 4 12l7-7"/><path d="M20 19 13 12l7-7"/></svg>
+            <span>${isVi ? "Câu trước" : "上一句"}</span>
+          </button>
+          <button class="listening-main-play" type="button" data-listening-play aria-label="${isVi ? "Phát" : "播放"}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="listening-step-btn" type="button" data-listening-next aria-label="${isVi ? "Câu sau" : "下一句"}">
+            <span>${isVi ? "Câu sau" : "下一句"}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 5 7 7-7 7"/><path d="m4 5 7 7-7 7"/></svg>
+          </button>
+          <button class="listening-replay-link" type="button" data-listening-replay>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v6h6"/></svg>
+            ${isVi ? "Nghe lại câu này" : "重听本句"}
+          </button>
+        </div>
+      </section>
+
+      <div class="listening-detail-practice-grid">
+        <section class="listening-script-card">
+          <h2 class="listening-script-title">${isVi ? "Nội dung nghe" : "听力内容"}</h2>
+          <div class="listening-script-head">
+            <strong>${isVi ? "Tùy chọn phụ đề" : "字幕选项"}</strong>
+            <div class="listening-subtitle-actions">
+              <button class="${state.listeningPinyinOn ? "active" : ""}" type="button" data-listening-toggle="pinyin">Pinyin</button>
+              <button class="${state.listeningVietnameseOn ? "active" : ""}" type="button" data-listening-toggle="vi">${isVi ? "Tiếng Việt" : "越南语"}</button>
+            </div>
+          </div>
+          <div class="listening-sentence-list">${sentencesHTML}</div>
+          <button class="listening-translation-btn" type="button" data-listening-translation>${state.listeningVietnameseOn ? (isVi ? "Ẩn bản dịch tiếng Việt" : "隐藏越南语翻译") : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译")} <span aria-hidden="true">⌄</span></button>
+        </section>
+        <div class="listening-script-quick-actions" aria-label="${isVi ? "Lối tắt luyện tập" : "练习快捷入口"}">
+          <button type="button" data-listening-jump="vocab">
+            ${desktopNavIcon("vocab")}
+            <span>${isVi ? "Từ vựng" : "词汇"}</span>
+          </button>
+          <button type="button" data-listening-jump="repeat">
+            ${desktopNavIcon("listening")}
+            <span>${isVi ? "Nói theo" : "跟读"}</span>
+          </button>
+        </div>
+        <section class="listening-vocab-practice-panel hidden" id="listeningVocabPracticePanel" aria-live="polite"></section>
+
+        <section class="listening-repeat-card">
+          <div class="listening-keyword-block">
+            <h2>${isVi ? "Từ trọng điểm" : "重点词"}</h2>
+            <div>${keywordsHTML}</div>
+            <article class="listening-keyword-detail hidden" id="listeningKeywordDetail" aria-live="polite"></article>
+          </div>
+          <div class="listening-translation-panel">
+            <h2>${isVi ? "Xem bản dịch" : "查看翻译"}</h2>
+            <p>${isVi ? "Xem toàn bộ bản dịch tiếng Việt của bài nghe." : "查看本课完整越南语翻译。"}</p>
+            <button class="listening-translation-side-btn" type="button" data-listening-translation>${state.listeningVietnameseOn ? (isVi ? "Ẩn bản dịch tiếng Việt" : "隐藏越南语翻译") : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译")}</button>
+          </div>
+          <div class="listening-repeat-box">
+            <h2>${isVi ? "Luyện nhại lại" : "跟读练习"}</h2>
+            <p>${isVi ? "Nhại lại câu hiện tại để tự kiểm tra phát âm" : "跟读当前句子，检查发音。"}</p>
+            <blockquote>
+              <strong>${escapeHtml(activeSentence.chinese || "")}</strong>
+              <small>${escapeHtml(activeSentence.pinyin || "")}</small>
+              <button type="button" data-listening-replay aria-label="${isVi ? "Nghe lại" : "重听"}">${desktopNavIcon("listening")}</button>
+            </blockquote>
+            <div class="listening-pronunciation-result" id="listeningPronunciationResult" aria-live="polite">
+              <span>${isVi ? "Bấm ghi âm, đọc lại câu, rồi bấm dừng để chấm điểm." : "点击录音，跟读句子，再点击停止评分。"}</span>
+            </div>
+            <div class="listening-record-row">
+              <button type="button" data-listening-record aria-label="${isVi ? "Ghi âm" : "录音"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+              </button>
+              <button type="button" data-listening-record>${isVi ? "Sẵn sàng đọc" : "准备朗读"}</button>
+            </div>
+            <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "还没有录音"}</span>
+            </button>
+            <textarea id="listeningRepeatInput" aria-label="${isVi ? "Kết quả đọc" : "朗读结果"}" readonly disabled>${escapeHtml(activeSentence.chinese || "")}</textarea>
+          </div>
+        </section>
+      </div>
+
+      <aside class="listening-keywords-card">
+        <section class="listening-lesson-progress">
+          <h2>${isVi ? "Tiến độ học tập" : "学习进度"}</h2>
+          <div class="listening-lesson-ring" style="--lesson-progress:${completionPercent}%">
+            <strong>${completionPercent}<span>%</span></strong>
+            <small>${isVi ? "Hoàn thành" : "完成"}</small>
+          </div>
+          <ul>
+            <li><span>24 / 32</span>${isVi ? "Bài học đã hoàn thành" : "已完成课程"}</li>
+            <li><span>562 / 1200</span>${isVi ? "Từ vựng đã học" : "已学词汇"}</li>
+            <li><span>512 / 750</span>${isVi ? "Phút đã nghe" : "已听分钟"}</li>
+            <li><span>3 / 10</span>${isVi ? "Đề thi thử đã làm" : "模拟测试"}</li>
+          </ul>
+        </section>
+        <section class="listening-streak-card">
+          <div><span class="listening-flame" aria-hidden="true"></span><b>${isVi ? "Chuỗi ngày hiện tại" : "当前连续"}</b><strong>12 ${isVi ? "ngày" : "天"}</strong></div>
+          <ol>
+            ${[18, 19, 20, 21, 22, 23].map((day) => `<li><span class="listening-flame" aria-hidden="true"></span><small>${day}</small></li>`).join("")}
+            <li class="muted"><span class="listening-flame" aria-hidden="true"></span><small>${isVi ? "Hôm nay" : "今天"}</small></li>
+          </ol>
+        </section>
+        <section class="listening-side-recommend">
+          <h2>${isVi ? "Bài nghe đề xuất" : "推荐听力"}</h2>
+          <div>
+            <span class="listening-side-cover"><button type="button" data-listening-open="ep-004" aria-label="${isVi ? "Phát" : "播放"}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></span>
+            <div>
+              <h3>${isVi ? "Ở nhà hàng" : "在餐厅"}</h3>
+              <p>HSK 3</p>
+              <small>${isVi ? "Luyện nghe - Hội thoại" : "听力 - 对话"} · 15 ${isVi ? "phút" : "分钟"} · ${isVi ? "Trung bình" : "中级"}</small>
+            </div>
+          </div>
+          <button type="button" data-listening-open="ep-004">${isVi ? "Tiếp tục học" : "继续学习"}</button>
+        </section>
+      </aside>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  requestAnimationFrame(() => {
+    bindListeningAudioEvents();
+    syncListeningAudioUi();
+  });
+}
+
+function getListeningAudioDuration(audio, episode) {
+  return Number.isFinite(audio?.duration) && audio.duration > 0 ? audio.duration : episode.duration;
+}
+
+function getListeningSentenceStart(episode, index) {
+  return episode.sentences[Math.max(0, Math.min(index, episode.sentences.length - 1))]?.start || 0;
+}
+
+function getListeningSentenceIndexAtTime(episode, time) {
+  return episode.sentences.reduce((activeIndex, sentence, index) => (
+    sentence.start <= time ? index : activeIndex
+  ), 0);
+}
+
+function setListeningActiveSentence(index) {
+  const episode = getListeningEpisode();
+  const nextIndex = Math.max(0, Math.min(index, episode.sentences.length - 1));
+  state.listeningSentenceIndex = nextIndex;
+  document.querySelectorAll("[data-listening-sentence]").forEach((button) => {
+    button.classList.toggle("active", Number(button.dataset.listeningSentence || 0) === nextIndex);
+  });
+}
+
+let listeningMediaRecorder = null;
+let listeningRecordingStream = null;
+let listeningRecordingChunks = [];
+let listeningRecordingUrl = "";
+let listeningRecordingBlob = null;
+let listeningRecordingAudio = null;
+let listeningRepeatRecognition = null;
+let listeningRepeatTranscript = "";
+let listeningRepeatInterim = "";
+let listeningRepeatScoringDone = false;
+let listeningRepeatScoreTimer = null;
+let listeningPlaybackRequested = false;
+let listeningRepeatSpeechToken = 0;
+let listeningRepeatSpeechState = "idle";
+let listeningRepeatAudioStopTimer = null;
+const listeningSpecializedPronunciationEnabled = true;
+
+function setListeningRepeatInput(value) {
+  const input = $("#listeningRepeatInput");
+  if (input) input.value = value;
+}
+
+function setListeningRepeatScorePreview(score = null) {
+  const preview = $(".listening-repeat-score-preview");
+  if (!preview) return;
+  const strong = preview.querySelector("strong");
+  const label = preview.querySelector("span");
+  const numericScore = Number(score);
+  if (strong) strong.textContent = Number.isFinite(numericScore) ? String(Math.max(0, Math.min(100, Math.round(numericScore)))) : "--";
+  if (label) label.textContent = "";
+}
+
+function setListeningRepeatListenUi(status = listeningRepeatSpeechState) {
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+  const button = $(".listening-repeat-play-large");
+  const label = $("[data-listening-repeat-listen-label]");
+  if (button) {
+    button.classList.toggle("is-playing", isPlaying);
+    button.classList.toggle("is-paused", isPaused);
+    button.setAttribute("aria-pressed", isPlaying ? "true" : "false");
+    button.setAttribute("aria-label", isPlaying
+      ? (state.lang === "vi" ? "Tạm dừng" : "Pause")
+      : (state.lang === "vi" ? "Phát" : "Play"));
+    button.innerHTML = isPlaying
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8z"/><path d="M13 5h3v14h-3z"/></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`;
+  }
+  if (label) {
+    label.textContent = isPlaying
+      ? (state.lang === "vi" ? "Tạm dừng" : "Pause")
+      : isPaused
+        ? (state.lang === "vi" ? "Tiếp tục" : "Resume")
+        : (state.lang === "vi" ? "Nghe lại" : "Replay");
+  }
+}
+
+function stopListeningRepeatListenPlayback() {
+  listeningRepeatSpeechToken += 1;
+  listeningRepeatSpeechState = "idle";
+  if (listeningRepeatAudioStopTimer) {
+    window.clearTimeout(listeningRepeatAudioStopTimer);
+    listeningRepeatAudioStopTimer = null;
+  }
+  const audio = $("#listeningRepeatAudio");
+  if (audio) {
+    audio.pause();
+    audio.ontimeupdate = null;
+    audio.onended = null;
+    audio.onerror = null;
+  }
+  window.speechSynthesis?.cancel();
+  setListeningRepeatListenUi("idle");
+}
+
+function updateListeningRecordingPlaybackUi(enabled = Boolean(listeningRecordingUrl)) {
+  document.querySelectorAll("[data-listening-recording-play]").forEach((button) => {
+    button.disabled = !enabled;
+    button.classList.toggle("has-recording", enabled);
+    const label = button.querySelector("[data-listening-recording-label]");
+    if (label) {
+      label.textContent = enabled
+        ? (state.lang === "vi" ? "Nghe lại ghi âm của bạn" : "重听你的录音")
+        : (state.lang === "vi" ? "Chưa có ghi âm" : "还没有录音");
+    }
+  });
+}
+
+function clearListeningRecordingPlayback() {
+  if (listeningRecordingAudio) {
+    listeningRecordingAudio.pause();
+    listeningRecordingAudio = null;
+  }
+  if (listeningRecordingUrl) URL.revokeObjectURL(listeningRecordingUrl);
+  listeningRecordingUrl = "";
+  listeningRecordingBlob = null;
+  listeningRecordingChunks = [];
+  updateListeningRecordingPlaybackUi(false);
+}
+
+function playListeningRepeatRecording() {
+  if (!listeningRecordingUrl) {
+    showToast(state.lang === "vi" ? "Chưa có ghi âm để nghe lại." : "还没有录音可以重听。");
+    return;
+  }
+  if (listeningRecordingAudio) {
+    listeningRecordingAudio.pause();
+    listeningRecordingAudio = null;
+  }
+  listeningRecordingAudio = new Audio(listeningRecordingUrl);
+  document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.add("is-playing"));
+  listeningRecordingAudio.addEventListener("ended", () => {
+    document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.remove("is-playing"));
+  }, { once: true });
+  listeningRecordingAudio.play().catch(() => {
+    document.querySelectorAll("[data-listening-recording-play]").forEach((button) => button.classList.remove("is-playing"));
+    showToast(state.lang === "vi" ? "Không thể phát lại ghi âm này." : "无法播放这段录音。");
+  });
+}
+
+function getListeningRecordingOptions() {
+  if (!window.MediaRecorder?.isTypeSupported) return {};
+  const candidates = [
+    "audio/ogg;codecs=opus",
+    "audio/webm;codecs=opus",
+    "audio/webm",
+  ];
+  const mimeType = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+  return mimeType ? { mimeType } : {};
+}
+
+function getListeningRepeatText() {
+  return `${listeningRepeatTranscript} ${listeningRepeatInterim}`.trim();
+}
+
+function clearListeningPronunciationResult(message = "") {
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+  if (listeningRepeatScoreTimer) {
+    window.clearTimeout(listeningRepeatScoreTimer);
+    listeningRepeatScoreTimer = null;
+  }
+  panel.classList.remove("has-score");
+  panel.innerHTML = message ? `<span>${escapeHtml(message)}</span>` : "";
+  setListeningRepeatScorePreview(null);
+}
+
+function scheduleListeningRepeatScore(delay = 650) {
+  if (listeningRepeatScoringDone) return;
+  if (listeningRepeatScoreTimer) window.clearTimeout(listeningRepeatScoreTimer);
+  listeningRepeatScoreTimer = window.setTimeout(() => {
+    listeningRepeatScoreTimer = null;
+    scoreListeningRepeatRecording();
+  }, delay);
+}
+
+function compareListeningPronunciation(targetText, spokenText) {
+  const targetChars = Array.from(normalizeHanzi(targetText));
+  const spokenChars = Array.from(normalizeHanzi(spokenText));
+  const rows = targetChars.length + 1;
+  const cols = spokenChars.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = targetChars.length - 1; i >= 0; i -= 1) {
+    for (let j = spokenChars.length - 1; j >= 0; j -= 1) {
+      dp[i][j] = targetChars[i] === spokenChars[j]
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  const matched = new Set();
+  let i = 0;
+  let j = 0;
+  while (i < targetChars.length && j < spokenChars.length) {
+    if (targetChars[i] === spokenChars[j]) {
+      matched.add(i);
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i += 1;
+    } else {
+      j += 1;
+    }
+  }
+
+  const score = targetChars.length ? Math.round((matched.size / targetChars.length) * 100) : 0;
+  return { matched, score, spokenText, targetChars };
+}
+
+function renderListeningPronunciationScore(spokenText = getListeningRepeatText()) {
+  if (listeningRepeatScoringDone) return;
+  listeningRepeatScoringDone = true;
+
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+
+  const result = compareListeningPronunciation(sentence.chinese || "", spokenText);
+  const hasSpokenText = Boolean(normalizeHanzi(spokenText));
+  const scoreClass = result.score >= 85 ? "good" : result.score >= 60 ? "ok" : "low";
+  const markedTarget = result.targetChars.map((char, index) => (
+    `<b class="${result.matched.has(index) ? "correct" : "wrong"}">${escapeHtml(char)}</b>`
+  )).join("");
+
+  panel.classList.add("has-score");
+  panel.innerHTML = `
+    <div class="listening-pronunciation-score ${scoreClass}">
+      <strong>${hasSpokenText ? result.score : 0}</strong><span></span>
+    </div>
+    <div class="listening-pronunciation-lines">
+      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget}</em></p>
+      <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(spokenText || (state.lang === "vi" ? "Chưa nhận dạng được giọng đọc." : "没有识别到朗读。"))}</small></p>
+    </div>
+  `;
+
+  setListeningRepeatInput(spokenText || (state.lang === "vi" ? "Chưa nhận dạng được giọng đọc. Hãy thử đọc rõ hơn hoặc kiểm tra quyền micro." : "没有识别到朗读，请再试一次。"));
+  setListeningRepeatScorePreview(hasSpokenText ? result.score : 0);
+}
+
+function renderSpecializedPronunciationScore(result) {
+  listeningRepeatScoringDone = true;
+  const panel = $("#listeningPronunciationResult");
+  if (!panel) return;
+  const score = Math.round(Number(result?.score || 0));
+  const scoreClass = score >= 85 ? "good" : score >= 60 ? "ok" : "low";
+  const charResults = Array.isArray(result?.charResults) ? result.charResults : [];
+  const markedTarget = charResults.map((item) => (
+    `<b class="${item.correct ? "correct" : "wrong"}" title="${escapeAttr(item.errorType || "")}">${escapeHtml(item.char || "")}</b>`
+  )).join("");
+  const metric = (label, value) => Number.isFinite(Number(value))
+    ? `<span>${label}: <strong>${Math.round(Number(value))}</strong></span>`
+    : "";
+
+  panel.classList.add("has-score");
+  panel.innerHTML = `
+    <div class="listening-pronunciation-score ${scoreClass}">
+      <strong>${score}</strong><span></span>
+    </div>
+    <div class="listening-pronunciation-lines">
+      <p class="listening-pronunciation-provider"><span>Azure Speech</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
+      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
+      <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
+    </div>
+  `;
+  setListeningRepeatScorePreview(score);
+  setListeningRepeatInput(result.recognizedText || "");
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      const value = String(reader.result || "");
+      resolve(value.includes(",") ? value.split(",").pop() : value);
+    }, { once: true });
+    reader.addEventListener("error", () => reject(reader.error || new Error("Không đọc được audio.")), { once: true });
+    reader.readAsDataURL(blob);
+  });
+}
+
+function encodePcm16Wav(samples, sampleRate) {
+  const bytesPerSample = 2;
+  const blockAlign = bytesPerSample;
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  const view = new DataView(buffer);
+  const writeString = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, samples.length * bytesPerSample, true);
+  let offset = 44;
+  for (const sample of samples) {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    offset += bytesPerSample;
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function downsampleAudioChannel(channelData, sourceRate, targetRate = 16000) {
+  if (sourceRate === targetRate) return channelData;
+  const ratio = sourceRate / targetRate;
+  const length = Math.max(1, Math.round(channelData.length / ratio));
+  const result = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(channelData.length, Math.floor((index + 1) * ratio));
+    let sum = 0;
+    let count = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      sum += channelData[cursor];
+      count += 1;
+    }
+    result[index] = count ? sum / count : channelData[Math.min(start, channelData.length - 1)] || 0;
+  }
+  return result;
+}
+
+async function blobToAssessmentAudio(blob) {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) {
+    return { audioBase64: await blobToBase64(blob), mimeType: blob.type || "audio/webm" };
+  }
+  const context = new AudioContextCtor();
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    const decoded = await context.decodeAudioData(arrayBuffer.slice(0));
+    const channelData = decoded.getChannelData(0);
+    const downsampled = downsampleAudioChannel(channelData, decoded.sampleRate, 16000);
+    const wavBlob = encodePcm16Wav(downsampled, 16000);
+    return { audioBase64: await blobToBase64(wavBlob), mimeType: "audio/wav" };
+  } catch (error) {
+    console.warn("Could not convert recording to WAV; sending original audio blob.", error);
+    return { audioBase64: await blobToBase64(blob), mimeType: blob.type || "audio/webm" };
+  } finally {
+    if (typeof context.close === "function") {
+      context.close().catch(() => {});
+    }
+  }
+}
+
+async function assessListeningPronunciationWithProvider(blob) {
+  if (!blob) throw new Error("Thiếu audio ghi âm.");
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const { audioBase64, mimeType } = await blobToAssessmentAudio(blob);
+  return apiRequest("/api/listening/pronunciation-assessment", {
+    method: "POST",
+    body: JSON.stringify({
+      referenceText: sentence.chinese || "",
+      audioBase64,
+      mimeType,
+    }),
+  });
+}
+
+async function scoreListeningRepeatRecording() {
+  if (!listeningSpecializedPronunciationEnabled || !listeningRecordingBlob) {
+    renderListeningPronunciationScore();
+    return;
+  }
+  clearListeningPronunciationResult(state.lang === "vi" ? "Đang chấm phát âm chuyên dụng..." : "正在进行专业发音评分...");
+  try {
+    const result = await assessListeningPronunciationWithProvider(listeningRecordingBlob);
+    renderSpecializedPronunciationScore(result);
+  } catch (error) {
+    console.warn("Specialized pronunciation assessment failed; falling back to browser scoring.", error);
+    showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    renderListeningPronunciationScore();
+  }
+}
+
+function stopListeningRepeatRecognition() {
+  if (!listeningRepeatRecognition) return;
+  try {
+    listeningRepeatRecognition.stop();
+  } catch {
+    scheduleListeningRepeatScore(0);
+  }
+}
+
+function startListeningRepeatRecognition() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  listeningRepeatTranscript = "";
+  listeningRepeatInterim = "";
+  listeningRepeatScoringDone = false;
+
+  if (!Recognition) {
+    clearListeningPronunciationResult(state.lang === "vi"
+      ? "Trình duyệt chưa hỗ trợ nhận dạng giọng nói để chấm điểm."
+      : "当前浏览器不支持语音识别评分。");
+    return false;
+  }
+
+  try {
+    listeningRepeatRecognition = new Recognition();
+    listeningRepeatRecognition.lang = "zh-CN";
+    listeningRepeatRecognition.continuous = true;
+    listeningRepeatRecognition.interimResults = true;
+    listeningRepeatRecognition.maxAlternatives = 1;
+
+    listeningRepeatRecognition.addEventListener("result", (event) => {
+      let interim = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0]?.transcript || "";
+        if (event.results[index].isFinal) listeningRepeatTranscript += transcript;
+        else interim += transcript;
+      }
+      listeningRepeatInterim = interim;
+      const heard = getListeningRepeatText();
+      if (heard) setListeningRepeatInput(heard);
+    });
+
+    listeningRepeatRecognition.addEventListener("end", () => {
+      if (listeningMediaRecorder?.state !== "recording") scheduleListeningRepeatScore(250);
+    });
+
+    listeningRepeatRecognition.addEventListener("error", () => {
+      if (listeningMediaRecorder?.state !== "recording") scheduleListeningRepeatScore(250);
+    });
+
+    listeningRepeatRecognition.start();
+    return true;
+  } catch {
+    clearListeningPronunciationResult(state.lang === "vi"
+      ? "Không thể bắt đầu nhận dạng giọng nói."
+      : "无法开始语音识别。");
+    return false;
+  }
+}
+
+function refreshListeningActiveSentenceUi() {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const completionPercent = Math.max(75, Math.round(((state.listeningSentenceIndex + 1) / Math.max(1, episode.sentences.length)) * 100));
+
+  setListeningActiveSentence(state.listeningSentenceIndex);
+  const repeatChinese = $(".listening-repeat-box blockquote strong");
+  const repeatPinyin = $(".listening-repeat-box blockquote small");
+  const progressRing = $(".listening-lesson-ring");
+  const progressText = $(".listening-lesson-ring strong");
+
+  if (repeatChinese) repeatChinese.textContent = sentence.chinese || "";
+  if (repeatPinyin) repeatPinyin.textContent = sentence.pinyin || "";
+  if (progressRing) progressRing.style.setProperty("--lesson-progress", `${completionPercent}%`);
+  if (progressText) progressText.innerHTML = `${completionPercent}<span>%</span>`;
+  setListeningRepeatInput(sentence.chinese || "");
+  clearListeningRecordingPlayback();
+  clearListeningPronunciationResult(state.lang === "vi"
+    ? "Bấm ghi âm, đọc lại câu, rồi bấm dừng để chấm điểm."
+    : "点击录音，跟读句子，再点击停止评分。");
+}
+
+function speakListeningSentence(index = state.listeningSentenceIndex) {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[Math.max(0, Math.min(index, episode.sentences.length - 1))];
+  if (!sentence?.chinese) return false;
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ đọc câu này." : "当前浏览器不支持朗读。");
+    return false;
+  }
+
+  const playbackRate = getListeningPlaybackRate();
+  browserSpeakText(sentence.chinese, { stage: "sentence", rate: playbackRate });
+  setListeningPlayIcon(true);
+  showToast(state.lang === "vi" ? "Đang đọc câu hiện tại." : "正在朗读当前句子。");
+  window.setTimeout(() => syncListeningAudioUi(), Math.max(900, Math.min(4500, (sentence.chinese.length * 180) / playbackRate)));
+  return true;
+}
+
+function toggleListeningRepeatSentencePlayback() {
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  if (!sentence?.chinese) return false;
+
+  const audio = $("#listeningRepeatAudio");
+
+  if (listeningRepeatSpeechState === "playing") {
+    if (audio && !audio.paused) audio.pause();
+    else window.speechSynthesis.pause();
+    if (listeningRepeatAudioStopTimer) {
+      window.clearTimeout(listeningRepeatAudioStopTimer);
+      listeningRepeatAudioStopTimer = null;
+    }
+    listeningRepeatSpeechState = "paused";
+    setListeningRepeatListenUi("paused");
+    return true;
+  }
+
+  if (listeningRepeatSpeechState === "paused") {
+    if (audio && episode.audioSrc) {
+      const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : (audio.currentTime || 0) + Math.max(1, sentence.chinese.length * 0.35);
+      const remainingMs = Math.max(400, ((endTime - (audio.currentTime || 0)) / getListeningPlaybackRate()) * 1000 + 180);
+      if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
+      listeningRepeatAudioStopTimer = window.setTimeout(() => {
+        audio.pause();
+        audio.currentTime = Number(sentence.start || 0);
+        listeningRepeatSpeechState = "idle";
+        listeningRepeatAudioStopTimer = null;
+        setListeningRepeatListenUi("idle");
+      }, remainingMs);
+      audio.play().catch(() => {
+        listeningRepeatSpeechState = "idle";
+        setListeningRepeatListenUi("idle");
+      });
+    } else {
+      window.speechSynthesis.resume();
+    }
+    listeningRepeatSpeechState = "playing";
+    setListeningRepeatListenUi("playing");
+    return true;
+  }
+
+  const playbackRate = getListeningPlaybackRate();
+  const speechToken = listeningRepeatSpeechToken + 1;
+  listeningRepeatSpeechToken = speechToken;
+  listeningRepeatSpeechState = "playing";
+  setListeningRepeatListenUi("playing");
+
+  if (audio && episode.audioSrc) {
+    const startTime = Number(sentence.start || 0);
+    const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : startTime + Math.max(1, sentence.chinese.length * 0.35);
+    const resetRepeatAudioUi = () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      if (listeningRepeatAudioStopTimer) {
+        window.clearTimeout(listeningRepeatAudioStopTimer);
+        listeningRepeatAudioStopTimer = null;
+      }
+      setListeningRepeatListenUi("idle");
+    };
+    applyListeningPlaybackRate(audio);
+    audio.currentTime = startTime;
+    audio.ontimeupdate = () => {
+      if (audio.currentTime >= endTime) {
+        audio.pause();
+        audio.currentTime = startTime;
+        resetRepeatAudioUi();
+      }
+    };
+    audio.onended = resetRepeatAudioUi;
+    audio.onerror = () => {
+      resetRepeatAudioUi();
+      if (!("speechSynthesis" in window)) {
+        showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
+        return;
+      }
+      listeningRepeatSpeechState = "playing";
+      setListeningRepeatListenUi("playing");
+      browserSpeakText(sentence.chinese, { stage: "sentence", rate: playbackRate, onend: resetRepeatAudioUi, onerror: resetRepeatAudioUi });
+    };
+    if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
+    listeningRepeatAudioStopTimer = window.setTimeout(() => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      audio.pause();
+      audio.currentTime = startTime;
+      resetRepeatAudioUi();
+    }, Math.max(600, ((endTime - startTime) / playbackRate) * 1000 + 180));
+    audio.play().catch(() => {
+      resetRepeatAudioUi();
+      if (!("speechSynthesis" in window)) {
+        showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
+        return;
+      }
+      listeningRepeatSpeechState = "playing";
+      setListeningRepeatListenUi("playing");
+      browserSpeakText(sentence.chinese, {
+        stage: "sentence",
+        rate: playbackRate,
+        onend: resetRepeatAudioUi,
+        onerror: resetRepeatAudioUi,
+      });
+    });
+    return true;
+  }
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "TrÃ¬nh duyá»‡t chÆ°a há»— trá»£ Ä‘á»c cÃ¢u nÃ y." : "å½“å‰æµè§ˆå™¨ä¸æ”¯æŒæœ—è¯»ã€‚");
+    listeningRepeatSpeechState = "idle";
+    setListeningRepeatListenUi("idle");
+    return false;
+  }
+
+  browserSpeakText(sentence.chinese, {
+    stage: "sentence",
+    rate: playbackRate,
+    onend: () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      setListeningRepeatListenUi("idle");
+    },
+    onerror: () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      listeningRepeatSpeechState = "idle";
+      setListeningRepeatListenUi("idle");
+    },
+  });
+  return true;
+}
+
+function getListeningKeyword(index) {
+  const episode = getListeningEpisode();
+  const keyword = episode.keywords[Math.max(0, Math.min(index, episode.keywords.length - 1))];
+  if (!keyword) return null;
+  return typeof keyword === "string"
+    ? { chinese: keyword, pinyin: "", vietnamese: "", examples: [] }
+    : {
+      chinese: keyword.chinese || "",
+      pinyin: keyword.pinyin || "",
+      vietnamese: keyword.vietnamese || "",
+      partOfSpeech: keyword.partOfSpeech || keyword.pos || keyword.type || "",
+      examples: Array.isArray(keyword.examples) ? keyword.examples : [],
+    };
+}
+
+function getListeningKeywordExamples(keyword = {}) {
+  const word = keyword.chinese || "";
+  const wordPinyin = keyword.pinyin || "";
+  const wordVi = keyword.vietnamese || word;
+  const customExamples = Array.isArray(keyword.examples) ? keyword.examples.filter(Boolean) : [];
+  const fallbackExamples = [
+    {
+      chinese: `我想学习“${word}”这个词。`,
+      pinyin: `Wǒ xiǎng xuéxí “${wordPinyin || word}” zhège cí.`,
+      vietnamese: `Tôi muốn học từ “${wordVi}”.`,
+    },
+    {
+      chinese: `请你再说一遍“${word}”。`,
+      pinyin: `Qǐng nǐ zài shuō yí biàn “${wordPinyin || word}”.`,
+      vietnamese: `Bạn hãy nói lại “${wordVi}” một lần nữa.`,
+    },
+    {
+      chinese: `这个句子里有“${word}”。`,
+      pinyin: `Zhège jùzi lǐ yǒu “${wordPinyin || word}”.`,
+      vietnamese: `Trong câu này có từ “${wordVi}”.`,
+    },
+  ];
+  return [...customExamples, ...fallbackExamples].slice(0, 3);
+}
+
+function normalizeListeningKeywordExample(example, keyword = {}) {
+  if (typeof example === "object" && example) {
+    return {
+      chinese: example.chinese || example.text || "",
+      pinyin: example.pinyin || "",
+      vietnamese: example.vietnamese || example.vi || "",
+    };
+  }
+  const chinese = String(example || "");
+  return {
+    chinese,
+    pinyin: "",
+    vietnamese: keyword.vietnamese ? `${state.lang === "vi" ? "Ví dụ với" : "例句"} ${keyword.chinese}` : "",
+  };
+}
+
+function highlightListeningKeyword(text = "", keyword = "") {
+  if (!keyword || !text.includes(keyword)) return escapeHtml(text);
+  return escapeHtml(text).replaceAll(escapeHtml(keyword), `<mark>${escapeHtml(keyword)}</mark>`);
+}
+
+function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeIndex) {
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.keywords.length);
+  const safeIndex = ((Number(index) || 0) + total) % total;
+  state.listeningVocabPracticeIndex = safeIndex;
+  const keyword = getListeningKeyword(safeIndex);
+  if (!keyword?.chinese) return "";
+
+  const examples = getListeningKeywordExamples(keyword)
+    .map((example) => normalizeListeningKeywordExample(example, keyword));
+  const keywordPartOfSpeech = keyword.partOfSpeech || (state.lang === "vi" ? "Từ trọng điểm" : "重点词");
+  const examplesHTML = examples.map((example, exampleIndex) => `
+    <article class="listening-vocab-example">
+      <span>${state.lang === "vi" ? "Ví dụ" : "例句"} ${exampleIndex + 1}</span>
+      <p>${highlightListeningKeyword(example.chinese, keyword.chinese)}</p>
+      ${example.pinyin ? `<small>${escapeHtml(example.pinyin)}</small>` : ""}
+      ${example.vietnamese ? `<em>${escapeHtml(example.vietnamese)}</em>` : ""}
+      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
+        ${desktopNavIcon("listening")}
+      </button>
+    </article>
+  `).join("");
+  const progress = Math.round(((safeIndex + 1) / total) * 100);
+
+  return `
+    <div class="listening-vocab-practice-progress">
+      <span>${state.lang === "vi" ? "Tiến độ" : "进步"}</span>
+      <i><b style="width:${progress}%"></b></i>
+      <strong>${safeIndex + 1} / ${total} ${state.lang === "vi" ? "từ" : "词"}</strong>
+    </div>
+    <div class="listening-vocab-practice-card">
+      <div class="listening-vocab-practice-kind"><i></i>${state.lang === "vi" ? "Chữ Hán" : "汉字"}<i></i></div>
+      <button class="listening-vocab-practice-speaker" type="button" data-listening-vocab-speak="normal" aria-label="${state.lang === "vi" ? "Nghe từ vựng" : "听词语"}">
+        ${desktopNavIcon("listening")}
+      </button>
+      <strong class="listening-vocab-practice-word">${escapeHtml(keyword.chinese)}</strong>
+      <div class="listening-vocab-practice-meta">
+        <div><span>${state.lang === "vi" ? "Loại từ" : "词类"}</span><b>${escapeHtml(keywordPartOfSpeech)}</b></div>
+        <div><span>pinyin</span><p>${escapeHtml(keyword.pinyin || "—")}</p></div>
+      </div>
+      <div class="listening-vocab-practice-meaning">
+        <span>${state.lang === "vi" ? "Tiếng Việt" : "越南语"}</span>
+        <p>${escapeHtml(keyword.vietnamese || "—")}</p>
+      </div>
+      <div class="listening-vocab-practice-audio">
+        <button type="button" data-listening-vocab-speak="normal">${desktopNavIcon("listening")} ${state.lang === "vi" ? "Nghe bình thường" : "正常听"}</button>
+        <button type="button" data-listening-vocab-speak="slow">${desktopNavIcon("listening")} ${state.lang === "vi" ? "Nghe chậm" : "慢速听"}</button>
+      </div>
+      <div class="listening-vocab-example-list">${examplesHTML}</div>
+      <button class="listening-vocab-next-btn" type="button" data-listening-vocab-next>
+        Next
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderListeningVocabPractice(index = state.listeningVocabPracticeIndex) {
+  const panel = $("#listeningVocabPracticePanel");
+  const html = buildListeningVocabPracticeHTML(index);
+  if (!panel || !html) return;
+  panel.classList.remove("hidden");
+  panel.dataset.keywordIndex = String(state.listeningVocabPracticeIndex);
+  panel.innerHTML = html;
+}
+
+function renderListeningVocabLesson(options = {}) {
+  const isVi = state.lang === "vi";
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-vocab-lesson-screen">
+      <button class="listening-vocab-back-btn" type="button" data-listening-vocab-back aria-label="${isVi ? "Quay lại bài nghe" : "返回听力"}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      </button>
+      <section class="listening-vocab-practice-panel listening-vocab-practice-panel--screen">
+        ${buildListeningVocabPracticeHTML(state.listeningVocabPracticeIndex)}
+      </section>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+}
+
+function resetListeningRepeatAttempt() {
+  stopListeningRepeatListenPlayback();
+  listeningRepeatTranscript = "";
+  listeningRepeatInterim = "";
+  listeningRepeatScoringDone = false;
+  if (listeningRepeatScoreTimer) {
+    window.clearTimeout(listeningRepeatScoreTimer);
+    listeningRepeatScoreTimer = null;
+  }
+  clearListeningRecordingPlayback();
+}
+
+function setListeningRepeatLessonSentence(index) {
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.sentences.length);
+  state.listeningSentenceIndex = Math.max(0, Math.min(Number(index) || 0, total - 1));
+  resetListeningRepeatAttempt();
+}
+
+function renderListeningRepeatLesson(options = {}) {
+  const isVi = state.lang === "vi";
+  const episode = getListeningEpisode();
+  const total = Math.max(1, episode.sentences.length);
+  const currentIndex = Math.max(0, Math.min(state.listeningSentenceIndex, total - 1));
+  const sentence = episode.sentences[currentIndex] || episode.sentences[0] || {};
+  const progress = Math.round(((currentIndex + 1) / total) * 100);
+  const listenLabel = listeningRepeatSpeechState === "playing"
+    ? (isVi ? "Tạm dừng" : "Pause")
+    : listeningRepeatSpeechState === "paused"
+      ? (isVi ? "Tiếp tục" : "Resume")
+      : (isVi ? "Nghe lại" : "Replay");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-repeat-lesson-screen listening-repeat-lesson-screen--compact">
+      <header class="listening-repeat-lesson-topbar listening-repeat-lesson-topbar--compact">
+        <div class="listening-repeat-title-block">
+          <h1>${isVi ? "Nói theo" : "Shadowing"}</h1>
+          <p>${escapeHtml(isVi ? (episode.category || "Chủ đề bài nghe") : (episode.categoryZh || "Listening topic"))}</p>
+        </div>
+        <div class="listening-repeat-progress listening-repeat-progress--compact">
+          <strong>${isVi ? "Câu" : "Sentence"} ${currentIndex + 1}/${total}</strong>
+          <i><b style="width:${progress}%"></b></i>
+        </div>
+      </header>
+
+      <section class="listening-repeat-workspace listening-repeat-workspace--compact">
+        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+        <div class="listening-repeat-practice-grid">
+          <article class="listening-repeat-listen-card">
+            <span class="listening-repeat-card-chip">${desktopNavIcon("listening")} ${isVi ? "听句子 / Listen" : "Listen"}</span>
+            <div class="listening-repeat-listen-content">
+              <strong>${escapeHtml(sentence.chinese || "")}</strong>
+              <small>${escapeHtml(sentence.pinyin || "")}</small>
+              <em>${escapeHtml(sentence.vietnamese || "")}</em>
+            </div>
+            <div class="listening-repeat-card-actions">
+              <button class="listening-repeat-play-large ${listeningRepeatSpeechState === "playing" ? "is-playing" : ""} ${listeningRepeatSpeechState === "paused" ? "is-paused" : ""}" type="button" data-listening-repeat-current-play aria-pressed="${listeningRepeatSpeechState === "playing" ? "true" : "false"}" aria-label="${escapeAttr(listenLabel)}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+              <button class="listening-repeat-small-audio-btn" type="button" data-listening-repeat-current-play aria-label="${isVi ? "Nghe lại" : "Replay"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v6h6"/></svg>
+              </button>
+            </div>
+            <span class="listening-repeat-hidden-label" data-listening-repeat-listen-label>${escapeHtml(listenLabel)}</span>
+          </article>
+
+          <article class="listening-repeat-shadow-card">
+            <span class="listening-repeat-card-chip">${desktopNavIcon("listening")} ${isVi ? "跟读 / Shadow" : "Shadow"}</span>
+            <div class="listening-repeat-shadow-body">
+              <button class="listening-repeat-mic-large" type="button" data-listening-record>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
+              </button>
+              <strong>Recording...</strong>
+              <div class="listening-repeat-record-wave"><i></i></div>
+              <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "No recording yet"}</span>
+              </button>
+              <textarea id="listeningRepeatInput" readonly disabled>${escapeHtml(sentence.chinese || "")}</textarea>
+            </div>
+          </article>
+
+          <article class="listening-repeat-score-card">
+            <h2><span>3</span>${isVi ? "Chấm điểm và lỗi sai" : "Score and mistakes"}</h2>
+            <div class="listening-repeat-score-layout">
+              <div class="listening-repeat-score-preview"><strong>--</strong><span></span></div>
+              <div id="listeningPronunciationResult" class="listening-pronunciation-result">
+                <span>${isVi ? "Lỗi sai" : "Mistakes"}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="listening-repeat-footer-actions">
+          <button class="listening-repeat-bottom-back" type="button" data-listening-repeat-back>${isVi ? "Trở lại" : "Back"}</button>
+          <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
+            ${isVi ? "Tiếp" : "Next"}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </section>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
+  setListeningRepeatListenUi(listeningRepeatSpeechState);
+  return;
+
+  const completedCount = currentIndex;
+  const sentenceCardsHTML = episode.sentences.map((item, index) => `
+    <article class="listening-repeat-list-card ${index === currentIndex ? "active" : ""}">
+      <button class="listening-repeat-list-main" type="button" data-listening-repeat-sentence="${index}">
+        <span>${index + 1}</span>
+        <strong>${escapeHtml(item.chinese || "")}</strong>
+        <small>${escapeHtml(item.pinyin || "")}</small>
+        <em>${escapeHtml(item.vietnamese || "")}</em>
+      </button>
+      <button class="listening-repeat-list-play" type="button" data-listening-repeat-play="${index}" aria-label="${isVi ? "Nghe câu này" : "Listen"}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </article>
+  `).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <div class="listening-repeat-lesson-screen">
+      <header class="listening-repeat-lesson-topbar">
+        <button class="listening-repeat-back-btn" type="button" data-listening-repeat-back>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <span>${isVi ? "Quay trở lại" : "Back"}</span>
+        </button>
+        <h1>${isVi ? "Nói theo" : "Shadowing"}</h1>
+        <div class="listening-repeat-progress">
+          <span>${isVi ? "Tiến độ nội dung:" : "Progress:"}</span>
+          <strong>${currentIndex + 1} / ${total} ${isVi ? "câu" : "sentences"}</strong>
+          <i><b style="width:${progress}%"></b></i>
+        </div>
+      </header>
+
+      <div class="listening-repeat-lesson-layout">
+        <aside class="listening-repeat-sentence-rail">
+          <h2>${isVi ? "Danh sách câu trong nội dung nghe" : "Sentence list"}</h2>
+          <div class="listening-repeat-list">${sentenceCardsHTML}</div>
+          <footer>
+            <span>${isVi ? "Tổng số câu:" : "Total:"} <strong>${total}</strong></span>
+            <span>${isVi ? "Đã hoàn thành:" : "Done:"} <strong>${completedCount}</strong></span>
+          </footer>
+        </aside>
+
+        <section class="listening-repeat-workspace">
+          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">1</div>
+            <div class="listening-repeat-step-control">
+              <button class="listening-repeat-play-large ${listeningRepeatSpeechState === "playing" ? "is-playing" : ""} ${listeningRepeatSpeechState === "paused" ? "is-paused" : ""}" type="button" data-listening-repeat-current-play aria-pressed="${listeningRepeatSpeechState === "playing" ? "true" : "false"}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+              <span data-listening-repeat-listen-label>${listeningRepeatSpeechState === "playing" ? (isVi ? "Tạm dừng" : "Pause") : listeningRepeatSpeechState === "paused" ? (isVi ? "Tiếp tục" : "Resume") : (isVi ? "Nghe lại" : "Replay")}</span>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Nghe từng câu" : "Listen sentence by sentence"}</h2>
+              <div class="listening-repeat-reference-wave">
+                <i></i>
+                <span>0:00 / ${listeningFormatTime(Math.max(1, (sentence.end || 0) - (sentence.start || 0)))}</span>
+              </div>
+              <div class="listening-repeat-current-text">
+                <strong>${escapeHtml(sentence.chinese || "")}</strong>
+                <small>${escapeHtml(sentence.pinyin || "")}</small>
+                <em>${escapeHtml(sentence.vietnamese || "")}</em>
+              </div>
+            </div>
+          </div>
+
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">2</div>
+            <div class="listening-repeat-step-control">
+              <button class="listening-repeat-mic-large" type="button" data-listening-record>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
+              </button>
+              <span>${isVi ? "Nhấn để bắt đầu" : "Tap to start"}</span>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Nói theo" : "Repeat"}</h2>
+              <div class="listening-repeat-record-panel">
+                <div class="listening-repeat-record-status">
+                  <span></span>
+                  <strong>${isVi ? "Sẵn sàng ghi âm" : "Ready to record"}</strong>
+                </div>
+                <div class="listening-repeat-record-wave"><i></i></div>
+                <p><b>${isVi ? "Mẹo:" : "Tip:"}</b> ${isVi ? "Nói rõ ràng, đúng ngữ điệu và tốc độ tự nhiên." : "Speak clearly with natural rhythm."}</p>
+                <button class="listening-recording-playback-btn" type="button" data-listening-recording-play disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "No recording yet"}</span>
+                </button>
+                <textarea id="listeningRepeatInput" readonly disabled>${escapeHtml(sentence.chinese || "")}</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="listening-repeat-step">
+            <div class="listening-repeat-step-index">3</div>
+            <div class="listening-repeat-step-control">
+              <div class="listening-repeat-score-preview"><strong>--</strong><span></span></div>
+            </div>
+            <div class="listening-repeat-step-body">
+              <h2>${isVi ? "Chấm điểm và lỗi sai" : "Score and mistakes"}</h2>
+              <div id="listeningPronunciationResult" class="listening-pronunciation-result">
+                <span>${isVi ? "Bấm micro để ghi âm. Sau khi dừng, hệ thống sẽ chấm điểm và tô màu chữ sai." : "Record your voice to see score and mistakes."}</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
+            ${isVi ? "Câu tiếp theo" : "Next sentence"}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+          </button>
+        </section>
+      </div>
+    </div>
+  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+
+  updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
+  setListeningRepeatListenUi(listeningRepeatSpeechState);
+}
+
+function renderListeningKeywordDetail(index, button = null) {
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+  const panel = $("#listeningKeywordDetail");
+  if (!panel) return;
+  const examplesHTML = getListeningKeywordExamples(keyword).map((example, exampleIndex) => `
+    <li>
+      <span>${exampleIndex + 1}</span>
+      <p>${escapeHtml(example)}</p>
+    </li>
+  `).join("");
+
+  document.querySelectorAll("[data-listening-keyword]").forEach((node) => node.classList.remove("active"));
+  button?.classList.add("active");
+  panel.classList.remove("hidden");
+  panel.dataset.keywordIndex = String(index);
+  panel.innerHTML = `
+    <div>
+      <span>${state.lang === "vi" ? "Chữ Hán" : "汉字"}</span>
+      <strong>${escapeHtml(keyword.chinese)}</strong>
+    </div>
+    <div>
+      <span>Pinyin</span>
+      <p>${escapeHtml(keyword.pinyin || "—")}</p>
+    </div>
+    <div>
+      <span>${state.lang === "vi" ? "Tiếng Việt" : "越南语"}</span>
+      <p>${escapeHtml(keyword.vietnamese || "—")}</p>
+    </div>
+    <div class="listening-keyword-actions">
+      <button type="button" data-listening-keyword-speak="${index}" data-listening-keyword-rate="normal">
+        ${desktopNavIcon("listening")}
+        ${state.lang === "vi" ? "Nghe thường" : "正常听"}
+      </button>
+      <button type="button" data-listening-keyword-speak="${index}" data-listening-keyword-rate="slow">
+        ${desktopNavIcon("listening")}
+        ${state.lang === "vi" ? "Nghe chậm" : "慢速听"}
+      </button>
+    </div>
+    <div class="listening-keyword-examples">
+      <span>${state.lang === "vi" ? "3 câu ví dụ tiếng Trung" : "3 个中文例句"}</span>
+      <ol>${examplesHTML}</ol>
+    </div>
+  `;
+}
+
+function playListeningKeyword(index, options = {}) {
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+
+  if (!("speechSynthesis" in window)) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ phát âm từ vựng." : "当前浏览器不支持朗读词语。");
+    return;
+  }
+  browserSpeakText(keyword.chinese, { stage: "word", slow: Boolean(options.slow), rate: options.slow ? 0.72 : 0.98 });
+}
+
+function selectListeningKeyword(index, button = null) {
+  renderListeningKeywordDetail(index, button);
+  const keyword = getListeningKeyword(index);
+  if (!keyword?.chinese) return;
+  const chinese = typeof keyword === "string" ? keyword : keyword?.chinese || "";
+  const pinyin = typeof keyword === "string" ? "" : keyword?.pinyin || "";
+  const vietnamese = typeof keyword === "string" ? "" : keyword?.vietnamese || "";
+  const meta = [pinyin, vietnamese].filter(Boolean).join(" · ");
+  if (meta) showToast(`${chinese}: ${meta}`);
+}
+
+async function startListeningRepeatRecording() {
+  if (listeningMediaRecorder?.state === "recording") {
+    stopListeningRepeatRecognition();
+    listeningMediaRecorder.stop();
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ ghi âm." : "当前浏览器不支持录音。");
+    return;
+  }
+
+  try {
+    listeningRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    clearListeningRecordingPlayback();
+    listeningRecordingChunks = [];
+    listeningMediaRecorder = new MediaRecorder(listeningRecordingStream, getListeningRecordingOptions());
+    document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.add("is-recording"));
+    clearListeningPronunciationResult(state.lang === "vi" ? "Đang nghe bạn đọc..." : "正在听你朗读...");
+    const canScorePronunciation = startListeningRepeatRecognition();
+    showToast(state.lang === "vi" ? "Đang ghi âm, bấm lại để dừng." : "正在录音，再点一次停止。");
+
+    listeningMediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data?.size) listeningRecordingChunks.push(event.data);
+    });
+
+    listeningMediaRecorder.addEventListener("stop", () => {
+      document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
+      listeningRecordingStream?.getTracks().forEach((track) => track.stop());
+      listeningRecordingStream = null;
+      if (listeningRecordingUrl) URL.revokeObjectURL(listeningRecordingUrl);
+      const blob = new Blob(listeningRecordingChunks, { type: listeningMediaRecorder.mimeType || "audio/webm" });
+      listeningRecordingBlob = blob;
+      listeningRecordingUrl = URL.createObjectURL(blob);
+      updateListeningRecordingPlaybackUi(true);
+      scheduleListeningRepeatScore(canScorePronunciation ? 850 : 0);
+      setListeningRepeatInput(state.lang === "vi"
+        ? "Đã ghi âm xong. Bạn có thể nghe lại bằng trình duyệt hoặc ghi lại lần nữa."
+        : "录音完成。你可以重新录一次。");
+      showToast(state.lang === "vi" ? "Đã ghi âm xong." : "录音完成。");
+    }, { once: true });
+
+    listeningMediaRecorder.start();
+  } catch {
+    stopListeningRepeatRecognition();
+    document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
+    listeningRecordingStream?.getTracks().forEach((track) => track.stop());
+    listeningRecordingStream = null;
+    showToast(state.lang === "vi" ? "Không thể mở micro. Hãy kiểm tra quyền trình duyệt." : "无法打开麦克风，请检查浏览器权限。");
+  }
+}
+
+function setListeningPlayIcon(isPlaying) {
+  document.querySelectorAll("[data-listening-play]").forEach((button) => {
+    button.classList.toggle("is-playing", isPlaying);
+    button.innerHTML = isPlaying
+      ? `<svg viewBox="0 0 24 24"><path d="M8 5h3v14H8z"/><path d="M13 5h3v14h-3z"/></svg>`
+      : `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+  });
+}
+
+function setListeningWaveformActive(isPlaying) {
+  document.querySelectorAll(".listening-waveform").forEach((waveform) => {
+    waveform.classList.toggle("is-playing", isPlaying);
+  });
+}
+
+function setListeningPlaybackUi(isPlaying) {
+  const statusTitle = $("#listeningStatusTitle");
+  if (statusTitle) statusTitle.textContent = isPlaying ? (state.lang === "vi" ? "Đang phát" : "播放中") : (state.lang === "vi" ? "Đã tạm dừng" : "已暂停");
+  setListeningPlayIcon(isPlaying);
+  setListeningWaveformActive(isPlaying);
+}
+
+function syncListeningAudioUi() {
+  if (state.screen !== "listening" || state.listeningView !== "detail") return;
+  const episode = getListeningEpisode();
+  const audio = $("#listeningAudio");
+  const statusTitle = $("#listeningStatusTitle");
+  const statusSub = $("#listeningStatusSub");
+  const currentTimeNode = $("#listeningCurrentTime");
+  const progressNode = $("#listeningProgress");
+  applyListeningPlaybackRate(audio);
+  const duration = getListeningAudioDuration(audio, episode);
+  const current = audio ? Math.min(audio.currentTime || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
+  const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
+  if (audio?.ended) listeningPlaybackRequested = false;
+  if (audio && !audio.paused) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
+
+  if (currentTimeNode) currentTimeNode.textContent = listeningFormatTime(current);
+  if (progressNode) progressNode.style.width = `${percent}%`;
+  if (statusTitle) statusTitle.textContent = audio && (!audio.paused || listeningPlaybackRequested) ? (state.lang === "vi" ? "Đang phát" : "播放中") : (state.lang === "vi" ? "Đã tạm dừng" : "已暂停");
+  if (statusSub) {
+    if (audio?.error) {
+      statusSub.textContent = state.lang === "vi" ? "Không thể phát file, có thể dùng giọng đọc trình duyệt." : "无法播放音频，可使用浏览器朗读。";
+    } else if (!episode.audioSrc) {
+      statusSub.textContent = state.lang === "vi" ? "Bài này dùng giọng đọc trình duyệt." : "本课使用浏览器朗读。";
+    } else {
+      statusSub.textContent = state.lang === "vi" ? "Âm thanh thật đã sẵn sàng" : "真实音频已准备";
+    }
+  }
+  const isPlaying = Boolean(audio && (!audio.paused || listeningPlaybackRequested));
+  setListeningPlayIcon(isPlaying);
+  setListeningWaveformActive(isPlaying);
+}
+
+function seekListeningSentence(index, autoplay = false) {
+  const episode = getListeningEpisode();
+  state.listeningSentenceIndex = Math.max(0, Math.min(index, episode.sentences.length - 1));
+  const audio = $("#listeningAudio");
+  const startTime = getListeningSentenceStart(episode, state.listeningSentenceIndex);
+
+  if (autoplay && audio && episode.audioSrc) {
+    listeningPlaybackRequested = true;
+    audio.currentTime = startTime;
+    refreshListeningActiveSentenceUi();
+    setListeningPlaybackUi(true);
+    audio.play()
+      .then(() => {
+        if (!listeningPlaybackRequested) {
+          audio.pause();
+          return;
+        }
+        syncListeningAudioUi();
+      })
+      .catch(() => {
+        if (!listeningPlaybackRequested) {
+          syncListeningAudioUi();
+          return;
+        }
+        if (!speakListeningSentence()) syncListeningAudioUi();
+      });
+    return;
+  }
+
+  if (autoplay && (!audio || !episode.audioSrc)) {
+    refreshListeningActiveSentenceUi();
+    if (!speakListeningSentence()) syncListeningAudioUi();
+    return;
+  }
+
+  renderListeningDetail({ preserveScroll: true });
+  requestAnimationFrame(() => {
+    const audio = $("#listeningAudio");
+    if (audio) audio.currentTime = startTime;
+    syncListeningAudioUi();
+  });
+}
+
+function isListeningPlaybackActive() {
+  const audio = $("#listeningAudio");
+  return Boolean(audio && (!audio.paused || listeningPlaybackRequested));
+}
+
+function toggleListeningPlayback() {
+  const episode = getListeningEpisode();
+  const audio = $("#listeningAudio");
+  if (!audio || !episode.audioSrc) {
+    if (listeningPlaybackRequested) {
+      listeningPlaybackRequested = false;
+      window.speechSynthesis?.cancel?.();
+      setListeningPlaybackUi(false);
+      return;
+    }
+    listeningPlaybackRequested = true;
+    if (!speakListeningSentence()) {
+      listeningPlaybackRequested = false;
+      syncListeningAudioUi();
+    }
+    return;
+  }
+  if (!audio.paused || listeningPlaybackRequested) {
+    listeningPlaybackRequested = false;
+    window.speechSynthesis?.cancel?.();
+    audio.pause();
+    syncListeningAudioUi();
+    return;
+  }
+
+  listeningPlaybackRequested = true;
+  setListeningPlaybackUi(true);
+  audio.play()
+    .then(() => {
+      if (!listeningPlaybackRequested) {
+        audio.pause();
+        return;
+      }
+      syncListeningAudioUi();
+    })
+    .catch(() => {
+      if (!listeningPlaybackRequested) {
+        syncListeningAudioUi();
+        return;
+      }
+      if (!speakListeningSentence()) syncListeningAudioUi();
+    });
+}
+
+function bindListeningAudioEvents() {
+  const audio = $("#listeningAudio");
+  if (audio && audio.dataset.bound !== "1") {
+    audio.dataset.bound = "1";
+    applyListeningPlaybackRate(audio);
+    ["loadedmetadata", "timeupdate", "play", "pause", "ended", "error"].forEach((eventName) => {
+      audio.addEventListener(eventName, syncListeningAudioUi);
+    });
+  } else if (audio) {
+    applyListeningPlaybackRate(audio);
+  }
+
+  const track = $("[data-listening-track]");
+  if (!track || track.dataset.bound === "1") return;
+  track.dataset.bound = "1";
+  track.addEventListener("click", (event) => {
+    const episode = getListeningEpisode();
+    const duration = getListeningAudioDuration(audio, episode);
+    if (!duration) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const nextTime = ratio * duration;
+    if (audio && episode.audioSrc) audio.currentTime = nextTime;
+    setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, nextTime));
+    syncListeningAudioUi();
+  });
 }
 
 function renderHomeDesktopLayoutHTML(isVi) {
@@ -4930,7 +7635,12 @@ function renderHomeDesktopLayoutHTML(isVi) {
   const avatarHTML = avatarUrl
     ? `<img src="${escapeAttr(avatarUrl)}" alt="${escapeAttr(userName)}" />`
     : escapeHtml(userInitial);
-  const accountTypeLabel = state.user?.role === "admin" ? (isVi ? "Admin" : "管理员") : state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : hasPremiumAccess() ? "Pro" : (isVi ? "Free" : "免费");
+  const vipDisplay = getVipPlanDisplay(state.user, isVi);
+  const accountTypeLabel = state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : vipDisplay.badge;
+  const vipMetaHTML = state.user ? `
+    <small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.status)}</small>
+    ${vipDisplay.expiry ? `<small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.expiry)}</small>` : ""}
+  ` : "";
   const studyHours = Math.floor(stats.studyMinutes / 60);
   const studyMins = stats.studyMinutes % 60;
   const studyLabel = studyHours > 0
@@ -4943,6 +7653,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
           <div>
             <p>${isVi ? "Xin chào!" : "你好！"}</p>
             <strong>${escapeHtml(desktopProfileName)}</strong>
+            ${vipMetaHTML}
           </div>
           <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
         </div>
@@ -4992,6 +7703,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
           <div>
             <p>${isVi ? "Xin chào!" : "你好！"}</p>
             <strong>${escapeHtml(desktopProfileName)}</strong>
+            ${vipMetaHTML}
           </div>
           <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
         </div>
@@ -5033,6 +7745,7 @@ function renderHomeMobileTopbarHTML(isVi) {
   const streakLabel = isVi ? "Học liên tục" : "连续学习";
   const dayUnit = isVi ? "ngày" : "天";
   const cheer = isVi ? "Tuyệt vời!" : "太棒了！";
+  const vipDisplay = getVipPlanDisplay(state.user, isVi);
 
   return `
     <header class="home-mobile-topbar" aria-label="${isVi ? "Tiêu đề trang chủ" : "首页标题"}">
@@ -5065,8 +7778,9 @@ function renderHomeMobileTopbarHTML(isVi) {
             <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
               <path d="M12 2l2.2 4.8 5.3.7-3.8 3.7.9 5.3-4.6-2.5-4.6 2.5.9-5.3L4.5 7.5l5.3-.7L12 2z"/>
             </svg>
-            ${escapeHtml(state.user?.role === "admin" ? (isVi ? "Admin" : "管理员") : state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : hasPremiumAccess() ? "Pro" : (isVi ? "Free" : "免费"))}
+            ${escapeHtml(state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : vipDisplay.badge)}
           </span>
+          <small>${escapeHtml(vipDisplay.status)}${vipDisplay.expiry ? ` · ${escapeHtml(vipDisplay.expiry)}` : ""}</small>
         </span>`}
       </div>
     </header>
@@ -5182,13 +7896,10 @@ function renderHomeMobileChallengeHTML(isVi) {
     <section class="home-mobile-challenge" aria-label="${isVi ? "Thử thách viết mỗi ngày" : "每日书写挑战"}">
       <img
         class="home-mobile-challenge-cover"
-        src="assets/home-mobile-challenge.png"
+        src="assets/home-desktop-challenge.png"
         alt="${isVi ? `Thử thách viết mỗi ngày - Viết chữ ${challengeChar} 10 lần thật đẹp` : `每日书写挑战 - 把“${challengeChar}”写 10 遍`}"
         loading="lazy"
       />
-      <button type="button" class="home-mobile-challenge-btn" id="homeMobileChallengeBtn">
-        ${isVi ? "Bắt đầu ngay" : "立即开始"} ›
-      </button>
     </section>
   `;
 }
@@ -5205,15 +7916,15 @@ function renderHomeMobileTopicsHTML(isVi) {
       </div>
       <div class="home-mobile-topics-list">
         ${topics.map((theme, index) => {
-          const config = getDailyFeaturedThemeConfig(theme);
-          const title = isVi ? config.titleVi : config.titleZh;
-          const zhText = config.zhLabel || theme.zh || title;
-          const pinyin = config.pinyin || "";
-          const itemCount = Array.isArray(theme.items) ? theme.items.length : 0;
-          const minutes = Math.max(2, Math.min(5, Math.ceil(itemCount / 2) + 2));
-          const level = index === 2 ? (isVi ? "Dễ" : "简单") : `HSK ${index % 2 === 0 ? 1 : 2}`;
-          const locked = isDailyThemeLockedForUser(theme.id);
-          return `
+    const config = getDailyFeaturedThemeConfig(theme);
+    const title = isVi ? config.titleVi : config.titleZh;
+    const zhText = config.zhLabel || theme.zh || title;
+    const pinyin = config.pinyin || "";
+    const itemCount = Array.isArray(theme.items) ? theme.items.length : 0;
+    const minutes = Math.max(2, Math.min(5, Math.ceil(itemCount / 2) + 2));
+    const level = index === 2 ? (isVi ? "Dễ" : "简单") : `HSK ${index % 2 === 0 ? 1 : 2}`;
+    const locked = isDailyThemeLockedForUser(theme.id);
+    return `
             <article class="home-mobile-topic-card${locked ? " is-locked" : ""}" data-home-topic="${escapeAttr(theme.id)}" role="button" tabindex="0">
               <span class="home-mobile-topic-index home-mobile-topic-index--${(index % 6) + 1}">${index + 1}</span>
               <img class="home-mobile-topic-cover" src="${escapeAttr(config.cover)}" alt="" loading="lazy" />
@@ -5236,7 +7947,7 @@ function renderHomeMobileTopicsHTML(isVi) {
               <span class="home-mobile-topic-chevron" aria-hidden="true">›</span>
             </article>
           `;
-        }).join("")}
+  }).join("")}
       </div>
     </section>
   `;
@@ -5355,7 +8066,8 @@ function renderHskLessonListHTML(options = {}) {
 
   return filteredLessons.length > 0 ? filteredLessons.map(({ lessonItem }) => {
     const isCompleted = state.completed.has(lessonItem.id);
-    const isLocked = isHskLessonLockedForUser(lessonItem.id);
+    const accessStatus = getHskLessonAccessStatus(lessonItem.id);
+    const isLocked = accessStatus === "locked";
     const wordCount = hskLessonItemsByType(lessonItem, "word").length;
     const sentenceCount = hskLessonItemsByType(lessonItem, "sentence").length;
 
@@ -5371,10 +8083,11 @@ function renderHskLessonListHTML(options = {}) {
     }
 
     return `
-      <div class="hsk-lesson-card ${isCompleted ? "completed" : ""} ${isLocked ? "locked" : ""}" data-lesson="${lessonItem.id}" ${isLocked ? 'data-locked="true"' : ""}>
+      <div class="hsk-lesson-card access-rule-${accessStatus} ${isCompleted ? "completed" : ""} ${isLocked ? "locked" : ""}" data-lesson="${lessonItem.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <div class="hsk-lesson-left">
           <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${isLocked ? renderContentLockIconHTML("number") : lessonItem.no}</div>
           <div class="hsk-lesson-info">
+            ${accessStatusBadgeHTML(accessStatus)}
             <h4>${isVi ? `Bài ${lessonItem.no}` : `第 ${lessonItem.no} 课`}</h4>
             <p>${state.lang === "vi" ? (lessonItem.titleVi || lessonItem.title) : (lessonItem.titleZh || lessonItem.title)}</p>
           </div>
@@ -5409,9 +8122,9 @@ function renderHskRemainingLessonsHTML(currentLesson) {
       </div>
       <div class="hsk-lessons-list hsk-lessons-list--remaining">
         ${renderHskLessonListHTML({
-          excludeLessonId: currentLesson.id,
-          emptyMessage: isVi ? "Không còn bài học nào khác trong cấp độ này." : "该等级没有其他课程。",
-        })}
+    excludeLessonId: currentLesson.id,
+    emptyMessage: isVi ? "Không còn bài học nào khác trong cấp độ này." : "该等级没有其他课程。",
+  })}
       </div>
     </section>
   `;
@@ -5425,11 +8138,14 @@ function renderHskContentTypePickerHTML(lessonItem = getHskPendingLesson()) {
       ${hskContentTypes.map((contentType) => {
     const itemsCount = hskLessonItemsByType(lessonItem, contentType.id).length;
     const active = state.hskContentType === contentType.id;
+    const accessStatus = getHskContentTypeAccessStatus(lessonItem.id, contentType.id);
+    const isLocked = accessStatus === "locked";
     const disabled = itemsCount === 0;
     const isWord = contentType.id === "word";
     return `
-          <button class="hsk-study-part-card hsk-study-part-card--${isWord ? "word" : "sentence"} ${active ? "active" : ""}" data-hsk-content-type="${contentType.id}" type="button" ${disabled ? "disabled" : ""}>
+          <button class="hsk-study-part-card hsk-study-part-card--${isWord ? "word" : "sentence"} access-rule-${accessStatus} ${isLocked ? "locked" : ""} ${active ? "active" : ""}" data-hsk-content-type="${contentType.id}" ${isLocked ? 'data-locked="true"' : ""} type="button" ${disabled ? "disabled" : ""}>
             <span class="hsk-study-part-copy">
+              ${accessStatusBadgeHTML(accessStatus)}
               <strong>${isWord ? (isVi ? "Từ vựng" : "词汇") : (isVi ? "Câu" : "句子")}</strong>
               <small>${itemsCount} ${isWord ? (isVi ? "từ vựng" : "词") : (isVi ? "câu" : "句")}</small>
               <em>${isWord ? `${iconSvg("book-open")} ${isVi ? "Sẵn sàng học" : "准备学习"}` : `${iconSvg("message")} ${itemsCount} ${isVi ? "mục" : "项"}`}</em>
@@ -5508,11 +8224,14 @@ function renderDailyContentTypePickerHTML(theme = getDailyPendingTheme()) {
       ${hskContentTypes.map((contentType) => {
     const itemsCount = dailyThemeItemsByType(theme, contentType.id).length;
     const active = state.dailyContentType === contentType.id;
+    const accessStatus = getDailyContentTypeAccessStatus(theme.id, contentType.id);
+    const isLocked = accessStatus === "locked";
     const disabled = itemsCount === 0;
     const isWord = contentType.id === "word";
     return `
-          <button class="hsk-study-part-card hsk-study-part-card--${isWord ? "word" : "sentence"} daily-study-part-card ${active ? "active" : ""}" data-daily-content-type="${contentType.id}" type="button" ${disabled ? "disabled" : ""}>
+          <button class="hsk-study-part-card hsk-study-part-card--${isWord ? "word" : "sentence"} daily-study-part-card access-rule-${accessStatus} ${isLocked ? "locked" : ""} ${active ? "active" : ""}" data-daily-content-type="${contentType.id}" ${isLocked ? 'data-locked="true"' : ""} type="button" ${disabled ? "disabled" : ""}>
             <span class="hsk-study-part-copy">
+              ${accessStatusBadgeHTML(accessStatus)}
               <strong>${isWord ? (isVi ? "Từ vựng" : "词汇") : (isVi ? "Câu" : "句子")}</strong>
               <small>${itemsCount} ${isWord ? (isVi ? "từ vựng" : "词") : (isVi ? "câu" : "句")}</small>
               <em>${isWord ? `${iconSvg("book-open")} ${isVi ? "Sẵn sàng học" : "准备学习"}` : `${iconSvg("message")} ${itemsCount} ${isVi ? "mục" : "项"}`}</em>
@@ -5765,10 +8484,11 @@ function renderDailyThemesListHTML() {
 
   return filteredThemes.length > 0 ? filteredThemes.map((theme) => {
     const cardMeta = getDailyThemeCardMeta(theme);
-    const isLocked = isDailyThemeLockedForUser(theme.id);
+    const accessStatus = getDailyThemeAccessStatus(theme.id);
+    const isLocked = accessStatus === "locked";
     const countLabel = isVi ? "Mục luyện" : "个练习";
     const featuredConfig = getDailyFeaturedThemeConfig(theme);
-    return renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, featuredConfig);
+    return renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, featuredConfig, accessStatus);
   }).join("") : `
     <div class="daily-no-results">
       ${isVi ? "Không tìm thấy chủ đề nào phù hợp." : "未找到符合的主题。"}
@@ -5783,15 +8503,16 @@ function renderDailyRemainingThemesHTML(currentTheme) {
   const countLabel = isVi ? "Mục luyện" : "个练习";
   const cardsHTML = remainingThemes.map((theme) => {
     const cardMeta = getDailyThemeCardMeta(theme);
-    const isLocked = isDailyThemeLockedForUser(theme.id);
+    const accessStatus = getDailyThemeAccessStatus(theme.id);
+    const isLocked = accessStatus === "locked";
     const featuredConfig = getDailyFeaturedThemeConfig(theme);
-    return renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, featuredConfig);
+    return renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel, isVi, featuredConfig, accessStatus);
   }).join("");
   return `
     <section class="daily-remaining-themes-section">
       <div class="daily-remaining-themes-heading">
         <h2>${isVi ? "Các chủ đề còn lại" : "其他主题"}</h2>
-        <span>${isVi ? "Thông dụng · chọn nhanh chủ đề khác" : "常用中文 · 快速选择其他主题"}</span>
+        <span>${isVi ? "Tiếng Trung tần suất cao · chọn nhanh chủ đề khác" : "高频汉语 · 快速选择其他主题"}</span>
       </div>
       <div class="daily-theme-grid daily-theme-grid--remaining">
         ${cardsHTML}
@@ -5834,7 +8555,7 @@ function renderDailyCourse() {
         </div>
       ` : `
       <header class="daily-course-header">
-        <h1>${isVi ? "Tiếng Trung Thông Dụng" : "普通中文"}</h1>
+        <h1>${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}</h1>
         <p>${isVi
       ? "Khám phá các tình huống giao tiếp thực tế và nâng cao khả năng phản xạ tiếng Trung của bạn qua từng chủ đề cụ thể."
       : "探索真实交流场景，通过具体主题提升你的中文反应能力。"}</p>
@@ -5868,8 +8589,11 @@ function browserSpeakText(text, options = {}) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = config.lang;
   utterance.voice = preferredChineseVoice || chooseChineseVoice();
-  utterance.rate = config.rate;
+  utterance.rate = Number.isFinite(Number(options.rate)) ? Math.max(0.5, Math.min(2, Number(options.rate))) : config.rate;
   utterance.pitch = config.pitch;
+  if (typeof options.onstart === "function") utterance.onstart = options.onstart;
+  if (typeof options.onend === "function") utterance.onend = options.onend;
+  if (typeof options.onerror === "function") utterance.onerror = options.onerror;
   stopSpeechPlayback();
   window.speechSynthesis?.speak(utterance);
 }
@@ -6801,10 +9525,10 @@ function bindEvents() {
       body: JSON.stringify({ email, password }),
     })
       .then((data) => {
-        if (data.user?.role !== "admin") {
+        if (!["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
           throw new Error(state.lang === "vi" ? "Tài khoản này không có quyền admin." : "该账户没有管理员权限。");
         }
-        state.user = data.user;
+        state.adminUser = data.user;
         state.adminStatus = "";
         saveState();
         renderChrome();
@@ -6820,6 +9544,200 @@ function bindEvents() {
     if (event.target.closest("[data-mobile-page-back]")) {
       handleMobilePageBack();
       return;
+    }
+
+    if (state.screen === "listening") {
+      const listeningOpenBtn = event.target.closest("[data-listening-open]");
+      if (listeningOpenBtn) {
+        event.preventDefault();
+        state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+        state.listeningView = "detail";
+        state.listeningSentenceIndex = 0;
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-back]")) {
+        state.listeningView = "dashboard";
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-vocab-back]")) {
+        state.listeningView = "detail";
+        renderListening();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-back]")) {
+        state.listeningView = "detail";
+        renderListening();
+        return;
+      }
+
+      const listeningSpeedToggle = event.target.closest("[data-listening-speed-toggle]");
+      if (listeningSpeedToggle) {
+        const speedMenu = listeningSpeedToggle.closest(".listening-speed-menu");
+        const isOpen = speedMenu?.classList.toggle("open") || false;
+        listeningSpeedToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        return;
+      }
+
+      const listeningRateBtn = event.target.closest("[data-listening-rate]");
+      if (listeningRateBtn) {
+        setListeningPlaybackRate(Number(listeningRateBtn.dataset.listeningRate || 1));
+        const speedMenu = listeningRateBtn.closest(".listening-speed-menu");
+        speedMenu?.classList.remove("open");
+        speedMenu?.querySelector("[data-listening-speed-toggle]")?.setAttribute("aria-expanded", "false");
+        return;
+      }
+
+      const listeningSentenceBtn = event.target.closest("[data-listening-sentence]");
+      if (listeningSentenceBtn) {
+        seekListeningSentence(Number(listeningSentenceBtn.dataset.listeningSentence || 0), true);
+        return;
+      }
+
+      const listeningKeywordSpeakBtn = event.target.closest("[data-listening-keyword-speak]");
+      if (listeningKeywordSpeakBtn) {
+        playListeningKeyword(Number(listeningKeywordSpeakBtn.dataset.listeningKeywordSpeak || 0), {
+          slow: listeningKeywordSpeakBtn.dataset.listeningKeywordRate === "slow",
+        });
+        return;
+      }
+
+      const listeningKeywordBtn = event.target.closest("[data-listening-keyword]");
+      if (listeningKeywordBtn) {
+        selectListeningKeyword(Number(listeningKeywordBtn.dataset.listeningKeyword || 0), listeningKeywordBtn);
+        return;
+      }
+
+      const vocabSpeakBtn = event.target.closest("[data-listening-vocab-speak]");
+      if (vocabSpeakBtn) {
+        playListeningKeyword(state.listeningVocabPracticeIndex, {
+          slow: vocabSpeakBtn.dataset.listeningVocabSpeak === "slow",
+        });
+        return;
+      }
+
+      const vocabExampleSpeakBtn = event.target.closest("[data-listening-vocab-example-speak]");
+      if (vocabExampleSpeakBtn) {
+        const keyword = getListeningKeyword(state.listeningVocabPracticeIndex);
+        const examples = getListeningKeywordExamples(keyword).map((example) => normalizeListeningKeywordExample(example, keyword));
+        const example = examples[Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleSpeak || 0)];
+        if (example?.chinese) browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-vocab-next]")) {
+        const episode = getListeningEpisode();
+        state.listeningVocabPracticeIndex = (state.listeningVocabPracticeIndex + 1) % Math.max(1, episode.keywords.length);
+        if (state.listeningView === "vocab") renderListeningVocabLesson({ preserveScroll: true });
+        else renderListeningVocabPractice(state.listeningVocabPracticeIndex);
+        return;
+      }
+
+      const listeningJumpBtn = event.target.closest("[data-listening-jump]");
+      if (listeningJumpBtn) {
+        if (listeningJumpBtn.dataset.listeningJump === "vocab") {
+          state.listeningView = "vocab";
+          renderListening();
+          return;
+        }
+        if (listeningJumpBtn.dataset.listeningJump === "repeat") {
+          resetListeningRepeatAttempt();
+          state.listeningView = "repeat";
+          renderListening();
+          return;
+        }
+        return;
+      }
+
+      const listeningRepeatSentenceBtn = event.target.closest("[data-listening-repeat-sentence]");
+      if (listeningRepeatSentenceBtn) {
+        setListeningRepeatLessonSentence(Number(listeningRepeatSentenceBtn.dataset.listeningRepeatSentence || 0));
+        renderListeningRepeatLesson({ preserveScroll: true });
+        return;
+      }
+
+      const listeningRepeatPlayBtn = event.target.closest("[data-listening-repeat-play]");
+      if (listeningRepeatPlayBtn) {
+        const nextIndex = Number(listeningRepeatPlayBtn.dataset.listeningRepeatPlay || 0);
+        stopListeningRepeatListenPlayback();
+        if (nextIndex !== state.listeningSentenceIndex) {
+          setListeningRepeatLessonSentence(nextIndex);
+          renderListeningRepeatLesson({ preserveScroll: true });
+        }
+        speakListeningSentence(nextIndex);
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-current-play]")) {
+        toggleListeningRepeatSentencePlayback();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-repeat-next]")) {
+        const episode = getListeningEpisode();
+        const total = Math.max(1, episode.sentences.length);
+        setListeningRepeatLessonSentence((state.listeningSentenceIndex + 1) % total);
+        renderListeningRepeatLesson({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-play]")) {
+        bindListeningAudioEvents();
+        toggleListeningPlayback();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-prev]")) {
+        seekListeningSentence(state.listeningSentenceIndex - 1, isListeningPlaybackActive());
+        return;
+      }
+
+      if (event.target.closest("[data-listening-next]")) {
+        seekListeningSentence(state.listeningSentenceIndex + 1, isListeningPlaybackActive());
+        return;
+      }
+
+      if (event.target.closest("[data-listening-replay]")) {
+        seekListeningSentence(state.listeningSentenceIndex, true);
+        return;
+      }
+
+      const subtitleToggle = event.target.closest("[data-listening-toggle]");
+      if (subtitleToggle) {
+        if (subtitleToggle.dataset.listeningToggle === "pinyin") state.listeningPinyinOn = !state.listeningPinyinOn;
+        if (subtitleToggle.dataset.listeningToggle === "vi") state.listeningVietnameseOn = !state.listeningVietnameseOn;
+        renderListening({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-translation]")) {
+        state.listeningVietnameseOn = !state.listeningVietnameseOn;
+        renderListening({ preserveScroll: true });
+        return;
+      }
+
+      if (event.target.closest("[data-listening-record]")) {
+        startListeningRepeatRecording();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-recording-play]")) {
+        playListeningRepeatRecording();
+        return;
+      }
+
+      if (event.target.closest("[data-listening-save]")) {
+        const episode = getListeningEpisode();
+        if (state.listeningSaved.has(episode.id)) state.listeningSaved.delete(episode.id);
+        else state.listeningSaved.add(episode.id);
+        saveState();
+        renderListening({ preserveScroll: true });
+        return;
+      }
     }
 
     if (event.target.closest("[data-home-login]")) {
@@ -7021,6 +9939,12 @@ function bindEvents() {
       return;
     }
 
+    const adminLogoutBtn = event.target.closest("#adminLogoutBtn");
+    if (adminLogoutBtn && state.screen === "admin") {
+      logoutAdminUser();
+      return;
+    }
+
     const adminCreateAccountBtn = event.target.closest("#adminCreateAccountBtn");
     if (adminCreateAccountBtn && state.screen === "admin") {
       showAdminCreateAccountModal();
@@ -7053,6 +9977,7 @@ function bindEvents() {
 
     const adminSubscriptionsTabBtn = event.target.closest("#adminSubscriptionsTabBtn");
     if (adminSubscriptionsTabBtn) {
+      if (!isAdminUser()) return;
       state.adminTab = "subscriptions";
       renderAdmin();
       return;
@@ -7060,6 +9985,7 @@ function bindEvents() {
 
     const adminContentTabBtn = event.target.closest("#adminContentTabBtn");
     if (adminContentTabBtn) {
+      if (!isAdminUser()) return;
       state.adminTab = "content";
       renderAdmin();
       loadAdminContentLocks();
@@ -7170,7 +10096,7 @@ function bindEvents() {
       });
       state.adminContentStatus = isVi ? "Đang lưu cấu hình..." : "正在保存配置...";
       renderAdmin();
-      const headers = { "X-Admin-User-Id": state.user?.id || "" };
+      const headers = { "X-Admin-User-Id": getAdminUserId() };
       Promise.all([
         apiRequest("/api/admin/content/hsk-locks", {
           method: "PUT",
@@ -7219,7 +10145,7 @@ function bindEvents() {
       }
       state.adminContentStatus = isVi ? "Đang lưu ảnh bìa..." : "正在保存封面...";
       renderAdmin();
-      const headers = { "X-Admin-User-Id": state.user?.id || "" };
+      const headers = { "X-Admin-User-Id": getAdminUserId() };
       apiRequest("/api/admin/content/hsk-level-covers", {
         method: "PUT",
         headers,
@@ -7244,19 +10170,13 @@ function bindEvents() {
     if (adminSaveUser) {
       const row = adminSaveUser.closest("[data-user-id]");
       const userId = row.dataset.userId;
-      const payload = {
-        fullName: row.querySelector('[data-field="fullName"]').value.trim(),
-        email: row.querySelector('[data-field="email"]').value.trim(),
-        role: row.querySelector('[data-field="role"]').value,
-        currentLevel: row.querySelector('[data-field="currentLevel"]')?.value || "HSK2",
-        isActive: row.querySelector('[data-field="isActive"]').checked,
-      };
+      const payload = buildAdminUserPatchPayload(row);
       state.adminStatus = state.lang === "vi" ? "Đang lưu thay đổi..." : "正在保存更改...";
       renderAdmin();
       apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: "PATCH",
         headers: {
-          "X-Admin-User-Id": state.user?.id || "",
+          "X-Admin-User-Id": getAdminUserId(),
         },
         body: JSON.stringify(payload),
       })
@@ -7268,8 +10188,140 @@ function bindEvents() {
       return;
     }
 
+    const adminVipUser = event.target.closest(".admin-vip-user");
+    if (adminVipUser) {
+      const row = adminVipUser.closest("[data-user-id]");
+      const userId = row.dataset.userId;
+      const durationDays = Number(adminVipUser.dataset.vipDays || 0);
+      if (!confirmAdminVipUpgrade(userId, durationDays)) return;
+      const payload = buildAdminUserPatchPayload(row, {
+        plan: "PREMIUM",
+        durationDays,
+      });
+      state.adminStatus = state.lang === "vi" ? `Đang mở VIP ${durationDays} ngày...` : `正在开通 ${durationDays} 天 VIP...`;
+      renderAdmin();
+      apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: {
+          "X-Admin-User-Id": getAdminUserId(),
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(() => {
+          showToast(state.lang === "vi" ? "Đã mở VIP cho người dùng." : "已为用户开通 VIP。");
+          return loadAdminUsers();
+        })
+        .catch((error) => {
+          state.adminStatus = error.message;
+          renderAdmin();
+        });
+      return;
+    }
+
+    const adminSetVipExpiry = event.target.closest(".admin-set-vip-expiry");
+    if (adminSetVipExpiry) {
+      const row = adminSetVipExpiry.closest("[data-user-id]");
+      const userId = row.dataset.userId;
+      const dateValue = row.querySelector(".admin-vip-expiry-input")?.value || "";
+      const expiryDate = dateValue ? new Date(`${dateValue}T23:59:59.000Z`) : null;
+      if (!expiryDate || Number.isNaN(expiryDate.getTime())) {
+        showToast(state.lang === "vi" ? "Vui lòng chọn ngày hết hạn VIP." : "请选择 VIP 到期日期。");
+        return;
+      }
+      if (expiryDate.getTime() <= Date.now()) {
+        showToast(state.lang === "vi" ? "Ngày hết hạn phải ở tương lai." : "到期日期必须晚于当前时间。");
+        return;
+      }
+      if (!confirmAdminVipExpiryUpdate(userId, dateValue)) return;
+      const user = findAdminUserById(userId);
+      const payload = buildAdminUserPatchPayload(row, {
+        plan: "PREMIUM",
+        premiumUntil: expiryDate.toISOString(),
+        vipPlanId: normalizeVipPlanId(user) || null,
+      });
+      state.adminStatus = state.lang === "vi" ? "Đang cập nhật hạn VIP..." : "正在更新 VIP 到期日期...";
+      renderAdmin();
+      apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: {
+          "X-Admin-User-Id": getAdminUserId(),
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(() => {
+          showToast(state.lang === "vi" ? "Đã cập nhật hạn VIP." : "已更新 VIP 到期日期。");
+          return loadAdminUsers();
+        })
+        .catch((error) => {
+          state.adminStatus = error.message;
+          renderAdmin();
+        });
+      return;
+    }
+
+    const adminCancelVipUser = event.target.closest(".admin-cancel-vip-user");
+    if (adminCancelVipUser) {
+      const row = adminCancelVipUser.closest("[data-user-id]");
+      const userId = row.dataset.userId;
+      if (!confirmAdminVipCancel(userId)) return;
+      const payload = buildAdminUserPatchPayload(row, {
+        plan: "FREE",
+      });
+      state.adminStatus = state.lang === "vi" ? "Đang hủy VIP..." : "正在取消 VIP...";
+      renderAdmin();
+      apiRequest(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: "PATCH",
+        headers: {
+          "X-Admin-User-Id": getAdminUserId(),
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(() => {
+          showToast(state.lang === "vi" ? "Đã hủy VIP cho người dùng." : "已取消用户 VIP。");
+          return loadAdminUsers();
+        })
+        .catch((error) => {
+          state.adminStatus = error.message;
+          renderAdmin();
+        });
+      return;
+    }
+
+    const adminRoleUser = event.target.closest(".admin-role-user");
+    if (adminRoleUser) {
+      if (!isAdminUser()) {
+        showToast(state.lang === "vi" ? "Bạn không có quyền quản lý nhân viên." : "你没有员工权限管理权限。");
+        return;
+      }
+      const row = adminRoleUser.closest("[data-user-id]");
+      const userId = row.dataset.userId;
+      const nextRole = adminRoleUser.dataset.nextRole === "staff" ? "staff" : "user";
+      if (!confirmAdminRoleChange(userId, nextRole)) return;
+      state.adminStatus = state.lang === "vi" ? "Đang cập nhật vai trò..." : "正在更新角色...";
+      renderAdmin();
+      apiRequest(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
+        method: "PATCH",
+        headers: {
+          "X-Admin-User-Id": getAdminUserId(),
+        },
+        body: JSON.stringify({ role: nextRole }),
+      })
+        .then(() => {
+          showToast(nextRole === "staff"
+            ? (state.lang === "vi" ? "Đã đặt làm CSKH quản trị." : "已设为客服管理员。")
+            : (state.lang === "vi" ? "Đã khôi phục thành người dùng thường." : "已恢复为普通用户。"));
+          return loadAdminUsers();
+        })
+        .catch((error) => {
+          state.adminStatus = error.message;
+          renderAdmin();
+        });
+      return;
+    }
+
     const adminDeleteUser = event.target.closest(".admin-delete-user");
     if (adminDeleteUser) {
+      if (!isAdminUser()) return;
       const row = adminDeleteUser.closest("[data-user-id]");
       showAdminDeleteUserConfirm(row);
       return;
@@ -7424,15 +10476,20 @@ function bindEvents() {
     }
     const hskContentTypeBtn = event.target.closest("[data-hsk-content-type]");
     if (hskContentTypeBtn) {
+      const nextContentType = hskContentTypeBtn.dataset.hskContentType;
       if (state.hskPendingLessonId) {
-        state.hskContentType = hskContentTypeBtn.dataset.hskContentType;
+        if (getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked") {
+          promptHskLessonLocked();
+          return;
+        }
+        state.hskContentType = nextContentType;
         startPractice({
           lessonId: state.hskPendingLessonId,
           mode: "translate",
           hskContentType: state.hskContentType,
         });
       } else {
-        state.hskContentType = hskContentTypeBtn.dataset.hskContentType;
+        state.hskContentType = nextContentType;
         renderHskCourse();
       }
       return;
@@ -7581,15 +10638,20 @@ function bindEvents() {
 
     const dailyContentTypeBtn = event.target.closest("[data-daily-content-type]");
     if (dailyContentTypeBtn) {
+      const nextContentType = dailyContentTypeBtn.dataset.dailyContentType;
       if (state.dailyPendingThemeId) {
-        state.dailyContentType = dailyContentTypeBtn.dataset.dailyContentType;
+        if (getDailyContentTypeAccessStatus(state.dailyPendingThemeId, nextContentType) === "locked") {
+          promptUpgradeLocked();
+          return;
+        }
+        state.dailyContentType = nextContentType;
         startPractice({
           themeId: state.dailyPendingThemeId,
           mode: "translate",
           dailyContentType: state.dailyContentType,
         });
       } else {
-        state.dailyContentType = dailyContentTypeBtn.dataset.dailyContentType;
+        state.dailyContentType = nextContentType;
         renderDailyCourse();
       }
       return;
@@ -7732,6 +10794,10 @@ function bindEvents() {
       state.adminUserSearch = event.target.value;
       state.adminUserPage = 1;
       updateAdminUsersList();
+      if (adminUserSearchTimer) clearTimeout(adminUserSearchTimer);
+      adminUserSearchTimer = setTimeout(() => {
+        loadAdminUsers();
+      }, 350);
     }
     if (event.target.matches?.("[data-admin-content-limit]")) {
       updateAdminHskLockConfig(event.target.dataset.adminContentLimit, {
@@ -7839,13 +10905,18 @@ function renderAll() {
   if (state.screen === "complete") renderComplete();
   if (state.screen === "admin") renderAdmin();
   if (state.screen === "vocab") renderVocab();
+  if (state.screen === "listening") renderListening();
   if (state.screen === "account") renderAccount();
 }
 
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
-  loadContentLocks().finally(() => {
+  Promise.allSettled([
+    refreshCurrentUserStatus(),
+    loadContentLocks(),
+    prefetchPaymentPlans(),
+  ]).finally(() => {
     renderAll();
     if (window.location.pathname === "/admin") {
       renderAdmin();

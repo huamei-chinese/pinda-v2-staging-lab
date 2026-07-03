@@ -6,6 +6,32 @@ import * as crypto from 'crypto';
 export class AuthService {
   constructor(private readonly db: DatabaseService) {}
 
+  private normalizeVipPlanId(planId: string | null | undefined): string | null {
+    const normalized = String(planId || '').trim().toLowerCase();
+    if (normalized === '7d') return '7d';
+    if (normalized === '30d') return '30d';
+    return normalized || null;
+  }
+
+  private normalizeRole(role: string | null | undefined): 'user' | 'staff' | 'admin' {
+    const normalized = String(role || '').trim().toLowerCase();
+    if (normalized === 'admin') return 'admin';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
+    return 'user';
+  }
+
+  private vipPlanName(planId: string | null, lang: 'vi' | 'zh'): string | null {
+    if (planId === '7d') return lang === 'vi' ? 'VIP 7 ngày' : '7天VIP';
+    if (planId === '30d') return lang === 'vi' ? 'VIP 30 ngày' : '30天VIP';
+    return planId ? (lang === 'vi' ? 'VIP' : 'VIP') : null;
+  }
+
+  private vipRemainingDays(premiumUntil: Date | null): number {
+    if (!premiumUntil) return 0;
+    const remainingMs = premiumUntil.getTime() - Date.now();
+    return remainingMs > 0 ? Math.ceil(remainingMs / 86400000) : 0;
+  }
+
   hashPassword(password: string, salt: string = crypto.randomBytes(16).toString('hex')): string {
     const hash = crypto.pbkdf2Sync(password, salt, 120000, 64, 'sha512').toString('hex');
     return `${salt}:${hash}`;
@@ -24,15 +50,29 @@ export class AuthService {
     const isPremium = Boolean(
       row.is_premium && (!premiumUntil || premiumUntil.getTime() > Date.now()),
     );
+    const vipPlanId = isPremium ? this.normalizeVipPlanId(row.vip_plan_id) : null;
+    const role = this.normalizeRole(row.role);
+    const vipPlan = role === 'admin'
+      ? 'ADMIN'
+      : isPremium
+        ? (vipPlanId || 'PREMIUM')
+        : 'FREE';
     return {
       id: row.id,
       fullName: row.full_name,
       email: row.email,
-      role: row.role,
+      role,
       isActive: row.is_active,
       currentLevel: row.current_level || 'HSK2',
       avatarUrl: row.avatar_url || '',
       isPremium,
+      vipStatus: isPremium ? 'active' : 'inactive',
+      vipPlan,
+      vipPlanId,
+      vipPlanName: isPremium ? this.vipPlanName(vipPlanId, 'vi') : null,
+      vipPlanNameZh: isPremium ? this.vipPlanName(vipPlanId, 'zh') : null,
+      vipExpiresAt: row.premium_until || null,
+      vipRemainingDays: isPremium ? this.vipRemainingDays(premiumUntil) : 0,
       premiumUntil: row.premium_until || null,
       dailyReminderEnabled: row.daily_reminder_enabled !== false,
       emailVerified: Boolean(row.email_verified_at),
@@ -56,9 +96,9 @@ export class AuthService {
 
     try {
       const result = await this.db.query(
-        `INSERT INTO users (full_name, email, password_hash)
-         VALUES ($1, $2, $3)
-         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+        `INSERT INTO users (full_name, email, password_hash, role)
+         VALUES ($1, $2, $3, 'user')
+         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
         [fullName, email, this.hashPassword(password)],
       );
       return { user: this.publicUser(result.rows[0]) };
@@ -89,10 +129,28 @@ export class AuthService {
     const updated = await this.db.query(
       `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
        WHERE id = $1
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [user.id],
     );
     return { user: this.publicUser(updated.rows[0]) };
+  }
+
+  async getCurrentUser(id: string, headers: Record<string, string | string[] | undefined>) {
+    const headerValue = headers['x-user-id'];
+    const requesterId = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+    if (!requesterId || requesterId !== id) {
+      throw new HttpException('Bạn không có quyền xem trạng thái tài khoản này.', HttpStatus.FORBIDDEN);
+    }
+
+    const result = await this.db.query('SELECT * FROM users WHERE id = $1', [id]);
+    const user = result.rows[0];
+    if (!user) {
+      throw new HttpException('Không tìm thấy tài khoản.', HttpStatus.NOT_FOUND);
+    }
+    if (!user.is_active) {
+      throw new HttpException('Tài khoản đã bị khóa.', HttpStatus.FORBIDDEN);
+    }
+    return { user: this.publicUser(user) };
   }
 
   private signCloudinaryParams(params: Record<string, string | number>, apiSecret: string): string {
@@ -191,7 +249,7 @@ export class AuthService {
              email_verification_expires_at = CASE WHEN email = $2 THEN email_verification_expires_at ELSE NULL END,
              updated_at = NOW()
          WHERE id = $6
-         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
         [fullName, email, currentLevel, avatarUrl || null, dailyReminderEnabled, id],
       );
       if (!result.rows[0]) {
@@ -219,7 +277,7 @@ export class AuthService {
       `UPDATE users
        SET avatar_url = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [avatarUrl, id],
     );
     if (!result.rows[0]) {
@@ -380,7 +438,7 @@ export class AuthService {
            email_verification_expires_at = NULL,
            updated_at = NOW()
        WHERE id = $1
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [id],
     );
     return { ok: true, user: this.publicUser(updated.rows[0]) };
@@ -398,7 +456,7 @@ export class AuthService {
       `UPDATE users
        SET daily_reminder_enabled = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [enabled, id],
     );
     if (!result.rows[0]) {

@@ -20,6 +20,15 @@ export class AdminController {
     return this.adminService.createUser(body, headers);
   }
 
+  @Patch(':id/role')
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Headers() headers: Record<string, string>
+  ) {
+    return this.adminService.updateUserRole(id, body, headers);
+  }
+
   @Patch(':id')
   async updateUser(
     @Param('id') id: string,

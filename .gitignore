@@ -10,6 +10,7 @@ node_modules/
 dist/
 build/
 .next/
+.gstack/
 
 # Repository/tooling state
 .git/
@@ -56,3 +57,8 @@ hsk2-pages/
 
 # Deployment scratch folders
 deploy-v1-monday-*/
+
+# Phase 3 GitHub-ready export safety rules
+00_Audit_Reports/
+13_Today_Deployment_Reports/
+14_Final_GitHub_Ready_Exports/

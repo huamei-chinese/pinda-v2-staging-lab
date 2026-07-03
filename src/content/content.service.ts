@@ -22,6 +22,8 @@ export interface DailyThemeLockRow {
 
 @Injectable()
 export class ContentService {
+  private publicHskLocksCache: Promise<Array<{ lessonId: string; freeItemLimit: number }>> | null = null;
+
   constructor(private readonly db: DatabaseService) {}
 
   private async ensureDailyThemeLocksSchema() {
@@ -49,16 +51,18 @@ export class ContentService {
   }
 
   async listPublicHskLocks(): Promise<Array<{ lessonId: string; freeItemLimit: number }>> {
-    const result = await this.db.query(
-      `SELECT lesson_id, free_item_limit
-       FROM hsk_lesson_locks
-       WHERE free_item_limit > 0
-       ORDER BY lesson_id ASC`,
-    );
-    return result.rows.map((row) => ({
-      lessonId: row.lesson_id,
-      freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
-    }));
+    if (!this.publicHskLocksCache) {
+      this.publicHskLocksCache = this.db.query(
+        `SELECT lesson_id, free_item_limit
+         FROM hsk_lesson_locks
+         WHERE free_item_limit > 0
+         ORDER BY lesson_id ASC`,
+      ).then((result) => result.rows.map((row) => ({
+        lessonId: row.lesson_id,
+        freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
+      })));
+    }
+    return this.publicHskLocksCache;
   }
 
   async saveLocks(lessons: Array<{
@@ -108,6 +112,7 @@ export class ContentService {
       client.release();
     }
 
+    this.publicHskLocksCache = null;
     return { locks: await this.listLocks() };
   }
 

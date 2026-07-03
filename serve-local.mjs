@@ -21,12 +21,30 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
+function resolveStaticFile(requested) {
+  const hasExtension = Boolean(path.extname(requested));
+  if (hasExtension) return path.resolve(root, `.${requested}`);
+
+  if (requested === "/") return path.resolve(root, "./index.html");
+
+  if (requested.startsWith("/listening-app")) {
+    const normalized = requested.endsWith("/") ? requested.slice(0, -1) : requested;
+    const candidates = [
+      path.resolve(root, `.${normalized}.html`),
+      path.resolve(root, `.${normalized}/index.html`),
+    ];
+    const match = candidates.find((candidate) => fs.existsSync(candidate));
+    if (match) return match;
+  }
+
+  return path.resolve(root, "./index.html");
+}
+
 http
   .createServer((req, res) => {
     const url = new URL(req.url || "/", `http://localhost:${port}`);
     const requested = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-    const hasExtension = Boolean(path.extname(requested));
-    const filePath = path.resolve(root, hasExtension ? `.${requested}` : "./index.html");
+    const filePath = resolveStaticFile(requested);
 
     if (!filePath.startsWith(root)) {
       send(res, 403, "Forbidden");

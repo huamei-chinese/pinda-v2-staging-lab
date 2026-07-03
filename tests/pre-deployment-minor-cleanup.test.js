@@ -1,0 +1,89 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+
+require("ts-node/register/transpile-only");
+
+const { PaymentPlansService } = require("../src/payment/payment-plans.service");
+const { ContentService } = require("../src/content/content.service");
+
+const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "utf8");
+
+test("public payment plans expose only the approved 7d and 30d plans", async () => {
+  const db = {
+    async query() {
+      return {
+        rows: [
+          { id: "7d", months: 7, duration_unit: "days", amount: 29000, name_vi: "Gói VIP 7 ngày", name_zh: "7天 VIP", sort_order: 1 },
+          { id: "30d", months: 30, duration_unit: "days", amount: 129000, name_vi: "Gói VIP 1 tháng", name_zh: "1个月 VIP", sort_order: 2 },
+          { id: "1m", months: 1, duration_unit: "months", amount: 29000, name_vi: "1 Tháng", name_zh: "1 个月", sort_order: 3 },
+        ],
+      };
+    },
+  };
+  const service = new PaymentPlansService(db);
+
+  const plans = await service.listActivePlans();
+
+  assert.deepEqual(plans.map((plan) => plan.id), ["7d", "30d"]);
+  assert.equal(plans[0].amount, 29000);
+  assert.equal(plans[1].amount, 129000);
+});
+
+test("legacy 1m payment plan id is resolved as the approved 30d plan", async () => {
+  let queryParams = null;
+  const db = {
+    async query(sql, params) {
+      queryParams = params;
+      return {
+        rows: [
+          { id: "30d", months: 30, duration_unit: "days", amount: 129000, name_vi: "Gói VIP 1 tháng", name_zh: "1个月 VIP" },
+        ],
+      };
+    },
+  };
+  const service = new PaymentPlansService(db);
+
+  const plan = await service.getPlan("1m");
+
+  assert.deepEqual(queryParams, ["30d"]);
+  assert.equal(plan.id, "30d");
+  assert.equal(plan.amount, 129000);
+  assert.equal(plan.durationUnit, "days");
+  assert.equal(plan.months, 30);
+});
+
+test(".env.example uses the Node entry port and contains only placeholder SePay variables", () => {
+  assert.match(envExample, /^PORT=3000$/m);
+  assert.match(envExample, /SEPAY_WEBHOOK_API_KEY=your_sepay_webhook_api_key/);
+  assert.match(envExample, /SEPAY_BANK_NAME=your_bank_display_name/);
+  assert.match(envExample, /SEPAY_BANK_CODE=your_sepay_bank_code/);
+  assert.match(envExample, /SEPAY_BANK_ACCOUNT=your_bank_account_number/);
+  assert.match(envExample, /SEPAY_BANK_ACCOUNT_NAME=your_bank_account_name/);
+  assert.match(envExample, /SEPAY_PAYMENT_PREFIX=HUAMEI/);
+  assert.match(envExample, /DATABASE_URL=postgresql:\/\/user:password@host:5432\/database\?sslmode=require/);
+  assert.doesNotMatch(envExample, /SEPAY_WEBHOOK_API_KEY=(?!your_sepay_webhook_api_key)\S+/);
+});
+
+test("public HSK lock rules are cached between reads to avoid repeated cold queries", async () => {
+  let queryCount = 0;
+  const db = {
+    async query() {
+      queryCount += 1;
+      return {
+        rows: [
+          { lesson_id: "HSK1-L01", free_item_limit: 6 },
+          { lesson_id: "HSK2-L03", free_item_limit: 4 },
+        ],
+      };
+    },
+  };
+  const service = new ContentService(db);
+
+  const first = await service.listPublicHskLocks();
+  const second = await service.listPublicHskLocks();
+
+  assert.equal(queryCount, 1);
+  assert.deepEqual(second, first);
+});

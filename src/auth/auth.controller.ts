@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('api')
@@ -18,6 +18,14 @@ export class AuthController {
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
     return this.authService.login(email, password);
+  }
+
+  @Get('users/:id/status')
+  async getCurrentUser(
+    @Param('id') id: string,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ) {
+    return this.authService.getCurrentUser(id, headers);
   }
 
   @Patch('users/:id/profile')

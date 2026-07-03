@@ -39,23 +39,6 @@ function isEnabled(name) {
   return ["1", "true", "yes", "on"].includes(env(name).toLowerCase());
 }
 
-function safeEqual(a, b) {
-  const provided = Buffer.from(String(a || ""));
-  const expected = Buffer.from(String(b || ""));
-  return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
-}
-
-function requireAdminKey(req) {
-  const adminKey = env("ADMIN_KEY");
-  if (!adminKey) {
-    throw apiError("ADMIN_KEY is required before admin APIs can be used.", 503);
-  }
-  const provided = req.headers.get("x-admin-key") || "";
-  if (!safeEqual(provided, adminKey)) {
-    throw apiError("Admin API is protected.", 401);
-  }
-}
-
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -71,6 +54,328 @@ function apiError(message, status = 500) {
   error.status = status;
   error.payload = typeof message === "string" ? { error: message } : message;
   return error;
+}
+
+function normalizeHanzi(value) {
+  return String(value || "").replace(/[。？！、，,.!?\s]/g, "");
+}
+
+function pronunciationMimeType(value) {
+  const mimeType = String(value || "").split(";")[0].trim().toLowerCase();
+  if (mimeType === "audio/ogg") return "audio/ogg; codecs=opus";
+  if (mimeType === "audio/webm") return "audio/webm; codecs=opus";
+  if (mimeType === "audio/wav" || mimeType === "audio/x-wav") return "audio/wav; codecs=audio/pcm; samplerate=16000";
+  return mimeType || "application/octet-stream";
+}
+
+function mapAzurePronunciationWords(words = []) {
+  return words.map((word) => ({
+    word: word.Word || "",
+    accuracyScore: word.PronunciationAssessment?.AccuracyScore ?? null,
+    errorType: word.PronunciationAssessment?.ErrorType || "None",
+  })).filter((word) => word.word);
+}
+
+function azureCharResults(referenceText, azureWords = [], fallback) {
+  const targetChars = Array.from(normalizeHanzi(referenceText));
+  const results = fallback.charResults.map((item) => ({ ...item }));
+  let cursor = 0;
+  for (const word of azureWords) {
+    const normalizedWord = normalizeHanzi(word.Word || "");
+    if (!normalizedWord) continue;
+    const foundAt = targetChars.join("").indexOf(normalizedWord, cursor);
+    if (foundAt === -1) continue;
+    const assessment = word.PronunciationAssessment || {};
+    const errorType = assessment.ErrorType || "None";
+    const accuracyScore = Number(assessment.AccuracyScore ?? 100);
+    const correct = errorType === "None" && accuracyScore >= 60;
+    for (let offset = 0; offset < normalizedWord.length; offset += 1) {
+      const index = foundAt + offset;
+      if (results[index]) {
+        results[index].correct = correct;
+        results[index].errorType = correct ? "None" : errorType;
+        results[index].accuracyScore = Number.isFinite(accuracyScore) ? accuracyScore : null;
+      }
+    }
+    cursor = foundAt + normalizedWord.length;
+  }
+  return results;
+}
+
+function comparePronunciationFallback(referenceText, recognizedText) {
+  const targetChars = Array.from(normalizeHanzi(referenceText));
+  const spokenChars = Array.from(normalizeHanzi(recognizedText));
+  const rows = targetChars.length + 1;
+  const cols = spokenChars.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = targetChars.length - 1; i >= 0; i -= 1) {
+    for (let j = spokenChars.length - 1; j >= 0; j -= 1) {
+      dp[i][j] = targetChars[i] === spokenChars[j]
+        ? dp[i + 1][j + 1] + 1
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  const matched = new Set();
+  let i = 0;
+  let j = 0;
+  while (i < targetChars.length && j < spokenChars.length) {
+    if (targetChars[i] === spokenChars[j]) {
+      matched.add(i);
+      i += 1;
+      j += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i += 1;
+    } else {
+      j += 1;
+    }
+  }
+
+  return {
+    score: targetChars.length ? Math.round((matched.size / targetChars.length) * 100) : 0,
+    charResults: targetChars.map((char, index) => ({
+      char,
+      correct: matched.has(index),
+      errorType: matched.has(index) ? "None" : "Mismatch",
+    })),
+  };
+}
+
+function speechAssessmentProvider() {
+  const requested = String(env("SPEECH_ASSESSMENT_PROVIDER") || env("PRONUNCIATION_ASSESSMENT_PROVIDER") || "auto").toLowerCase();
+  const hasIflytek = Boolean(env("IFLYTEK_APP_ID") && env("IFLYTEK_API_KEY") && env("IFLYTEK_API_SECRET"));
+  const hasAzure = Boolean(env("AZURE_SPEECH_KEY") && env("AZURE_SPEECH_REGION"));
+  if (requested === "iflytek") return hasIflytek ? "iflytek" : "";
+  if (requested === "azure") return hasAzure ? "azure" : "";
+  if (hasIflytek) return "iflytek";
+  if (hasAzure) return "azure";
+  return "";
+}
+
+function iflytekIseUrl() {
+  const protocol = (env("IFLYTEK_ISE_PROTOCOL") || "wss").replace(/:$/, "");
+  const host = env("IFLYTEK_ISE_HOST") || "ise-api-sg.xf-yun.com";
+  const pathname = env("IFLYTEK_ISE_PATH") || "/v2/ise";
+  const date = new Date().toUTCString();
+  const signatureOrigin = `host: ${host}\ndate: ${date}\nGET ${pathname} HTTP/1.1`;
+  const signature = crypto.createHmac("sha256", env("IFLYTEK_API_SECRET")).update(signatureOrigin).digest("base64");
+  const authorizationOrigin = `api_key="${env("IFLYTEK_API_KEY")}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`;
+  const authorization = Buffer.from(authorizationOrigin).toString("base64");
+  return `${protocol}://${host}${pathname}?authorization=${encodeURIComponent(authorization)}&date=${encodeURIComponent(date)}&host=${encodeURIComponent(host)}`;
+}
+
+function normalizeProviderScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return null;
+  if (score <= 5) return Math.round(score * 20);
+  if (score <= 10) return Math.round(score * 10);
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function pcmPayloadFromAudioBuffer(audioBuffer) {
+  if (audioBuffer.subarray(0, 4).toString("ascii") !== "RIFF") return audioBuffer;
+  let offset = 12;
+  while (offset + 8 <= audioBuffer.length) {
+    const chunkId = audioBuffer.subarray(offset, offset + 4).toString("ascii");
+    const chunkSize = audioBuffer.readUInt32LE(offset + 4);
+    const dataStart = offset + 8;
+    if (chunkId === "data") return audioBuffer.subarray(dataStart, dataStart + chunkSize);
+    offset = dataStart + chunkSize + (chunkSize % 2);
+  }
+  return audioBuffer;
+}
+
+function parseIflytekAssessment(messages, referenceText) {
+  const xml = messages.map((message) => {
+    const encoded = message?.data?.data || "";
+    if (!encoded) return "";
+    try {
+      return Buffer.from(encoded, "base64").toString("utf8");
+    } catch {
+      return "";
+    }
+  }).join("");
+  const totalMatch = xml.match(/\b(?:total_score|overall_score|score)="([^"]+)"/i);
+  const scoreMatches = [...xml.matchAll(/\b(?:phone_score|tone_score|fluency_score|accuracy_score|dp_message|score)="([^"]+)"/gi)]
+    .map((match) => normalizeProviderScore(match[1]))
+    .filter((score) => score !== null);
+  const score = normalizeProviderScore(totalMatch?.[1])
+    ?? (scoreMatches.length ? Math.round(scoreMatches.reduce((sum, item) => sum + item, 0) / scoreMatches.length) : 0);
+  const recognizedMatch = xml.match(/\b(?:content|text)="([^"]+)"/i);
+  const recognizedText = recognizedMatch ? recognizedMatch[1].replace(/&quot;/g, "\"").replace(/&amp;/g, "&") : referenceText;
+  const fallback = comparePronunciationFallback(referenceText, recognizedText || referenceText);
+  const charResults = fallback.charResults.map((item) => ({
+    ...item,
+    correct: item.correct && score >= 60,
+    errorType: item.correct && score >= 60 ? "None" : "Pronunciation",
+    accuracyScore: score,
+  }));
+  return { provider: "iflytek", recognizedText, score, accuracyScore: score, fluencyScore: null, completenessScore: null, charResults, rawXml: xml };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function assessWithIflytek(referenceText, audioBuffer) {
+  if (typeof WebSocket === "undefined") {
+    throw apiError("Node runtime chua ho tro WebSocket de ket noi iFLYTEK.", 503);
+  }
+  const pcmBuffer = pcmPayloadFromAudioBuffer(audioBuffer);
+  const messages = [];
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(iflytekIseUrl());
+    let settled = false;
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    };
+    const timeout = setTimeout(() => {
+      try { socket.close(); } catch {}
+      fail(apiError("iFLYTEK phan hoi qua lau.", 504));
+    }, 30000);
+    socket.addEventListener("open", async () => {
+      try {
+        const chunkSize = 1280;
+        socket.send(JSON.stringify({
+          common: { app_id: env("IFLYTEK_APP_ID") },
+          business: {
+            sub: "ise",
+            ent: "cn_vip",
+            category: "read_sentence",
+            cmd: "ssb",
+            auf: "audio/L16;rate=16000",
+            aue: "raw",
+            rstcd: "utf8",
+            tte: "utf-8",
+            ttp_skip: true,
+            group: "adult",
+            rst: "entirety",
+            ise_unite: "1",
+            extra_ability: "multi_dimension",
+            text: `\uFEFF${referenceText}`,
+          },
+          data: { status: 0 },
+        }));
+        await delay(40);
+        for (let offset = 0; offset < pcmBuffer.length; offset += chunkSize) {
+          const chunk = pcmBuffer.subarray(offset, offset + chunkSize);
+          const isFirstAudioFrame = offset === 0;
+          const isLastAudioFrame = offset + chunkSize >= pcmBuffer.length;
+          socket.send(JSON.stringify({
+            business: {
+              cmd: "auw",
+              aus: isFirstAudioFrame ? 1 : isLastAudioFrame ? 4 : 2,
+            },
+            data: {
+              status: isLastAudioFrame ? 2 : 1,
+              data: chunk.toString("base64"),
+            },
+          }));
+          await delay(40);
+        }
+      } catch (error) {
+        fail(error instanceof Error ? error : apiError("Khong gui duoc audio den iFLYTEK ISE.", 502));
+      }
+    });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data || "{}"));
+      messages.push(message);
+      if (message.code && message.code !== 0) {
+        fail(apiError(message.message || "iFLYTEK cham phat am that bai.", 502));
+        try { socket.close(); } catch {}
+        return;
+      }
+      if (message.data?.status === 2) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        try { socket.close(); } catch {}
+        resolve(parseIflytekAssessment(messages, referenceText));
+      }
+    });
+    socket.addEventListener("error", (event) => {
+      const detail = event?.message || event?.error?.message || "";
+      fail(apiError(detail ? `Khong ket noi duoc iFLYTEK ISE: ${detail}` : "Khong ket noi duoc iFLYTEK ISE.", 502));
+    });
+    socket.addEventListener("close", (event) => {
+      if (settled) return;
+      const reason = event?.reason ? ` ${event.reason}` : "";
+      fail(apiError(`iFLYTEK ISE da dong ket noi truoc khi tra ket qua (${event?.code || "unknown"}).${reason}`, 502));
+    });
+  });
+}
+
+async function assessWithAzure(referenceText, audioBuffer, mimeType) {
+  const key = env("AZURE_SPEECH_KEY");
+  const region = env("AZURE_SPEECH_REGION");
+  const pronunciationConfig = {
+    ReferenceText: referenceText,
+    GradingSystem: "HundredMark",
+    Granularity: "Word",
+    Dimension: "Comprehensive",
+    EnableMiscue: true,
+  };
+  const endpoint = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=zh-CN&format=detailed`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": key,
+      "Content-Type": pronunciationMimeType(mimeType),
+      "Pronunciation-Assessment": Buffer.from(JSON.stringify(pronunciationConfig)).toString("base64"),
+      Accept: "application/json",
+    },
+    body: audioBuffer,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw apiError({
+      error: data.error?.message || data.message || "Khong cham duoc phat am bang Azure Speech.",
+      code: "speech_assessment_failed",
+    }, response.status || 502);
+  }
+  const best = data.NBest?.[0] || {};
+  const assessment = best.PronunciationAssessment || {};
+  const recognizedText = best.Display || data.DisplayText || "";
+  const fallback = comparePronunciationFallback(referenceText, recognizedText);
+  const words = best.Words || [];
+  return {
+    provider: "azure",
+    recognizedText,
+    score: Math.round(assessment.PronScore ?? fallback.score),
+    accuracyScore: assessment.AccuracyScore ?? null,
+    fluencyScore: assessment.FluencyScore ?? null,
+    completenessScore: assessment.CompletenessScore ?? null,
+    words: mapAzurePronunciationWords(words),
+    charResults: words.length ? azureCharResults(referenceText, words, fallback) : fallback.charResults,
+  };
+}
+
+async function assessListeningPronunciation(body) {
+  const provider = speechAssessmentProvider();
+  if (!provider) {
+    throw apiError({
+      error: "Pronunciation assessment chưa được cấu hình.",
+      code: "speech_not_configured",
+    }, 503);
+  }
+
+  const referenceText = String(body.referenceText || "").trim();
+  const audioBase64 = String(body.audioBase64 || "");
+  if (!referenceText) throw apiError("Thiếu câu gốc để chấm phát âm.", 400);
+  if (!audioBase64) throw apiError("Thiếu audio ghi âm để chấm phát âm.", 400);
+
+  const audioBuffer = Buffer.from(audioBase64, "base64");
+  if (!audioBuffer.length) throw apiError("Audio ghi âm không hợp lệ.", 400);
+  if (audioBuffer.length > 8 * 1024 * 1024) throw apiError("Audio ghi âm quá lớn.", 413);
+
+  const result = provider === "iflytek"
+    ? await assessWithIflytek(referenceText, audioBuffer)
+    : await assessWithAzure(referenceText, audioBuffer, body.mimeType);
+  return json({ ...result, referenceText });
 }
 
 async function readBody(req) {
@@ -388,7 +693,6 @@ async function uploadAvatarToCloudinary(userId, avatarDataUrl) {
 }
 
 async function assertAdmin(req) {
-  requireAdminKey(req);
   const userId = req.headers.get("x-admin-user-id");
   if (!userId) throw apiError("Vui lòng đăng nhập bằng tài khoản admin.", 401);
   const result = await query("SELECT role, is_active FROM users WHERE id = $1", [userId]);
@@ -1403,6 +1707,7 @@ async function route(req) {
 
   if (req.method === "POST" && path === "/api/register") return register(body);
   if (req.method === "POST" && path === "/api/login") return login(body);
+  if (req.method === "POST" && path === "/api/listening/pronunciation-assessment") return assessListeningPronunciation(body);
   const ownAvatarMatch = path.match(/^\/api\/users\/([^/]+)\/avatar$/);
   if (ownAvatarMatch && req.method === "PATCH") return updateOwnAvatar(req, decodeURIComponent(ownAvatarMatch[1]), body);
   const ownPasswordMatch = path.match(/^\/api\/users\/([^/]+)\/password$/);

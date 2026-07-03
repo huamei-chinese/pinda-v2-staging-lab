@@ -122,6 +122,7 @@ export class PaymentService {
             accountNumber: config.accountNumber,
             accountName: config.accountName,
           },
+          bankConfigured: Boolean(config.accountNumber),
           qrImageUrl: this.buildQrImageUrl(
             config.accountNumber,
             config.bankCode,
@@ -195,7 +196,7 @@ export class PaymentService {
   verifyWebhookAuthorization(authorizationHeader?: string): boolean {
     const apiKey = process.env.SEPAY_WEBHOOK_API_KEY;
     if (!apiKey) {
-      return process.env.NODE_ENV !== 'production';
+      return false;
     }
     if (!authorizationHeader) return false;
     const expected = `Apikey ${apiKey}`;
@@ -288,16 +289,41 @@ export class PaymentService {
   }
 
   private async activateOrder(order: any, sepayId: number) {
-    const plan = await this.paymentPlansService.getPlanById(order.plan_id);
-    if (!plan) return;
-
     const client = await this.db.getPool()!.connect();
     try {
       await client.query('BEGIN');
 
+      const orderResult = await client.query(
+        'SELECT * FROM payment_orders WHERE id = $1 FOR UPDATE',
+        [order.id],
+      );
+      const lockedOrder = orderResult.rows[0];
+      if (!lockedOrder || lockedOrder.status !== 'pending') {
+        await client.query(
+          `UPDATE sepay_webhook_events
+           SET processed = TRUE, order_id = COALESCE($2, order_id)
+           WHERE sepay_id = $1`,
+          [sepayId, order.id],
+        );
+        await client.query('COMMIT');
+        return;
+      }
+
+      const plan = await this.paymentPlansService.getPlanById(lockedOrder.plan_id);
+      if (!plan) {
+        await client.query(
+          `UPDATE sepay_webhook_events
+           SET processed = TRUE, order_id = COALESCE($2, order_id)
+           WHERE sepay_id = $1`,
+          [sepayId, lockedOrder.id],
+        );
+        await client.query('COMMIT');
+        return;
+      }
+
       const userResult = await client.query(
         'SELECT premium_until FROM users WHERE id = $1 FOR UPDATE',
-        [order.user_id],
+        [lockedOrder.user_id],
       );
       const user = userResult.rows[0];
       const now = new Date();
@@ -305,25 +331,35 @@ export class PaymentService {
       const base = currentEnd && currentEnd > now ? currentEnd : now;
       const premiumUntil = applyPlanDuration(base, plan);
 
-      await client.query(
+      const paidResult = await client.query(
         `UPDATE payment_orders
          SET status = 'paid', paid_at = NOW()
          WHERE id = $1 AND status = 'pending'`,
-        [order.id],
+        [lockedOrder.id],
       );
+      if (paidResult.rowCount !== 1) {
+        await client.query(
+          `UPDATE sepay_webhook_events
+           SET processed = TRUE, order_id = COALESCE($2, order_id)
+           WHERE sepay_id = $1`,
+          [sepayId, lockedOrder.id],
+        );
+        await client.query('COMMIT');
+        return;
+      }
 
       await client.query(
         `UPDATE users
-         SET is_premium = TRUE, premium_until = $2, updated_at = NOW()
+         SET is_premium = TRUE, premium_until = $2, vip_plan_id = $3, updated_at = NOW()
          WHERE id = $1`,
-        [order.user_id, premiumUntil.toISOString()],
+        [lockedOrder.user_id, premiumUntil.toISOString(), lockedOrder.plan_id],
       );
 
       await client.query(
         `UPDATE sepay_webhook_events
          SET processed = TRUE, order_id = $2
          WHERE sepay_id = $1`,
-        [sepayId, order.id],
+        [sepayId, lockedOrder.id],
       );
 
       await client.query('COMMIT');

@@ -56,12 +56,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'student',
+        role TEXT NOT NULL DEFAULT 'user',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         current_level TEXT NOT NULL DEFAULT 'HSK2',
         avatar_url TEXT,
         is_premium BOOLEAN NOT NULL DEFAULT FALSE,
         premium_until TIMESTAMPTZ,
+        vip_plan_id TEXT,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
@@ -76,6 +77,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS current_level TEXT NOT NULL DEFAULT 'HSK2';
     `);
     await this.pool.query(`
+      ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user';
+    `);
+    await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
     `);
     await this.pool.query(`
@@ -83,6 +87,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
@@ -149,11 +156,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ADD COLUMN IF NOT EXISTS duration_unit TEXT NOT NULL DEFAULT 'months';
     `);
     await this.pool.query(`
-      INSERT INTO payment_plans (id, months, amount, name_vi, name_zh, is_active, sort_order)
+      INSERT INTO payment_plans (id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order)
       VALUES
-        ('1m', 1, 149000, '1 Tháng', '1 个月', TRUE, 1),
-        ('3m', 3, 399000, '3 Tháng', '3 个月', TRUE, 2),
-        ('6m', 6, 699000, '6 Tháng', '6 个月', TRUE, 3)
+        ('7d', 7, 'days', 29000, 'Gói VIP 7 ngày', '7天 VIP', TRUE, 1),
+        ('30d', 30, 'days', 129000, 'Gói VIP 1 tháng', '1个月 VIP', TRUE, 2),
+        ('1m', 1, 'months', 149000, '1 Tháng', '1 个月', TRUE, 3),
+        ('3m', 3, 'months', 399000, '3 Tháng', '3 个月', TRUE, 4),
+        ('6m', 6, 'months', 699000, '6 Tháng', '6 个月', TRUE, 5)
       ON CONFLICT (id) DO NOTHING;
     `);
     await this.pool.query(`
