@@ -67,6 +67,10 @@ test("package exposes a listening package upload gate command", () => {
   assert.equal(packageJson.scripts["validate:listening-package"], "node ./scripts/validate-listening-package.mjs");
 });
 
+test("package exposes a listening package importer command", () => {
+  assert.equal(packageJson.scripts["import:listening-package"], "node ./scripts/import-listening-package.mjs");
+});
+
 test("accepts a complete topic batch manifest with referenced audio", async () => {
   const { validateListeningManifest } = await loadValidator();
   const result = validateListeningManifest(validManifest(), new Set([

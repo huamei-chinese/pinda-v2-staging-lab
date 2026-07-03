@@ -45,7 +45,7 @@ test("static typing fallback selects the word bank for all ten listening episode
 test("daily listening audio assets cover the ten exported episodes", () => {
   const mainAudioPath = path.join(listeningAppPath, "audio", "main");
   const wordAudioPath = path.join(listeningAppPath, "audio", "words");
-  const expectedKeywordCounts = [9, 10, 10, 8, 8, 8, 8, 8, 8, 8];
+  const expectedKeywordCounts = [15, 15, 10, 8, 8, 8, 8, 8, 8, 8];
 
   for (let episodeNumber = 1; episodeNumber <= 10; episodeNumber += 1) {
     const episodeId = String(episodeNumber).padStart(3, "0");
