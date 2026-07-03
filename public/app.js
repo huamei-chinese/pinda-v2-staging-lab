@@ -576,6 +576,21 @@ function buildItem(item) {
     keywords: item.keywords || [],
   };
 }
+function sub(id, start, end, zh, pinyin, vi) {
+  return { id, start, end, zh, pinyin, vi };
+}
+function vocab(hanzi, pinyin, vi, posVi, posZh, examples = []) {
+  return {
+    hanzi,
+    pinyin,
+    vi,
+    posVi,
+    posZh,
+    audioNormal: "",
+    audioSlow: "",
+    examples,
+  };
+}
 
 const listeningEpisodes = [
   buildItem({
@@ -682,46 +697,6 @@ const listeningEpisodes = [
     progress: 50,
   }),
 ];
-
-function repairUtf8MojibakeText(value) {
-  const text = String(value || "");
-  if (!/[\u00C0-\u00FF\u0100-\u017F\u0192\u02C6\u02DC\u2013-\u201E\u2020-\u2026\u2030\u2039-\u203A\u20AC\u2122]/.test(text)) return value;
-  const cp1252 = {
-    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
-    0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
-    0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
-    0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
-    0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F,
-  };
-  try {
-    const bytes = Uint8Array.from(Array.from(text, (char) => {
-      const code = char.codePointAt(0) || 0;
-      return cp1252[code] ?? (code <= 255 ? code : 0x3F);
-    }));
-    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return repaired.includes("\uFFFD") ? value : repaired;
-  } catch {
-    return value;
-  }
-}
-
-function repairListeningTextFields(value) {
-  if (typeof value === "string") return repairUtf8MojibakeText(value);
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      value[index] = repairListeningTextFields(item);
-    });
-    return value;
-  }
-  if (value && typeof value === "object") {
-    Object.keys(value).forEach((key) => {
-      value[key] = repairListeningTextFields(value[key]);
-    });
-  }
-  return value;
-}
-
-listeningEpisodes.forEach(repairListeningTextFields);
 
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
@@ -3073,6 +3048,14 @@ function navigatePrimaryTab(target) {
   state.fromRoadmap = false;
   state.dailyPendingThemeId = "";
   state.dailyContentType = "";
+
+  if (target === "write") target = "hsk";
+if (target === "listen") target = "listening";
+
+if (target === "listening") {
+  state.listeningView = "levels";
+  state.listeningSentenceIndex = 0;
+}
 
   if (target === "home") {
     renderHome();
@@ -5674,52 +5657,37 @@ function renderHomeDesktopSavedVocabHTML(isVi) {
 
 function renderHomeDesktopModulesHTML(isVi) {
   return `
-    <section class="home-desktop-modules" aria-label="${isVi ? "Khóa học chính" : "主要课程"}">
-      <article class="home-desktop-module-card home-desktop-module-card--hsk" data-home-module="hsk" role="button" tabindex="0">
-        <img
-          class="home-desktop-module-cover"
-          src="assets/home-module-hsk-pc.png"
-          alt=""
-          onerror="this.src='assets/home-module-hsk.png'"
-        />
-        <div class="home-desktop-module-content">
-          <div>
-            <h3>HSK</h3>
-            <p>${isVi ? "Bài học theo cấp độ" : "分级课程"}</p>
-          </div>
-          <button type="button" class="home-desktop-module-btn" data-home-module="hsk">
-            ${isVi ? "Bắt đầu học" : "开始学习"} <span aria-hidden="true">›</span>
+    <section class="home-desktop-modules home-desktop-modules--duo home-duo-modules">
+      <article class="home-desktop-module-card home-duo-card home-duo-card--write" data-home-module="write" role="button" tabindex="0">
+        <div class="home-duo-card-bg" aria-hidden="true"></div>
+        <div class="home-duo-copy">
+          <span class="home-duo-badge">${isVi ? "✦ Mỗi ngày luyện viết" : "✦ 每日写作练习"}</span>
+          <h3>${isVi ? "Luyện viết" : "写作练习"}</h3>
+          <p>${isVi ? "Khóa HSK theo cấp độ và tiếng Trung tần suất cao" : "分级 HSK 课程与高频汉语"}</p>
+          <button type="button" class="home-duo-btn" data-home-module="write">
+            ${isVi ? "Bắt đầu học" : "开始学习"} <span>›</span>
           </button>
         </div>
+        <div class="home-duo-art home-duo-art--write">
+          <img src="assets/home-module-writing.png" alt="" onerror="this.src='assets/home-module-hsk-pc.png'" />
+        </div>
+        <span class="home-duo-watermark">写</span>
       </article>
-      <article class="home-desktop-module-card home-desktop-module-card--daily" data-home-module="daily" role="button" tabindex="0">
-        <img class="home-desktop-module-cover" src="assets/home-module-daily-pc.png" alt="" onerror="this.src='assets/home-module-daily.png'" />
-        <div class="home-desktop-module-content">
-          <div>
-            <h3>${isVi ? "Tần suất cao" : "高频汉语"}</h3>
-            <p>${isVi ? "Luyện nói & viết" : "听说读写"}</p>
-          </div>
-          <button type="button" class="home-desktop-module-btn" data-home-module="daily">
-            ${isVi ? "Vào luyện tập" : "进入练习"} <span aria-hidden="true">›</span>
+
+      <article class="home-desktop-module-card home-duo-card home-duo-card--listen" data-home-module="listen" role="button" tabindex="0">
+        <div class="home-duo-card-bg" aria-hidden="true"></div>
+        <div class="home-duo-copy">
+          <span class="home-duo-badge">${isVi ? "✦ Mỗi ngày luyện nghe" : "✦ 每日听力练习"}</span>
+          <h3>${isVi ? "Luyện nghe" : "听力练习"}</h3>
+          <p>${isVi ? "Đối thoại & độc thoại theo từng trình độ" : "对话与独白，分级练习"}</p>
+          <button type="button" class="home-duo-btn" data-home-module="listen">
+            ${isVi ? "Vào luyện tập" : "进入练习"} <span>›</span>
           </button>
         </div>
-      </article>
-      <article class="home-desktop-module-card home-desktop-module-card--vocab" data-home-module="vocab" role="button" tabindex="0">
-        <img
-          class="home-desktop-module-cover"
-          src="assets/home-module-vocab-pc.png"
-          alt=""
-          onerror="this.src='assets/home-module-vocab.png'"
-        />
-        <div class="home-desktop-module-content">
-          <div>
-            <h3>${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h3>
-            <p>${isVi ? "Ôn tập từ yêu thích" : "复习收藏词"}</p>
-          </div>
-          <button type="button" class="home-desktop-module-btn" data-home-module="vocab">
-            ${isVi ? "Xem danh sách" : "查看列表"} <span aria-hidden="true">›</span>
-          </button>
+        <div class="home-duo-art home-duo-art--listen">
+          <img src="assets/home-module-listening.png" alt="" onerror="this.src='assets/home-module-vocab-pc.png'" />
         </div>
+        <span class="home-duo-watermark">听</span>
       </article>
     </section>
   `;
@@ -5857,7 +5825,88 @@ function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", active
   else scrollAppToTop();
 }
 
+const listeningCategories = [
+  {
+    id: "dialogue",
+    icon: "💬",
+    vi: "Đối thoại",
+    zh: "对话",
+    countVi: "3 cấp độ",
+    countZh: "3 个等级",
+    levels: [
+      { id: "dialogue-so-cap", vi: "Đối thoại sơ cấp", zh: "初级对话" },
+      { id: "dialogue-trung-cap", vi: "Đối thoại trung cấp", zh: "中级对话" },
+      { id: "dialogue-cao-cap", vi: "Đối thoại cao cấp", zh: "高级对话" },
+    ],
+  },
+  {
+    id: "monologue",
+    icon: "🎙️",
+    vi: "Độc thoại",
+    zh: "独白",
+    countVi: "3 chủ đề",
+    countZh: "3 个主题",
+    levels: [
+      { id: "monologue-dien-thuyet", vi: "Diễn thuyết", zh: "演讲" },
+      { id: "monologue-tap-chi", vi: "Tạp chí", zh: "杂志" },
+      { id: "monologue-tam-ly-hoc", vi: "Tâm lý học", zh: "心理学" },
+    ],
+  },
+];
+
+function renderListeningLevelGateway(options = {}) {
+  const isVi = state.lang === "vi";
+
+  const categoryHTML = listeningCategories.map((category) => `
+    <article class="listening-gateway-card listening-gateway-card--${category.id}">
+      <div class="listening-gateway-card-head">
+        <span class="listening-gateway-icon">${category.icon}</span>
+        <div>
+          <h2>${escapeHtml(isVi ? category.vi : category.zh)}</h2>
+          <small>${escapeHtml(isVi ? category.countVi : category.countZh)}</small>
+        </div>
+      </div>
+
+      <div class="listening-gateway-levels">
+        ${category.levels.map((level) => `
+          <button type="button" class="listening-gateway-level" data-listening-level="${escapeAttr(level.id)}">
+            <span>${escapeHtml(isVi ? level.vi : level.zh)}</span>
+            <span>›</span>
+          </button>
+        `).join("")}
+      </div>
+    </article>
+  `).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-gateway-screen">
+      <header class="listening-gateway-hero">
+        <h1>${isVi ? "Luyện Nghe" : "听力练习"}</h1>
+        <p>${isVi ? "Nghe hiểu tự nhiên - Tiến bộ mỗi ngày" : "自然听懂，每天进步"}</p>
+      </header>
+
+      <div class="listening-gateway-grid">
+        ${categoryHTML}
+      </div>
+    </section>
+  `, "app-desktop-shell--listening", "listening", options);
+}
+
+function openListeningLevel(levelId) {
+  state.listeningLevelId = levelId || "dialogue-so-cap";
+  state.listeningView = "dashboard";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+  renderListening();
+}
+
+
+
 function renderListening(options = {}) {
+  if (state.listeningView === "levels") {
+  renderListeningLevelGateway(options);
+  return;
+  }
   if (state.listeningView === "repeat") {
     renderListeningRepeatLesson(options);
     return;
@@ -5968,6 +6017,19 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
   ];
+  const monologueCards = getMonologueListeningEpisodes().slice(0, 3).map((episode, index) => ({
+  titleVi: episode.title,
+  titleZh: episode.titleZh,
+  levelVi: "Độc thoại",
+  levelZh: "独白",
+  openId: episode.id,
+  progress: 0,
+  minutes: Math.max(1, Math.ceil((episode.duration || 60) / 60)),
+  icon: "mic",
+  tone: ["purple", "orange", "teal"][index % 3],
+  actionVi: "Bắt đầu nghe",
+  actionZh: "开始听",
+}));
   const topicIconHTML = (icon) => {
     const icons = {
       chat: `<span class="listening-topic-art listening-topic-art--chat"><i></i><i></i></span>`,
@@ -5980,7 +6042,9 @@ function renderListeningDashboard() {
     };
     return icons[icon] || icons.chat;
   };
-  const cardsHTML = topicCards.map((topic) => `
+  const allTopicCards = [...topicCards, ...monologueCards];
+
+const cardsHTML = allTopicCards.map((topic) => `
     <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-open="${escapeAttr(topic.openId)}">
       <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
       ${topicIconHTML(topic.icon)}
@@ -9594,6 +9658,12 @@ function bindEvents() {
         state.listeningView = "detail";
         state.listeningSentenceIndex = 0;
         renderListening();
+        return;
+      }
+
+      const listeningLevelBtn = event.target.closest("[data-listening-level]");
+      if (listeningLevelBtn) {
+        openListeningLevel(listeningLevelBtn.dataset.listeningLevel);
         return;
       }
 
