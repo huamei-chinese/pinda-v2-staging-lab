@@ -8,6 +8,10 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - Unit and static test suite: `npm.cmd test` passed `128/128`.
 - Build: `npm.cmd run build` exited successfully.
+- Dependency security:
+  - Nest packages upgraded to the 11.x line.
+  - `multer` is pinned through npm `overrides` to the patched 2.2.x line.
+  - `npm.cmd audit --audit-level=high` returned `found 0 vulnerabilities`.
 - Content generation:
   - `npm.cmd run generate:content` is available for HSK2/3/4/5/remediation content.
   - `npm.cmd run generate:high-frequency` is stable and uses repo-relative high-frequency source paths.
@@ -22,7 +26,6 @@ Scope: V2 staging lab only
 ## Known Gaps
 
 - Real interactive browser screenshots are not yet recorded in this report.
-- The dependency audit still needs a separate security-upgrade task; earlier audit output included high-severity dependency issues.
 - HSK2 lesson packs for lessons 2-15 are lab-generated and should be treated as lab content unless replaced with approved textbook-final source.
 - This report does not certify production sync readiness.
 

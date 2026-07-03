@@ -15,9 +15,9 @@
 - Repository: `https://github.com/huamei-chinese/pinda-v2-staging-lab.git`
 - Branch: `main`
 - Remote freshness: `git fetch origin` completed, `main` is aligned with `origin/main`
-- Tests: `npm.cmd test` passes 125/125
+- Tests: `npm.cmd test` passes 128/128
 - Build: `npm.cmd run build` passes
-- Known dependency risk: `npm.cmd audit --audit-level=high` reports 23 vulnerabilities, including 8 high severity issues. Some fixes require breaking Nest major-version upgrades.
+- Dependency security: Nest packages are on the 11.x line, `multer` is overridden to the patched 2.2.x line, and `npm.cmd audit --audit-level=high` reports `found 0 vulnerabilities`.
 - Production boundary: no deployment to `https://hoctrung.com/`; do not touch `D:\6.20_Pinda_V1\02_Working_Project\pratice_write`.
 
 ## Definition Of Done
