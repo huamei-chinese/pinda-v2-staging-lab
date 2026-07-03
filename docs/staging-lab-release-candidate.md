@@ -8,8 +8,8 @@ Scope: V2 staging lab only
 - Git branch and remote: `main` aligned with `origin/main` in the lab repository.
 - One-command acceptance gate:
   - Command: `npm.cmd run acceptance:lab`
-  - Result: safety gate, `145/145` tests, build, dependency audit, temporary local server startup, and `18/18` smoke checks passed.
-- Unit and static test suite: `npm.cmd test` passed `145/145`.
+  - Result: safety gate, `148/148` tests, build, dependency audit, temporary local server startup, and `18/18` smoke checks passed.
+- Unit and static test suite: `npm.cmd test` passed `148/148`.
 - Build: `npm.cmd run build` exited successfully.
 - Lab safety gate:
   - Command: `npm.cmd run safety:lab`
@@ -27,7 +27,9 @@ Scope: V2 staging lab only
   - Result: `18/18` checks passed.
   - Covered learner home, stylesheet, app runtime, HSK2, HSK3, HSK4, HSK5, high-frequency content, daily listening entry, daily listening list, daily listening detail, typing drill for ep-001 and ep-010, favorites, member gate, review checklist, VIP subscriptions surface, and payment-plan database fallback.
 - Ajie listening source intake:
+  - Command: `npm.cmd run validate:ajie-listening -- <DocThoai.txt> [DoiThoai.txt]`
   - `scripts/normalize-ajie-listening-files.mjs` validates Ajie txt/JSON files and normalizes monologue or dialogue source data into lab listening episode objects.
+  - The command reports `ok: false` when a source file has invalid JSON or when referenced mp3 assets are missing from `public/listening-app`.
   - Verified against `DocThoai.txt`: one monologue episode can be normalized, but referenced audio files are missing from `public/listening-app`.
   - Verified against `DoiThoai.txt`: rejected as invalid JSON at line 27, column 28 before import.
 - Browser QA:

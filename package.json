@@ -15,6 +15,7 @@
     "acceptance:lab": "node ./scripts/run-staging-lab-acceptance.mjs",
     "safety:lab": "node ./scripts/check-staging-lab-safety.mjs",
     "smoke:lab": "node ./scripts/smoke-staging-lab.mjs",
+    "validate:ajie-listening": "node ./scripts/normalize-ajie-listening-files.mjs --asset-root public/listening-app",
     "test": "node --test ./tests/*.test.js"
   },
   "dependencies": {

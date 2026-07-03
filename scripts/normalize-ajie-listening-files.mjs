@@ -148,36 +148,57 @@ export function checkReferencedAudioFiles(episodes, assetRoot) {
   return missing;
 }
 
-async function runCli(argv) {
-  const assetRootIndex = argv.indexOf("--asset-root");
-  const assetRoot = assetRootIndex >= 0 ? argv[assetRootIndex + 1] : "";
-  const files = argv.slice(2).filter((arg, index, allArgs) => {
-    const absoluteIndex = index + 2;
-    return arg !== "--asset-root" && allArgs[index - 1] !== "--asset-root" && argv[absoluteIndex - 1] !== "--asset-root";
-  });
-  if (files.length === 0) {
-    console.error("Usage: node scripts/normalize-ajie-listening-files.mjs [--asset-root public/listening-app] <DocThoai.txt> [DoiThoai.txt]");
-    process.exitCode = 1;
-    return;
+export function parseAjieCliArgs(argv) {
+  const args = argv.slice(2);
+  const files = [];
+  let assetRoot = "";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--asset-root") {
+      assetRoot = args[index + 1] || "";
+      index += 1;
+      continue;
+    }
+    files.push(arg);
   }
 
+  return { assetRoot, files };
+}
+
+export function validateAjieSourceFiles(files, assetRoot = "") {
   const report = [];
-  let hasError = false;
+  let hasBlockingIssue = false;
 
   for (const file of files) {
     try {
       const source = fs.readFileSync(file, "utf8");
       const episodes = normalizeAjieListeningText(source, path.basename(file));
       const missingAudio = assetRoot ? checkReferencedAudioFiles(episodes, assetRoot) : [];
+      if (missingAudio.length > 0) {
+        hasBlockingIssue = true;
+      }
       report.push({ file, valid: true, episode_count: episodes.length, missing_audio: missingAudio, episodes });
     } catch (error) {
-      hasError = true;
+      hasBlockingIssue = true;
       report.push({ file, valid: false, error: error.message });
     }
   }
 
-  console.log(JSON.stringify({ ok: !hasError, files: report }, null, 2));
-  process.exitCode = hasError ? 1 : 0;
+  return { ok: !hasBlockingIssue, files: report };
+}
+
+async function runCli(argv) {
+  const { assetRoot, files } = parseAjieCliArgs(argv);
+  if (files.length === 0) {
+    console.error("Usage: node scripts/normalize-ajie-listening-files.mjs [--asset-root public/listening-app] <DocThoai.txt> [DoiThoai.txt]");
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = validateAjieSourceFiles(files, assetRoot);
+  console.log(JSON.stringify(result, null, 2));
+  process.exitCode = result.ok ? 0 : 1;
 }
 
 const currentFile = fileURLToPath(import.meta.url);

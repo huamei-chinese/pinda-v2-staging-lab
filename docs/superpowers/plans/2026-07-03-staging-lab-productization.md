@@ -15,10 +15,10 @@
 - Repository: `https://github.com/huamei-chinese/pinda-v2-staging-lab.git`
 - Branch: `main`
 - Remote freshness: `git fetch origin` completed, `main` is aligned with `origin/main`
-- Tests: `npm.cmd test` passes 145/145
+- Tests: `npm.cmd test` passes 148/148
 - Build: `npm.cmd run build` passes
 - One-command acceptance gate: `npm.cmd run acceptance:lab` runs safety, tests, build, audit, starts `server.js`, runs 18 smoke checks, and shuts the local server down.
-- Daily listening intake: `scripts/normalize-ajie-listening-files.mjs` can validate Ajie txt/JSON source files, normalize monologue/dialogue structures into lab episode objects, and report missing referenced mp3 assets.
+- Daily listening intake: `npm.cmd run validate:ajie-listening -- <DocThoai.txt> [DoiThoai.txt]` validates Ajie txt/JSON source files, normalizes monologue/dialogue structures into lab episode objects, and reports `ok: false` for invalid JSON or missing referenced mp3 assets.
 - Browser QA: desktop and mobile lab surfaces were checked with the in-app browser; HSK cards fit at 1280 x 720, HSK2 lesson 1 opens local fallback study parts on mobile without a VIP modal when `DATABASE_URL` is missing, and mobile daily listening detail/typing drill are usable without horizontal overflow.
 - Lab safety gate: `npm.cmd run safety:lab` scans repo text/code files for formal-site paths, live payment keys, SePay secret assignments, and non-placeholder database URLs.
 - Dependency security: Nest packages are on the 11.x line, `multer` is overridden to the patched 2.2.x line, and `npm.cmd audit --audit-level=high` reports `found 0 vulnerabilities`.
@@ -28,7 +28,7 @@
 
 - Stable HSK content generation can be run from one command: `npm.cmd run generate:content`.
 - High-frequency content generation remains a separate command until its generator no longer rewrites local absolute paths or creates noisy whole-file diffs.
-- `npm.cmd test` passes 145/145 or the updated full suite passes with a documented new count.
+- `npm.cmd test` passes 148/148 or the updated full suite passes with a documented new count.
 - `npm.cmd run build` passes.
 - Browser smoke checks pass for learner entry, HSK content, high-frequency content, daily listening list/detail/typing/favorites/member/review surfaces, admin login surface, VIP/paywall modal surface, and payment modal failure states.
 - No real production database, VIP user, payment key, order data, or `hoctrung.com` deployment is touched.

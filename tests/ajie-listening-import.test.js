@@ -1,14 +1,43 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const test = require("node:test");
 
 const repoRoot = path.join(__dirname, "..");
+const packageJson = require("../package.json");
 const moduleUrl = pathToFileURL(path.join(repoRoot, "scripts", "normalize-ajie-listening-files.mjs")).href;
 
 async function loadImporter() {
   return import(moduleUrl);
 }
+
+test("package exposes a one-command Ajie listening validator", () => {
+  assert.equal(
+    packageJson.scripts["validate:ajie-listening"],
+    "node ./scripts/normalize-ajie-listening-files.mjs --asset-root public/listening-app",
+  );
+});
+
+test("parses Ajie listening CLI arguments with asset root and multiple files", async () => {
+  const { parseAjieCliArgs } = await loadImporter();
+
+  assert.deepEqual(
+    parseAjieCliArgs([
+      "node",
+      "scripts/normalize-ajie-listening-files.mjs",
+      "DocThoai.txt",
+      "--asset-root",
+      "public/listening-app",
+      "DoiThoai.txt",
+    ]),
+    {
+      assetRoot: "public/listening-app",
+      files: ["DocThoai.txt", "DoiThoai.txt"],
+    },
+  );
+});
 
 test("normalizes Ajie monologue course text into a lab listening episode", async () => {
   const { parseAjieListeningText, normalizeAjieCourse } = await loadImporter();
@@ -140,4 +169,30 @@ test("reports missing audio assets referenced by normalized Ajie episodes", asyn
     "audio/monologue/topic_001.mp3",
     "/audio/vocabulary/dajia.mp3",
   ]);
+});
+
+test("marks Ajie source validation as not ready when referenced audio is missing", async () => {
+  const { validateAjieSourceFiles } = await loadImporter();
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ajie-listening-"));
+  const sourcePath = path.join(tempDir, "DocThoai.txt");
+  fs.writeFileSync(sourcePath, JSON.stringify({
+    course: {
+      id: "monologue_course",
+      topics: [
+        {
+          id: "topic_001",
+          title: "Chu de 1",
+          audio: { url: "audio/monologue/topic_001.mp3" },
+          sentences: [],
+          vocabulary: [],
+        },
+      ],
+    },
+  }), "utf8");
+
+  const report = validateAjieSourceFiles([sourcePath], path.join(repoRoot, "public", "listening-app"));
+
+  assert.equal(report.ok, false);
+  assert.equal(report.files[0].valid, true);
+  assert.deepEqual(report.files[0].missing_audio, ["audio/monologue/topic_001.mp3"]);
 });
