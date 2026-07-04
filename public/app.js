@@ -470,6 +470,8 @@ const state = {
 listeningLessonsBackTarget: "levels",
   listeningLevelId: "dialogue-so-cap",
 listeningBackTarget: "",
+  listeningSelectedTopicTitleVi: "",
+  listeningSelectedTopicTitleZh: "",
   listeningEpisodeId: "ep-001",
   listeningSentenceIndex: 0,
   listeningVocabPracticeIndex: 0,
@@ -599,62 +601,101 @@ function vocab(hanzi, pinyin, vi, posVi, posZh, examples = []) {
 const listeningEpisodes = [
   buildItem({
     id: "ep-001",
-    title: "为什么你学了 HSK 还是听不懂",
-    category: "热点短文",
-    is_featured_sample: true,
-    speaker: "林老师",
+    title: "一个人生活，是自由还是孤单？",
+    titleZh: "一个人生活，是自由还是孤单？",
+    category: "Cuộc sống một mình",
+    categoryZh: "一个人生活",
+    level: "Hội thoại trung cấp",
+    speaker: "B/A",
+    audioSrc: "/listening-app/audio/main/daily-001-main.mp3",
     sentences: makeSentences("ep-001", [
-      ["最近我有点儿不开心。", "Zuìjìn wǒ yǒudiǎnr bù kāixīn.", "Dạo này tôi hơi không vui.", 0, 3.77],
-      ["我喜欢你", "Wǒ xǐhuān nǐ", "Tôi thích bạn", 3.77, 8.34],
-      ["你吃饭了吗", "nị chi phan lơ ma?", "Bạn đã ăn chưa?", 8.34, 18.38],
-      ["你是不是又在和别人比？", "Nǐ shì bú shì yòu zài hé biérén bǐ?", "Có phải bạn lại đang so sánh mình với người khác không?", 18.38, 22.35],
-      ["可能是吧。看到他们越来越好，我就觉得自己进步得很慢。", "Kěnéng shì ba. Kàndào tāmen yuè lái yuè hǎo, wǒ jiù juéde zìjǐ jìnbù de hěn màn.", "Có lẽ vậy. Thấy họ ngày càng tốt hơn, tôi lại cảm thấy mình tiến bộ rất chậm.", 22.35, 30.65],
-      ["每个人的时间不一样。别人快，不代表你差。", "Měi ge rén de shíjiān bù yíyàng. Biérén kuài, bù dàibiǎo nǐ chà.", "Thời gian của mỗi người không giống nhau. Người khác nhanh không có nghĩa là bạn kém.", 30.65, 39.12],
-      ["可是我还是会着急。", "Kěshì wǒ háishi huì zháojí.", "Nhưng tôi vẫn sẽ sốt ruột.", 39.12, 42.47],
-      ["着急很正常。但你可以先做好今天的事。每天进步一点点，就已经很好了。", "Zháojí hěn zhèngcháng. Dàn nǐ kěyǐ xiān zuò hǎo jīntiān de shì. Měitiān jìnbù yìdiǎndiǎn, jiù yǐjīng hěn hǎo le.", "Sốt ruột là bình thường. Nhưng bạn có thể làm tốt việc hôm nay trước. Mỗi ngày tiến bộ một chút đã rất tốt rồi.", 42.47, 54.61],
-      ["你说得对。我不应该一直看别人。", "Nǐ shuō de duì. Wǒ bù yīnggāi yìzhí kàn biérén.", "Bạn nói đúng. Tôi không nên cứ nhìn người khác mãi.", 54.61, 60.75],
-      ["对。你要相信自己，也要给自己一点时间。", "Duì. Nǐ yào xiāngxìn zìjǐ, yě yào gěi zìjǐ yìdiǎn shíjiān.", "Đúng. Bạn phải tin bản thân, cũng phải cho bản thân thêm một chút thời gian.", 60.75, 68.44],
+        ["阿南，你能接受一个人生活吗？", "Ā Nán, nǐ néng jiēshòu yí ge rén shēnghuó ma?", "A Nam, bạn có thể chấp nhận sống một mình không?", 0, 2.912],
+        ["可以接受，但我觉得一个人生活有点孤单。", "Kě yǐ jiēshòu, dàn wǒ juéde yí ge rén shēnghuó yǒu diǎn gūdān.", "Có thể chấp nhận, nhưng tôi thấy sống một mình hơi cô đơn.", 2.912, 7.183],
+        ["我反而觉得一个人生活很自由。想吃什么就吃什么，想几点睡就几点睡。", "Wǒ fǎn’ér juéde yí ge rén shēnghuó hěn zìyóu. Xiǎng chī shénme jiù chī shénme, xiǎng jǐ diǎn shuì jiù jǐ diǎn shuì.", "Tôi ngược lại thấy sống một mình rất tự do. Muốn ăn gì thì ăn, muốn mấy giờ ngủ thì ngủ.", 7.183, 13.404],
+        ["自由是自由，可是晚上回到房间，只有自己一个人，不会觉得空吗？", "Zìyóu shì zìyóu, kěshì wǎnshang huí dào fángjiān, zhǐ yǒu zìjǐ yí ge rén, bú huì juéde kōng ma?", "Tự do thì đúng là tự do, nhưng buổi tối về phòng chỉ có một mình, không thấy trống trải sao?", 13.404, 19.427],
+        ["有时候会。但我觉得这种安静也很好。至少不用照顾别人的情绪。", "Yǒu shíhou huì. Dàn wǒ juéde zhè zhǒng ānjìng yě hěn hǎo. Zhìshǎo bú yòng zhàogù biérén de qíngxù.", "Đôi khi có. Nhưng tôi thấy sự yên tĩnh này cũng tốt. Ít nhất không cần để ý cảm xúc của người khác.", 19.427, 25.686],
+        ["你说得有道理。和别人一起住，有时候确实会有很多小矛盾。", "Nǐ shuō de yǒu dàolǐ. Hé biérén yìqǐ zhù, yǒu shíhou quèshí huì yǒu hěn duō xiǎo máodùn.", "Bạn nói có lý. Sống cùng người khác đôi khi đúng là có nhiều mâu thuẫn nhỏ.", 25.686, 31.051],
+        ["对啊。一个人住，家里乱不乱、安不安静，都是自己决定。", "Duì a. Yí ge rén zhù, jiā lǐ luàn bú luàn, ān bù ānjìng, dōu shì zìjǐ juédìng.", "Đúng vậy. Sống một mình, nhà có bừa hay không, có yên tĩnh hay không, đều do mình quyết định.", 31.051, 36.128],
+        ["可是如果生病了呢？一个人发烧，一个人去买药，想想就很难受。", "Kěshì rúguǒ shēngbìng le ne? Yí ge rén fāshāo, yí ge rén qù mǎi yào, xiǎngxiang jiù hěn nánshòu.", "Nhưng nếu bị bệnh thì sao? Một mình sốt, một mình đi mua thuốc, nghĩ thôi đã thấy khó chịu.", 36.128, 42.2],
+        ["这确实是一个问题。一个人生活最难的不是吃饭，而是遇到困难时没人马上帮你。", "Zhè quèshí shì yí ge wèntí. Yí ge rén shēnghuó zuì nán de bú shì chīfàn, ér shì yù dào kùnnan shí méi rén mǎshàng bāng nǐ.", "Đây đúng là một vấn đề. Sống một mình khó nhất không phải ăn uống, mà là khi gặp khó khăn không có ai giúp ngay.", 42.2, 49.954],
+        ["所以我觉得，一个人生活需要很强的能力。", "Suǒyǐ wǒ juéde, yí ge rén shēnghuó xūyào hěn qiáng de nénglì.", "Vì vậy tôi thấy sống một mình cần năng lực rất mạnh.", 49.954, 54.283],
+        ["对。不是每个人都适合一个人生活。它不是只有自由，也有责任。", "Duì. Bú shì měi ge rén dōu shìhé yí ge rén shēnghuó. Tā bú shì zhǐ yǒu zìyóu, yě yǒu zérèn.", "Đúng. Không phải ai cũng phù hợp sống một mình. Nó không chỉ có tự do, cũng có trách nhiệm.", 54.283, 60.622],
+        ["那你觉得一个人生活最大的好处是什么？", "Nà nǐ juéde yí ge rén shēnghuó zuì dà de hǎochù shì shénme?", "Vậy bạn thấy lợi ích lớn nhất của sống một mình là gì?", 60.622, 64.732],
+        ["是可以真正认识自己。没人打扰的时候，你会知道自己喜欢什么、害怕什么、想要什么。", "Shì kě yǐ zhēnzhèng rènshi zìjǐ. Méi rén dǎrǎo de shíhou, nǐ huì zhīdào zìjǐ xǐhuan shénme, hàipà shénme, xiǎng yào shénme.", "Là có thể thật sự hiểu bản thân. Khi không ai làm phiền, bạn sẽ biết mình thích gì, sợ gì, muốn gì.", 64.732, 72.636],
+        ["听起来，一个人生活不是简单地“一个人住”，而是一种成长。", "Tīng qǐlai, yí ge rén shēnghuó bú shì jiǎndān de “yí ge rén zhù”, ér shì yì zhǒng chéngzhǎng.", "Nghe có vẻ sống một mình không chỉ đơn giản là “ở một mình”, mà là một kiểu trưởng thành.", 72.636, 77.779],
+        ["没错。自由和孤单都会有，关键是你能不能和自己好好相处。", "Méi cuò. Zìyóu hé gūdān dōu huì yǒu, guānjiàn shì nǐ néng bù néng hé zìjǐ hǎohāo xiāngchǔ.", "Đúng vậy. Tự do và cô đơn đều sẽ có, mấu chốt là bạn có thể ở cùng chính mình cho tốt hay không.", 77.779, 85.038]
     ]),
     keywords: makeKeywords([
-      ["通过", "tong guo", "vượt qua", "giới từ"],
-      ["真实", "zhen shi", "thật, thực tế", "tính từ"],
-      ["紧张", "jin zhang", "căng thẳng", "tính từ"],
-      ["原因", "yuan yin", "nguyên nhân", "danh từ"],
-      ["努力", "nu li", "cố gắng", "động từ"],
-      ["材料", "cai liao", "tài liệu", "danh từ"],
-      ["省略", "sheng lue", "lược bỏ", "động từ"],
-      ["连读", "lian du", "nối âm", "danh từ"],
-      ["表达", "biao da", "cách diễn đạt", "động từ"],
+        ["接受", "jiēshòu", "Chấp nhận"],
+        ["自由", "zìyóu", "Tự do"],
+        ["孤单", "gūdān", "Cô đơn"],
+        ["反而", "fǎn’ér", "Ngược lại"],
+        ["照顾情绪", "zhàogù qíngxù", "Để ý/chăm sóc cảm xúc"],
+        ["矛盾", "máodùn", "Mâu thuẫn"],
+        ["乱", "luàn", "Bừa bộn, loạn"],
+        ["安静", "ānjìng", "Yên tĩnh"],
+        ["发烧", "fāshāo", "Sốt"],
+        ["买药", "mǎi yào", "Mua thuốc"],
+        ["遇到困难", "yù dào kùnnan", "Gặp khó khăn"],
+        ["责任", "zérèn", "Trách nhiệm"],
+        ["认识自己", "rènshi zìjǐ", "Hiểu bản thân"],
+        ["打扰", "dǎrǎo", "Làm phiền"],
+        ["相处", "xiāngchǔ", "Ở chung, hòa hợp"]
     ]),
     is_free: true,
     is_member_only: false,
-    member_cta: "想继续练真实语速？解锁更多 1 分钟精品听力。",
-    created_at: "2026-06-16",
-    progress: 80,
+    member_cta: "继续练习每日听力。",
+    created_at: "2026-07-03",
+    progress: 0,
   }),
   buildItem({
     id: "ep-002",
-    title: "Phân biệt bốn thanh điệu",
-    titleZh: "区分四个声调",
-    category: "Thanh điệu",
-    categoryZh: "声调",
-    level: "Dễ",
-    speaker: "HuaMei",
+    title: "一个人吃饭，很可怜吗？",
+    titleZh: "一个人吃饭，很可怜吗？",
+    category: "Cuộc sống một mình",
+    categoryZh: "一个人生活",
+    level: "Hội thoại trung cấp",
+    speaker: "B/A",
+    audioSrc: "/listening-app/audio/main/daily-002-main.mp3",
     sentences: makeSentences("ep-002", [
-      ["妈，麻，马，骂。", "ma1, ma2, ma3, ma4.", "Bốn thanh của âm ma.", 0, 8],
-      ["请再听一遍。", "Qing zai ting yi bian.", "Hãy nghe lại một lần nữa.", 8, 24],
+        ["阿明，我昨天一个人去吃火锅，感觉特别尴尬。", "Ā Míng, wǒ zuótiān yí ge rén qù chī huǒguō, gǎnjué tèbié gāngà.", "A Minh, hôm qua tôi đi ăn lẩu một mình, cảm thấy đặc biệt ngại.", 0, 5.664],
+        ["为什么尴尬？一个人吃饭不是很正常吗？", "Wèishénme gāngà? Yí ge rén chīfàn bú shì hěn zhèngcháng ma?", "Sao lại ngại? Ăn một mình không phải rất bình thường sao?", 5.664, 10.092],
+        ["我总觉得别人会看我，好像我没有朋友一样。", "Wǒ zǒng juéde biérén huì kàn wǒ, hǎoxiàng wǒ méi yǒu péngyou yíyàng.", "Tôi luôn thấy người khác sẽ nhìn tôi, như thể tôi không có bạn vậy.", 10.092, 14.2],
+        ["其实大家都在吃自己的饭，没那么多人注意你。", "Qíshí dàjiā dōu zài chī zìjǐ de fàn, méi nàme duō rén zhùyì nǐ.", "Thật ra mọi người đều đang ăn phần của mình, không có nhiều người chú ý đến bạn vậy đâu.", 14.2, 19.24],
+        ["可是看到别人一桌人说说笑笑，我一个人坐在那里，就觉得自己很可怜。", "Kěshì kàn dào biérén yì zhuō rén shuōshuō xiàoxiào, wǒ yí ge rén zuò zài nà lǐ, jiù juéde zìjǐ hěn kělián.", "Nhưng thấy người khác cả bàn vừa nói vừa cười, tôi ngồi đó một mình liền thấy mình rất đáng thương.", 19.24, 24.265],
+        ["一个人吃饭不等于可怜。有时候一个人吃饭反而更舒服。", "Yí ge rén chīfàn bù děngyú kělián. Yǒu shíhou yí ge rén chīfàn fǎn’ér gèng shūfu.", "Ăn một mình không đồng nghĩa với đáng thương. Đôi khi ăn một mình ngược lại thoải mái hơn.", 24.265, 30.287],
+        ["舒服在哪里？没有人聊天，不会很无聊吗？", "Shūfu zài nǎ lǐ? Méi yǒu rén liáotiān, bú huì hěn wúliáo ma?", "Thoải mái ở đâu? Không có ai nói chuyện, không chán sao?", 30.287, 34.418],
+        ["可以慢慢吃，也不用配合别人的口味和时间。想安静就安静。", "Kě yǐ mànmàn chī, yě bú yòng pèihé biérén de kǒuwèi hé shíjiān. Xiǎng ānjìng jiù ānjìng.", "Có thể ăn từ từ, cũng không cần phối hợp khẩu vị và thời gian của người khác. Muốn yên tĩnh thì yên tĩnh.", 34.418, 41.385],
+        ["你这么说，好像也有道理。以前我总觉得吃饭一定要有人陪。", "Nǐ zhème shuō, hǎoxiàng yě yǒu dàolǐ. Yǐqián wǒ zǒng juéde chīfàn yídìng yào yǒu rén péi.", "Bạn nói vậy hình như cũng có lý. Trước đây tôi luôn nghĩ ăn cơm nhất định phải có người đi cùng.", 41.385, 46.143],
+        ["很多人害怕的不是一个人吃饭，而是害怕别人觉得自己孤单。", "Hěn duō rén hàipà de bú shì yí ge rén chīfàn, ér shì hàipà biérén juéde zìjǐ gūdān.", "Nhiều người sợ không phải là ăn một mình, mà là sợ người khác nghĩ mình cô đơn.", 46.143, 51.853],
+        ["对，我就是这样。我很在意别人的眼光。", "Duì, wǒ jiù shì zhèyàng. Wǒ hěn zàiyì biérén de yǎnguāng.", "Đúng, tôi chính là như vậy. Tôi rất để ý ánh nhìn của người khác.", 51.853, 55.427],
+        ["但生活是自己的。你不可能每一顿饭都为了别人怎么看而吃。", "Dàn shēnghuó shì zìjǐ de. Nǐ bù kěnéng měi yí dùn fàn dōu wèile biérén zěnme kàn ér chī.", "Nhưng cuộc sống là của mình. Bạn không thể mỗi bữa ăn đều vì người khác nhìn thế nào mà ăn.", 55.427, 61.243],
+        ["那以后我应该练习一个人吃饭吗？", "Nà yǐhòu wǒ yīnggāi liànxí yí ge rén chīfàn ma?", "Vậy sau này tôi nên luyện ăn một mình không?", 61.243, 64.376],
+        ["可以。从简单的开始，比如一个人去咖啡店、一个人吃午饭。", "Kě yǐ. Cóng jiǎndān de kāishǐ, bǐrú yí ge rén qù kāfēi diàn, yí ge rén chī wǔfàn.", "Có thể. Bắt đầu từ việc đơn giản, ví dụ một mình đi quán cà phê, một mình ăn trưa.", 64.376, 70.039],
+        ["也许学会一个人吃饭，也是学会不那么依赖别人。", "Yěxǔ xuéhuì yí ge rén chīfàn, yě shì xuéhuì bú nàme yīlài biérén.", "Có lẽ học cách ăn một mình cũng là học cách không phụ thuộc người khác nhiều như vậy.", 70.039, 74.391]
     ]),
     keywords: makeKeywords([
-      ["妈", "ma1", "mẹ"],
-      ["麻", "ma2", "tê"],
-      ["马", "ma3", "ngựa"],
-      ["骂", "ma4", "mắng"],
+        ["火锅", "huǒguō", "Lẩu"],
+        ["尴尬", "gāngà", "Ngại, lúng túng"],
+        ["正常", "zhèngcháng", "Bình thường"],
+        ["好像", "hǎoxiàng", "Hình như, giống như"],
+        ["注意", "zhùyì", "Chú ý"],
+        ["说说笑笑", "shuōshuō xiàoxiào", "Vừa nói vừa cười"],
+        ["可怜", "kělián", "Đáng thương"],
+        ["舒服", "shūfu", "Dễ chịu, thoải mái"],
+        ["配合", "pèihé", "Phối hợp"],
+        ["口味", "kǒuwèi", "Khẩu vị"],
+        ["陪", "péi", "Ở cùng, đi cùng"],
+        ["在意", "zàiyì", "Để ý, bận tâm"],
+        ["眼光", "yǎnguāng", "Ánh nhìn, cách nhìn"],
+        ["练习", "liànxí", "Luyện tập"],
+        ["依赖", "yīlài", "Phụ thuộc"]
     ]),
     is_free: true,
     is_member_only: false,
-    member_cta: "继续练习声调辨音，听得更准。",
-    created_at: "2026-06-16",
-    progress: 60,
+    member_cta: "继续练习每日听力。",
+    created_at: "2026-07-03",
+    progress: 0,
   }),
   buildItem({
     id: "ep-003",
@@ -701,6 +742,7 @@ const listeningEpisodes = [
     progress: 50,
   }),
 ];
+
 function oldContentToListeningEpisode(content, index = 0) {
   return {
     id: `monologue-${content.id}`,
@@ -732,6 +774,44 @@ function oldContentToListeningEpisode(content, index = 0) {
   };
 }
 
+function repairUtf8MojibakeText(value) {
+  const text = String(value || "");
+  if (!/[\u00C0-\u00FF\u0100-\u017F\u0192\u02C6\u02DC\u2013-\u201E\u2020-\u2026\u2030\u2039-\u203A\u20AC\u2122]/.test(text)) return value;
+  const cp1252 = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
+    0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
+    0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
+    0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
+    0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F,
+  };
+  try {
+    const bytes = Uint8Array.from(Array.from(text, (char) => {
+      const code = char.codePointAt(0) || 0;
+      return cp1252[code] ?? (code <= 255 ? code : 0x3F);
+    }));
+    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return repaired.includes("\uFFFD") ? value : repaired;
+  } catch {
+    return value;
+  }
+}
+
+function repairListeningTextFields(value) {
+  if (typeof value === "string") return repairUtf8MojibakeText(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      value[index] = repairListeningTextFields(item);
+    });
+    return value;
+  }
+  if (value && typeof value === "object") {
+    Object.keys(value).forEach((key) => {
+      value[key] = repairListeningTextFields(value[key]);
+    });
+  }
+  return value;
+}
+
 if (typeof listeningContentMap !== "undefined") {
   Object.values(listeningContentMap).forEach((content, index) => {
     const episode = oldContentToListeningEpisode(content, index);
@@ -743,13 +823,39 @@ if (typeof listeningContentMap !== "undefined") {
   });
 }
 
-function getMonologueListeningEpisodes() {
-  return listeningEpisodes.filter((episode) =>
-    String(episode.id || "").startsWith("monologue-")
-  );
-}
+listeningEpisodes.forEach(repairListeningTextFields);
+
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
+}
+
+function listeningEpisodeText(episode = {}) {
+  return [
+    episode.id,
+    episode.type,
+    episode.kind,
+    episode.format,
+    episode.category,
+    episode.categoryZh,
+    episode.title,
+    episode.titleZh,
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function getConversationListeningEpisodes() {
+  const episodes = listeningEpisodes.filter((episode) => {
+    const text = listeningEpisodeText(episode);
+    return /dialogue|conversation|对话|会话|hội thoại|doi thoai|đối thoại/.test(text);
+  });
+  return episodes.length > 0 ? episodes : listeningEpisodes;
+}
+
+function getMonologueListeningEpisodes() {
+  const episodes = listeningEpisodes.filter((episode) => {
+    const text = listeningEpisodeText(episode);
+    return /monologue|solo|独白|短文|演讲|độc thoại|doc thoai|bài ngắn|bai ngan|diễn thuyết|dien thuyet/.test(text);
+  });
+  return episodes.length > 0 ? episodes : listeningEpisodes;
 }
 
 const hskContentTypes = [
@@ -1921,7 +2027,10 @@ async function apiRequest(path, options = {}) {
     const message = data.error
       || (Array.isArray(data.message) ? data.message[0] : data.message)
       || "Không thể kết nối server.";
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.code = data.code || "";
+    throw error;
   }
   return data;
 }
@@ -2131,8 +2240,19 @@ function hasPremiumAccess() {
   return isActivePremiumUser(state.user);
 }
 
+function shouldUseLocalContentLockFallback() {
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  const errorText = String(state.contentLocksError || "");
+  return isLocalHost && state.contentLocksFailed === true && (
+    /DATABASE_URL/i.test(errorText) ||
+    /Backend/i.test(errorText) ||
+    errorText === backendDisabledMessage()
+  );
+}
+
 function areContentLocksTrusted() {
-  return state.contentLocksReady === true && state.contentLocksFailed !== true;
+  return state.contentLocksReady === true && state.contentLocksFailed !== true || shouldUseLocalContentLockFallback();
 }
 
 function getHskLessonFreeItemLimit(lessonId) {
@@ -6080,6 +6200,9 @@ function getListeningLevelInfo(levelId = state.listeningLevelId) {
 
 function getListeningLevelLessons(levelId = state.listeningLevelId) {
   const isMonologue = String(levelId).startsWith("monologue");
+  const isSelectedTopicContent = state.listeningLessonsBackTarget === "dashboard"
+    && Boolean(state.listeningSelectedTopicTitleVi || state.listeningSelectedTopicTitleZh);
+  const usesContentLabel = isMonologue || isSelectedTopicContent;
   const monologues = typeof getMonologueListeningEpisodes === "function" ? getMonologueListeningEpisodes() : [];
   const source = isMonologue && monologues.length ? monologues : listeningEpisodes;
 
@@ -6097,14 +6220,81 @@ function getListeningLevelLessons(levelId = state.listeningLevelId) {
 
   return Array.from({ length: 5 }, (_, index) => {
     const episode = source[(start + index) % source.length] || listeningEpisodes[0];
+    const labelPrefixVi = usesContentLabel ? "Nội dung" : "Chủ đề";
+    const labelPrefixZh = usesContentLabel ? "内容" : "主题";
 
     return {
       no: index + 1,
       episodeId: episode.id,
-      title: `Chủ đề ${index + 1}`,
-      zh: `主题 ${index + 1}`,
+      title: `${labelPrefixVi} ${index + 1}`,
+      zh: `${labelPrefixZh} ${index + 1}`,
+      kind: usesContentLabel ? "content" : "topic",
     };
   });
+}
+
+function renderListeningLevelLessons(options = {}) {
+  const isVi = state.lang === "vi";
+  const { category, level } = getListeningLevelInfo();
+  const lessons = getListeningLevelLessons(level.id);
+  const isMonologueLevel = String(level.id).startsWith("monologue");
+  const selectedTopicTitle = isVi ? state.listeningSelectedTopicTitleVi : state.listeningSelectedTopicTitleZh;
+  const isSelectedTopicContent = state.listeningLessonsBackTarget === "dashboard" && Boolean(selectedTopicTitle);
+  const levelTitle = state.listeningLessonsBackTarget === "dashboard" && selectedTopicTitle
+    ? selectedTopicTitle
+    : (isVi ? level.vi : level.zh);
+  const categoryTitle = isVi ? category.vi : category.zh;
+  const lessonCountLabel = isMonologueLevel || isSelectedTopicContent
+    ? (isVi ? "nội dung nghe" : "个听力内容")
+    : (isVi ? "chủ đề nghe" : "个听力主题");
+  const backLabel = state.listeningLessonsBackTarget === "dashboard"
+    ? (isVi ? "Quay lại chủ đề" : "返回主题")
+    : (isVi ? "Quay lại cấp độ" : "返回等级");
+
+  const lessonRowsHTML = lessons.map((lesson) => {
+    const episode = getListeningEpisode(lesson.episodeId);
+    const durationMinutes = Math.max(1, Math.ceil((episode.duration || 60) / 60));
+    const title = isVi ? lesson.title : lesson.zh;
+    const episodeTitle = isVi ? episode.title : episode.titleZh;
+    const waveHeights = [18, 28, 14, 32, 22, 30, 16, 26];
+    const waveHTML = waveHeights.map((height, waveIndex) => (
+      `<i style="--h:${height}px;--d:${(waveIndex * 0.08).toFixed(2)}s"></i>`
+    )).join("");
+
+    return `
+      <button
+        class="listening-lesson-row"
+        type="button"
+        data-listening-topic-open="${escapeAttr(lesson.episodeId)}"
+        data-listening-row-kind="${escapeAttr(lesson.kind || "content")}"
+        data-listening-topic-title-vi="${escapeAttr(lesson.title)}"
+        data-listening-topic-title-zh="${escapeAttr(lesson.zh)}"
+        title="${escapeAttr(episodeTitle)}"
+        aria-label="${escapeAttr(`${title}: ${episodeTitle}`)}"
+      >
+        <span class="listening-lesson-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <strong>${escapeHtml(title)}</strong>
+        <span class="listening-lesson-wave" aria-hidden="true">${waveHTML}</span>
+        <em>${durationMinutes} ${isVi ? "phút" : "分钟"}</em>
+      </button>
+    `;
+  }).join("");
+
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-lessons-screen">
+      <header class="listening-lessons-hero">
+        <button class="listening-lessons-back" type="button" data-listening-level-back aria-label="${escapeAttr(backLabel)}">‹</button>
+        <h1>${escapeHtml(levelTitle)}</h1>
+        <p>${escapeHtml(categoryTitle)} · ${lessons.length} ${lessonCountLabel}</p>
+      </header>
+
+      <div class="listening-lessons-list">
+        ${lessonRowsHTML}
+      </div>
+    </section>
+  `, "app-desktop-shell--listening", "listening", options);
 }
 
 function openListeningLevel(levelId) {
@@ -6112,14 +6302,11 @@ function openListeningLevel(levelId) {
   state.listeningSeedEpisodeId = "";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
-
-  if (String(state.listeningLevelId).startsWith("dialogue")) {
-    state.listeningLessonsBackTarget = "dashboard";
-    state.listeningView = "dashboard";
-  } else {
-    state.listeningLessonsBackTarget = "levels";
-    state.listeningView = "lessons";
-  }
+  state.listeningSeedEpisodeId = "";
+  state.listeningLessonsBackTarget = "levels";
+  state.listeningSelectedTopicTitleVi = "";
+  state.listeningSelectedTopicTitleZh = "";
+  state.listeningView = "lessons";
 
   renderListening();
 }
@@ -6144,7 +6331,7 @@ function renderListening(options = {}) {
     renderListeningDetail(options);
     return;
   }
-  renderListeningDashboard();
+  renderListeningLevelGateway(options);
 }
 
 function renderListeningDashboard() {
@@ -6164,8 +6351,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "HSK Listening",
-      titleZh: "HSK 听力",
+      titleVi: "Chủ đề 2",
+      titleZh: "主题 2",
       levelVi: "Trung cấp",
       levelZh: "中级",
       openId: "ep-002",
@@ -6177,8 +6364,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "Phát âm",
-      titleZh: "发音",
+      titleVi: "Chủ đề 3",
+      titleZh: "主题 3",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-003",
@@ -6190,8 +6377,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Du lịch",
-      titleZh: "旅行",
+      titleVi: "Chủ đề 4",
+      titleZh: "主题 4",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-004",
@@ -6203,8 +6390,8 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
-      titleVi: "Mua sắm",
-      titleZh: "购物",
+      titleVi: "Chủ đề 5",
+      titleZh: "主题 5",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-004",
@@ -6216,8 +6403,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Công việc",
-      titleZh: "工作",
+      titleVi: "Chủ đề 6",
+      titleZh: "主题 6",
       levelVi: "Trung cấp",
       levelZh: "中级",
       openId: "ep-001",
@@ -6229,8 +6416,8 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
-      titleVi: "Ẩm thực",
-      titleZh: "美食",
+      titleVi: "Chủ đề 7",
+      titleZh: "主题 7",
       levelVi: "Sơ cấp",
       levelZh: "初级",
       openId: "ep-003",
@@ -6270,7 +6457,13 @@ function renderListeningDashboard() {
   const allTopicCards = [...topicCards, ...monologueCards];
 
 const cardsHTML = allTopicCards.map((topic) => `
-    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-topic-list="${escapeAttr(topic.openId)}">
+    <button
+      class="listening-topic-card listening-topic-card--${topic.tone}"
+      type="button"
+      data-listening-open="${escapeAttr(topic.openId)}"
+      data-listening-topic-title-vi="${escapeAttr(topic.titleVi)}"
+      data-listening-topic-title-zh="${escapeAttr(topic.titleZh)}"
+    >
       <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
       ${topicIconHTML(topic.icon)}
       <span class="listening-topic-chip">${escapeHtml(isVi ? topic.levelVi : topic.levelZh)}</span>
@@ -6681,6 +6874,7 @@ let listeningRepeatTranscript = "";
 let listeningRepeatInterim = "";
 let listeningRepeatScoringDone = false;
 let listeningRepeatScoreTimer = null;
+let listeningRepeatRecognitionAvailable = false;
 let listeningPlaybackRequested = false;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
@@ -6871,6 +7065,18 @@ function renderListeningPronunciationScore(spokenText = getListeningRepeatText()
 
   const result = compareListeningPronunciation(sentence.chinese || "", spokenText);
   const hasSpokenText = Boolean(normalizeHanzi(spokenText));
+  if (!hasSpokenText && !listeningRepeatRecognitionAvailable) {
+    panel.classList.remove("has-score");
+    panel.innerHTML = `<span>${state.lang === "vi"
+      ? "Chưa chấm được bằng trình duyệt này. Hãy mở bằng Chrome hoặc Edge trên localhost/HTTPS, cho phép micro, rồi ghi âm lại."
+      : "当前浏览器暂时无法评分。请使用 Chrome 或 Edge 并允许麦克风后再试。"
+    }</span>`;
+    setListeningRepeatInput(state.lang === "vi"
+      ? "Trình duyệt chưa hỗ trợ nhận dạng giọng nói để chấm điểm."
+      : "当前浏览器不支持语音识别评分。");
+    setListeningRepeatScorePreview(null);
+    return;
+  }
   const scoreClass = result.score >= 85 ? "good" : result.score >= 60 ? "ok" : "low";
   const markedTarget = result.targetChars.map((char, index) => (
     `<b class="${result.matched.has(index) ? "correct" : "wrong"}">${escapeHtml(char)}</b>`
@@ -6911,7 +7117,7 @@ function renderSpecializedPronunciationScore(result) {
       <strong>${score}</strong><span></span>
     </div>
     <div class="listening-pronunciation-lines">
-      <p class="listening-pronunciation-provider"><span>Azure Speech</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
+      <p class="listening-pronunciation-provider"><span>${escapeHtml(result.provider || "Speech")}</span>${metric("Accuracy", result.accuracyScore)}${metric("Tone", result.toneScore)}${metric("Intonation", result.intonationScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
       <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
       <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
     </div>
@@ -7015,6 +7221,7 @@ async function assessListeningPronunciationWithProvider(blob) {
     method: "POST",
     body: JSON.stringify({
       referenceText: sentence.chinese || "",
+      pinyin: sentence.pinyin || "",
       audioBase64,
       mimeType,
     }),
@@ -7032,9 +7239,21 @@ async function scoreListeningRepeatRecording() {
     renderSpecializedPronunciationScore(result);
   } catch (error) {
     console.warn("Specialized pronunciation assessment failed; falling back to browser scoring.", error);
-    showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    if (!isListeningPronunciationApiUnavailableError(error)) {
+      showToast(error.message || (state.lang === "vi" ? "Chưa chấm được bằng engine chuyên dụng." : "专业评分暂不可用。"));
+    }
     renderListeningPronunciationScore();
   }
+}
+
+function isListeningPronunciationApiUnavailableError(error) {
+  const message = String(error?.message || "");
+  const code = String(error?.code || "");
+  const status = Number(error?.status || 0);
+  return status === 404
+    || status === 503
+    || code === "speech_not_configured"
+    || /pronunciation assessment.*cau hinh|chưa được cấu hình|chua duoc cau hinh|không thể kết nối server|failed to fetch|load failed/i.test(message);
 }
 
 function stopListeningRepeatRecognition() {
@@ -7051,6 +7270,7 @@ function startListeningRepeatRecognition() {
   listeningRepeatTranscript = "";
   listeningRepeatInterim = "";
   listeningRepeatScoringDone = false;
+  listeningRepeatRecognitionAvailable = Boolean(Recognition);
 
   if (!Recognition) {
     clearListeningPronunciationResult(state.lang === "vi"
@@ -7428,8 +7648,15 @@ function setListeningRepeatLessonSentence(index) {
 
 function renderListeningLevelLessons(options = {}) {
   const isVi = state.lang === "vi";
-  const { level } = getListeningLevelInfo(state.listeningLevelId);
+  const { category, level } = getListeningLevelInfo(state.listeningLevelId);
   const lessons = getListeningLevelLessons(state.listeningLevelId);
+  const selectedTopicTitle = isVi ? state.listeningSelectedTopicTitleVi : state.listeningSelectedTopicTitleZh;
+  const isSelectedTopicContent = state.listeningLessonsBackTarget === "dashboard" && Boolean(selectedTopicTitle);
+  const isMonologueLevel = String(state.listeningLevelId).startsWith("monologue");
+  const heroTitle = isSelectedTopicContent ? selectedTopicTitle : (isVi ? level.vi : level.zh);
+  const subtitle = isSelectedTopicContent || isMonologueLevel
+    ? `${escapeHtml(isVi ? category.vi : category.zh)} · ${lessons.length} ${isVi ? "nội dung nghe" : "个听力内容"}`
+    : (isVi ? "Chọn chủ đề để bắt đầu luyện nghe" : "选择主题开始听力练习");
 
   const rowsHTML = lessons.map((lesson) => {
     const bars = Array.from({ length: 16 }, () => {
@@ -7439,7 +7666,14 @@ function renderListeningLevelLessons(options = {}) {
     }).join("");
 
     return `
-      <button class="listening-lesson-row" type="button" data-listening-topic-open="${escapeAttr(lesson.episodeId)}">
+      <button
+        class="listening-lesson-row"
+        type="button"
+        data-listening-topic-open="${escapeAttr(lesson.episodeId)}"
+        data-listening-row-kind="${escapeAttr(lesson.kind || "content")}"
+        data-listening-topic-title-vi="${escapeAttr(lesson.title)}"
+        data-listening-topic-title-zh="${escapeAttr(lesson.zh)}"
+      >
         <span class="listening-lesson-play">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         </span>
@@ -7454,8 +7688,8 @@ function renderListeningLevelLessons(options = {}) {
     <section class="listening-lessons-screen">
       <div class="listening-lessons-hero">
         <button class="listening-lessons-back" type="button" data-listening-level-back aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
-        <h1>${escapeHtml(isVi ? level.vi : level.zh)}</h1>
-        <p>${isVi ? "Chọn chủ đề để bắt đầu luyện nghe" : "选择主题开始听力练习"}</p>
+        <h1>${escapeHtml(heroTitle)}</h1>
+        <p>${subtitle}</p>
       </div>
       <div class="listening-lessons-list">
         ${rowsHTML}
@@ -9956,6 +10190,8 @@ if (listeningTopicListBtn) {
   event.preventDefault();
 
   state.listeningSeedEpisodeId = listeningTopicListBtn.dataset.listeningTopicList;
+  state.listeningSelectedTopicTitleVi = listeningTopicListBtn.dataset.listeningTopicTitleVi || "";
+  state.listeningSelectedTopicTitleZh = listeningTopicListBtn.dataset.listeningTopicTitleZh || "";
   state.listeningLessonsBackTarget = "dashboard";
   state.listeningView = "lessons";
   state.listeningSentenceIndex = 0;
@@ -9971,6 +10207,18 @@ if (listeningTopicListBtn) {
       const listeningTopicOpenBtn = event.target.closest("[data-listening-topic-open]");
 if (listeningTopicOpenBtn) {
   event.preventDefault();
+
+  if (state.listeningView === "lessons" && listeningTopicOpenBtn.dataset.listeningRowKind === "topic") {
+    state.listeningSeedEpisodeId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
+    state.listeningSelectedTopicTitleVi = listeningTopicOpenBtn.dataset.listeningTopicTitleVi || "";
+    state.listeningSelectedTopicTitleZh = listeningTopicOpenBtn.dataset.listeningTopicTitleZh || "";
+    state.listeningLessonsBackTarget = "dashboard";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return;
+  }
+
   state.listeningEpisodeId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
   state.listeningBackTarget = "lessons";
   state.listeningView = "detail";
@@ -9980,9 +10228,11 @@ if (listeningTopicOpenBtn) {
 }
 
 if (event.target.closest("[data-listening-level-back]")) {
-  state.listeningView = state.listeningLessonsBackTarget || "levels";
+  state.listeningView = "levels";
   state.listeningLessonsBackTarget = "levels";
   state.listeningSeedEpisodeId = "";
+  state.listeningSelectedTopicTitleVi = "";
+  state.listeningSelectedTopicTitleZh = "";
   renderListening();
   return;
 }
@@ -9992,6 +10242,8 @@ if (listeningOpenBtn) {
 
   if (state.listeningView === "dashboard" && listeningOpenBtn.closest(".listening-topic-card")) {
     state.listeningSeedEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+    state.listeningSelectedTopicTitleVi = listeningOpenBtn.dataset.listeningTopicTitleVi || "";
+    state.listeningSelectedTopicTitleZh = listeningOpenBtn.dataset.listeningTopicTitleZh || "";
     state.listeningLessonsBackTarget = "dashboard";
     state.listeningView = "lessons";
     state.listeningSentenceIndex = 0;
@@ -11376,6 +11628,49 @@ function renderAll() {
   if (state.screen === "account") renderAccount();
 }
 
+function applyRouteFromLocation() {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const listeningDetailMatch = pathname.match(/^\/listening-app\/listening\/(ep-\d{3})$/);
+
+  if (listeningDetailMatch) {
+    const episodeId = listeningDetailMatch[1];
+    const episodeExists = listeningEpisodes.some((episode) => episode.id === episodeId);
+    if (!episodeExists) return false;
+
+    state.screen = "listening";
+    state.listeningView = "detail";
+    state.listeningEpisodeId = episodeId;
+    state.listeningBackTarget = "levels";
+    state.listeningSeedEpisodeId = "";
+    state.listeningLessonsBackTarget = "levels";
+    state.listeningSelectedTopicTitleVi = "";
+    state.listeningSelectedTopicTitleZh = "";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return true;
+  }
+
+  const isListeningRoute =
+    pathname === "/listening-app" ||
+    pathname === "/listening-app/listening";
+
+  if (isListeningRoute) {
+    state.screen = "listening";
+    state.listeningView = "levels";
+    state.listeningSeedEpisodeId = "";
+    state.listeningLessonsBackTarget = "levels";
+    state.listeningSelectedTopicTitleVi = "";
+    state.listeningSelectedTopicTitleZh = "";
+    state.listeningSentenceIndex = 0;
+    state.listeningVocabPracticeIndex = 0;
+    renderListening();
+    return true;
+  }
+
+  return false;
+}
+
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
@@ -11391,6 +11686,8 @@ function init() {
       if (isAdminUser()) {
         loadAdminUsers();
       }
+    } else if (applyRouteFromLocation()) {
+      return;
     } else {
       const restored = restorePersistedRoute();
       if (!restored) {

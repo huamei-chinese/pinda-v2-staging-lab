@@ -5,6 +5,8 @@ const test = require("node:test");
 
 require("ts-node/register/transpile-only");
 
+const { HttpStatus } = require("@nestjs/common");
+const { DatabaseService } = require("../src/database/database.service");
 const { PaymentPlansService } = require("../src/payment/payment-plans.service");
 const { ContentService } = require("../src/content/content.service");
 
@@ -64,6 +66,19 @@ test(".env.example uses the Node entry port and contains only placeholder SePay 
   assert.match(envExample, /SEPAY_PAYMENT_PREFIX=HUAMEI/);
   assert.match(envExample, /DATABASE_URL=postgresql:\/\/user:password@host:5432\/database\?sslmode=require/);
   assert.doesNotMatch(envExample, /SEPAY_WEBHOOK_API_KEY=(?!your_sepay_webhook_api_key)\S+/);
+});
+
+test("database routes fail as service unavailable when DATABASE_URL is missing", async () => {
+  const db = new DatabaseService();
+
+  await assert.rejects(
+    () => db.query("SELECT 1"),
+    (error) => {
+      assert.equal(error.getStatus(), HttpStatus.SERVICE_UNAVAILABLE);
+      assert.match(JSON.stringify(error.getResponse()), /DATABASE_URL/);
+      return true;
+    },
+  );
 });
 
 test("public HSK lock rules are cached between reads to avoid repeated cold queries", async () => {

@@ -5,9 +5,14 @@ import { pinyin } from "pinyin-pro";
 const root = process.cwd();
 const outputDir = path.join(root, "content", "high_frequency_chinese");
 const localSourcePath = path.join(outputDir, "high_frequency_topics.json");
-const desktopSourcePath = "C:/Users/huame/OneDrive/Desktop/22222/high_frequency_topics.json";
-const sourcePath = process.env.HIGH_FREQUENCY_SOURCE || (fs.existsSync(desktopSourcePath) ? desktopSourcePath : localSourcePath);
+const sourcePath = process.env.HIGH_FREQUENCY_SOURCE || localSourcePath;
 const lessonOutput = path.join(root, "public", "lesson-high-frequency-topics.js");
+
+function writeTextPreservingEol(filePath, text) {
+  const existing = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+  const eol = existing.includes("\r\n") ? "\r\n" : "\n";
+  fs.writeFileSync(filePath, text.replace(/\r?\n/g, eol), "utf8");
+}
 
 const colors = [
   "#58cc02",
@@ -375,6 +380,7 @@ function convertTopic(topic, index) {
 }
 
 function writeBrowserPack(topics) {
+  const browserData = JSON.stringify({ source: "high_frequency_topics.json", topics }, null, 2).replace(/\n/g, "\n  ");
   const body = `(function (root, factory) {
   const data = factory();
   if (typeof module === "object" && module.exports) {
@@ -382,19 +388,20 @@ function writeBrowserPack(topics) {
   }
   root.highFrequencyTopics = data.topics;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  return ${JSON.stringify({ source: "high_frequency_topics.json", topics }, null, 2)};
+  return ${browserData};
 });
 `;
-  fs.writeFileSync(lessonOutput, body, "utf8");
+  writeTextPreservingEol(lessonOutput, body);
 }
 
 function writeDocs(sourceTopics, convertedTopics, issueMap) {
   fs.mkdirSync(outputDir, { recursive: true });
-  fs.writeFileSync(path.join(outputDir, "high_frequency_topics.json"), JSON.stringify(sourceTopics, null, 2), "utf8");
+  writeTextPreservingEol(path.join(outputDir, "high_frequency_topics.json"), JSON.stringify(sourceTopics, null, 2));
+  const sourceLabel = path.relative(root, sourcePath).replace(/\\/g, "/");
   const md = [
     "# 高频汉语主题模块",
     "",
-    `素材来源：${sourcePath}`,
+    `素材来源：${sourceLabel}`,
     "",
     "| 主题 | 越南语 | 等级 | 生词 | 短语 | 句子 |",
     "| --- | --- | --- | ---: | ---: | ---: |",
@@ -404,7 +411,7 @@ function writeDocs(sourceTopics, convertedTopics, issueMap) {
     }),
     "",
   ].join("\n");
-  fs.writeFileSync(path.join(outputDir, "high_frequency_topics.md"), md, "utf8");
+  writeTextPreservingEol(path.join(outputDir, "high_frequency_topics.md"), md);
 
   const issueLines = Object.entries(issueMap).flatMap(([topicId, issues]) =>
     issues.length ? [`## ${topicId}`, "", ...issues.map((issue) => `- ${issue}`), ""] : [],
@@ -419,7 +426,7 @@ function writeDocs(sourceTopics, convertedTopics, issueMap) {
     issueLines.length ? issueLines.join("\n") : "未发现结构性问题。内容按素材原文接入，未做扩写或改写。",
     "",
   ].join("\n");
-  fs.writeFileSync(path.join(outputDir, "review_report.md"), report, "utf8");
+  writeTextPreservingEol(path.join(outputDir, "review_report.md"), report);
 }
 
 const sourceTopics = JSON.parse(fs.readFileSync(sourcePath, "utf8"));

@@ -429,7 +429,7 @@
           {
             "stage": "phrase",
             "vi": "tên là gì",
-            "hanzi": "叫什么名字",
+            "hanzi": "叫什么",
             "words": [
               {
                 "text": "叫",
@@ -439,9 +439,9 @@
                 "vi": "tên là"
               },
               {
-                "text": "什么名字",
-                "pinyin": "shen me ming zi",
-                "tone": "shén me míngzi",
+                "text": "什么",
+                "pinyin": "shen me",
+                "tone": "shén me",
                 "pos": "pron",
                 "vi": "gì"
               }
@@ -1023,14 +1023,14 @@
           {
             "stage": "sentence",
             "vi": "Mình có thể kết bạn WeChat với bạn không?",
-            "hanzi": "我可以加你的微信吗？",
+            "hanzi": "可以加你的微信吗？",
             "words": [
               {
-                "text": "我可以",
-                "pinyin": "wo ke yi",
-                "tone": "wǒ kě yǐ",
+                "text": "可以",
+                "pinyin": "ke yi",
+                "tone": "kě yǐ",
                 "pos": "verb",
-                "vi": "Tôi có thể"
+                "vi": "có thể"
               },
               {
                 "text": "加",
@@ -1062,8 +1062,8 @@
               }
             ],
             "source": "high-frequency-source:greeting_introduction",
-            "pinyin": "wo ke yi jia ni de wei xin ma ？",
-            "tone": "Wǒ kěyǐ jiā nǐ de Wēixìn ma?"
+            "pinyin": "ke yi jia ni de wei xin ma ？",
+            "tone": "Kěyǐ jiā nǐ de Wēixìn ma?"
           }
         ]
       },
@@ -1823,15 +1823,15 @@
           },
           {
             "stage": "phrase",
-            "vi": "chuẩn bị phỏng vấn",
-            "hanzi": "准备面试",
+            "vi": "đậu phỏng vấn",
+            "hanzi": "通过面试",
             "words": [
               {
-                "text": "准备",
-                "pinyin": "zhun bei",
-                "tone": "zhǔnbèi",
+                "text": "通过",
+                "pinyin": "tong guo",
+                "tone": "tōngguò",
                 "pos": "verb",
-                "vi": "chuẩn bị"
+                "vi": "được thông qua, vượt qua"
               },
               {
                 "text": "面试",
@@ -1842,8 +1842,8 @@
               }
             ],
             "source": "high-frequency-source:job_interview",
-            "pinyin": "zhun bei mian shi",
-            "tone": "zhǔnbèi miànshì"
+            "pinyin": "tong guo mian shi",
+            "tone": "tōngguò miànshì"
           },
           {
             "stage": "phrase",
@@ -4216,8 +4216,8 @@
               },
               {
                 "text": "了",
-                "pinyin": "le",
-                "tone": "le",
+                "pinyin": "liao",
+                "tone": "liǎo",
                 "pos": "particle",
                 "vi": "rồi"
               },
@@ -9919,7 +9919,7 @@
           {
             "stage": "sentence",
             "vi": "Khách hàng này do ai phụ trách?",
-            "hanzi": "这个客户有谁负责？",
+            "hanzi": "这个客户由谁负责？",
             "words": [
               {
                 "text": "这个客户",
@@ -9929,9 +9929,9 @@
                 "vi": "khách hàng này"
               },
               {
-                "text": "有谁",
-                "pinyin": "yǒu shéi",
-                "tone": "yǒu shéi",
+                "text": "由谁",
+                "pinyin": "you shui",
+                "tone": "yóu shuí",
                 "pos": "pron",
                 "vi": "do ai"
               },
@@ -12345,7 +12345,7 @@
           },
           {
             "stage": "word",
-            "vi": "hẹn hò, hẹn gặp",
+            "vi": "hẹn hò",
             "hanzi": "约会",
             "words": [
               {
@@ -12353,7 +12353,7 @@
                 "pinyin": "yue hui",
                 "tone": "yuēhuì",
                 "pos": "verb",
-                "vi": "hẹn hò, hẹn gặp"
+                "vi": "hẹn hò"
               }
             ],
             "source": "high-frequency-source:close_relationships",
@@ -13058,7 +13058,7 @@
           },
           {
             "stage": "phrase",
-            "vi": "ở bên người nhà/ gia đình",
+            "vi": "ở bên gia đình",
             "hanzi": "陪伴家人",
             "words": [
               {
@@ -13073,7 +13073,7 @@
                 "pinyin": "jia ren",
                 "tone": "jiā rén",
                 "pos": "noun",
-                "vi": "người nhà"
+                "vi": "家人"
               }
             ],
             "source": "high-frequency-source:close_relationships",
@@ -13379,18 +13379,18 @@
             "hanzi": "两个人在一起，最重要的是互相信任。",
             "words": [
               {
-                "text": "两个人",
-                "pinyin": "liang ge ren",
-                "tone": "liǎng gè rén",
+                "text": "两个人在",
+                "pinyin": "liang ge ren zai",
+                "tone": "liǎng gè rén zài",
                 "pos": "noun",
-                "vi": "两个人"
+                "vi": "两个人在"
               },
               {
-                "text": "在一起",
-                "pinyin": "zai yi qi",
-                "tone": "zài yì qǐ",
+                "text": "一起",
+                "pinyin": "yi qi",
+                "tone": "yì qǐ",
                 "pos": "adv",
-                "vi": "ở cùng nhau"
+                "vi": "cùng nhau"
               },
               {
                 "text": "最重要的是",

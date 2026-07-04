@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HuaMei - Typing drill</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f6f8fb;
+      color: #0f1f3d;
+      font-family: Inter, "Segoe UI", "Noto Sans", Arial, sans-serif;
+    }
+
+    .typing-shell {
+      min-height: 100vh;
+      padding: 18px 18px 92px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .back-link,
+    .chip,
+    .bottom-nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-link {
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid #d9e2ef;
+      border-radius: 10px;
+      background: #fff;
+      color: #21446f;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .chip {
+      min-height: 30px;
+      padding: 0 12px;
+      border-radius: 999px;
+      color: #0b7a3d;
+      background: #e8f8ef;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 27px;
+      line-height: 1.15;
+    }
+
+    .muted {
+      color: #637189;
+      line-height: 1.55;
+    }
+
+    .panel {
+      border: 1px solid #dce5f2;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(20, 50, 92, .06);
+    }
+
+    .prompt-panel {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .word {
+      font-size: 40px;
+      line-height: 1.1;
+      font-weight: 900;
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .pinyin {
+      color: #1768df;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .meaning {
+      color: #4d5f79;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .answer-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      color: #334967;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid #cad8ea;
+      border-radius: 12px;
+      padding: 0 14px;
+      color: #0f1f3d;
+      font: inherit;
+      outline: none;
+      background: #fbfdff;
+    }
+
+    input:focus {
+      border-color: #1768df;
+      box-shadow: 0 0 0 3px rgba(23, 104, 223, .12);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 46px;
+      border: 0;
+      border-radius: 12px;
+      color: #fff;
+      background: #1768df;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      border: 1px solid #cad8ea;
+      color: #21446f;
+      background: #fff;
+    }
+
+    .feedback {
+      min-height: 24px;
+      color: #0b7a3d;
+      font-weight: 900;
+    }
+
+    .progress-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .word-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .word-pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #eef4ff;
+      color: #245283;
+      font-weight: 800;
+    }
+
+    .word-pill.done {
+      color: #fff;
+      background: #159a55;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      min-height: 72px;
+      border-top: 1px solid #dce5f2;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+
+    .bottom-nav a {
+      min-width: 0;
+      flex-direction: column;
+      gap: 4px;
+      color: #52647e;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .bottom-nav a.active {
+      color: #1768df;
+    }
+
+    @media (min-width: 700px) {
+      .typing-shell {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body data-listening-typing-fallback>
+  <main class="typing-shell">
+    <div class="topline">
+      <a class="back-link" href="/listening-app/listening/ep-001">Back to listening</a>
+      <span class="chip">Local lab fallback</span>
+    </div>
+
+    <header>
+      <p class="muted">Daily listening typing drill</p>
+      <h1>Type the pinyin for today&apos;s keyword</h1>
+    </header>
+
+    <section class="panel prompt-panel" aria-live="polite">
+      <div>
+        <p class="muted" id="typing-step">Word 1 of 5</p>
+        <div class="word" id="typing-word">通过</div>
+        <div class="pinyin" id="typing-pinyin">tong guo</div>
+        <p class="meaning" id="typing-meaning">vượt qua</p>
+      </div>
+
+      <div class="answer-row">
+        <label for="typing-answer">Type pinyin without tone marks</label>
+        <input id="typing-answer" autocomplete="off" autocapitalize="none" spellcheck="false" data-answer="tong guo" />
+      </div>
+
+      <div class="actions">
+        <button type="button" id="check-answer">Check</button>
+        <button type="button" class="secondary" id="next-word">Next</button>
+      </div>
+      <p class="feedback" id="typing-feedback"></p>
+    </section>
+
+    <section class="panel progress-panel">
+      <h2>Practice queue</h2>
+      <div class="word-list" id="word-list"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Bottom navigation">
+    <a href="/listening-app">Home</a>
+    <a href="/listening-app/listening">Listening</a>
+    <a class="active" href="/listening-app/typing">Typing</a>
+    <a href="/listening-app/favorites">Mine</a>
+  </nav>
+
+  <script>
+    const episodeWordBank = {
+      "ep-001": [
+        { word: "通过", pinyin: "tong guo", meaning: "vượt qua" },
+        { word: "真实", pinyin: "zhen shi", meaning: "thật, thực tế" },
+        { word: "紧张", pinyin: "jin zhang", meaning: "căng thẳng" },
+        { word: "原因", pinyin: "yuan yin", meaning: "nguyên nhân" },
+        { word: "努力", pinyin: "nu li", meaning: "cố gắng" },
+        { word: "材料", pinyin: "cai liao", meaning: "tài liệu" },
+        { word: "省略", pinyin: "sheng lue", meaning: "lược bỏ" },
+        { word: "连读", pinyin: "lian du", meaning: "nối âm" },
+        { word: "表达", pinyin: "biao da", meaning: "cách diễn đạt" },
+      ],
+      "ep-002": [
+        { word: "老板", pinyin: "lao ban", meaning: "sếp" },
+        { word: "通常", pinyin: "tong chang", meaning: "thường" },
+        { word: "建议", pinyin: "jian yi", meaning: "đề nghị" },
+        { word: "方案", pinyin: "fang an", meaning: "phương án" },
+        { word: "成熟", pinyin: "cheng shu", meaning: "chín chắn" },
+        { word: "辛苦了", pinyin: "xin ku le", meaning: "vất vả rồi" },
+        { word: "提醒", pinyin: "ti xing", meaning: "nhắc nhở" },
+        { word: "跟进", pinyin: "gen jin", meaning: "theo dõi tiếp" },
+        { word: "顺利", pinyin: "shun li", meaning: "thuận lợi" },
+        { word: "汇报", pinyin: "hui bao", meaning: "báo cáo" },
+      ],
+      "ep-003": [
+        { word: "面试", pinyin: "mian shi", meaning: "phỏng vấn" },
+        { word: "介绍", pinyin: "jie shao", meaning: "giới thiệu" },
+        { word: "专业", pinyin: "zhuan ye", meaning: "chuyên ngành" },
+        { word: "相关", pinyin: "xiang guan", meaning: "liên quan" },
+        { word: "经历", pinyin: "jing li", meaning: "kinh nghiệm" },
+        { word: "说明", pinyin: "shuo ming", meaning: "giải thích" },
+        { word: "适合", pinyin: "shi he", meaning: "phù hợp" },
+        { word: "岗位", pinyin: "gang wei", meaning: "vị trí công việc" },
+        { word: "自然", pinyin: "zi ran", meaning: "tự nhiên" },
+        { word: "语速", pinyin: "yu su", meaning: "tốc độ nói" },
+      ],
+      "ep-004": [
+        { word: "最近", pinyin: "zui jin", meaning: "gần đây" },
+        { word: "加班", pinyin: "jia ban", meaning: "tăng ca" },
+        { word: "文化", pinyin: "wen hua", meaning: "văn hóa" },
+        { word: "热门", pinyin: "re men", meaning: "nóng, phổ biến" },
+        { word: "话题", pinyin: "hua ti", meaning: "chủ đề" },
+        { word: "平衡", pinyin: "ping heng", meaning: "cân bằng" },
+        { word: "节奏", pinyin: "jie zou", meaning: "nhịp độ" },
+        { word: "讨论", pinyin: "tao lun", meaning: "thảo luận" },
+      ],
+      "ep-005": [
+        { word: "地铁", pinyin: "di tie", meaning: "tàu điện ngầm" },
+        { word: "下车", pinyin: "xia che", meaning: "xuống xe" },
+        { word: "广场", pinyin: "guang chang", meaning: "quảng trường" },
+        { word: "应该", pinyin: "ying gai", meaning: "chắc là" },
+        { word: "差不多", pinyin: "cha bu duo", meaning: "gần như" },
+        { word: "换线", pinyin: "huan xian", meaning: "đổi tuyến" },
+        { word: "下班", pinyin: "xia ban", meaning: "tan làm" },
+        { word: "时间", pinyin: "shi jian", meaning: "thời gian" },
+      ],
+      "ep-006": [
+        { word: "有空", pinyin: "you kong", meaning: "rảnh" },
+        { word: "一起", pinyin: "yi qi", meaning: "cùng nhau" },
+        { word: "不过", pinyin: "bu guo", meaning: "nhưng mà" },
+        { word: "以后", pinyin: "yi hou", meaning: "sau đó" },
+        { word: "公司", pinyin: "gong si", meaning: "công ty" },
+        { word: "楼下", pinyin: "lou xia", meaning: "dưới lầu" },
+        { word: "清淡", pinyin: "qing dan", meaning: "thanh đạm" },
+        { word: "见", pinyin: "jian", meaning: "gặp" },
+      ],
+      "ep-007": [
+        { word: "文件", pinyin: "wen jian", meaning: "tài liệu" },
+        { word: "数据", pinyin: "shu ju", meaning: "dữ liệu" },
+        { word: "需要", pinyin: "xu yao", meaning: "cần" },
+        { word: "确认", pinyin: "que ren", meaning: "xác nhận" },
+        { word: "上午", pinyin: "shang wu", meaning: "buổi sáng" },
+        { word: "开会", pinyin: "kai hui", meaning: "họp" },
+        { word: "会议室", pinyin: "hui yi shi", meaning: "phòng họp" },
+        { word: "没问题", pinyin: "mei wen ti", meaning: "không vấn đề" },
+      ],
+      "ep-008": [
+        { word: "短视频", pinyin: "duan shi pin", meaning: "video ngắn" },
+        { word: "内容", pinyin: "nei rong", meaning: "nội dung" },
+        { word: "反馈", pinyin: "fan kui", meaning: "phản hồi" },
+        { word: "大脑", pinyin: "da nao", meaning: "não bộ" },
+        { word: "轻松", pinyin: "qing song", meaning: "thoải mái" },
+        { word: "建立", pinyin: "jian li", meaning: "xây dựng" },
+        { word: "习惯", pinyin: "xi guan", meaning: "thói quen" },
+        { word: "小时", pinyin: "xiao shi", meaning: "giờ" },
+      ],
+      "ep-009": [
+        { word: "入职", pinyin: "ru zhi", meaning: "nhận việc" },
+        { word: "记住", pinyin: "ji zhu", meaning: "ghi nhớ" },
+        { word: "同事", pinyin: "tong shi", meaning: "đồng nghiệp" },
+        { word: "资料", pinyin: "zi liao", meaning: "tài liệu" },
+        { word: "主管", pinyin: "zhu guan", meaning: "quản lý" },
+        { word: "优先级", pinyin: "you xian ji", meaning: "mức ưu tiên" },
+        { word: "重要", pinyin: "zhong yao", meaning: "quan trọng" },
+        { word: "靠谱", pinyin: "kao pu", meaning: "đáng tin" },
+      ],
+      "ep-010": [
+        { word: "越南", pinyin: "Yue nan", meaning: "Việt Nam" },
+        { word: "开始", pinyin: "kai shi", meaning: "bắt đầu" },
+        { word: "为了", pinyin: "wei le", meaning: "để" },
+        { word: "找工作", pinyin: "zhao gong zuo", meaning: "tìm việc" },
+        { word: "做生意", pinyin: "zuo sheng yi", meaning: "kinh doanh" },
+        { word: "考试", pinyin: "kao shi", meaning: "thi cử" },
+        { word: "进步", pinyin: "jin bu", meaning: "tiến bộ" },
+        { word: "稳定", pinyin: "wen ding", meaning: "ổn định" },
+      ],
+    };
+    const currentEpisodeId = (window.location.pathname.match(/\/typing\/(ep-\d+)/) || [])[1] || "ep-001";
+    const words = episodeWordBank[currentEpisodeId] || episodeWordBank["ep-001"];
+
+    let index = 0;
+    const solved = new Set();
+    const answer = document.getElementById("typing-answer");
+    const feedback = document.getElementById("typing-feedback");
+    const wordList = document.getElementById("word-list");
+
+    function normalize(value) {
+      return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function render() {
+      const item = words[index];
+      document.getElementById("typing-step").textContent = `Word ${index + 1} of ${words.length}`;
+      document.getElementById("typing-word").textContent = item.word;
+      document.getElementById("typing-pinyin").textContent = item.pinyin;
+      document.getElementById("typing-meaning").textContent = item.meaning;
+      answer.value = "";
+      answer.dataset.answer = item.pinyin;
+      feedback.textContent = "";
+      wordList.innerHTML = words.map((word, wordIndex) => (
+        `<span class="word-pill ${solved.has(wordIndex) ? "done" : ""}">${word.word}</span>`
+      )).join("");
+      answer.focus();
+    }
+
+    document.getElementById("check-answer").addEventListener("click", () => {
+      const expected = normalize(words[index].pinyin);
+      if (normalize(answer.value) === expected) {
+        solved.add(index);
+        index = (index + 1) % words.length;
+        render();
+        feedback.textContent = "Correct. Continue to the next word.";
+        return;
+      }
+      feedback.textContent = `Try again: ${words[index].pinyin}`;
+    });
+
+    document.getElementById("next-word").addEventListener("click", () => {
+      index = (index + 1) % words.length;
+      render();
+    });
+
+    answer.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        document.getElementById("check-answer").click();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

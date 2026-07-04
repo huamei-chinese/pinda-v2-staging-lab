@@ -728,6 +728,12 @@ mark.inactive {
 
   .plan-table {
     overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .plan-table::-webkit-scrollbar {
+    display: none;
   }
 }
 

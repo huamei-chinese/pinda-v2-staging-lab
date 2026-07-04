@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
 
 @Injectable()
@@ -42,7 +42,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async query<T extends any = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
     if (!this.pool) {
-      throw new Error('DATABASE_URL chưa được cấu hình. Hãy đặt Neon PostgreSQL connection string rồi chạy lại server.');
+      throw new HttpException(
+        { error: 'DATABASE_URL chưa được cấu hình. Hãy đặt Neon PostgreSQL connection string rồi chạy lại server.' },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
     return this.pool.query<T>(text, params);
   }
