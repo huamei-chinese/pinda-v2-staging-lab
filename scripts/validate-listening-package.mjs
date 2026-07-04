@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const REQUIRED_SCHEMA_VERSION = "pinda_listening_topic_batch_v1";
 const REQUIRED_MODULE = "daily_listening";
 const ALLOWED_TRACKS = new Set(["dialogue", "monologue"]);
+const ALLOWED_DIALOGUE_LEVELS = new Set(["beginner", "intermediate", "advanced"]);
+const ALLOWED_MONOLOGUE_LEVELS = new Set(["speech", "magazine", "psychology", "other"]);
 const FORBIDDEN_SENTENCE_PATTERNS = [
   /请听今天/,
   /今天的(对话|短文|独白)/,
@@ -35,6 +37,15 @@ function normalizeAssetPath(value) {
   return String(value || "").replace(/\\/g, "/").replace(/^\/+/, "");
 }
 
+function isSafeAudioPath(value) {
+  const raw = String(value || "").replace(/\\/g, "/").trim();
+  if (!raw) return false;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return false;
+  if (raw.startsWith("/")) return false;
+  const parts = raw.split("/").filter(Boolean);
+  return parts[0] === "audio" && !parts.includes("..");
+}
+
 function requireString(errors, value, label) {
   if (!isNonEmptyString(value)) {
     errors.push(`${label} is required`);
@@ -60,9 +71,14 @@ function collectFiles(root) {
   return files;
 }
 
-function pushMissingAudio(errors, availableFiles, audioPath) {
+function pushMissingAudio(errors, availableFiles, audioPath, label = "audio") {
   const normalized = normalizeAssetPath(audioPath);
-  if (normalized && availableFiles && !availableFiles.has(normalized)) {
+  if (!normalized) return;
+  if (!isSafeAudioPath(audioPath)) {
+    errors.push(`${label} must be a relative audio/ path without traversal`);
+    return;
+  }
+  if (availableFiles && !availableFiles.has(normalized)) {
     errors.push(`missing audio file: ${normalized}`);
   }
 }
@@ -71,19 +87,26 @@ function sameNormalizedText(a, b) {
   const normalize = (value) => String(value || "").replace(/[：:，,。！？?！\s"'“”‘’]/g, "").toLowerCase();
   const left = normalize(a);
   const right = normalize(b);
-  return left.length > 0 && right.length > 0 && (left === right || left.includes(right) || right.includes(left));
+  if (!left || !right) return false;
+  if (left === right) return true;
+  return left.length >= 8 && right.length >= 8 && (left.includes(right) || right.includes(left));
 }
 
-function sentenceLooksLikeTitleOrIntro(lesson, sentence) {
+function sentenceHasForbiddenIntroText(sentence) {
   const fields = [sentence?.zh, sentence?.pinyin, sentence?.vi].filter(Boolean);
-  if (fields.some((field) => FORBIDDEN_SENTENCE_PATTERNS.some((pattern) => pattern.test(String(field))))) {
-    return true;
-  }
+  return fields.some((field) => FORBIDDEN_SENTENCE_PATTERNS.some((pattern) => pattern.test(String(field))));
+}
 
+function sentenceMatchesLessonTitle(lesson, sentence) {
+  const fields = [sentence?.zh, sentence?.pinyin, sentence?.vi].filter(Boolean);
   return fields.some((field) =>
     sameNormalizedText(field, lesson?.title_zh) ||
     sameNormalizedText(field, lesson?.title_vi)
   );
+}
+
+function sentenceLooksLikeTitleOrIntro(lesson, sentence) {
+  return sentenceHasForbiddenIntroText(sentence) || sentenceMatchesLessonTitle(lesson, sentence);
 }
 
 function validateSentence(errors, lesson, sentence, sentenceIndex, track) {
@@ -107,7 +130,11 @@ function validateSentence(errors, lesson, sentence, sentenceIndex, track) {
   if (isFiniteNumber(sentence?.start) && isFiniteNumber(sentence?.end) && sentence.end <= sentence.start) {
     errors.push(`${label} end must be greater than start`);
   }
-  if (sentenceLooksLikeTitleOrIntro(lesson, sentence)) {
+  const allowLaterTitleOverlap =
+    process.env.PINDA_ALLOW_TITLE_OVERLAP_AFTER_FIRST === "1" &&
+    sentenceIndex > 0 &&
+    !sentenceHasForbiddenIntroText(sentence);
+  if (sentenceLooksLikeTitleOrIntro(lesson, sentence) && !(allowLaterTitleOverlap && sentenceMatchesLessonTitle(lesson, sentence))) {
     errors.push(`${label} title or intro text must not be in sentences`);
   }
 }
@@ -122,7 +149,7 @@ function validateKeyword(errors, availableFiles, lesson, keyword, keywordIndex) 
   requireString(errors, keyword?.pinyin, `${label} pinyin`);
   requireString(errors, keyword?.vi, `${label} vi`);
   requireString(errors, keyword?.audio, `${label} audio`);
-  pushMissingAudio(errors, availableFiles, keyword?.audio);
+  pushMissingAudio(errors, availableFiles, keyword?.audio, `${label} audio`);
 }
 
 function validateLesson(errors, availableFiles, lesson, lessonIndex, track) {
@@ -136,8 +163,17 @@ function validateLesson(errors, availableFiles, lesson, lessonIndex, track) {
   }
   requireString(errors, lesson?.title_zh, `${label} title_zh`);
   requireString(errors, lesson?.title_vi, `${label} title_vi`);
+  if (lesson?.main_audio_includes_title !== true) {
+    requireString(errors, lesson?.title_audio, `${label} title_audio`);
+    if (!isNonEmptyString(lesson?.title_audio)) {
+      errors.push(`${label} main_audio_includes_title must be true or title_audio is required`);
+    }
+  }
+  if (isNonEmptyString(lesson?.title_audio)) {
+    pushMissingAudio(errors, availableFiles, lesson.title_audio, `${label} title_audio`);
+  }
   requireString(errors, lesson?.main_audio, `${label} main_audio`);
-  pushMissingAudio(errors, availableFiles, lesson?.main_audio);
+  pushMissingAudio(errors, availableFiles, lesson?.main_audio, `${label} main_audio`);
 
   if (!Array.isArray(lesson?.sentences) || lesson.sentences.length === 0) {
     errors.push(`${label} sentences must be a non-empty array`);
@@ -175,6 +211,12 @@ export function validateListeningManifest(manifest, availableFiles = null) {
     requireString(errors, manifest.level.id, "level id");
     requireString(errors, manifest.level.name_zh, "level name_zh");
     requireString(errors, manifest.level.name_vi, "level name_vi");
+    if (manifest.track === "dialogue" && !ALLOWED_DIALOGUE_LEVELS.has(manifest.level.id)) {
+      errors.push("level id must be beginner, intermediate, or advanced");
+    }
+    if (manifest.track === "monologue" && !ALLOWED_MONOLOGUE_LEVELS.has(manifest.level.id)) {
+      errors.push("level id must be speech, magazine, psychology, or other");
+    }
   }
 
   if (!isObject(manifest.topic)) {

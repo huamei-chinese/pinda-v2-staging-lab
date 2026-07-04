@@ -35,6 +35,7 @@ function validManifest() {
         type: "dialogue",
         title_zh: "一个人生活，是自由还是孤单？",
         title_vi: "Song mot minh la tu do hay co don?",
+        main_audio_includes_title: true,
         main_audio: "audio/main/daily-001-main.mp3",
         sentences: [
           {
@@ -103,6 +104,92 @@ test("rejects title and intro lines inside sentence subtitles", async () => {
 
   assert.equal(result.ok, false);
   assert.match(result.errors.join("\n"), /title or intro text must not be in sentences/);
+});
+
+test("allows short real dialogue greetings that appear inside a longer lesson title", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  manifest.lessons[0].title_zh = "说完“你好”以后不知道说什么";
+  manifest.lessons[0].title_vi = "Khong biet noi gi sau cau xin chao";
+  manifest.lessons[0].sentences[0].zh = "你好。";
+  manifest.lessons[0].sentences[0].pinyin = "Ni hao.";
+  manifest.lessons[0].sentences[0].vi = "Xin chao.";
+
+  const result = validateListeningManifest(manifest, new Set([
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]));
+
+  assert.equal(result.ok, true);
+});
+
+test("requires every lesson audio to include or reference the spoken title", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  delete manifest.lessons[0].main_audio_includes_title;
+
+  const result = validateListeningManifest(manifest, new Set([
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]));
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /main_audio_includes_title must be true or title_audio is required/);
+});
+
+test("accepts a separate title audio file when main audio starts with body text", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  manifest.lessons[0].main_audio_includes_title = false;
+  manifest.lessons[0].title_audio = "audio/title/daily-001-title.mp3";
+
+  const result = validateListeningManifest(manifest, new Set([
+    "audio/title/daily-001-title.mp3",
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]));
+
+  assert.equal(result.ok, true);
+});
+
+test("rejects audio paths that can escape the package audio folder", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  manifest.lessons[0].main_audio = "../outside.mp3";
+  manifest.lessons[0].keywords[0].audio = "audio/../outside-keyword.mp3";
+
+  const result = validateListeningManifest(manifest, new Set([
+    "../outside.mp3",
+    "audio/../outside-keyword.mp3",
+  ]));
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /main_audio must be a relative audio\/ path without traversal/);
+  assert.match(result.errors.join("\n"), /keyword 1 audio must be a relative audio\/ path without traversal/);
+});
+
+test("rejects unsupported level ids for dialogue and monologue packages", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const dialogueManifest = validManifest();
+  dialogueManifest.level.id = "magazine";
+
+  const monologueManifest = validManifest();
+  monologueManifest.track = "monologue";
+  monologueManifest.lessons[0].type = "monologue";
+  delete monologueManifest.lessons[0].sentences[0].speaker;
+  monologueManifest.level.id = "intermediate";
+
+  const files = new Set([
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]);
+  const dialogueResult = validateListeningManifest(dialogueManifest, files);
+  const monologueResult = validateListeningManifest(monologueManifest, files);
+
+  assert.equal(dialogueResult.ok, false);
+  assert.match(dialogueResult.errors.join("\n"), /level id must be beginner, intermediate, or advanced/);
+  assert.equal(monologueResult.ok, false);
+  assert.match(monologueResult.errors.join("\n"), /level id must be speech, magazine, psychology, or other/);
 });
 
 test("validates a real zipped topic batch package", async () => {

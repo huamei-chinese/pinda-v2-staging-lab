@@ -17,6 +17,7 @@
     "safety:lab": "node ./scripts/check-staging-lab-safety.mjs",
     "smoke:lab": "node ./scripts/smoke-staging-lab.mjs",
     "validate:ajie-listening": "node ./scripts/normalize-ajie-listening-files.mjs --asset-root public/listening-app",
+    "validate:listening-catalog": "node ./scripts/validate-listening-catalog.mjs",
     "validate:listening-package": "node ./scripts/validate-listening-package.mjs",
     "import:listening-package": "node ./scripts/import-listening-package.mjs",
     "test": "node --test ./tests/*.test.js"
