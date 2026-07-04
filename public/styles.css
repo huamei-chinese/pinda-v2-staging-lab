@@ -22295,6 +22295,7 @@ body:has(#practiceScreen:not(.hidden)) {
   padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: #b9cff2 transparent;
+  scroll-behavior: smooth;
 }
 
 .listening-detail-spa .listening-repeat-card {
@@ -25179,10 +25180,10 @@ body:has(#practiceScreen:not(.hidden)) {
   position: relative;
   overflow: hidden;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease;
+    transform 100ms ease,
+    box-shadow 100ms ease,
+    border-color 100ms ease,
+    background 100ms ease;
 }
 
 .listening-detail-spa .listening-sentence.active {
@@ -25207,7 +25208,7 @@ body:has(#practiceScreen:not(.hidden)) {
     transparent 72%
   );
   transform: translateX(-120%);
-  animation: listeningSentenceFlash 720ms ease;
+  animation: listeningSentenceFlash 300ms ease;
   pointer-events: none;
 }
 
@@ -25422,14 +25423,6 @@ body:has(#practiceScreen:not(.hidden)) {
   font-weight: 850;
 }
 
-.home-duo-copy h3 {
-  margin: 18px 0 8px !important;
-  color: #fff !important;
-  font-size: clamp(36px, 3.5vw, 54px) !important;
-  line-height: 1 !important;
-  font-weight: 950 !important;
-}
-
 .home-duo-copy p {
   color: rgba(255,255,255,.92) !important;
   font-weight: 750 !important;
@@ -25571,7 +25564,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .home-duo-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
+  min-height: 26px;
   padding: 0 14px;
   border-radius: 999px;
   background: rgba(255,255,255,.17);
@@ -25584,7 +25577,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .home-duo-copy h3 {
   margin: 18px 0 8px !important;
   color: #fff !important;
-  font-size: clamp(38px, 3.5vw, 56px) !important;
+  font-size: clamp(5px, 3.5vw, 10px) !important;
   line-height: 1 !important;
   font-weight: 950 !important;
   letter-spacing: 0 !important;
@@ -25705,7 +25698,7 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 /* Chỉnh riêng box Luyện nghe cho gọn và đẹp hơn */
 .home-duo-card--listen .home-duo-copy h3 {
-  font-size: clamp(10px, 3vw, 20px) !important;
+  font-size: clamp(5px, 3vw, 10px) !important;
   line-height: 0.98 !important;
   max-width: 260px;
 }
@@ -26074,7 +26067,7 @@ body:has(#practiceScreen:not(.hidden)) {
 /* Fix dòng clamp cũ bị ngược min/max */
 .home-duo-card--listen .home-duo-copy h3,
 .home-duo-card--write .home-duo-copy h3 {
-  font-size: clamp(34px, 3vw, 48px) !important;
+  font-size: clamp(28px, 3vw, 35px) !important;
 }
 
 /* Responsive */
@@ -26355,4 +26348,113 @@ body:has(#practiceScreen:not(.hidden)) {
 /* Ẩn nút Mới nhất trong màn Chủ đề nghe */
 .listening-sort-btn {
   display: none !important;
+}
+/* Nút back cho "Chủ đề nghe" */
+.listening-dashboard-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.listening-dashboard-back-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f766e;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+
+.listening-dashboard-back-btn:hover {
+  transform: translateX(-3px);
+  background: #ecfdf5;
+  color: #059669;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+}
+
+/* Nút back cho trang "Luyện Nghe" (hero ảnh nền) */
+.listening-gateway-hero {
+  position: relative;
+}
+
+.listening-gateway-back-btn {
+  position: absolute;
+  left: 22px;
+  top: 22px;
+  z-index: 5;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.listening-gateway-back-btn:hover {
+  transform: translateX(-3px);
+  background: rgba(15, 23, 42, 0.36);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.28);
+}
+
+@media (max-width: 640px) {
+  .listening-gateway-back-btn {
+    left: 14px;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .listening-dashboard-back-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+.hsk-level-hero {
+  position: relative;
+}
+
+.hsk-level-hero-back-btn {
+  position: absolute;
+  left: 22px;
+  top: 22px;
+  z-index: 5;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.22);
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.hsk-level-hero-back-btn:hover {
+  transform: translateX(-3px);
+  background: rgba(15, 23, 42, 0.36);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.28);
+}
+
+@media (max-width: 640px) {
+  .hsk-level-hero-back-btn {
+    left: 14px;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+  }
 }

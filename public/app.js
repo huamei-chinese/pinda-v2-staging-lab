@@ -3158,6 +3158,133 @@ function openDailyTopicFromHome(themeId) {
   scrollAppToTop();
 }
 
+const APP_ROUTE_STORAGE_KEY = "v2-route";
+
+function savePersistedRoute() {
+  try {
+    const route = {
+      screen: state.screen,
+      module: state.module,
+      level: state.level,
+      hskLevelPicker: state.hskLevelPicker,
+      hskPendingLessonId: state.hskPendingLessonId,
+      hskContentType: state.hskContentType,
+      lessonId: state.lessonId,
+      dailyPendingThemeId: state.dailyPendingThemeId,
+      dailyContentType: state.dailyContentType,
+      themeId: state.themeId,
+      mode: state.mode,
+      index: state.index,
+      vocabFilterTab: state.vocabFilterTab,
+      listeningView: state.listeningView,
+      listeningLevelId: state.listeningLevelId,
+      listeningEpisodeId: state.listeningEpisodeId,
+      listeningSentenceIndex: state.listeningSentenceIndex,
+      listeningLessonsBackTarget: state.listeningLessonsBackTarget,
+      listeningBackTarget: state.listeningBackTarget,
+      listeningSeedEpisodeId: state.listeningSeedEpisodeId,
+      adminTab: state.adminTab,
+    };
+    localStorage.setItem(APP_ROUTE_STORAGE_KEY, JSON.stringify(route));
+  } catch {
+    // bỏ qua nếu lỗi lưu trữ
+  }
+}
+
+function readPersistedRoute() {
+  try {
+    return JSON.parse(localStorage.getItem(APP_ROUTE_STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function restorePersistedRoute() {
+  const route = readPersistedRoute();
+  if (!route || !route.screen || route.screen === "home") return false;
+
+  try {
+    if (route.module) state.module = route.module;
+    if (route.level && hskLevels[route.level]) state.level = route.level;
+    if (typeof route.hskLevelPicker === "boolean") state.hskLevelPicker = route.hskLevelPicker;
+    if (route.hskPendingLessonId !== undefined) state.hskPendingLessonId = route.hskPendingLessonId;
+    if (route.hskContentType !== undefined) state.hskContentType = route.hskContentType;
+    if (route.lessonId) state.lessonId = route.lessonId;
+    if (route.dailyPendingThemeId !== undefined) state.dailyPendingThemeId = route.dailyPendingThemeId;
+    if (route.dailyContentType !== undefined) state.dailyContentType = route.dailyContentType;
+    if (route.themeId) state.themeId = route.themeId;
+    if (route.mode) state.mode = route.mode;
+    if (Number.isInteger(route.index)) state.index = route.index;
+    if (route.vocabFilterTab) state.vocabFilterTab = route.vocabFilterTab;
+    if (route.listeningView) state.listeningView = route.listeningView;
+    if (route.listeningLevelId) state.listeningLevelId = route.listeningLevelId;
+    if (route.listeningEpisodeId) state.listeningEpisodeId = route.listeningEpisodeId;
+    if (Number.isInteger(route.listeningSentenceIndex)) state.listeningSentenceIndex = route.listeningSentenceIndex;
+    if (route.listeningLessonsBackTarget) state.listeningLessonsBackTarget = route.listeningLessonsBackTarget;
+    if (route.listeningBackTarget !== undefined) state.listeningBackTarget = route.listeningBackTarget;
+    if (route.listeningSeedEpisodeId !== undefined) state.listeningSeedEpisodeId = route.listeningSeedEpisodeId;
+    if (route.adminTab) state.adminTab = route.adminTab;
+
+    switch (route.screen) {
+      case "course":
+        renderCourse();
+        setScreen("course");
+        return true;
+
+      case "vocab":
+        renderVocab();
+        setScreen("vocab");
+        return true;
+
+      case "listening":
+        renderListening();
+        setScreen("listening");
+        return true;
+
+      case "account":
+        if (!state.user) return false;
+        renderAccount();
+        setScreen("account");
+        return true;
+
+      case "admin":
+        renderAdmin();
+        setScreen("admin");
+        if (isAdminUser()) loadAdminUsers();
+        return true;
+
+      case "subscriptions":
+        setScreen("subscriptions");
+        return true;
+
+      case "practice": {
+        if (state.module === "hsk" && route.lessonId && hskLevels[state.level]?.some((l) => l.id === route.lessonId)) {
+          startPractice({ lessonId: route.lessonId, mode: route.mode || "translate", hskContentType: route.hskContentType || "", index: route.index || 0 });
+          return true;
+        }
+        if (state.module === "daily" && route.themeId && dailyThemes.some((th) => th.id === route.themeId)) {
+          startPractice({ themeId: route.themeId, mode: route.mode || "translate", dailyContentType: route.dailyContentType || "", index: route.index || 0 });
+          return true;
+        }
+        if (state.module === "vocab") {
+          return startSavedVocabPractice(route.index || 0);
+        }
+        return false;
+      }
+
+      case "complete":
+        renderCourse();
+        setScreen("course");
+        return true;
+
+      default:
+        return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
 function setScreen(name) {
   state.screen = name;
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
@@ -3224,6 +3351,7 @@ function setScreen(name) {
     bottomAccount.classList.toggle("active", name === "account");
     bottomAccount.classList.toggle("hidden", BACKEND_DISABLED);
   }
+  savePersistedRoute();
   scrollAppToTop();
 }
 
@@ -5791,9 +5919,6 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <button type="button" class="${navClass("vocab")}" data-home-nav="vocab">
           <span aria-hidden="true">${desktopNavIcon("vocab")}</span>${t("vocab")}
         </button>
-        <button type="button" class="${navClass("listening")}" data-home-nav="listening">
-          <span aria-hidden="true">${desktopNavIcon("listening")}</span>${isVi ? t("listening") : "听力"}
-        </button>
         <button type="button" class="${navClass("account")}" data-home-nav="account">
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
@@ -5906,7 +6031,6 @@ const listeningCategories = [
 
 function renderListeningLevelGateway(options = {}) {
   const isVi = state.lang === "vi";
-
   const categoryHTML = listeningCategories.map((category) => `
     <article class="listening-gateway-card listening-gateway-card--${category.id}">
       <div class="listening-gateway-card-head">
@@ -5931,6 +6055,11 @@ function renderListeningLevelGateway(options = {}) {
   setScreenWithDesktopShell("listening", `
     <section class="listening-gateway-screen">
       <header class="listening-gateway-hero">
+        <button class="listening-gateway-back-btn" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
         <h1>${isVi ? "Luyện Nghe" : "听力练习"}</h1>
         <p>${isVi ? "Nghe hiểu tự nhiên - Tiến bộ mỗi ngày" : "自然听懂，每天进步"}</p>
       </header>
@@ -6162,7 +6291,14 @@ const cardsHTML = allTopicCards.map((topic) => `
   setScreenWithDesktopShell("listening", `
     <div class="listening-spa-layout">
       <header class="listening-dashboard-topbar">
-        <h1>${isVi ? "Chủ đề nghe" : "听力主题"}</h1>
+        <div class="listening-dashboard-title-row">
+          <button class="listening-dashboard-back-btn" type="button" data-listening-dashboard-back aria-label="${isVi ? "Quay lại" : "返回"}">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h1>${isVi ? "Chủ đề nghe" : "听力主题"}</h1>
+        </div>
         <div class="listening-dashboard-userbar" aria-label="${isVi ? "Thông tin học tập" : "学习信息"}">
           <div class="listening-stat-pill">
             <span class="listening-stat-icon listening-stat-icon--coin" aria-hidden="true">★</span>
@@ -6514,9 +6650,23 @@ function getListeningSentenceIndexAtTime(episode, time) {
 function setListeningActiveSentence(index) {
   const episode = getListeningEpisode();
   const nextIndex = Math.max(0, Math.min(index, episode.sentences.length - 1));
+
+  // NẾU CÂU KHÔNG ĐỔI THÌ DỪNG LẠI NGAY -> Rất quan trọng để hết lag!
+  if (state.listeningSentenceIndex === nextIndex) return;
+
   state.listeningSentenceIndex = nextIndex;
+  
   document.querySelectorAll("[data-listening-sentence]").forEach((button) => {
-    button.classList.toggle("active", Number(button.dataset.listeningSentence || 0) === nextIndex);
+    const isActive = Number(button.dataset.listeningSentence || 0) === nextIndex;
+    button.classList.toggle("active", isActive);
+
+    // Kéo cuộn tức thì (auto) để khớp với tốc độ đọc
+    if (isActive) {
+      button.scrollIntoView({
+        behavior: "auto", 
+        block: "center"
+      });
+    }
   });
 }
 
@@ -7631,7 +7781,7 @@ function selectListeningKeyword(index, button = null) {
   const pinyin = typeof keyword === "string" ? "" : keyword?.pinyin || "";
   const vietnamese = typeof keyword === "string" ? "" : keyword?.vietnamese || "";
   const meta = [pinyin, vietnamese].filter(Boolean).join(" · ");
-  if (meta) showToast(`${chinese}: ${meta}`);
+  
 }
 
 async function startListeningRepeatRecording() {
@@ -7718,7 +7868,7 @@ function syncListeningAudioUi() {
   const progressNode = $("#listeningProgress");
   applyListeningPlaybackRate(audio);
   const duration = getListeningAudioDuration(audio, episode);
-  const current = audio ? Math.min(audio.currentTime || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
+  const current = audio ? Math.min((audio.currentTime + 0.25) || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
   const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
   if (audio?.ended) listeningPlaybackRequested = false;
   if (audio && !audio.paused) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
@@ -8418,8 +8568,13 @@ function renderHskLevelPickerHTML() {
   const isVi = state.lang === "vi";
   return `
     <section class="hsk-level-picker">
-      <div class="hsk-level-hero" aria-hidden="true">
-        <img src="assets/hsk-level-hero.png" alt="" />
+<div class="hsk-level-hero">
+        <button class="hsk-level-hero-back-btn" type="button" data-hsk-level-picker-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <img src="assets/hsk-level-hero.png" alt="" aria-hidden="true" />
       </div>
 
       <div class="hsk-level-grid">
@@ -9785,6 +9940,17 @@ function bindEvents() {
     
 
     if (state.screen === "listening") {
+      const listeningGatewayBackBtn = event.target.closest("[data-listening-gateway-back]");
+      if (listeningGatewayBackBtn) {
+        navigatePrimaryTab("home");
+        return;
+      }
+      const listeningDashboardBackBtn = event.target.closest("[data-listening-dashboard-back]");
+      if (listeningDashboardBackBtn) {
+        state.listeningView = "levels";
+        renderListening();
+        return;
+      }
       const listeningTopicListBtn = event.target.closest("[data-listening-topic-list]");
 if (listeningTopicListBtn) {
   event.preventDefault();
@@ -10758,6 +10924,11 @@ if (listeningOpenBtn) {
       renderHskCourse();
       return;
     }
+    const hskLevelPickerBackBtn = event.target.closest("[data-hsk-level-picker-back]");
+    if (hskLevelPickerBackBtn) {
+      navigatePrimaryTab("home");
+      return;
+    }
     const hskLevelBackBtn = event.target.closest("[data-hsk-level-back]");
     if (hskLevelBackBtn) {
       backToHskLevelPicker();
@@ -11221,7 +11392,10 @@ function init() {
         loadAdminUsers();
       }
     } else {
-      setScreen("home");
+      const restored = restorePersistedRoute();
+      if (!restored) {
+        setScreen("home");
+      }
     }
   });
 }
