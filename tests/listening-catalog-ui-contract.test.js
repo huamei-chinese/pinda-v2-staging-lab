@@ -43,6 +43,14 @@ test("catalog level rows can be intentionally empty without falling back to demo
   assert.match(appSource, /if \(catalogLevelRows\) return catalogLevelRows;/);
 });
 
+test("listening UI keeps catalog hierarchy separate from visual-only UI", () => {
+  assert.match(appSource, /lesson\.kind === "topic"/);
+  assert.match(appSource, /data-listening-topic-level/);
+  assert.match(appSource, /state\.listeningSeedEpisodeId && selectedTopic/);
+  assert.match(appSource, /state\.listeningLevelId = listeningTopicListBtn\.dataset\.listeningTopicLevel \|\| state\.listeningLevelId/);
+  assert.doesNotMatch(appSource, /state\.listeningLevelId = "dialogue-so-cap";\s*renderListening\(\);/);
+});
+
 test("listening playback starts with title audio before the main lesson audio", () => {
   assert.match(appSource, /function playListeningTitleThenMain/);
   assert.match(appSource, /titleAudioSrc/);

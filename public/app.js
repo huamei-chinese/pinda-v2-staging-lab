@@ -755,7 +755,7 @@ function getCatalogLevelRows(levelId = "") {
     const selectedTopic = (level.topics || []).find((topic) =>
       (topic.lessons || []).some((lesson) => lesson.id === state.listeningSeedEpisodeId),
     );
-    if (state.listeningLessonsBackTarget === "dashboard" && selectedTopic) {
+    if (state.listeningSeedEpisodeId && selectedTopic) {
       return (selectedTopic.lessons || []).map((lesson, index) => ({
         no: index + 1,
         episodeId: lesson.id,
@@ -6436,14 +6436,8 @@ function openListeningLevel(levelId) {
   state.listeningSeedEpisodeId = "";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
-
-  if (String(state.listeningLevelId).startsWith("dialogue")) {
-    state.listeningLessonsBackTarget = "dashboard";
-    state.listeningView = "dashboard";
-  } else {
-    state.listeningLessonsBackTarget = "levels";
-    state.listeningView = "lessons";
-  }
+  state.listeningLessonsBackTarget = "levels";
+  state.listeningView = "lessons";
 
   renderListening();
 }
@@ -7872,8 +7866,12 @@ function renderListeningLevelLessons(options = {}) {
       return `<i style="--h:${h}px;--d:${d}s"></i>`;
     }).join("");
 
+    const rowActionAttr = lesson.kind === "topic"
+      ? `data-listening-topic-list="${escapeAttr(lesson.episodeId)}" data-listening-topic-level="${escapeAttr(state.listeningLevelId)}"`
+      : `data-listening-topic-open="${escapeAttr(lesson.episodeId)}"`;
+
     return `
-      <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}" type="button" data-listening-topic-open="${escapeAttr(lesson.episodeId)}">
+      <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}" type="button" ${rowActionAttr}>
   <span class="listening-lesson-play">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
   </span>
@@ -10544,12 +10542,11 @@ if (listeningTopicListBtn) {
   event.preventDefault();
 
   state.listeningSeedEpisodeId = listeningTopicListBtn.dataset.listeningTopicList;
-  state.listeningLessonsBackTarget = "dashboard";
+  state.listeningLevelId = listeningTopicListBtn.dataset.listeningTopicLevel || state.listeningLevelId || "dialogue-so-cap";
+  state.listeningLessonsBackTarget = "lessons";
   state.listeningView = "lessons";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
-
-  state.listeningLevelId = "dialogue-so-cap";
 
   renderListening();
   return;
