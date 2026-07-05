@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { pushPinyinGuardError } from "./listening-text-guards.mjs";
 
 const REQUIRED_SCHEMA_VERSION = "pinda_listening_topic_batch_v1";
 const REQUIRED_MODULE = "daily_listening";
@@ -120,6 +121,7 @@ function validateSentence(errors, lesson, sentence, sentenceIndex, track) {
   }
   requireString(errors, sentence?.zh, `${label} zh`);
   requireString(errors, sentence?.pinyin, `${label} pinyin`);
+  pushPinyinGuardError(errors, sentence?.pinyin, `${label} pinyin`);
   requireString(errors, sentence?.vi, `${label} vi`);
   if (!isFiniteNumber(sentence?.start)) {
     errors.push(`${label} start must be a number`);
@@ -147,6 +149,7 @@ function validateKeyword(errors, availableFiles, lesson, keyword, keywordIndex) 
   }
   requireString(errors, keyword?.zh, `${label} zh`);
   requireString(errors, keyword?.pinyin, `${label} pinyin`);
+  pushPinyinGuardError(errors, keyword?.pinyin, `${label} pinyin`);
   requireString(errors, keyword?.vi, `${label} vi`);
   requireString(errors, keyword?.audio, `${label} audio`);
   pushMissingAudio(errors, availableFiles, keyword?.audio, `${label} audio`);

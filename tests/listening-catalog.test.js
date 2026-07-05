@@ -74,6 +74,18 @@ test("listening catalog validator accepts the checked-in catalog", async () => {
   assert.equal(result.summary.lessons, countCatalogLessons(readCatalog()));
 });
 
+test("listening catalog validator rejects pinyin mojibake question marks", async () => {
+  const { validateListeningCatalog } = await import(validatorUrl);
+  const catalog = readCatalog();
+  const lesson = catalog.tracks[0].levels[0].topics[0].lessons[0];
+  lesson.sentences[0].pinyin = "H?o, s?o m? k? y? ma?";
+
+  const result = validateListeningCatalog(catalog);
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /suspicious pinyin mojibake/);
+});
+
 test("listening catalog audio references exist in the isolated catalog audio folder", () => {
   const lessons = catalogLessons(readCatalog());
   for (const lesson of lessons) {
