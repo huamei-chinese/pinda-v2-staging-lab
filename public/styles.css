@@ -25325,64 +25325,7 @@ body:has(#practiceScreen:not(.hidden)) {
   gap: 24px !important;
 }
 
-.listening-gateway-screen {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 28px clamp(18px, 4vw, 48px) 64px;
-}
 
-.listening-gateway-hero {
-  min-height: 295px;
-  border-radius: 34px;
-  padding: 48px 64px;
-  color: #fff;
-  background: linear-gradient(135deg, #13b8a6, #23b4a1 42%, #78d8c8);
-  box-shadow: 0 24px 60px rgba(13, 148, 136, 0.22);
-}
-
-.listening-gateway-hero h1 {
-  margin: 0 0 12px;
-  color: #fff;
-  font-size: clamp(46px, 6vw, 72px);
-  font-weight: 950;
-}
-
-.listening-gateway-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 26px;
-  margin-top: 34px;
-}
-
-.listening-gateway-card {
-  border-radius: 30px;
-  padding: 28px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
-}
-
-.listening-gateway-card--dialogue {
-  background: linear-gradient(145deg, #ecfdf5, #f0fdfa);
-  border-top: 6px solid #14b8a6;
-}
-
-.listening-gateway-card--monologue {
-  background: linear-gradient(145deg, #fdf2f8, #f5f3ff);
-  border-top: 6px solid #d946ef;
-}
-
-.listening-gateway-level {
-  min-height: 60px;
-  border: 1px solid rgba(15,23,42,.08);
-  border-radius: 18px;
-  background: rgba(255,255,255,.9);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  font-weight: 900;
-  cursor: pointer;
-}
 .home-desktop-modules--duo,
 .home-duo-modules {
   display: grid !important;
