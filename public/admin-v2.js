@@ -48,6 +48,11 @@ const adminV2LocalBridge = {
   learningEventUrl: "/api/admin-v2/learning-event",
   materialActionUrl: "/api/admin-v2/material-action",
   agentActionUrl: "/api/admin-v2/agent-action",
+  realUsersPreviewUrl: "/api/admin-v2/real-users-readonly-preview",
+  stage7SchemaUrl: "/api/admin-v2/stage7-schema-contract",
+  stage8HandoffUrl: "/api/admin-v2/stage8-local-api-handoff",
+  stage9ReadinessUrl: "/api/admin-v2/stage9-pr-readiness",
+  stage10FinalUrl: "/api/admin-v2/stage10-final-acceptance",
   dataUrl: "admin-v2-local-data.json",
   blockedEndpoints: [
     "/api/payments/orders",
@@ -55,6 +60,132 @@ const adminV2LocalBridge = {
     "/api/admin/users/:id/role",
     "/api/admin/plans",
     "/api/admin/content",
+  ],
+};
+
+const adminV2Stage7SchemaFallback = {
+  learning: [
+    {
+      key: "learning_event",
+      label: "学习事件",
+      fields: "event_id, user_id, module, lesson_id, event_name, occurred_at",
+      source: "前台学习行为",
+      boundary: "只定义契约，不采集正式用户行为。",
+    },
+    {
+      key: "learning_summary",
+      label: "学习汇总",
+      fields: "user_id, date, questions_answered, wrong_answers, accuracy",
+      source: "学习事件聚合",
+      boundary: "只读分析口径，不写正式统计表。",
+    },
+    {
+      key: "wrong_answer_event",
+      label: "错题事件",
+      fields: "user_id, question_id, answer, correct_answer, lesson_id",
+      source: "练习答题结果",
+      boundary: "不保存敏感内容，不影响 VIP 锁课。",
+    },
+  ],
+  agent: [
+    {
+      key: "agent_referral",
+      label: "代理归因 schema",
+      fields: "agent_code, user_id, source_url, bound_at, changed_by",
+      owner: "阿杰确认",
+      boundary: "只定义归因字段，不绑定正式用户。",
+    },
+    {
+      key: "agent_customer",
+      label: "代理客户 schema",
+      fields: "agent_id, user_id, vip_status, first_seen_at, last_activity_at",
+      owner: "阿杰确认",
+      boundary: "代理账号只看自己客户。",
+    },
+    {
+      key: "agent_commission_preview",
+      label: "佣金结算 schema",
+      fields: "agent_id, user_id, vip_plan, amount, status, period",
+      owner: "老板确认",
+      boundary: "只做预览，不结算，不付款。",
+    },
+  ],
+  gates: [
+    { owner: "老板", item: "确认是否允许进入真实表设计", status: "required-before-real-db" },
+    { owner: "阿杰", item: "确认学习事件和代理归因字段", status: "pending-review" },
+    { owner: "阿辉", item: "确认后台操作路径是否易用", status: "pending-ui-review" },
+  ],
+};
+
+const adminV2RealReadonlyFallback = {
+  users: [
+    {
+      id: "5E802A4",
+      fullName: "lixiang001",
+      email: "lixiang001@gmail.com",
+      role: "普通用户",
+      currentLevel: "HSK2",
+      vipStatus: "Free",
+      premiumUntil: "N/A",
+      readOnly: true,
+    },
+    {
+      id: "9AB59000",
+      fullName: "Felix",
+      email: "langkhai01082002@gmail.com",
+      role: "普通用户",
+      currentLevel: "HSK2",
+      vipStatus: "VIP 7d",
+      premiumUntil: "2026-07-08",
+      readOnly: true,
+    },
+    {
+      id: "8E6320AE",
+      fullName: "lixiang",
+      email: "huameizhongxin@gmail.com",
+      role: "超级管理员",
+      currentLevel: "HSK2",
+      vipStatus: "VIP",
+      premiumUntil: "N/A",
+      readOnly: true,
+    },
+  ],
+  contracts: [
+    {
+      sourceTable: "users",
+      sourceFields: "id, full_name, email, role, current_level, is_premium, premium_until",
+      adminV2Fields: "用户ID、姓名、Email、角色、等级、VIP状态、VIP到期",
+      riskBoundary: "只读展示，不修改用户、VIP或角色。",
+    },
+    {
+      sourceTable: "payment plans",
+      sourceFields: "id, months, duration_unit, amount, name_vi, name_zh, is_active",
+      adminV2Fields: "套餐名称、时长、价格、启用状态",
+      riskBoundary: "只读核对套餐字段，不调整定价。",
+    },
+    {
+      sourceTable: "course locks",
+      sourceFields: "level, lesson_id, free_limit, is_locked, updated_at",
+      adminV2Fields: "课程等级、课节、免费限制、锁课状态",
+      riskBoundary: "只读核对锁课配置，不改 VIP 锁定。",
+    },
+  ],
+  gaps: [
+    {
+      label: "真实学习记录",
+      status: "当前发布后台暂无真实表或 API 来源",
+      nextStep: "第 7 阶段先定义学习事件 schema。",
+    },
+    {
+      label: "真实代理归因",
+      status: "当前发布后台暂无真实表或 API 来源",
+      nextStep: "后续由阿杰确认代理归因表设计。",
+    },
+    {
+      label: "真实代理佣金",
+      status: "当前发布后台暂无真实表或 API 来源",
+      nextStep: "先有订单归因和结算规则，再接真实佣金。",
+    },
   ],
 };
 
@@ -136,6 +267,9 @@ function renderAdminV2LocalData(data) {
   const agentCommissions = Array.isArray(data.agentCommissions) ? data.agentCommissions : [];
   const agentTeamMembers = Array.isArray(data.agentTeamMembers) ? data.agentTeamMembers : [];
   const agentAuditLogs = Array.isArray(data.agentAuditLogs) ? data.agentAuditLogs : [];
+  const realReadonlyUsers = Array.isArray(data.realReadonlyUsers) ? data.realReadonlyUsers : [];
+  const realReadonlyContracts = Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [];
+  const realReadonlyGaps = Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [];
   adminV2CustomerState.data = { ...data, users, auditLogs };
   adminV2LearningState.data = { ...data, learningRecords, learningEvents, learningSummary: data.learningSummary || {} };
   adminV2MaterialState.data = {
@@ -228,6 +362,9 @@ function renderAdminV2LocalData(data) {
   renderAgentCustomers(agentCustomers);
   renderAgentCommissionRows(agentCommissions);
   renderAgentAudit(agentAuditLogs);
+  renderRealReadonlyUsers(realReadonlyUsers);
+  renderRealReadonlyContracts(realReadonlyContracts);
+  renderRealReadonlyGaps(realReadonlyGaps);
 }
 
 function escapeHtml(value) {
@@ -648,6 +785,182 @@ function performAgentAction(action) {
     .then(() => refreshAdminV2BackendData());
 }
 
+function renderRealReadonlyUsers(users) {
+  const target = document.querySelector("[data-real-readonly-users-body]");
+  if (!target) return;
+  if (!users.length) {
+    target.innerHTML = '<tr><td colspan="8">暂无只读真实用户预览。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = users.map((user) => `
+    <tr>
+      <td>${escapeHtml(user.id)}</td>
+      <td>${escapeHtml(user.fullName)}</td>
+      <td>${escapeHtml(user.email)}</td>
+      <td><span class="status-badge">${escapeHtml(user.role)}</span></td>
+      <td>${escapeHtml(user.currentLevel)}</td>
+      <td>${escapeHtml(user.vipStatus)}</td>
+      <td>${escapeHtml(user.premiumUntil)}</td>
+      <td>${user.readOnly ? "只读" : "禁止写入"}</td>
+    </tr>
+  `).join("");
+}
+
+function renderRealReadonlyContracts(contracts) {
+  const target = document.querySelector("[data-real-readonly-contract-body]");
+  if (!target) return;
+  if (!contracts.length) {
+    target.innerHTML = '<tr><td colspan="4">暂无真实后台字段契约。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = contracts.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.sourceTable)}</td>
+      <td>${escapeHtml(item.sourceFields)}</td>
+      <td>${escapeHtml(item.adminV2Fields)}</td>
+      <td>${escapeHtml(item.riskBoundary)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderRealReadonlyGaps(gaps) {
+  const target = document.querySelector("[data-real-readonly-gaps-body]");
+  if (!target) return;
+  if (!gaps.length) {
+    target.innerHTML = '<tr><td colspan="3">暂无真实数据缺口。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = gaps.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.label)}</td>
+      <td>${escapeHtml(item.status)}</td>
+      <td>${escapeHtml(item.nextStep)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderRealReadonlyPreview(data, statusText) {
+  renderRealReadonlyUsers(Array.isArray(data.users) ? data.users : []);
+  renderRealReadonlyContracts(Array.isArray(data.contracts) ? data.contracts : []);
+  renderRealReadonlyGaps(Array.isArray(data.gaps) ? data.gaps : []);
+  const status = document.querySelector("[data-real-readonly-status]");
+  if (status) status.textContent = statusText;
+}
+
+function refreshRealReadonlyPreview() {
+  const status = document.querySelector("[data-real-readonly-status]");
+  if (status) status.textContent = "只读请求中";
+
+  fetch(adminV2LocalBridge.realUsersPreviewUrl, { cache: "no-store" })
+    .then((response) => response.json())
+    .then((data) => {
+      renderRealReadonlyPreview(data, "本地只读预览已加载");
+    })
+    .catch(() => {
+      fetch(adminV2LocalBridge.dataUrl, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          renderRealReadonlyPreview({
+            users: Array.isArray(data.realReadonlyUsers) ? data.realReadonlyUsers : [],
+            contracts: Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [],
+            gaps: Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [],
+          }, "JSON fallback 只读预览");
+        })
+        .catch(() => {
+          renderRealReadonlyPreview(adminV2RealReadonlyFallback, "静态兜底只读预览");
+        });
+    });
+}
+
+function renderStage7LearningSchemas(items) {
+  const target = document.querySelector("[data-stage7-learning-schema-body]");
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = '<tr><td colspan="4">暂无学习 schema 契约。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.label)}</td>
+      <td>${escapeHtml(item.fields)}</td>
+      <td>${escapeHtml(item.source)}</td>
+      <td>${escapeHtml(item.boundary)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderStage7AgentSchemas(items) {
+  const target = document.querySelector("[data-stage7-agent-schema-body]");
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = '<tr><td colspan="4">暂无代理 schema 契约。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.label)}</td>
+      <td>${escapeHtml(item.fields)}</td>
+      <td>${escapeHtml(item.owner)}</td>
+      <td>${escapeHtml(item.boundary)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderStage7Gates(items) {
+  const target = document.querySelector("[data-stage7-gate-body]");
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = '<tr><td colspan="3">暂无第 7 阶段接入闸口。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = items.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.owner)}</td>
+      <td>${escapeHtml(item.item)}</td>
+      <td><span class="status-badge">${escapeHtml(item.status)}</span></td>
+    </tr>
+  `).join("");
+}
+
+function renderStage7SchemaContract(data, statusText) {
+  renderStage7LearningSchemas(Array.isArray(data.learning) ? data.learning : []);
+  renderStage7AgentSchemas(Array.isArray(data.agent) ? data.agent : []);
+  renderStage7Gates(Array.isArray(data.gates) ? data.gates : []);
+  const status = document.querySelector("[data-stage7-schema-status]");
+  if (status) status.textContent = statusText;
+}
+
+function refreshStage7SchemaContract() {
+  const status = document.querySelector("[data-stage7-schema-status]");
+  if (status) status.textContent = "schema 请求中";
+
+  fetch(adminV2LocalBridge.stage7SchemaUrl, { cache: "no-store" })
+    .then((response) => response.json())
+    .then((data) => {
+      renderStage7SchemaContract(data, "本地 schema 契约已加载");
+    })
+    .catch(() => {
+      fetch(adminV2LocalBridge.dataUrl, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          renderStage7SchemaContract({
+            learning: Array.isArray(data.stage7LearningEventSchemas) ? data.stage7LearningEventSchemas : [],
+            agent: Array.isArray(data.stage7AgentDataSchemas) ? data.stage7AgentDataSchemas : [],
+            gates: Array.isArray(data.stage7AcceptanceGates) ? data.stage7AcceptanceGates : [],
+          }, "JSON schema 契约已加载");
+        })
+        .catch(() => {
+          renderStage7SchemaContract(adminV2Stage7SchemaFallback, "静态兜底 schema 契约");
+        });
+    });
+}
+
 function renderAdminV2LocalBridgeFallback() {
   const metricsTarget = document.querySelector("[data-local-metrics]");
   if (metricsTarget) {
@@ -687,18 +1000,33 @@ function loadAdminV2LocalBridge() {
   refreshAdminV2BackendData();
 }
 
-function setAdminV2Tab(tab) {
+function setAdminV2Tab(tab, options = {}) {
   adminV2State.activeTab = tab;
   document.querySelectorAll("[data-admin-v2-tab]").forEach((button) => {
     button.classList.toggle("active", button.dataset.adminV2Tab === tab);
   });
-  document.querySelectorAll("[data-admin-v2-panel]").forEach((panel) => {
-    panel.classList.toggle("active", panel.dataset.adminV2Panel === tab);
+  document.querySelectorAll("[data-admin-v2-overview-only]").forEach((section) => {
+    section.hidden = tab !== "overview";
   });
+  let activePanel = null;
+  document.querySelectorAll("[data-admin-v2-panel]").forEach((panel) => {
+    const active = panel.dataset.adminV2Panel === tab;
+    panel.classList.toggle("active", active);
+    if (active) activePanel = panel;
+  });
+  if (options.scroll && activePanel) {
+    activePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (tab === "users") {
+    refreshRealReadonlyPreview();
+  }
+  if (tab === "learning") {
+    refreshStage7SchemaContract();
+  }
 }
 
 document.querySelectorAll("[data-admin-v2-tab]").forEach((button) => {
-  button.addEventListener("click", () => setAdminV2Tab(button.dataset.adminV2Tab));
+  button.addEventListener("click", () => setAdminV2Tab(button.dataset.adminV2Tab, { scroll: true }));
 });
 
 function setAdminV2Role(role) {
@@ -842,6 +1170,61 @@ function setSystemPreview(preview) {
   });
 }
 
+function renderStage8LocalApiHandoff(data) {
+  const status = document.querySelector("[data-stage8-api-status]");
+  const source = document.querySelector("[data-stage8-api-source]");
+  const database = document.querySelector("[data-stage8-api-database]");
+  const write = document.querySelector("[data-stage8-api-write]");
+  const deploy = document.querySelector("[data-stage8-api-deploy]");
+  const endpointBody = document.querySelector("[data-stage8-endpoint-body]");
+  const handoff = data || {};
+
+  if (status) status.textContent = handoff.status || "local-api-ready";
+  if (source) source.textContent = handoff.source || "public/admin-v2-local-data.json";
+  if (database) database.textContent = handoff.realDatabaseConnected ? "已连接" : "不连接";
+  if (write) write.textContent = handoff.writeEnabled ? "开启" : "关闭";
+  if (deploy) deploy.textContent = handoff.productionDeployEnabled ? "可发布" : "不可发布";
+
+  const checks = Array.isArray(handoff.endpointChecks) ? handoff.endpointChecks : [];
+  if (!endpointBody) return;
+  if (!checks.length) {
+    endpointBody.innerHTML = '<tr><td colspan="3">等待加载本地 API 验收清单。</td></tr>';
+    return;
+  }
+
+  endpointBody.innerHTML = checks.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.path)}</td>
+      <td><span class="status-badge">${escapeHtml(item.status)}</span></td>
+      <td>${escapeHtml(item.source)}</td>
+    </tr>
+  `).join("");
+}
+
+function refreshStage8LocalApiHandoff() {
+  const status = document.querySelector("[data-stage8-api-status]");
+  if (status) status.textContent = "请求中";
+
+  fetch(adminV2LocalBridge.stage8HandoffUrl, { cache: "no-store" })
+    .then((response) => response.json())
+    .then(renderStage8LocalApiHandoff)
+    .catch(() => {
+      fetch(adminV2LocalBridge.dataUrl, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => renderStage8LocalApiHandoff(data.stage8LocalApiHandoff || {}))
+        .catch(() => {
+          renderStage8LocalApiHandoff({
+            status: "fallback-only",
+            source: "static fallback",
+            realDatabaseConnected: false,
+            writeEnabled: false,
+            productionDeployEnabled: false,
+            endpointChecks: [],
+          });
+        });
+    });
+}
+
 document.querySelectorAll("[data-system-preview]").forEach((button) => {
   button.addEventListener("click", () => setSystemPreview(button.dataset.systemPreview));
 });
@@ -863,6 +1246,149 @@ document.querySelectorAll("[data-sync-preview]").forEach((button) => {
 });
 
 setSyncPreview(adminV2SyncState.activePreview);
+
+function renderStage9Rows(selector, items, columns, emptyText) {
+  const target = document.querySelector(selector);
+  if (!target) return;
+  if (!items.length) {
+    target.innerHTML = `<tr><td colspan="${columns.length}">${escapeHtml(emptyText)}</td></tr>`;
+    return;
+  }
+
+  target.innerHTML = items.map((item) => `
+    <tr>
+      ${columns.map((column) => `<td>${escapeHtml(item[column] || "")}</td>`).join("")}
+    </tr>
+  `).join("");
+}
+
+function renderStage9Readiness(data) {
+  const readiness = data || {};
+  const status = document.querySelector("[data-stage9-readiness-status]");
+  const gitStatus = document.querySelector("[data-stage9-git-status]");
+  const commit = document.querySelector("[data-stage9-can-commit]");
+  const push = document.querySelector("[data-stage9-can-push]");
+  const deploy = document.querySelector("[data-stage9-can-deploy]");
+  const merge = document.querySelector("[data-stage9-can-merge]");
+  const next = document.querySelector("[data-stage9-next-action]");
+
+  if (status) status.textContent = readiness.status || "waiting-boss-acceptance";
+  if (gitStatus) gitStatus.textContent = readiness.gitStatus || "worktree-changes-not-committed";
+  if (commit) commit.textContent = readiness.canCommit ? "允许" : "不允许";
+  if (push) push.textContent = readiness.canPush ? "允许" : "不允许";
+  if (deploy) deploy.textContent = readiness.canDeployProduction ? "允许" : "不允许";
+  if (merge) merge.textContent = readiness.canMergeMain ? "允许" : "不允许";
+  if (next) next.textContent = readiness.nextAllowedAction || "老板统一验收通过后再进入提交/推送准备。";
+
+  renderStage9Rows(
+    "[data-stage9-team-body]",
+    Array.isArray(readiness.teamReviews) ? readiness.teamReviews : [],
+    ["owner", "scope", "status", "focus"],
+    "等待加载团队 review 清单。",
+  );
+  renderStage9Rows(
+    "[data-stage9-checklist-body]",
+    Array.isArray(readiness.checklist) ? readiness.checklist : [],
+    ["item", "status"],
+    "等待加载 PR 闸口清单。",
+  );
+  renderStage9Rows(
+    "[data-stage9-risk-body]",
+    Array.isArray(readiness.productionBlockers) ? readiness.productionBlockers : [],
+    ["label", "status"],
+    "等待加载生产阻断项。",
+  );
+}
+
+function refreshStage9Readiness() {
+  const status = document.querySelector("[data-stage9-readiness-status]");
+  if (status) status.textContent = "请求中";
+
+  fetch(adminV2LocalBridge.stage9ReadinessUrl, { cache: "no-store" })
+    .then((response) => response.json())
+    .then(renderStage9Readiness)
+    .catch(() => {
+      fetch(adminV2LocalBridge.dataUrl, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => renderStage9Readiness(data.stage9PrReadiness || {}))
+        .catch(() => {
+          renderStage9Readiness({
+            status: "fallback-only",
+            gitStatus: "unknown",
+            canCommit: false,
+            canPush: false,
+            canDeployProduction: false,
+            canMergeMain: false,
+            teamReviews: [],
+            checklist: [],
+            productionBlockers: [],
+          });
+        });
+    });
+}
+
+function renderStage10FinalAcceptance(data) {
+  const acceptance = data || {};
+  const status = document.querySelector("[data-stage10-final-status]");
+  const commit = document.querySelector("[data-stage10-can-commit]");
+  const push = document.querySelector("[data-stage10-can-push]");
+  const pr = document.querySelector("[data-stage10-can-pr]");
+  const deploy = document.querySelector("[data-stage10-can-deploy]");
+  const note = document.querySelector("[data-stage10-decision-note]");
+
+  if (status) status.textContent = acceptance.status || "waiting-boss-final-acceptance";
+  if (commit) commit.textContent = acceptance.canCommit ? "允许" : "不允许";
+  if (push) push.textContent = acceptance.canPush ? "允许" : "不允许";
+  if (pr) pr.textContent = acceptance.canCreatePr ? "允许" : "不允许";
+  if (deploy) deploy.textContent = acceptance.canDeployProduction ? "允许" : "不允许";
+  if (note) note.textContent = acceptance.decisionNote || "老板最终确认之前，不提交、不 push、不创建 PR、不部署正式站。";
+
+  renderStage9Rows(
+    "[data-stage10-stage-body]",
+    Array.isArray(acceptance.stageSummaries) ? acceptance.stageSummaries : [],
+    ["stage", "label", "status"],
+    "等待加载 P1-P9 总体验收清单。",
+  );
+  renderStage9Rows(
+    "[data-stage10-checklist-body]",
+    Array.isArray(acceptance.finalChecklist) ? acceptance.finalChecklist : [],
+    ["item", "status"],
+    "等待加载最终提交前清单。",
+  );
+  renderStage9Rows(
+    "[data-stage10-risk-body]",
+    Array.isArray(acceptance.riskLocks) ? acceptance.riskLocks : [],
+    ["label", "status"],
+    "等待加载风险锁。",
+  );
+}
+
+function refreshStage10FinalAcceptance() {
+  const status = document.querySelector("[data-stage10-final-status]");
+  if (status) status.textContent = "请求中";
+
+  fetch(adminV2LocalBridge.stage10FinalUrl, { cache: "no-store" })
+    .then((response) => response.json())
+    .then(renderStage10FinalAcceptance)
+    .catch(() => {
+      fetch(adminV2LocalBridge.dataUrl, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => renderStage10FinalAcceptance(data.stage10FinalAcceptance || {}))
+        .catch(() => {
+          renderStage10FinalAcceptance({
+            status: "fallback-only",
+            canCommit: false,
+            canPush: false,
+            canCreatePr: false,
+            canDeployProduction: false,
+            stageSummaries: [],
+            finalChecklist: [],
+            riskLocks: [],
+          });
+        });
+    });
+}
+
 document.querySelector("[data-customer-search]")?.addEventListener("input", () => {
   renderCustomerRows(adminV2CustomerState.data.users || []);
 });
@@ -913,5 +1439,14 @@ document.querySelectorAll("[data-agent-action]").forEach((button) => {
   button.addEventListener("click", () => performAgentAction(button.dataset.agentAction));
 });
 
+document.querySelector("[data-real-readonly-action='previewRealUsers']")?.addEventListener("click", refreshRealReadonlyPreview);
+document.querySelector("[data-stage7-schema-action='refreshContract']")?.addEventListener("click", refreshStage7SchemaContract);
+document.querySelector("[data-stage8-api-action='refreshHandoff']")?.addEventListener("click", refreshStage8LocalApiHandoff);
+document.querySelector("[data-stage9-action='refreshReadiness']")?.addEventListener("click", refreshStage9Readiness);
+document.querySelector("[data-stage10-action='refreshFinalAcceptance']")?.addEventListener("click", refreshStage10FinalAcceptance);
 document.querySelector("[data-refresh-backend]")?.addEventListener("click", refreshAdminV2BackendData);
 loadAdminV2LocalBridge();
+refreshStage7SchemaContract();
+refreshStage8LocalApiHandoff();
+refreshStage9Readiness();
+refreshStage10FinalAcceptance();

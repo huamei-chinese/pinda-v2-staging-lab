@@ -20,6 +20,29 @@ export class AdminV2LocalPreviewController {
     };
   }
 
+  @Get("real-users-readonly-preview")
+  getRealUsersReadonlyPreview() {
+    return this.buildRealReadonlyPreview(this.readLocalData());
+  }
+
+  @Get("stage7-schema-contract")
+  getStage7SchemaContract() {
+    const data = this.readLocalData();
+
+    return {
+      learning: Array.isArray(data.stage7LearningEventSchemas) ? data.stage7LearningEventSchemas : [],
+      agent: Array.isArray(data.stage7AgentDataSchemas) ? data.stage7AgentDataSchemas : [],
+      gates: Array.isArray(data.stage7AcceptanceGates) ? data.stage7AcceptanceGates : [],
+      meta: {
+        ...(data.stage7SchemaMeta || {}),
+        apiMode: 'stage7-schema-contract',
+        readOnly: true,
+        realDatabaseConnected: false,
+        writeEnabled: false,
+      },
+    };
+  }
+
   @Post("customer-action")
   customerAction(@Body() body: { action?: string; userId?: string; value?: string }) {
     const data = this.readLocalData();
@@ -404,6 +427,41 @@ export class AdminV2LocalPreviewController {
 
   private readLocalData() {
     return JSON.parse(fs.readFileSync(this.dataPath(), 'utf8'));
+  }
+
+  private buildRealReadonlyPreview(data: any) {
+    const users = Array.isArray(data.realReadonlyUsers)
+      ? data.realReadonlyUsers
+      : this.buildRealReadonlyUsers(Array.isArray(data.users) ? data.users : []);
+
+    return {
+      users,
+      contracts: Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [],
+      gaps: Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [],
+      meta: {
+        ...(data.realReadonlyMeta || {}),
+        apiMode: 'real-readonly-contract-preview',
+        source: 'local-contract-preview',
+        readOnly: true,
+        realDatabaseConnected: false,
+        writeEnabled: false,
+      },
+    };
+  }
+
+  private buildRealReadonlyUsers(users: any[]) {
+    return users.map((user) => ({
+      id: user.id,
+      fullName: user.name || user.fullName || 'unknown',
+      email: user.email,
+      role: user.role || '普通用户',
+      currentLevel: user.level || user.currentLevel || 'HSK2',
+      vipStatus: user.vipStatus || user.plan || 'Free',
+      premiumUntil: user.vipExpiresAt || user.premiumUntil || 'N/A',
+      isActive: true,
+      sourceTable: 'users',
+      readOnly: true,
+    }));
   }
 
   private addDays(date: Date, days: number) {

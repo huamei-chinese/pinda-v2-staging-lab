@@ -931,6 +931,43 @@ h1 {
   padding: 14px;
 }
 
+.stage8-api-handoff {
+  border: 1px solid rgba(0, 229, 216, 0.32);
+  background: rgba(0, 42, 46, 0.52);
+  margin-bottom: 12px;
+  padding: 14px;
+}
+
+.stage8-api-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.stage8-api-grid article {
+  border: 1px solid rgba(0, 229, 216, 0.24);
+  background: rgba(0, 20, 28, 0.62);
+  padding: 12px;
+}
+
+.stage8-api-grid span {
+  color: var(--teal);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.stage8-api-grid strong {
+  color: #fff7dc;
+  font-size: 18px;
+}
+
+.stage8-endpoint-table {
+  margin-top: 12px;
+}
+
 .system-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1011,6 +1048,91 @@ h1 {
   border: 1px solid var(--line);
   background: rgba(4, 16, 25, 0.7);
   padding: 14px;
+}
+
+.stage9-pr-readiness {
+  border: 1px solid rgba(0, 229, 216, 0.32);
+  background: rgba(0, 42, 46, 0.52);
+  margin-bottom: 12px;
+  padding: 14px;
+}
+
+.stage9-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.stage9-readiness-grid article {
+  border: 1px solid rgba(0, 229, 216, 0.24);
+  background: rgba(0, 20, 28, 0.62);
+  padding: 12px;
+}
+
+.stage9-readiness-grid span,
+.stage9-tables h3 {
+  color: var(--teal);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.stage9-readiness-grid strong {
+  color: #fff7dc;
+  font-size: 16px;
+}
+
+.stage9-tables {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stage10-final-acceptance {
+  border: 1px solid rgba(246, 200, 102, 0.42);
+  background: rgba(92, 70, 10, 0.18);
+  margin-bottom: 12px;
+  padding: 14px;
+}
+
+.stage10-decision-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.stage10-decision-grid article {
+  border: 1px solid rgba(246, 200, 102, 0.38);
+  background: rgba(0, 20, 28, 0.62);
+  padding: 12px;
+}
+
+.stage10-decision-grid span,
+.stage10-tables h3 {
+  color: #f6c866;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.stage10-decision-grid strong {
+  color: #fff7dc;
+  font-size: 16px;
+}
+
+.stage10-tables {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stage10-tables p {
+  color: var(--muted);
+  margin-top: 10px;
 }
 
 .sync-tabs {
@@ -1207,6 +1329,98 @@ article strong {
   min-width: 720px;
 }
 
+.real-readonly-center {
+  border: 1px solid var(--line);
+  background: rgba(0, 192, 182, 0.05);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.real-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.real-readonly-grid article {
+  border: 1px solid var(--line);
+  background: rgba(0, 36, 48, 0.74);
+  padding: 14px;
+}
+
+.real-readonly-grid span,
+.real-readonly-tables h3 {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.real-readonly-grid strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 20px;
+}
+
+.real-readonly-actions {
+  margin: 12px 0;
+}
+
+.real-readonly-tables {
+  display: grid;
+  gap: 12px;
+}
+
+.real-readonly-tables table {
+  min-width: 900px;
+}
+
+.real-readonly-gap {
+  border-color: rgba(255, 196, 87, 0.35);
+}
+
+.stage7-schema-center {
+  border: 1px solid var(--line);
+  background: rgba(255, 196, 87, 0.045);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.stage7-schema-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stage7-schema-grid article {
+  border: 1px solid rgba(255, 196, 87, 0.28);
+  background: rgba(0, 36, 48, 0.76);
+  padding: 14px;
+}
+
+.stage7-schema-grid span,
+.stage7-schema-tables h3 {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.stage7-schema-grid strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 18px;
+}
+
+.stage7-schema-actions {
+  margin: 12px 0;
+}
+
+.stage7-schema-tables {
+  display: grid;
+  gap: 12px;
+}
+
+.stage7-schema-tables table {
+  min-width: 920px;
+}
+
 .status-badge {
   display: inline-flex;
   border: 1px solid rgba(0, 192, 182, 0.45);
@@ -1259,6 +1473,8 @@ th {
   .bridge-grid,
   .split-grid,
   .bridge-status-grid,
+  .real-readonly-grid,
+  .stage7-schema-grid,
   .local-metrics-strip,
   .backend-pulse,
   .role-switcher,
@@ -1267,6 +1483,9 @@ th {
   .unlock-matrix,
   .commission-range-filter,
   .system-setting-grid,
+  .stage8-api-grid,
+  .stage9-readiness-grid,
+  .stage10-decision-grid,
   .agent-metric-grid {
     grid-template-columns: 1fr;
   }

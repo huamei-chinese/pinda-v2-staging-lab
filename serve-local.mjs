@@ -21,9 +21,181 @@ function send(res, status, body, headers = {}) {
   res.end(body);
 }
 
+function sendJson(res, status, payload) {
+  send(res, status, `${JSON.stringify(payload)}\n`, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
+}
+
+function dataPath() {
+  return path.join(root, "public", "admin-v2-local-data.json");
+}
+
+function readLocalData() {
+  return JSON.parse(fs.readFileSync(dataPath(), "utf8"));
+}
+
+function buildRealReadonlyUsers(users) {
+  return users.map((user) => ({
+    id: user.id,
+    fullName: user.name || user.fullName || "unknown",
+    email: user.email,
+    role: user.role || "普通用户",
+    currentLevel: user.level || user.currentLevel || "HSK2",
+    vipStatus: user.vipStatus || user.plan || "Free",
+    premiumUntil: user.vipExpiresAt || user.premiumUntil || "N/A",
+    isActive: true,
+    sourceTable: "users",
+    readOnly: true,
+  }));
+}
+
+function buildRealReadonlyPreview(data) {
+  const users = Array.isArray(data.realReadonlyUsers)
+    ? data.realReadonlyUsers
+    : buildRealReadonlyUsers(Array.isArray(data.users) ? data.users : []);
+
+  return {
+    users,
+    contracts: Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [],
+    gaps: Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [],
+    meta: {
+      ...(data.realReadonlyMeta || {}),
+      apiMode: "real-readonly-contract-preview",
+      source: "local-contract-preview",
+      readOnly: true,
+      realDatabaseConnected: false,
+      writeEnabled: false,
+    },
+  };
+}
+
+function buildStage7SchemaContract(data) {
+  return {
+    learning: Array.isArray(data.stage7LearningEventSchemas) ? data.stage7LearningEventSchemas : [],
+    agent: Array.isArray(data.stage7AgentDataSchemas) ? data.stage7AgentDataSchemas : [],
+    gates: Array.isArray(data.stage7AcceptanceGates) ? data.stage7AcceptanceGates : [],
+    meta: {
+      ...(data.stage7SchemaMeta || {}),
+      apiMode: "stage7-schema-contract",
+      readOnly: true,
+      realDatabaseConnected: false,
+      writeEnabled: false,
+    },
+  };
+}
+
+function buildStage8LocalApiHandoff(data) {
+  return {
+    ...(data.stage8LocalApiHandoff || {}),
+    endpointChecks: [
+      {
+        path: "/api/admin-v2/local-preview",
+        status: "json-ready",
+        source: "public/admin-v2-local-data.json",
+      },
+      {
+        path: "/api/admin-v2/real-users-readonly-preview",
+        status: "json-ready",
+        source: "local readonly contract",
+      },
+      {
+        path: "/api/admin-v2/stage7-schema-contract",
+        status: "json-ready",
+        source: "local schema contract",
+      },
+    ],
+    realDatabaseConnected: false,
+    writeEnabled: false,
+    productionDeployEnabled: false,
+    readOnly: true,
+  };
+}
+
+function buildStage9PrReadiness(data) {
+  return {
+    ...(data.stage9PrReadiness || {}),
+    canCommit: false,
+    canPush: false,
+    canDeployProduction: false,
+    canMergeMain: false,
+    readOnly: true,
+  };
+}
+
+function buildStage10FinalAcceptance(data) {
+  return {
+    ...(data.stage10FinalAcceptance || {}),
+    canCommit: false,
+    canPush: false,
+    canCreatePr: false,
+    canDeployProduction: false,
+    requiresBossApproval: true,
+    readOnly: true,
+  };
+}
+
+function handleAdminV2Api(req, res, requested) {
+  if (req.method !== "GET") {
+    sendJson(res, 405, {
+      ok: false,
+      reason: "read-only-local-preview",
+      writeEnabled: false,
+    });
+    return true;
+  }
+
+  const data = readLocalData();
+  if (requested === "/api/admin-v2/local-preview") {
+    sendJson(res, 200, {
+      ...data,
+      meta: {
+        ...data.meta,
+        apiMode: "local-preview",
+        readOnly: true,
+        databaseConnected: false,
+        paymentWritesEnabled: false,
+      },
+    });
+    return true;
+  }
+
+  if (requested === "/api/admin-v2/real-users-readonly-preview") {
+    sendJson(res, 200, buildRealReadonlyPreview(data));
+    return true;
+  }
+
+  if (requested === "/api/admin-v2/stage7-schema-contract") {
+    sendJson(res, 200, buildStage7SchemaContract(data));
+    return true;
+  }
+
+  if (requested === "/api/admin-v2/stage8-local-api-handoff") {
+    sendJson(res, 200, buildStage8LocalApiHandoff(data));
+    return true;
+  }
+
+  if (requested === "/api/admin-v2/stage9-pr-readiness") {
+    sendJson(res, 200, buildStage9PrReadiness(data));
+    return true;
+  }
+
+  if (requested === "/api/admin-v2/stage10-final-acceptance") {
+    sendJson(res, 200, buildStage10FinalAcceptance(data));
+    return true;
+  }
+
+  return false;
+}
+
 function resolveStaticFile(requested) {
   const hasExtension = Boolean(path.extname(requested));
-  if (hasExtension) return path.resolve(root, `.${requested}`);
+  if (hasExtension) {
+    const rootFile = path.resolve(root, `.${requested}`);
+    if (fs.existsSync(rootFile)) return rootFile;
+    return path.resolve(root, "public", `.${requested}`);
+  }
 
   if (requested === "/") return path.resolve(root, "./index.html");
 
@@ -44,6 +216,11 @@ http
   .createServer((req, res) => {
     const url = new URL(req.url || "/", `http://localhost:${port}`);
     const requested = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+
+    if (requested.startsWith("/api/admin-v2/") && handleAdminV2Api(req, res, requested)) {
+      return;
+    }
+
     const filePath = resolveStaticFile(requested);
 
     if (!filePath.startsWith(root)) {

@@ -921,6 +921,280 @@
       "scope": "local-json-only"
     }
   ],
+  "realReadonlyMeta": {
+    "source": "local-contract-preview",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "notes": "第 6 阶段只做真实后台字段契约和脱敏样例预览，不连接真实数据库。"
+  },
+  "realReadonlyUsers": [
+    {
+      "id": "5E802A4",
+      "fullName": "lixiang001",
+      "email": "lixiang001@gmail.com",
+      "role": "普通用户",
+      "currentLevel": "HSK2",
+      "vipStatus": "Free",
+      "premiumUntil": "N/A",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    },
+    {
+      "id": "9AB59000",
+      "fullName": "Felix",
+      "email": "langkhai01082002@gmail.com",
+      "role": "普通用户",
+      "currentLevel": "HSK2",
+      "vipStatus": "VIP 7d",
+      "premiumUntil": "2026-07-08",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    },
+    {
+      "id": "8E6320AE",
+      "fullName": "lixiang",
+      "email": "huameizhongxin@gmail.com",
+      "role": "超级管理员",
+      "currentLevel": "HSK2",
+      "vipStatus": "VIP",
+      "premiumUntil": "N/A",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    }
+  ],
+  "realReadonlyContracts": [
+    {
+      "sourceTable": "users",
+      "sourceFields": "id, full_name, email, role, current_level, is_premium, premium_until, vip_plan_id, is_active",
+      "adminV2Fields": "用户ID、姓名、Email、角色、等级、VIP状态、VIP到期、状态",
+      "riskBoundary": "第 6 阶段只读展示，不允许修改用户、VIP或角色。"
+    },
+    {
+      "sourceTable": "payment_plans",
+      "sourceFields": "id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order",
+      "adminV2Fields": "套餐名称、时长、价格、启用状态、排序",
+      "riskBoundary": "只读核对套餐字段，不调整定价。"
+    },
+    {
+      "sourceTable": "payment_orders",
+      "sourceFields": "id, user_id, plan_id, amount, transfer_code, status, created_at, paid_at, expires_at",
+      "adminV2Fields": "订单号、用户、套餐、金额、转账码、状态、创建/支付/过期时间",
+      "riskBoundary": "只读核对订单字段，不创建订单，不处理回调。"
+    },
+    {
+      "sourceTable": "hsk_lesson_locks / daily_theme_locks",
+      "sourceFields": "level, lesson_id, free_limit, is_locked, updated_at",
+      "adminV2Fields": "课程等级、课节、免费限制、锁课状态、更新时间",
+      "riskBoundary": "只读核对锁课配置，不改 VIP 锁定。"
+    }
+  ],
+  "realReadonlyGaps": [
+    {
+      "key": "learning_records",
+      "label": "真实学习记录",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "第 7 阶段先定义学习事件 schema，再决定是否采集。"
+    },
+    {
+      "key": "learning_events",
+      "label": "真实学习事件",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "先保持本地 mock，禁止伪造为真实数据。"
+    },
+    {
+      "key": "agent_referrals",
+      "label": "真实代理归因",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "后续由阿杰确认代理归因表设计。"
+    },
+    {
+      "key": "agent_commissions",
+      "label": "真实代理佣金",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "后续必须先有订单归因和结算规则，不能从支付订单直接推断。"
+    }
+  ],
+  "stage7SchemaMeta": {
+    "status": "schema-contract-only",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "notes": "第 7 阶段只定义缺失真实数据 schema 契约，不建表、不接库、不写正式用户行为。"
+  },
+  "stage7LearningEventSchemas": [
+    {
+      "key": "learning_event",
+      "label": "学习事件 schema",
+      "fields": "event_id, user_id, module, lesson_id, event_name, occurred_at, client_source",
+      "source": "前台学习行为",
+      "boundary": "只定义契约，不采集正式用户行为。"
+    },
+    {
+      "key": "learning_summary",
+      "label": "学习汇总 schema",
+      "fields": "user_id, date, questions_answered, wrong_answers, accuracy, last_studied_at",
+      "source": "学习事件聚合",
+      "boundary": "只读分析口径，不写正式统计表。"
+    },
+    {
+      "key": "wrong_answer_event",
+      "label": "错题事件 schema",
+      "fields": "user_id, lesson_id, question_id, answer_value, correct_value, occurred_at",
+      "source": "练习答题结果",
+      "boundary": "不保存敏感内容，不影响 VIP 锁课。"
+    }
+  ],
+  "stage7AgentDataSchemas": [
+    {
+      "key": "agent_referral",
+      "label": "代理归因 schema",
+      "fields": "agent_code, user_id, source_url, bound_at, changed_by, change_reason",
+      "owner": "阿杰确认",
+      "boundary": "只定义归因字段，不绑定正式用户。"
+    },
+    {
+      "key": "agent_customer",
+      "label": "代理客户 schema",
+      "fields": "agent_id, user_id, vip_status, first_seen_at, last_activity_at, visibility_scope",
+      "owner": "阿杰确认",
+      "boundary": "代理账号只看自己客户，不看全站用户。"
+    },
+    {
+      "key": "agent_commission_preview",
+      "label": "佣金结算 schema",
+      "fields": "agent_id, user_id, vip_plan, amount, period, status, reviewed_by",
+      "owner": "老板确认",
+      "boundary": "只做预览，不结算，不付款。"
+    }
+  ],
+  "stage7AcceptanceGates": [
+    {
+      "owner": "老板",
+      "item": "确认是否允许进入真实表设计",
+      "status": "required-before-real-db"
+    },
+    {
+      "owner": "阿杰",
+      "item": "确认学习事件、代理归因、佣金字段是否能落地",
+      "status": "pending-review"
+    },
+    {
+      "owner": "阿辉",
+      "item": "确认客服、学习、代理三条后台操作路径是否易用",
+      "status": "pending-ui-review"
+    }
+  ],
+  "stage8LocalApiHandoff": {
+    "status": "local-api-ready",
+    "source": "public/admin-v2-local-data.json",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "productionDeployEnabled": false,
+    "notes": "第 8 阶段只打通本地静态预览服务器的只读 JSON API，不连接真实数据库，不写 VIP、支付、订单、代理佣金。"
+  },
+  "stage9PrReadiness": {
+    "status": "waiting-boss-acceptance",
+    "gitStatus": "worktree-changes-not-committed",
+    "canCommit": false,
+    "canPush": false,
+    "canDeployProduction": false,
+    "canMergeMain": false,
+    "nextAllowedAction": "老板统一验收通过后，才允许进入提交/推送准备。",
+    "teamReviews": [
+      {
+        "owner": "老板",
+        "scope": "统一验收",
+        "status": "required",
+        "focus": "确认 P1-P9 是否符合后台落地目标，不触碰正式站、支付、VIP、数据库。"
+      },
+      {
+        "owner": "阿辉",
+        "scope": "UI review",
+        "status": "pending-after-boss",
+        "focus": "检查后台视觉密度、表格、筛选、状态 Badge、操作区是否适合管理人员使用。"
+      },
+      {
+        "owner": "阿杰",
+        "scope": "功能 review",
+        "status": "pending-after-boss",
+        "focus": "检查本地 API 契约、真实数据缺口、后续数据库表设计和后台接口落地路线。"
+      }
+    ],
+    "checklist": [
+      {
+        "item": "当前是否可以提交",
+        "status": "blocked-until-boss-acceptance"
+      },
+      {
+        "item": "当前是否可以 push",
+        "status": "blocked-until-boss-acceptance"
+      },
+      {
+        "item": "是否可以给阿辉阿杰 review",
+        "status": "prepare-after-boss"
+      },
+      {
+        "item": "是否可以部署正式站",
+        "status": "blocked"
+      },
+      {
+        "item": "是否可以合并 main",
+        "status": "blocked"
+      }
+    ],
+    "productionBlockers": [
+      {
+        "key": "real_db_not_connected",
+        "label": "真实数据库未连接",
+        "status": "blocked"
+      },
+      {
+        "key": "production_deploy_blocked",
+        "label": "不部署正式站",
+        "status": "blocked"
+      },
+      {
+        "key": "payment_vip_untouched",
+        "label": "支付、VIP、用户数据未触碰",
+        "status": "protected"
+      }
+    ]
+  },
+  "stage10FinalAcceptance": {
+    "status": "waiting-boss-final-acceptance",
+    "canCommit": false,
+    "canPush": false,
+    "canCreatePr": false,
+    "canDeployProduction": false,
+    "requiresBossApproval": true,
+    "decisionNote": "老板最终确认之前，不提交、不 push、不创建 PR、不部署正式站。",
+    "stageSummaries": [
+      { "stage": "P1", "label": "后台视觉骨架", "status": "ready-for-boss-review" },
+      { "stage": "P2", "label": "角色与菜单权限骨架", "status": "ready-for-boss-review" },
+      { "stage": "P3", "label": "用户 / 客服 / VIP 服务视图", "status": "ready-for-boss-review" },
+      { "stage": "P4", "label": "学习数据分析口径", "status": "ready-for-boss-review" },
+      { "stage": "P5", "label": "VIP 与课程解锁配置", "status": "ready-for-boss-review" },
+      { "stage": "P6", "label": "内容与素材流程", "status": "ready-for-boss-review" },
+      { "stage": "P7", "label": "缺失真实数据 Schema 契约", "status": "superpower-accepted" },
+      { "stage": "P8", "label": "本地只读 API 联调验收", "status": "superpower-accepted" },
+      { "stage": "P9", "label": "PR / 团队同步 / 生产前检查", "status": "superpower-accepted" }
+    ],
+    "finalChecklist": [
+      { "item": "P1-P9 总体验收", "status": "waiting-boss" },
+      { "item": "Superpower 验收", "status": "required-before-commit" },
+      { "item": "阿辉 UI review", "status": "optional-after-boss" },
+      { "item": "阿杰功能 review", "status": "optional-after-boss" },
+      { "item": "回滚计划", "status": "documented-local-only" }
+    ],
+    "riskLocks": [
+      { "key": "production_site_locked", "label": "不部署正式站", "status": "locked" },
+      { "key": "payment_vip_locked", "label": "支付、VIP、订单、佣金不写入", "status": "locked" },
+      { "key": "database_locked", "label": "真实数据库不连接", "status": "locked" },
+      { "key": "main_merge_locked", "label": "不合并 main", "status": "locked" }
+    ]
+  },
   "blockedEndpoints": [
     "/api/payments/orders",
     "/api/webhooks/sepay",

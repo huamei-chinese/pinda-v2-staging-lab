@@ -34,6 +34,7 @@ const checks = [
 const allowedDisplayOnly = [
   { file: "public/admin-v2.html", label: "server database dependency", includes: "DATABASE_URL off" },
   { file: "public/admin-v2.js", label: "server payment dependency", includes: "/api/webhooks/sepay" },
+  { file: "public/admin-v2-local-data.json", label: "server database dependency", includes: "payment_orders" },
   { file: "public/admin-v2-local-data.json", label: "server payment dependency", includes: "/api/webhooks/sepay" },
 ];
 

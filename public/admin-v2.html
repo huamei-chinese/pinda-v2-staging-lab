@@ -49,7 +49,7 @@
         <span>本版本为本地实验版，不可部署，不可连接线上数据库；所有危险写操作默认关闭。</span>
       </section>
 
-      <section class="local-bridge" aria-label="本地前后端接入安全壳">
+      <section class="local-bridge" data-admin-v2-overview-only aria-label="本地前后端接入安全壳">
         <div class="section-title">
           <span>本地前后端接入安全壳</span>
           <h2>老板验收重点</h2>
@@ -92,7 +92,7 @@
         </div>
       </section>
 
-      <section class="role-control" aria-label="P2 角色与菜单权限骨架">
+      <section class="role-control" data-admin-v2-overview-only aria-label="P2 角色与菜单权限骨架">
         <div class="section-title">
           <span>P2：角色与菜单权限骨架</span>
           <h2>老板验收重点</h2>
@@ -150,7 +150,7 @@
         </div>
       </section>
 
-      <section class="service-board" aria-label="P3 用户客服 VIP 服务视图">
+      <section class="service-board" data-admin-v2-overview-only aria-label="P3 用户客服 VIP 服务视图">
         <div class="section-title">
           <span>P3：用户 / 客服 / VIP 服务视图</span>
           <h2>老板验收重点</h2>
@@ -204,7 +204,7 @@
         </div>
       </section>
 
-      <section class="metric-grid" aria-label="运营总览">
+      <section class="metric-grid" data-admin-v2-overview-only aria-label="运营总览">
         <article>
           <span>今日注册</span>
           <strong>待接入</strong>
@@ -264,6 +264,94 @@
         <div class="section-title">
           <span>用户管理</span>
           <h2>账号、VIP、归因预览</h2>
+        </div>
+        <div class="real-readonly-center">
+          <div class="section-title">
+            <span>第 6 阶段：真实数据只读接入</span>
+            <h2>老板验收重点</h2>
+            <p>确认真实后台字段契约已经进入实验舱，但当前只读预览仍来自本地契约数据；不连接真实数据库，不读取正式用户表，不写入 VIP、订单、支付、代理佣金。</p>
+          </div>
+          <div class="real-readonly-grid">
+            <article>
+              <span>真实数据接入状态</span>
+              <strong data-real-readonly-status>等待只读预览</strong>
+              <small>本地 endpoint 只返回字段契约和脱敏样例。</small>
+            </article>
+            <article>
+              <span>真实学习数据：暂无真实表</span>
+              <strong>gap</strong>
+              <small>当前发布后台没有学习记录、学习事件真实来源。</small>
+            </article>
+            <article>
+              <span>真实代理佣金：暂无真实表</span>
+              <strong>gap</strong>
+              <small>当前发布后台没有代理客户、代理佣金真实来源。</small>
+            </article>
+            <article>
+              <span>写入边界</span>
+              <strong>read-only</strong>
+              <small>不调用正式 API，不接库，不处理支付回调。</small>
+            </article>
+          </div>
+          <div class="backend-pulse real-readonly-actions">
+            <button type="button" data-real-readonly-action="previewRealUsers">刷新只读真实预览</button>
+            <span>数据源：<strong>local-contract-preview</strong></span>
+            <span>真实库：<strong>未连接</strong></span>
+            <span>写入：<strong>关闭</strong></span>
+          </div>
+          <div class="real-readonly-tables">
+            <article class="table-shell">
+              <h3>只读真实用户预览</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th>Email</th>
+                    <th>角色</th>
+                    <th>等级</th>
+                    <th>VIP</th>
+                    <th>到期</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-users-body>
+                  <tr><td colspan="8">等待加载只读真实用户预览。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>真实后台字段契约</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>真实表</th>
+                    <th>真实字段</th>
+                    <th>实验舱字段</th>
+                    <th>风险边界</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-contract-body>
+                  <tr><td colspan="4">等待加载字段契约。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell real-readonly-gap">
+              <h3>真实数据缺口</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>缺口</th>
+                    <th>当前状态</th>
+                    <th>后续动作</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-gaps-body>
+                  <tr><td colspan="3">等待加载缺口列表。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
         </div>
         <div class="customer-command-center">
           <div class="section-title">
@@ -351,6 +439,90 @@
           <span>P4：学习数据与事件分析</span>
           <h2>老板验收重点</h2>
           <p>确认学习事件口径、模块学习漏斗、热门课程排行、VIP 弹窗与锁课触发是否覆盖核心学习业务；当前为只读学习事件规划，不读取正式用户学习数据，不写入正式埋点表。</p>
+        </div>
+        <div class="stage7-schema-center">
+          <div class="section-title">
+            <span>第 7 阶段：缺失真实数据 Schema 契约</span>
+            <h2>老板验收重点</h2>
+            <p>确认真实学习数据、代理归因、佣金结算三类缺口已经被拆成字段契约、采集边界和审批闸口；当前只做 schema 契约，不建表，不接库，不采集正式用户行为。</p>
+          </div>
+          <div class="stage7-schema-grid">
+            <article>
+              <span>学习事件 schema</span>
+              <strong data-stage7-schema-status>等待加载契约</strong>
+              <small>先定义事件字段，不写正式埋点表。</small>
+            </article>
+            <article>
+              <span>代理归因 schema</span>
+              <strong>阿杰确认</strong>
+              <small>先确认 agent_code、绑定来源、归属变更日志。</small>
+            </article>
+            <article>
+              <span>佣金结算 schema</span>
+              <strong>老板验收后才允许进入真实表设计</strong>
+              <small>不从订单直接推断佣金，不触发付款。</small>
+            </article>
+            <article>
+              <span>UI 对齐</span>
+              <strong>阿辉确认</strong>
+              <small>后续确认客服、学习、代理三条工作流是否易操作。</small>
+            </article>
+          </div>
+          <div class="backend-pulse stage7-schema-actions">
+            <button type="button" data-stage7-schema-action="refreshContract">刷新 schema 契约</button>
+            <span>真实库：<strong>未连接</strong></span>
+            <span>写入：<strong>关闭</strong></span>
+            <span>下一步：<strong>只做契约评审</strong></span>
+          </div>
+          <div class="stage7-schema-tables">
+            <article class="table-shell">
+              <h3>学习事件 schema</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>事件</th>
+                    <th>字段</th>
+                    <th>来源</th>
+                    <th>边界</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-learning-schema-body>
+                  <tr><td colspan="4">等待加载学习 schema。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>代理与佣金 schema</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>对象</th>
+                    <th>字段</th>
+                    <th>负责人</th>
+                    <th>边界</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-agent-schema-body>
+                  <tr><td colspan="4">等待加载代理 schema。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>接入闸口</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>负责人</th>
+                    <th>确认项</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-gate-body>
+                  <tr><td colspan="3">等待加载接入闸口。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
         </div>
         <div class="learning-command-center">
           <div class="section-title">
@@ -880,6 +1052,38 @@
           <h2>老板验收重点</h2>
           <p>确认系统设置总览、审计日志、发布闸口、错误 hook 提醒和环境边界是否清楚；当前是只读系统预览，不连接正式数据库，不部署正式站，不修改 .env。</p>
         </div>
+        <div class="stage8-api-handoff">
+          <div class="section-title">
+            <span>第 8 阶段：本地只读 API 联调验收</span>
+            <h2>本地 API 验收通道</h2>
+            <p>确认静态预览服务器可以返回本地 JSON API，前端刷新按钮有真实本地响应；真实库：不连接，写入：关闭，不部署正式站。</p>
+          </div>
+          <div class="stage8-api-grid">
+            <article><span>联调状态</span><strong data-stage8-api-status>等待请求</strong></article>
+            <article><span>数据源</span><strong data-stage8-api-source>public/admin-v2-local-data.json</strong></article>
+            <article><span>真实库</span><strong data-stage8-api-database>不连接</strong></article>
+            <article><span>写入</span><strong data-stage8-api-write>关闭</strong></article>
+            <article><span>部署</span><strong data-stage8-api-deploy>不可发布</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage8-api-action="refreshHandoff">刷新本地 API 验收</button>
+            <span>只读 API：<strong>/api/admin-v2/stage8-local-api-handoff</strong></span>
+          </div>
+          <div class="table-shell stage8-endpoint-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>接口</th>
+                  <th>状态</th>
+                  <th>来源</th>
+                </tr>
+              </thead>
+              <tbody data-stage8-endpoint-body>
+                <tr><td colspan="3">等待加载本地 API 验收清单。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         <div class="system-control-board">
           <div class="system-tabs" aria-label="系统设置预览切换">
             <button class="active" type="button" data-system-preview="settings">系统设置总览</button>
@@ -958,6 +1162,135 @@
           <span>P9：PR / 同步 / 生产准备</span>
           <h2>老板验收重点</h2>
           <p>确认 GitHub 同步准备、阿辉 UI 设计、阿杰功能开发、老板验收、PR 清单、生产前检查、差异确认、冲突风险和回滚计划是否清楚；当前只读同步准备，不 push，不部署，不合并 main。</p>
+        </div>
+        <div class="stage9-pr-readiness">
+          <div class="section-title">
+            <span>第 9 阶段：PR / 团队同步 / 生产前检查</span>
+            <h2>老板验收重点</h2>
+            <p>确认当前是否可以提交、当前是否可以 push、是否可以交给阿辉 UI review 和阿杰功能 review；当前仍不部署正式站，不合并 main。</p>
+          </div>
+          <div class="stage9-readiness-grid">
+            <article><span>验收状态</span><strong data-stage9-readiness-status>等待请求</strong></article>
+            <article><span>Git 状态</span><strong data-stage9-git-status>等待请求</strong></article>
+            <article><span>当前是否可以提交</span><strong data-stage9-can-commit>不允许</strong></article>
+            <article><span>当前是否可以 push</span><strong data-stage9-can-push>不允许</strong></article>
+            <article><span>部署正式站</span><strong data-stage9-can-deploy>不允许</strong></article>
+            <article><span>合并 main</span><strong data-stage9-can-merge>不允许</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage9-action="refreshReadiness">刷新 PR 准备状态</button>
+            <span>下一步：<strong data-stage9-next-action>老板统一验收后再决定。</strong></span>
+          </div>
+          <div class="stage9-tables">
+            <div class="table-shell">
+              <h3>团队 review 分工</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>人员</th>
+                    <th>范围</th>
+                    <th>状态</th>
+                    <th>重点</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-team-body>
+                  <tr><td colspan="4">等待加载团队 review 清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>PR 闸口清单</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>项目</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-checklist-body>
+                  <tr><td colspan="2">等待加载 PR 闸口清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>生产前阻断项</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>风险</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-risk-body>
+                  <tr><td colspan="2">等待加载生产阻断项。</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="stage10-final-acceptance">
+          <div class="section-title">
+            <span>第 10 阶段：总体验收包 / 最终提交前决策</span>
+            <h2>老板最终决策</h2>
+            <p>P1-P9 总体验收后，由老板决定是否允许 commit、push、创建 PR；当前仍不部署正式站，不合并 main。</p>
+          </div>
+          <div class="stage10-decision-grid">
+            <article><span>最终状态</span><strong data-stage10-final-status>等待请求</strong></article>
+            <article><span>是否允许 commit</span><strong data-stage10-can-commit>不允许</strong></article>
+            <article><span>是否允许 push</span><strong data-stage10-can-push>不允许</strong></article>
+            <article><span>是否允许创建 PR</span><strong data-stage10-can-pr>不允许</strong></article>
+            <article><span>是否允许部署正式站</span><strong data-stage10-can-deploy>不允许</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage10-action="refreshFinalAcceptance">刷新最终验收包</button>
+            <span>决策说明：<strong data-stage10-decision-note>老板最终确认之前，不提交、不 push、不创建 PR、不部署正式站。</strong></span>
+          </div>
+          <div class="stage10-tables">
+            <div class="table-shell">
+              <h3>P1-P9 总体验收</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>阶段</th>
+                    <th>内容</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-stage-body>
+                  <tr><td colspan="3">等待加载 P1-P9 总体验收清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>最终提交前清单</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>项目</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-checklist-body>
+                  <tr><td colspan="2">等待加载最终提交前清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>风险锁与回滚计划</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>风险锁</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-risk-body>
+                  <tr><td colspan="2">等待加载风险锁。</td></tr>
+                </tbody>
+              </table>
+              <p>Superpower 验收通过后，仍需要老板最终确认；回滚计划保留为本地实验舱回退，不影响正式站。</p>
+            </div>
+          </div>
         </div>
         <div class="sync-readiness-board">
           <div class="sync-tabs" aria-label="同步准备预览切换">
