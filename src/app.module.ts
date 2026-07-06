@@ -12,7 +12,7 @@ import { ListeningModule } from './listening/listening.module';
   imports: [
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), 'public'),
-      exclude: ['/api/(.*)'],
+      exclude: ['/api/*path'],
     }),
     DatabaseModule,
     AuthModule,
