@@ -17768,6 +17768,7 @@ body:has(#practiceScreen:not(.hidden)) {
   width: 100%;
   display: grid;
   gap: 18px;
+  margin-top: 15px;
 }
 
 .listening-spa-hero,
@@ -24827,7 +24828,7 @@ body:has(#practiceScreen:not(.hidden)) {
       rgba(255, 255, 255, 0.72),
       rgba(248, 250, 255, 0.84)
     ),
-    url("assets/tuvung.png"),
+    url("assets/anhnentuvung.png"),
     linear-gradient(135deg, #f7f2ff, #eef9ff) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -24863,7 +24864,7 @@ body:has(#practiceScreen:not(.hidden)) {
       rgba(255, 255, 255, 0.48),
       rgba(248, 250, 255, 0.62)
     ),
-    url("assets/tuvung.png"),
+    url("assets/anhnentuvung.png"),
     linear-gradient(135deg, #f7f2ff, #eef9ff) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -25325,7 +25326,64 @@ body:has(#practiceScreen:not(.hidden)) {
   gap: 24px !important;
 }
 
+.listening-gateway-screen {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px clamp(18px, 4vw, 48px) 64px;
+}
 
+.listening-gateway-hero {
+  min-height: 295px;
+  border-radius: 34px;
+  padding: 48px 64px;
+  color: #fff;
+  background: linear-gradient(135deg, #13b8a6, #23b4a1 42%, #78d8c8);
+  box-shadow: 0 24px 60px rgba(13, 148, 136, 0.22);
+}
+
+.listening-gateway-hero h1 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: clamp(46px, 6vw, 72px);
+  font-weight: 950;
+}
+
+.listening-gateway-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+  margin-top: 34px;
+}
+
+.listening-gateway-card {
+  border-radius: 30px;
+  padding: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.08);
+}
+
+.listening-gateway-card--dialogue {
+  background: linear-gradient(145deg, #ecfdf5, #f0fdfa);
+  border-top: 6px solid #14b8a6;
+}
+
+.listening-gateway-card--monologue {
+  background: linear-gradient(145deg, #fdf2f8, #f5f3ff);
+  border-top: 6px solid #d946ef;
+}
+
+.listening-gateway-level {
+  min-height: 60px;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,.9);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: 900;
+  cursor: pointer;
+}
 .home-desktop-modules--duo,
 .home-duo-modules {
   display: grid !important;
@@ -26657,7 +26715,7 @@ background:
   padding: clamp(38px, 6vw, 70px) clamp(24px, 6vw, 70px);
   background:
     linear-gradient(90deg, rgba(255,255,255,.84), rgba(245,250,255,.58)),
-    url("assets/backgroundoithoai.png") center / cover no-repeat,
+    url("assets/anhnentrangchu1.png") center / cover no-repeat,
     #f7fbff;
 }
 
@@ -26795,7 +26853,7 @@ background:
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255,255,255,.78), rgba(247,251,255,.52), rgba(238,247,255,.72)),
-    url("assets/backgroundoithoai.png") center / cover no-repeat,
+    url("assets/anhnentuvung.png") center / cover no-repeat,
     #f7fbff;
 }
 
@@ -27058,7 +27116,7 @@ background:
   overflow-x: hidden !important;
   background:
     linear-gradient(90deg, rgba(255,255,255,.62), rgba(241,249,255,.76)),
-    url("assets/backgroundoithoai.png") center / cover no-repeat !important;
+    url("assets/anhnentuvung.png") center / cover no-repeat !important;
 }
 
 
@@ -27220,7 +27278,7 @@ background:
   padding: clamp(18px, 3vw, 40px);
   background:
     linear-gradient(180deg, rgba(255,255,255,.78), rgba(238,249,255,.82)),
-    url("assets/backgroundoithoai.png") center / cover no-repeat,
+    url("assets/anhnentuvung.png") center / cover no-repeat,
     #f4fbff;
 }
 
@@ -27235,7 +27293,7 @@ background:
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(237,255,250,.96) 0%, rgba(233,251,247,.78) 42%, rgba(72,211,204,.28) 100%),
-    url("assets/backgroundoithoai.png") right center / auto 115% no-repeat;
+    url("assets/anhnentuvung.png") right center / auto 115% no-repeat;
   box-shadow: 0 28px 70px rgba(29, 91, 105, .14);
 }
 
@@ -27444,7 +27502,7 @@ background:
   .app-desktop-shell--listening .app-desktop-content {
     background:
       linear-gradient(180deg, rgba(255,255,255,.76), rgba(240,249,255,.8)),
-      url("assets/backgroundoithoai.png") center / cover no-repeat !important;
+      url("assets/anhnentuvung.png") center / cover no-repeat !important;
   }
 
   .listening-gateway-screen {
@@ -27711,7 +27769,7 @@ background:
   position: fixed !important;
   inset: 0 !important;
   z-index: -2 !important;
-  background-image: url("assets/backgroundoithoai.png") !important;
+  background-image: url("assets/anhnentuvung.png") !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
@@ -27768,7 +27826,7 @@ background:
 .listening-lessons-screen {
   background:
     linear-gradient(90deg, rgba(255,255,255,.36), rgba(255,255,255,.18)),
-    url("assets/backgroundoithoai.png") center top / cover no-repeat !important;
+    url("assets/anhnentuvung.png") center top / cover no-repeat !important;
 }
 
 /* Mobile */
@@ -30074,6 +30132,7 @@ background:
 .listening-repeat-feed-card--active {
   min-height: min(520px, 68vh) !important;
   padding: clamp(24px, 4vw, 48px) clamp(18px, 4vw, 54px) !important;
+  position: relative !important;
   display: grid !important;
   align-content: center !important;
   justify-items: center !important;
@@ -30085,6 +30144,55 @@ background:
     linear-gradient(135deg, rgba(255,255,255,.92), rgba(234,248,255,.84)) !important;
   box-shadow: 0 28px 70px rgba(70, 88, 136, .14), inset 0 1px 0 rgba(255,255,255,.92) !important;
   text-align: center !important;
+}
+
+.listening-repeat-feed-nav {
+  position: absolute !important;
+  top: 50% !important;
+  z-index: 3 !important;
+  width: 58px !important;
+  height: 58px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(124, 58, 237, .16) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .88) !important;
+  color: #7c3aed !important;
+  box-shadow: 0 16px 34px rgba(74, 86, 134, .14) !important;
+  transform: translateY(-50%) !important;
+  cursor: pointer !important;
+  transition: transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease, opacity .18s ease !important;
+}
+
+.listening-repeat-feed-nav--prev {
+  left: clamp(14px, 2.4vw, 32px) !important;
+}
+
+.listening-repeat-feed-nav--next {
+  right: clamp(14px, 2.4vw, 32px) !important;
+}
+
+.listening-repeat-feed-nav:hover:not(:disabled) {
+  background: #7c3aed !important;
+  color: #fff !important;
+  box-shadow: 0 20px 42px rgba(124, 58, 237, .24) !important;
+  transform: translateY(-50%) scale(1.04) !important;
+}
+
+.listening-repeat-feed-nav:disabled {
+  opacity: .32 !important;
+  cursor: default !important;
+  box-shadow: none !important;
+}
+
+.listening-repeat-feed-nav svg {
+  width: 26px !important;
+  height: 26px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 3 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
 }
 
 .listening-repeat-feed-index {
@@ -30324,8 +30432,26 @@ background:
 
   .listening-repeat-feed-card--active {
     min-height: min(430px, 66vh) !important;
-    padding: 24px 14px !important;
+    padding: 24px 52px !important;
     gap: 16px !important;
+  }
+
+  .listening-repeat-feed-nav {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .listening-repeat-feed-nav--prev {
+    left: 8px !important;
+  }
+
+  .listening-repeat-feed-nav--next {
+    right: 8px !important;
+  }
+
+  .listening-repeat-feed-nav svg {
+    width: 21px !important;
+    height: 21px !important;
   }
 
   .listening-repeat-feed-active-content strong {
@@ -30726,7 +30852,7 @@ background:
       rgba(16, 185, 129, 0.10) 42%,
       rgba(236, 72, 153, 0.12) 100%
     ),
-    url("assets/backgroundoithoai.png") center bottom / cover no-repeat !important;
+    url("assets/anhnentuvung.png") center bottom / cover no-repeat !important;
 }
 
 .listening-repeat-listen-card,
@@ -31246,7 +31372,7 @@ background:
     rgba(255,255,255,.10) 34%,
     rgba(255,255,255,.05) 100%
   ),
-  url("assets/anhnentrangchu.png") center / cover no-repeat !important;
+  url("assets/anhnentrangchu1.png") center / cover no-repeat !important;
   pointer-events: none;
 }
 
@@ -32160,5 +32286,2937 @@ background:
   .home-desktop-feature-card small {
     font-size: 12px !important;
     line-height: 1.3 !important;
+  }
+}
+/* ===== FINAL player nghe: giống app nhạc, dùng bieutuong.png ===== */
+.listening-player-card {
+  position: relative !important;
+  min-height: 150px !important;
+  padding: 20px 30px 18px 132px !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(147, 197, 253, 0.45) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,255,.92)) !important;
+  box-shadow:
+    0 18px 46px rgba(37, 99, 235, .10),
+    inset 0 1px 0 rgba(255,255,255,.9) !important;
+  overflow: hidden !important;
+}
+
+/* Ảnh biểu tượng bên trái */
+.listening-player-card::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 34px !important;
+  top: 28px !important;
+  width: 78px !important;
+  height: 78px !important;
+  border-radius: 22px !important;
+  background: url("assets/bieutuong.png") center / cover no-repeat !important;
+  box-shadow:
+    0 16px 34px rgba(37, 99, 235, .16),
+    inset 0 1px 0 rgba(255,255,255,.6) !important;
+}
+
+/* Dòng tiêu đề + waveform */
+.listening-player-status {
+  display: grid !important;
+  grid-template-columns: minmax(190px, 270px) 54px minmax(280px, 1fr) 54px !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+.listening-player-status strong {
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+}
+
+.listening-player-status small {
+  margin-top: 4px !important;
+  color: #2563eb !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+
+.listening-player-status > span {
+  color: #111827 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+}
+
+/* Waveform kiểu ảnh mẫu */
+.listening-waveform {
+  height: 42px !important;
+  min-height: 42px !important;
+  border-radius: 999px !important;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(37, 99, 235, .16) 0 3px,
+      transparent 3px 12px
+    ) !important;
+  opacity: .9 !important;
+  overflow: hidden !important;
+}
+
+.listening-waveform i {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #3b82f6 0 3px,
+      transparent 3px 12px
+    ) !important;
+  opacity: .8 !important;
+}
+
+/* Bỏ dòng thời gian phụ */
+.listening-time-row {
+  display: none !important;
+}
+
+/* Thanh tiến trình mảnh hơn */
+.listening-track {
+  height: 8px !important;
+  margin: 8px 0 16px !important;
+  border-radius: 999px !important;
+  background: #eaf2ff !important;
+  box-shadow: inset 0 1px 2px rgba(37, 99, 235, .12) !important;
+}
+
+.listening-track i {
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #fb923c, #2563eb) !important;
+}
+
+.listening-track-marker {
+  width: 28px !important;
+  height: 28px !important;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, .18) !important;
+}
+
+/* Controls nhỏ lại giống trình phát nhạc */
+.listening-player-card .listening-controls {
+  display: grid !important;
+  grid-template-columns: 88px 42px 58px 42px 130px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 18px !important;
+  padding-top: 0 !important;
+}
+
+.listening-speed-toggle {
+  min-height: 32px !important;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.9) !important;
+  border: 1px solid rgba(37, 99, 235, .18) !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .08) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+.listening-player-card .listening-step-btn {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #1d4ed8 !important;
+}
+
+.listening-player-card .listening-step-btn span {
+  display: none !important;
+}
+
+.listening-player-card .listening-step-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.listening-player-card .listening-main-play {
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  box-shadow: 0 16px 30px rgba(37, 99, 235, .32) !important;
+}
+
+.listening-player-card .listening-main-play svg {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.listening-player-card .listening-replay-link {
+  min-height: 38px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #2563eb !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+/* Nếu chữ replay bị tràn, chỉ giữ icon */
+@media (max-width: 1180px) {
+  .listening-player-card .listening-replay-link {
+    width: 42px !important;
+    min-width: 42px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+
+  .listening-player-card .listening-replay-link svg {
+    width: 21px !important;
+    height: 21px !important;
+  }
+}
+/* ===== LISTENING DETAIL FINAL CLEAN ===== */
+
+/* Banner anh nen: chi hien desktop */
+.screen-listening .listening-detail-spa > .listening-detail-hero {
+  display: block !important;
+  height: clamp(128px, 11vw, 168px) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  background: url("assets/anhnentrinhphatnhac.png") center / cover no-repeat !important;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.1) !important;
+}
+
+.screen-listening .listening-detail-hero > *,
+.screen-listening .listening-detail-hero::before,
+.screen-listening .listening-detail-hero::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Player gon hon */
+.screen-listening .listening-player-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 68px minmax(0, 1fr) !important;
+  grid-template-rows: auto 6px auto !important;
+  column-gap: 16px !important;
+  row-gap: 8px !important;
+  min-height: 118px !important;
+  padding: 15px 22px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(147, 197, 253, 0.42) !important;
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.09) !important;
+}
+
+.screen-listening .listening-player-card::before {
+  content: "" !important;
+  position: static !important;
+  grid-column: 1 !important;
+  grid-row: 1 / 4 !important;
+  align-self: center !important;
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 16px !important;
+  background: url("assets/bieutuong.png") center / cover no-repeat !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.14) !important;
+}
+
+.screen-listening .listening-player-status {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns: minmax(150px, 230px) 44px minmax(180px, 1fr) 44px !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+.screen-listening .listening-player-status strong {
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-player-status small {
+  margin-top: 3px !important;
+  color: #2563eb !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  font-weight: 850 !important;
+}
+
+.screen-listening .listening-waveform {
+  height: 30px !important;
+  min-height: 30px !important;
+  border-radius: 999px !important;
+}
+
+.screen-listening .listening-time-row,
+.screen-listening .listening-track-marker {
+  display: none !important;
+}
+
+.screen-listening .listening-track {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  height: 6px !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: #eaf2ff !important;
+}
+
+.screen-listening .listening-track i {
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #fb923c, #2563eb) !important;
+}
+
+.screen-listening .listening-controls {
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  display: grid !important;
+  grid-template-columns: 98px 36px 50px 36px 140px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.screen-listening .listening-step-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.screen-listening .listening-step-btn span {
+  display: none !important;
+}
+
+.screen-listening .listening-main-play {
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28) !important;
+}
+
+.screen-listening .listening-speed-toggle,
+.screen-listening .listening-replay-link {
+  min-height: 34px !important;
+  font-size: 12.5px !important;
+  white-space: nowrap !important;
+}
+
+/* Noi dung nghe: nho lai, chi thay khoang 2 cau tren desktop */
+@media (min-width: 901px) {
+  .screen-listening .listening-script-card {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 22px 28px 20px !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 430px) !important;
+    grid-template-areas:
+      "title head"
+      "list list" !important;
+    gap: 14px 18px !important;
+    align-items: center !important;
+  }
+
+  .screen-listening .listening-script-title {
+    grid-area: title !important;
+    margin: 0 !important;
+    font-size: 26px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-script-head {
+    grid-area: head !important;
+    position: static !important;
+    width: auto !important;
+    min-height: 52px !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    grid-area: list !important;
+    height: 248px !important;
+    max-height: 248px !important;
+    overflow-y: auto !important;
+    padding-right: 10px !important;
+    scroll-behavior: smooth !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 108px !important;
+    padding: 15px 18px !important;
+    border-radius: 18px !important;
+    grid-template-columns: 42px minmax(0, 1fr) 32px !important;
+    gap: 14px !important;
+  }
+
+  .screen-listening .listening-sentence span:first-child {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 16px !important;
+  }
+
+  .screen-listening .listening-sentence strong {
+    font-size: clamp(24px, 2vw, 32px) !important;
+    line-height: 1.15 !important;
+    word-break: break-word !important;
+  }
+
+  .screen-listening .listening-sentence small {
+    margin-top: 6px !important;
+    font-size: 16.5px !important;
+    line-height: 1.34 !important;
+  }
+}
+
+/* Mobile: an banner, player khong vo, noi dung hien khoang 3 cau */
+@media (max-width: 900px) {
+  .screen-listening .listening-detail-spa > .listening-detail-hero,
+  .screen-listening .listening-detail-hero {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background-image: none !important;
+  }
+
+  .screen-listening .listening-player-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    min-height: auto !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .screen-listening .listening-player-card::before {
+    display: none !important;
+  }
+
+  .screen-listening .listening-player-status {
+    grid-template-columns: 1fr auto !important;
+    gap: 8px 10px !important;
+  }
+
+  .screen-listening .listening-waveform {
+    grid-column: 1 / -1 !important;
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  .screen-listening .listening-controls {
+    grid-template-columns: 1fr 52px 1fr !important;
+    grid-template-areas:
+      "prev play next"
+      "speed speed replay" !important;
+    gap: 10px !important;
+  }
+
+  .screen-listening .listening-speed-menu {
+    grid-area: speed !important;
+  }
+
+  .screen-listening [data-listening-prev] {
+    grid-area: prev !important;
+  }
+
+  .screen-listening .listening-main-play {
+    grid-area: play !important;
+    justify-self: center !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+  }
+
+  .screen-listening [data-listening-next] {
+    grid-area: next !important;
+  }
+
+  .screen-listening .listening-replay-link {
+    grid-area: replay !important;
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 12.5px !important;
+  }
+
+  .screen-listening .listening-script-card {
+    padding: 16px 12px 14px !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-listening .listening-script-title {
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-script-head {
+    position: static !important;
+    width: auto !important;
+    min-height: auto !important;
+    padding: 9px !important;
+    margin: 10px 0 12px !important;
+    border-radius: 15px !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    height: 282px !important;
+    max-height: 282px !important;
+    overflow-y: auto !important;
+    padding-right: 6px !important;
+    scroll-behavior: smooth !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 86px !important;
+    padding: 13px 12px !important;
+    border-radius: 16px !important;
+    grid-template-columns: 36px minmax(0, 1fr) 28px !important;
+    gap: 10px !important;
+  }
+
+  .screen-listening .listening-sentence span:first-child {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+
+  .screen-listening .listening-sentence strong {
+    font-size: 20.5px !important;
+    line-height: 1.18 !important;
+    word-break: break-word !important;
+  }
+
+  .screen-listening .listening-sentence small {
+    font-size: 14.5px !important;
+    line-height: 1.32 !important;
+  }
+}
+/* ===== NOI DUNG NGHE - PHU DE NOI BAT ===== */
+
+.screen-listening .listening-script-card {
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 24px 28px 24px !important;
+  border-radius: 28px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(205, 213, 232, 0.85) !important;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08) !important;
+}
+
+.screen-listening .listening-script-card::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 28px !important;
+  right: 28px !important;
+  height: 7px !important;
+  border-radius: 0 0 999px 999px !important;
+  background: linear-gradient(90deg, #ec4899, #7c3aed, #2563eb) !important;
+}
+
+.screen-listening .listening-script-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin: 4px 0 16px !important;
+  color: #111827 !important;
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-script-title::before {
+  content: "" !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #ec4899, #7c3aed) !important;
+  box-shadow: 0 0 0 6px rgba(124, 58, 237, 0.08) !important;
+}
+
+.screen-listening .listening-script-head {
+  position: static !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 0 14px !important;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+  background: #f8f7ff !important;
+  border: 1px solid rgba(124, 58, 237, 0.14) !important;
+  box-shadow: none !important;
+}
+
+.screen-listening .listening-script-head strong {
+  color: #4f46e5 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.screen-listening .listening-sentence-list {
+  display: grid !important;
+  gap: 10px !important;
+  height: 310px !important;
+  max-height: 310px !important;
+  overflow-y: auto !important;
+  padding: 0 8px 0 0 !important;
+  scroll-behavior: smooth !important;
+}
+
+.screen-listening .listening-sentence {
+  position: relative !important;
+  min-height: 88px !important;
+  padding: 15px 18px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) 32px !important;
+  gap: 14px !important;
+  align-items: center !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(199, 204, 226, 0.78) !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.035) !important;
+}
+
+.screen-listening .listening-sentence > span {
+  width: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #f1efff !important;
+  color: #334155 !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-sentence p {
+  margin: 0 !important;
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.screen-listening .listening-sentence strong {
+  color: #10182f !important;
+  font-size: clamp(18px, 1.45vw, 23px) !important;
+  line-height: 1.22 !important;
+  font-weight: 950 !important;
+  word-break: break-word !important;
+}
+
+.screen-listening .listening-sentence small {
+  display: block !important;
+  color: #273eaa !important;
+  font-size: 14px !important;
+  line-height: 1.28 !important;
+  font-weight: 850 !important;
+}
+
+.screen-listening .listening-sentence em {
+  display: block !important;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  font-style: normal !important;
+  font-weight: 650 !important;
+}
+
+.screen-listening .listening-sentence i {
+  display: none !important;
+}
+
+/* Cau dang nghe */
+.screen-listening .listening-sentence.active {
+  min-height: 98px !important;
+  padding-left: 18px !important;
+  border-color: transparent !important;
+  background: linear-gradient(100deg, #0f172a 0%, #312e81 48%, #be185d 100%) !important;
+  box-shadow:
+    0 18px 32px rgba(49, 46, 129, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset !important;
+}
+
+.screen-listening .listening-sentence.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 12px !important;
+  bottom: 12px !important;
+  width: 5px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #fbbf24, #f97316) !important;
+}
+
+.screen-listening .listening-sentence.active::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 18px !important;
+  top: 50% !important;
+  width: 42px !important;
+  height: 18px !important;
+  transform: translateY(-50%) !important;
+  opacity: 0.9 !important;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0 4px,
+    transparent 4px 10px
+  ) !important;
+}
+
+.screen-listening .listening-sentence.active > span {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.screen-listening .listening-sentence.active strong,
+.screen-listening .listening-sentence.active small,
+.screen-listening .listening-sentence.active em {
+  color: #ffffff !important;
+}
+
+.screen-listening .listening-sentence.active small,
+.screen-listening .listening-sentence.active em {
+  opacity: 0.92 !important;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .screen-listening .listening-script-card {
+    padding: 20px 14px 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .screen-listening .listening-script-card::before {
+    left: 18px !important;
+    right: 18px !important;
+  }
+
+  .screen-listening .listening-script-title {
+    font-size: 22px !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    height: 292px !important;
+    max-height: 292px !important;
+    padding-right: 6px !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 84px !important;
+    padding: 13px 12px !important;
+    grid-template-columns: 36px minmax(0, 1fr) 24px !important;
+    gap: 10px !important;
+    border-radius: 17px !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    min-height: 94px !important;
+  }
+
+  .screen-listening .listening-sentence strong {
+    font-size: 20px !important;
+  }
+
+  .screen-listening .listening-sentence small,
+  .screen-listening .listening-sentence em {
+    font-size: 13.5px !important;
+  }
+
+  .screen-listening .listening-sentence.active::after {
+    display: none !important;
+  }
+}
+/* ===== FIX: vach ||| ben phai + khung noi dung nghe nho hon ===== */
+
+/* Khung ngoai nho gon lai */
+.screen-listening .listening-script-card {
+  padding: 18px 22px 18px !important;
+  border-radius: 24px !important;
+}
+
+/* Tieu de gon hon */
+.screen-listening .listening-script-title {
+  margin-bottom: 12px !important;
+  font-size: 22px !important;
+}
+
+/* Box tuy chon phu de gon lai */
+.screen-listening .listening-script-head {
+  min-height: 46px !important;
+  padding: 8px 10px !important;
+  margin-bottom: 10px !important;
+  border-radius: 14px !important;
+}
+
+/* Danh sach chi cao vua du, khong lam khung qua dai */
+.screen-listening .listening-sentence-list {
+  height: 250px !important;
+  max-height: 250px !important;
+  gap: 8px !important;
+  overflow-y: auto !important;
+}
+
+/* Moi cau nho gon hon nhung chu van ro */
+.screen-listening .listening-sentence {
+  min-height: 74px !important;
+  padding: 12px 16px !important;
+  grid-template-columns: 36px minmax(0, 1fr) 28px !important;
+  gap: 12px !important;
+  border-radius: 18px !important;
+}
+
+.screen-listening .listening-sentence > span {
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 14px !important;
+}
+
+.screen-listening .listening-sentence strong {
+  font-size: clamp(17px, 1.25vw, 21px) !important;
+  line-height: 1.2 !important;
+}
+
+.screen-listening .listening-sentence small,
+.screen-listening .listening-sentence em {
+  font-size: 13.5px !important;
+  line-height: 1.25 !important;
+}
+
+/* Cau dang nghe: chua khoang trong rieng cho dau ||| ben phai */
+.screen-listening .listening-sentence.active {
+  min-height: 86px !important;
+  padding-right: 68px !important;
+}
+
+/* Dau ||| nam ben phai box, khong lam co khung */
+.screen-listening .listening-sentence.active::after {
+  display: block !important;
+  content: "" !important;
+  position: absolute !important;
+  right: 18px !important;
+  top: 50% !important;
+  width: 42px !important;
+  height: 18px !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0 4px,
+    transparent 4px 10px
+  ) !important;
+}
+
+/* Mobile: van gon, khong bi tran */
+@media (max-width: 900px) {
+  .screen-listening .listening-script-card {
+    padding: 16px 12px 14px !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    height: 260px !important;
+    max-height: 260px !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 78px !important;
+    padding: 12px 11px !important;
+    grid-template-columns: 34px minmax(0, 1fr) 22px !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    padding-right: 14px !important;
+  }
+
+  .screen-listening .listening-sentence.active::after {
+    display: none !important;
+  }
+}
+/* ===== FIX: ||| khong de len chu ===== */
+
+.screen-listening .listening-sentence.active {
+  grid-template-columns: 42px minmax(0, 1fr) 58px !important;
+  padding-right: 18px !important;
+}
+
+.screen-listening .listening-sentence.active p {
+  min-width: 0 !important;
+  padding-right: 8px !important;
+}
+
+.screen-listening .listening-sentence.active::after {
+  right: 18px !important;
+  width: 34px !important;
+  height: 18px !important;
+  grid-column: 3 !important;
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-sentence.active {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    padding-right: 12px !important;
+  }
+
+  .screen-listening .listening-sentence.active::after {
+    display: none !important;
+  }
+}
+/* ===== LISTENING GATEWAY COMPACT FINAL - nho gon hon, it scroll ===== */
+
+@media (min-width: 901px) {
+  .screen-listening .listening-gateway-screen {
+    padding: 10px 18px 16px !important;
+  }
+
+  .screen-listening .listening-gateway-hero {
+    min-height: 205px !important;
+    margin: 0 auto 12px !important;
+    padding: 26px clamp(34px, 4vw, 56px) 24px !important;
+    border-radius: 24px !important;
+  }
+
+  .screen-listening .listening-gateway-back-btn {
+    top: 16px !important;
+    left: 16px !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  .screen-listening .listening-gateway-badge {
+    padding: 4px 11px !important;
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-gateway-hero h1 {
+    margin-bottom: 4px !important;
+    font-size: clamp(36px, 4vw, 54px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .screen-listening .listening-gateway-hero p {
+    margin-bottom: 12px !important;
+    font-size: clamp(14px, 1.25vw, 17px) !important;
+    line-height: 1.28 !important;
+  }
+
+  .screen-listening .listening-gateway-cta {
+    min-height: 38px !important;
+    padding: 8px 18px !important;
+    border-radius: 11px !important;
+    font-size: 13px !important;
+  }
+
+  .screen-listening .listening-gateway-stats-row {
+    margin-top: 12px !important;
+    gap: 14px !important;
+  }
+
+  .screen-listening .listening-gateway-stat-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .screen-listening .listening-gateway-stat-text strong {
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-gateway-stat-text small {
+    font-size: 10.5px !important;
+    line-height: 1.18 !important;
+  }
+
+  .screen-listening .listening-gateway-grid {
+    gap: 12px !important;
+    align-items: start !important;
+  }
+
+  .screen-listening .listening-gateway-card {
+    min-height: 0 !important;
+    height: 286px !important;
+    padding: 16px 18px !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-listening .listening-gateway-card-head {
+    min-height: 64px !important;
+    margin-bottom: 8px !important;
+    gap: 10px !important;
+    padding-right: 108px !important;
+  }
+
+  .screen-listening .listening-gateway-card::after,
+  .screen-listening .listening-gateway-card-illustration {
+    top: 16px !important;
+    right: 16px !important;
+    width: 96px !important;
+    height: 64px !important;
+    border-radius: 15px !important;
+  }
+
+  .screen-listening .listening-gateway-icon {
+    width: 46px !important;
+    height: 46px !important;
+    flex-basis: 46px !important;
+    border-radius: 15px !important;
+    font-size: 21px !important;
+  }
+
+  .screen-listening .listening-gateway-card h2 {
+    font-size: clamp(25px, 2.2vw, 34px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .screen-listening .listening-gateway-card small {
+    margin-top: 4px !important;
+    padding: 4px 9px !important;
+    font-size: 11.5px !important;
+  }
+
+  .screen-listening .listening-gateway-levels {
+    gap: 6px !important;
+  }
+
+  .screen-listening .listening-gateway-level {
+    min-height: 42px !important;
+    padding: 6px 10px !important;
+    border-radius: 13px !important;
+    grid-template-columns: 30px minmax(0, 1fr) auto 16px !important;
+    gap: 8px !important;
+  }
+
+  .screen-listening .listening-gateway-card--monologue .listening-gateway-level {
+    grid-template-columns: 30px minmax(0, 1fr) 16px !important;
+  }
+
+  .screen-listening .listening-level-code,
+  .screen-listening .listening-level-row-icon {
+    width: 28px !important;
+    height: 28px !important;
+    flex-basis: 28px !important;
+    font-size: 11.5px !important;
+  }
+
+  .screen-listening .listening-level-body strong {
+    font-size: 12.8px !important;
+    line-height: 1.12 !important;
+  }
+
+  .screen-listening .listening-level-body small {
+    font-size: 10.8px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .screen-listening .listening-level-count {
+    font-size: 10.8px !important;
+  }
+
+  .screen-listening .listening-level-chevron {
+    font-size: 17px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-gateway-screen {
+    padding: 10px 10px 76px !important;
+  }
+
+  .screen-listening .listening-gateway-hero {
+    min-height: 165px !important;
+    padding: 56px 16px 16px !important;
+    margin-bottom: 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .screen-listening .listening-gateway-stats-row {
+    display: none !important;
+  }
+
+  .screen-listening .listening-gateway-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .screen-listening .listening-gateway-card {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .screen-listening .listening-gateway-card-head {
+    min-height: 58px !important;
+    padding-right: 84px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .screen-listening .listening-gateway-card::after,
+  .screen-listening .listening-gateway-card-illustration {
+    width: 72px !important;
+    height: 50px !important;
+    top: 12px !important;
+    right: 12px !important;
+  }
+
+  .screen-listening .listening-gateway-level {
+    min-height: 44px !important;
+    padding: 7px 10px !important;
+  }
+}
+/* ===== FIX: Tang nhe card Luyen nghe, Doc thoai cao hon vi co 4 chu de ===== */
+
+@media (min-width: 901px) {
+  .screen-listening .listening-gateway-hero {
+    min-height: 218px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .screen-listening .listening-gateway-card {
+    height: auto !important;
+    padding: 20px 22px !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-listening .listening-gateway-card--dialogue {
+    min-height: 318px !important;
+  }
+
+  .screen-listening .listening-gateway-card--monologue {
+    min-height: 354px !important;
+  }
+
+  .screen-listening .listening-gateway-card-head {
+    min-height: 74px !important;
+    margin-bottom: 10px !important;
+    padding-right: 124px !important;
+  }
+
+  .screen-listening .listening-gateway-card::after,
+  .screen-listening .listening-gateway-card-illustration {
+    width: 112px !important;
+    height: 74px !important;
+    border-radius: 16px !important;
+  }
+
+  .screen-listening .listening-gateway-icon {
+    width: 50px !important;
+    height: 50px !important;
+    flex-basis: 50px !important;
+    font-size: 23px !important;
+  }
+
+  .screen-listening .listening-gateway-card h2 {
+    font-size: clamp(28px, 2.45vw, 38px) !important;
+  }
+
+  .screen-listening .listening-gateway-levels {
+    gap: 8px !important;
+  }
+
+  .screen-listening .listening-gateway-level {
+    min-height: 48px !important;
+    padding: 8px 12px !important;
+    grid-template-columns: 34px minmax(0, 1fr) auto 18px !important;
+  }
+
+  .screen-listening .listening-gateway-card--monologue .listening-gateway-level {
+    grid-template-columns: 34px minmax(0, 1fr) 18px !important;
+  }
+
+  .screen-listening .listening-level-code,
+  .screen-listening .listening-level-row-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 12.5px !important;
+  }
+
+  .screen-listening .listening-level-body strong {
+    font-size: 13.8px !important;
+  }
+
+  .screen-listening .listening-level-body small {
+    font-size: 11.6px !important;
+  }
+}
+/* ===== SUBTITLE CLEAN FINAL ===== */
+
+.screen-listening .listening-script-card {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) minmax(390px, 500px) !important;
+  grid-template-areas:
+    "title controls"
+    "list list" !important;
+  gap: 14px 18px !important;
+  align-items: center !important;
+}
+
+.screen-listening .listening-script-title {
+  grid-area: title !important;
+  margin: 0 !important;
+  color: #0f172a !important;
+}
+
+.screen-listening .listening-script-head {
+  grid-area: controls !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.screen-listening .listening-script-head > strong {
+  display: none !important;
+}
+
+.screen-listening .listening-subtitle-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  width: 100% !important;
+  padding: 5px !important;
+  border-radius: 18px !important;
+  background: #f8fbff !important;
+  border: 1px solid #dbeafe !important;
+}
+
+.screen-listening .listening-subtitle-actions button {
+  min-width: 0 !important;
+  min-height: 40px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: transparent !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.screen-listening .listening-subtitle-actions button.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9) !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, .22) !important;
+}
+
+.screen-listening .listening-sentence-list {
+  grid-area: list !important;
+  height: 312px !important;
+  max-height: 312px !important;
+  gap: 10px !important;
+  overflow-y: auto !important;
+  padding-right: 8px !important;
+}
+
+.screen-listening .listening-sentence {
+  min-height: 104px !important;
+  padding: 18px 18px !important;
+  grid-template-columns: 40px minmax(0, 1fr) !important;
+  gap: 14px !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(191, 219, 254, .9) !important;
+  background: linear-gradient(135deg, #f8fcff 0%, #ffffff 100%) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .045) !important;
+}
+
+.screen-listening .listening-sentence.active {
+  min-height: 124px !important;
+  border-color: #38bdf8 !important;
+  background: linear-gradient(135deg, #eaf9ff 0%, #ffffff 72%, #f4fbff 100%) !important;
+  box-shadow:
+    0 16px 34px rgba(14, 165, 233, .16),
+    inset 5px 0 0 #38bdf8 !important;
+}
+
+.screen-listening .listening-sentence.active::before,
+.screen-listening .listening-sentence.active::after {
+  display: none !important;
+  content: none !important;
+}
+
+.screen-listening .listening-sentence > span {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 999px !important;
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-sentence.active > span {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9) !important;
+  color: #ffffff !important;
+}
+
+.screen-listening .listening-line-zh,
+.screen-listening .listening-sentence strong,
+.screen-listening .listening-sentence.active strong {
+  color: #10235f !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  font-family: var(--font-zh) !important;
+  font-size: clamp(26px, 2.6vw, 38px) !important;
+  line-height: 1.12 !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-line-pinyin,
+.screen-listening .listening-sentence small,
+.screen-listening .listening-sentence.active small {
+  color: #2563eb !important;
+  font-size: clamp(14px, 1.25vw, 17px) !important;
+  line-height: 1.28 !important;
+  font-weight: 850 !important;
+}
+
+.screen-listening .listening-line-vi,
+.screen-listening .listening-sentence em,
+.screen-listening .listening-sentence.active em {
+  color: #475569 !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  font-style: normal !important;
+  font-size: clamp(14px, 1.25vw, 17px) !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+.screen-listening .listening-line-vi.listening-line-main {
+  color: #0f766e !important;
+  font-size: clamp(22px, 2.1vw, 32px) !important;
+  line-height: 1.22 !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-sentence i {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-script-card {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "title"
+      "controls"
+      "list" !important;
+  }
+
+  .screen-listening .listening-subtitle-actions button {
+    min-height: 38px !important;
+    padding: 0 6px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    height: 292px !important;
+    max-height: 292px !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 92px !important;
+    padding: 14px 12px !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    min-height: 112px !important;
+  }
+
+  .screen-listening .listening-line-zh,
+  .screen-listening .listening-sentence strong {
+    font-size: 22px !important;
+  }
+}
+/* ===== NOI DUNG NGHE - COMPACT DARK ACTIVE STYLE ===== */
+
+.screen-listening .listening-sentence-list {
+  height: 300px !important;
+  max-height: 300px !important;
+  gap: 9px !important;
+  overflow-y: auto !important;
+  padding-right: 8px !important;
+}
+
+/* Cau thuong: gon lai */
+.screen-listening .listening-sentence {
+  position: relative !important;
+  min-height: 84px !important;
+  padding: 14px 18px !important;
+  grid-template-columns: 38px minmax(0, 1fr) 52px !important;
+  gap: 12px !important;
+  align-items: center !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(191, 219, 254, .82) !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .04) !important;
+}
+
+.screen-listening .listening-sentence > span {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 999px !important;
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  box-shadow: none !important;
+}
+
+.screen-listening .listening-sentence-copy,
+.screen-listening .listening-sentence p {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+.screen-listening .listening-line-zh,
+.screen-listening .listening-sentence strong {
+  color: #10235f !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  font-family: var(--font-zh) !important;
+  font-size: clamp(20px, 1.8vw, 27px) !important;
+  line-height: 1.16 !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-line-pinyin,
+.screen-listening .listening-sentence small {
+  color: #2563eb !important;
+  font-size: clamp(12.5px, 1vw, 14.5px) !important;
+  line-height: 1.24 !important;
+  font-weight: 850 !important;
+}
+
+.screen-listening .listening-line-vi,
+.screen-listening .listening-sentence em {
+  color: #64748b !important;
+  font-size: clamp(12.5px, 1vw, 14.5px) !important;
+  line-height: 1.28 !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+}
+
+.screen-listening .listening-line-vi.listening-line-main {
+  color: #0f766e !important;
+  font-size: clamp(19px, 1.65vw, 25px) !important;
+  line-height: 1.18 !important;
+  font-weight: 950 !important;
+}
+
+/* Cau dang nghe: style giong anh mau ben trai */
+.screen-listening .listening-sentence.active {
+  min-height: 94px !important;
+  padding: 15px 20px !important;
+  grid-template-columns: 38px minmax(0, 1fr) 54px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: linear-gradient(105deg, #10182f 0%, #332a78 52%, #a01658 100%) !important;
+  box-shadow:
+    0 18px 34px rgba(16, 24, 47, .18),
+    inset 4px 0 0 #f59e0b !important;
+}
+
+.screen-listening .listening-sentence.active::before {
+  display: none !important;
+  content: none !important;
+}
+
+.screen-listening .listening-sentence.active::after {
+  display: block !important;
+  content: "" !important;
+  position: static !important;
+  justify-self: end !important;
+  width: 38px !important;
+  height: 16px !important;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,.92) 0 4px,
+    transparent 4px 9px
+  ) !important;
+  opacity: .92 !important;
+}
+
+.screen-listening .listening-sentence.active > span {
+  background: rgba(255, 255, 255, .14) !important;
+  color: #ffffff !important;
+}
+
+.screen-listening .listening-sentence.active .listening-line-zh,
+.screen-listening .listening-sentence.active strong {
+  color: #ffffff !important;
+  font-size: clamp(19px, 1.65vw, 25px) !important;
+}
+
+.screen-listening .listening-sentence.active .listening-line-pinyin,
+.screen-listening .listening-sentence.active small {
+  color: rgba(255, 255, 255, .96) !important;
+  font-size: clamp(12.5px, 1vw, 14px) !important;
+}
+
+.screen-listening .listening-sentence.active .listening-line-vi,
+.screen-listening .listening-sentence.active em {
+  color: rgba(255, 255, 255, .88) !important;
+  font-size: clamp(12.5px, 1vw, 14px) !important;
+}
+
+.screen-listening .listening-sentence i {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-sentence-list {
+    height: 286px !important;
+    max-height: 286px !important;
+  }
+
+  .screen-listening .listening-sentence,
+  .screen-listening .listening-sentence.active {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    min-height: 82px !important;
+    padding: 13px 12px !important;
+  }
+
+  .screen-listening .listening-sentence.active::after {
+    display: none !important;
+  }
+
+  .screen-listening .listening-line-zh,
+  .screen-listening .listening-sentence strong,
+  .screen-listening .listening-sentence.active .listening-line-zh,
+  .screen-listening .listening-sentence.active strong {
+    font-size: 20px !important;
+  }
+
+  .screen-listening .listening-line-vi.listening-line-main {
+    font-size: 19px !important;
+  }
+}
+/* ===== MOBILE FIX: subtitle buttons khong bi vo ===== */
+
+@media (max-width: 600px) {
+  .screen-listening .listening-script-card {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "title"
+      "controls"
+      "list" !important;
+    gap: 10px !important;
+    padding: 14px 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .screen-listening .listening-script-title {
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-script-head {
+    grid-area: controls !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  .screen-listening .listening-subtitle-actions {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    border-radius: 14px !important;
+  }
+
+  .screen-listening .listening-subtitle-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 30px !important;
+    padding: 0 4px !important;
+    border-radius: 10px !important;
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .screen-listening .listening-subtitle-actions button.active {
+    box-shadow: 0 8px 16px rgba(37, 99, 235, .18) !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    height: 278px !important;
+    max-height: 278px !important;
+    padding-right: 5px !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 72px !important;
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding: 12px 10px !important;
+    border-radius: 15px !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    min-height: 82px !important;
+  }
+
+  .screen-listening .listening-sentence > span {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-line-zh,
+  .screen-listening .listening-sentence strong {
+    font-size: 18px !important;
+    line-height: 1.16 !important;
+  }
+
+  .screen-listening .listening-line-pinyin,
+  .screen-listening .listening-sentence small,
+  .screen-listening .listening-line-vi,
+  .screen-listening .listening-sentence em {
+    font-size: 11.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .screen-listening .listening-line-vi.listening-line-main {
+    font-size: 17px !important;
+  }
+}
+/* ===== MOBILE LISTENING DETAIL FINAL ===== */
+@media (max-width: 600px) {
+  .app-desktop-shell--listening .app-desktop-content,
+  .screen-listening,
+  .screen-listening .listening-detail-spa {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.78), rgba(239,248,255,.84)),
+      url("assets/anhnenphatdienthoai.png") center top / cover no-repeat fixed !important;
+  }
+
+  .screen-listening .listening-detail-spa {
+    padding: 10px 8px 92px !important;
+    gap: 10px !important;
+    overflow-x: hidden !important;
+  }
+
+  .screen-listening .listening-detail-hero {
+    display: none !important;
+  }
+
+  /* Player mobile gon, khong vo */
+  .screen-listening .listening-player-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    padding: 12px 14px !important;
+    border-radius: 17px !important;
+    overflow: hidden !important;
+    background: rgba(255,255,255,.94) !important;
+    border: 1px solid rgba(191,219,254,.9) !important;
+  }
+
+  .screen-listening .listening-player-card::before,
+  .screen-listening .listening-time-row,
+  .screen-listening .listening-track-marker {
+    display: none !important;
+  }
+
+  .screen-listening .listening-player-status {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 6px 8px !important;
+    align-items: center !important;
+  }
+
+  .screen-listening .listening-player-status strong {
+    font-size: 15px !important;
+    line-height: 1.1 !important;
+  }
+
+  .screen-listening .listening-player-status small {
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-waveform {
+    grid-column: 1 / -1 !important;
+    height: 30px !important;
+    min-height: 30px !important;
+  }
+
+  .screen-listening .listening-track {
+    height: 5px !important;
+    margin: 0 !important;
+  }
+
+  .screen-listening .listening-controls {
+    display: grid !important;
+    grid-template-columns: 1fr 48px 1fr !important;
+    grid-template-areas:
+      "prev play next"
+      "speed speed replay" !important;
+    gap: 8px !important;
+    padding: 2px 0 0 !important;
+    align-items: center !important;
+  }
+
+  .screen-listening [data-listening-prev] {
+    grid-area: prev !important;
+  }
+
+  .screen-listening .listening-main-play {
+    grid-area: play !important;
+    justify-self: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+  }
+
+  .screen-listening [data-listening-next] {
+    grid-area: next !important;
+  }
+
+  .screen-listening .listening-speed-menu {
+    grid-area: speed !important;
+  }
+
+  .screen-listening .listening-replay-link {
+    grid-area: replay !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Noi dung nghe */
+  .screen-listening .listening-script-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "title"
+      "controls"
+      "list" !important;
+    gap: 9px !important;
+    padding: 14px 12px !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+    background: rgba(255,255,255,.95) !important;
+  }
+
+  .screen-listening .listening-script-title {
+    grid-area: title !important;
+    margin: 0 !important;
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-script-head {
+    grid-area: controls !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .screen-listening .listening-script-head > strong {
+    display: none !important;
+  }
+
+  .screen-listening .listening-subtitle-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    border-radius: 14px !important;
+    background: #f8fbff !important;
+    border: 1px solid #dbeafe !important;
+  }
+
+  .screen-listening .listening-subtitle-actions button {
+    min-width: 0 !important;
+    min-height: 30px !important;
+    padding: 0 4px !important;
+    border-radius: 10px !important;
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Chi hien toi da khoang 2 cau */
+  .screen-listening .listening-sentence-list {
+    grid-area: list !important;
+    height: 168px !important;
+    max-height: 168px !important;
+    overflow-y: auto !important;
+    display: grid !important;
+    gap: 8px !important;
+    padding-right: 5px !important;
+    overscroll-behavior: contain !important;
+    scroll-behavior: smooth !important;
+  }
+
+  .screen-listening .listening-sentence,
+  .screen-listening .listening-sentence.active {
+    min-height: 78px !important;
+    max-height: 78px !important;
+    padding: 10px 10px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    border-radius: 15px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-listening .listening-sentence.active::after {
+    display: none !important;
+  }
+
+  .screen-listening .listening-sentence > span {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-line-zh,
+  .screen-listening .listening-sentence strong {
+    font-size: 17px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .screen-listening .listening-line-pinyin,
+  .screen-listening .listening-sentence small,
+  .screen-listening .listening-line-vi,
+  .screen-listening .listening-sentence em {
+    font-size: 11px !important;
+    line-height: 1.22 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .screen-listening .listening-line-vi.listening-line-main {
+    font-size: 17px !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+}
+/* ===== MOBILE: title + subtitle buttons cùng hàng, bỏ khoảng trắng thừa ===== */
+@media (max-width: 600px) {
+  .screen-listening .listening-script-card {
+    display: grid !important;
+    grid-template-columns: minmax(132px, 1fr) minmax(150px, auto) !important;
+    grid-template-areas:
+      "title controls"
+      "list list" !important;
+    align-items: center !important;
+    column-gap: 8px !important;
+    row-gap: 8px !important;
+    padding: 12px 10px 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .screen-listening .listening-script-title {
+    grid-area: title !important;
+    margin: 0 !important;
+    font-size: 19px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-listening .listening-script-head {
+    grid-area: controls !important;
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    justify-self: end !important;
+  }
+
+  .screen-listening .listening-subtitle-actions {
+    width: 154px !important;
+    min-width: 154px !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    padding: 3px !important;
+    border-radius: 13px !important;
+  }
+
+  .screen-listening .listening-subtitle-actions button {
+    min-width: 0 !important;
+    min-height: 28px !important;
+    padding: 0 3px !important;
+    border-radius: 10px !important;
+    font-size: 8.5px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-listening .listening-sentence-list {
+    grid-area: list !important;
+    margin-top: 0 !important;
+    height: 166px !important;
+    max-height: 166px !important;
+  }
+}
+/* ===== NOI DUNG NGHE: hien thi 3 cau + scroll cau dang nghe o giua ===== */
+.screen-listening .listening-sentence-list {
+  height: 272px !important;
+  max-height: 272px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: grid !important;
+  gap: 8px !important;
+  padding-right: 7px !important;
+  scroll-behavior: smooth !important;
+  overscroll-behavior: contain !important;
+}
+
+.screen-listening .listening-sentence {
+  min-height: 80px !important;
+  max-height: 80px !important;
+  padding: 12px 16px !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  overflow: hidden !important;
+}
+
+.screen-listening .listening-sentence.active {
+  min-height: 96px !important;
+  max-height: 96px !important;
+  padding: 13px 16px !important;
+}
+
+.screen-listening .listening-sentence strong {
+  font-size: clamp(20px, 1.6vw, 25px) !important;
+  line-height: 1.12 !important;
+}
+
+.screen-listening .listening-sentence small,
+.screen-listening .listening-sentence em {
+  font-size: clamp(12px, .95vw, 14px) !important;
+  line-height: 1.25 !important;
+}
+
+.screen-listening .listening-line-vi.listening-line-main {
+  font-size: clamp(19px, 1.55vw, 24px) !important;
+  line-height: 1.18 !important;
+}
+
+@media (max-width: 600px) {
+  .screen-listening .listening-sentence-list {
+    height: 238px !important;
+    max-height: 238px !important;
+    gap: 8px !important;
+    padding-right: 4px !important;
+  }
+
+  .screen-listening .listening-sentence {
+    min-height: 72px !important;
+    max-height: 72px !important;
+    padding: 10px 10px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    min-height: 78px !important;
+    max-height: 78px !important;
+    padding: 10px 10px !important;
+  }
+
+  .screen-listening .listening-sentence strong {
+    font-size: 16.5px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-listening .listening-sentence small,
+  .screen-listening .listening-sentence em {
+    font-size: 11px !important;
+    line-height: 1.22 !important;
+  }
+
+  .screen-listening .listening-line-vi.listening-line-main {
+    font-size: 16.5px !important;
+    line-height: 1.18 !important;
+  }
+}
+/* ===== HOME DESKTOP COMPACT: giam khoang cach de it scroll ===== */
+@media (min-width: 901px) {
+  .screen-home .home-desktop-layout {
+    gap: 18px !important;
+    padding: 14px 16px 18px !important;
+  }
+
+  .screen-home .home-desktop-main {
+    gap: 12px !important;
+    padding-top: 8px !important;
+  }
+
+  .screen-home .home-desktop-topbar {
+    min-height: 88px !important;
+    padding: 0 4px !important;
+  }
+
+  .screen-home .home-desktop-topbar h1 {
+    font-size: clamp(34px, 3vw, 48px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .screen-home .home-desktop-topbar p {
+    margin-top: 4px !important;
+    font-size: 15px !important;
+  }
+
+  .screen-home .home-duo-modules,
+  .screen-home .home-desktop-modules--duo {
+    gap: 14px !important;
+    margin: 0 !important;
+  }
+
+  .screen-home .home-duo-card {
+    height: clamp(230px, 27vh, 285px) !important;
+    min-height: 230px !important;
+    border-radius: 24px !important;
+  }
+
+  .screen-home .home-duo-copy {
+    padding: 24px 28px !important;
+  }
+
+  .screen-home .home-duo-copy h3 {
+    font-size: clamp(34px, 3vw, 48px) !important;
+    line-height: 1.02 !important;
+    margin: 14px 0 8px !important;
+  }
+
+  .screen-home .home-duo-copy p {
+    font-size: 16px !important;
+    line-height: 1.28 !important;
+  }
+
+  .screen-home .home-duo-btn {
+    min-height: 42px !important;
+    padding: 0 22px !important;
+  }
+
+  .screen-home .home-desktop-saved-section {
+    padding: 18px 22px !important;
+    border-radius: 24px !important;
+  }
+
+  .screen-home .home-desktop-section-head {
+    margin-bottom: 10px !important;
+  }
+
+  .screen-home .home-desktop-vocab-empty {
+    min-height: 78px !important;
+    padding: 16px !important;
+  }
+
+  .screen-home .home-desktop-feature-strip {
+    margin-top: 8px !important;
+    gap: 12px !important;
+  }
+
+  .screen-home .home-desktop-feature-card {
+    min-height: 92px !important;
+    padding: 14px 16px !important;
+    grid-template-columns: 50px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .screen-home .home-feature-icon {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    border-radius: 16px !important;
+    font-size: 22px !important;
+  }
+
+  .screen-home .home-desktop-feature-card strong {
+    font-size: clamp(15px, 1vw, 18px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .screen-home .home-desktop-feature-card small {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+  }
+
+  .screen-home .home-desktop-rail {
+    gap: 12px !important;
+    top: 14px !important;
+    max-height: calc(100vh - 28px) !important;
+    overflow: hidden !important;
+  }
+
+  .screen-home .home-desktop-profile-card,
+  .screen-home .home-desktop-streak-card,
+  .screen-home .home-desktop-stats-card,
+  .screen-home .home-desktop-calendar-card {
+    border-radius: 22px !important;
+    padding: 18px 20px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--login {
+    min-height: 64px !important;
+  }
+
+  .screen-home .home-desktop-streak-card {
+    min-height: 80px !important;
+  }
+
+  .screen-home .home-desktop-stats-card ul {
+    gap: 8px !important;
+  }
+
+  .screen-home .home-desktop-calendar-card {
+    padding: 18px 20px !important;
+  }
+
+  .screen-home .home-calendar-grid {
+    gap: 7px !important;
+  }
+
+  .screen-home .home-calendar-day,
+  .screen-home .home-calendar-week {
+    min-height: 24px !important;
+    font-size: 12px !important;
+  }
+}
+/* ===== FIX: 2 box Luyen viet / Luyen nghe rong hon, khong vo layout ===== */
+@media (min-width: 901px) {
+  .screen-home .home-duo-modules,
+  .screen-home .home-desktop-modules--duo {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(430px, 1fr)) !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+  }
+
+  .screen-home .home-duo-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: clamp(250px, 28vh, 300px) !important;
+    min-height: 250px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-home .home-duo-copy {
+    max-width: 60% !important;
+    padding: 24px 30px !important;
+  }
+
+  .screen-home .home-duo-copy h3 {
+    font-size: clamp(25px, 3.2vw, 33px) !important;
+    line-height: 1.02 !important;
+    margin: 14px 0 8px !important;
+  }
+
+  .screen-home .home-duo-copy p {
+    max-width: 300px !important;
+    font-size: 17px !important;
+    line-height: 1.25 !important;
+  }
+
+  .screen-home .home-duo-art {
+    width: 38% !important;
+    right: 20px !important;
+  }
+}
+/* ===== MOBILE LISTENING: chi giu nut back tren cung ===== */
+@media (max-width: 900px) {
+  .screen-listening .listening-gateway-back-btn,
+  .screen-listening .listening-dashboard-back-btn,
+  .screen-listening .listening-back-btn {
+    display: none !important;
+  }
+
+  .screen-listening .listening-dashboard-title-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .screen-listening .listening-dashboard-title-row h1 {
+    padding-left: 0 !important;
+  }
+
+  .screen-listening .listening-gateway-hero {
+    padding-top: 22px !important;
+  }
+
+  .screen-listening .listening-detail-topbar {
+    grid-template-columns: 1fr auto !important;
+  }
+}
+/* ===== MOBILE BOTTOM NAV: giong sidebar desktop ===== */
+@media (max-width: 900px) {
+  #bottomNavDailyBtn,
+  #bottomNavVocabBtn,
+  #bottomNavSubscriptionsBtn {
+    display: none !important;
+  }
+
+  .mobile-bottom-nav:not(.hidden) {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .mobile-bottom-nav-item {
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 7px 2px !important;
+    border-radius: 14px !important;
+    gap: 4px !important;
+  }
+
+  .mobile-bottom-nav-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .mobile-bottom-nav-label {
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #10a352 !important;
+    background: rgba(16, 163, 82, 0.08) !important;
+  }
+}
+
+/* ===== LISTENING SCRIPT: prevent Vietnamese subtitle clipping ===== */
+.screen-listening .listening-sentence,
+.screen-listening .listening-sentence.active {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  align-items: center !important;
+}
+
+.screen-listening .listening-sentence {
+  min-height: 86px !important;
+}
+
+.screen-listening .listening-sentence.active {
+  min-height: 112px !important;
+  padding-block: 16px !important;
+}
+
+.screen-listening .listening-sentence-copy,
+.screen-listening .listening-sentence p {
+  min-width: 0 !important;
+  overflow: visible !important;
+  align-self: center !important;
+}
+
+.screen-listening .listening-sentence strong,
+.screen-listening .listening-sentence small,
+.screen-listening .listening-sentence em,
+.screen-listening .listening-line-zh,
+.screen-listening .listening-line-pinyin,
+.screen-listening .listening-line-vi {
+  display: block !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+.screen-listening .listening-sentence em,
+.screen-listening .listening-line-vi {
+  line-height: 1.35 !important;
+}
+
+@media (max-width: 600px) {
+  .screen-listening .listening-sentence {
+    min-height: 82px !important;
+  }
+
+  .screen-listening .listening-sentence.active {
+    min-height: 104px !important;
+    padding-block: 12px !important;
+  }
+}
+
+/* ===== LISTENING SCRIPT: keep long translations inside each row ===== */
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence-list {
+  display: flex !important;
+  flex-direction: column !important;
+  align-content: start !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  grid-auto-rows: initial !important;
+  scroll-padding-block: 88px !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence,
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence.active,
+.screen-listening .listening-detail-practice-grid .listening-script-card button.listening-sentence {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 96px !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  align-items: center !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence.active {
+  min-height: 118px !important;
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence-copy,
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence p {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  overflow: hidden !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence strong,
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence small,
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence em {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  text-overflow: clip !important;
+}
+
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence small,
+.screen-listening .listening-detail-practice-grid .listening-script-card .listening-sentence em {
+  line-height: 1.32 !important;
+}
+
+/* ===== Listening dashboard: back button inside hero box ===== */
+.screen-listening .listening-topic-hero .listening-dashboard-back-btn--hero {
+  position: absolute !important;
+  top: 18px !important;
+  left: 18px !important;
+  z-index: 5 !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  flex-basis: 48px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 16px !important;
+}
+
+.screen-listening .listening-topic-hero .listening-dashboard-back-btn--hero svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-copy {
+  padding-top: 28px !important;
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-topic-hero .listening-dashboard-back-btn--hero {
+    display: inline-grid !important;
+    top: 14px !important;
+    left: 14px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    flex-basis: 44px !important;
+  }
+
+  .screen-listening .listening-topic-hero .listening-topic-hero-copy {
+    padding-top: 30px !important;
+  }
+}
+
+/* ===== Listening player controls spacing ===== */
+.screen-listening .listening-player-card .listening-controls {
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: grid !important;
+  grid-template-columns: 138px 34px 64px 34px minmax(132px, max-content) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  column-gap: 10px !important;
+  padding-top: 2px !important;
+}
+
+.screen-listening .listening-player-card .listening-speed-menu,
+.screen-listening .listening-player-card .listening-speed-toggle {
+  width: 138px !important;
+  min-width: 138px !important;
+}
+
+.screen-listening .listening-player-card .listening-speed-toggle {
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.screen-listening .listening-player-card .listening-step-btn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  color: #f97316 !important;
+}
+
+.screen-listening .listening-player-card .listening-step-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.screen-listening .listening-player-card .listening-main-play {
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+}
+
+.screen-listening .listening-player-card .listening-replay-link {
+  min-width: 132px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+@media (max-width: 900px) {
+  .screen-listening .listening-player-card .listening-controls {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(6px, 2vw, 12px) !important;
+    overflow: visible !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 124px !important;
+    min-width: 124px !important;
+    flex: 0 0 124px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-step-btn {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    flex: 0 0 30px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-main-play {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+    flex: 0 0 58px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    width: auto !important;
+    min-width: 118px !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    padding: 0 4px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .screen-listening .listening-player-card .listening-controls {
+    gap: 5px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 112px !important;
+    min-width: 112px !important;
+    flex-basis: 112px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    font-size: 12px !important;
+    padding: 0 8px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-main-play {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    flex-basis: 52px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    min-width: 104px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 106px !important;
+    min-width: 106px !important;
+    flex-basis: 106px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    min-width: 96px !important;
+    font-size: 11.5px !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 138px !important;
+    min-width: 138px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    min-width: 132px !important;
+    width: auto !important;
+  }
+}
+
+/* ===== Listening vocab practice bottom actions ===== */
+.screen-listening .listening-vocab-practice-actions {
+  width: 100% !important;
+  margin-top: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+
+.screen-listening .listening-vocab-prev-btn,
+.screen-listening .listening-vocab-next-btn {
+  min-width: 128px !important;
+  min-height: 46px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+.screen-listening .listening-vocab-prev-btn {
+  border: 1px solid rgba(109, 91, 255, .22) !important;
+  color: #6d5bff !important;
+  background: rgba(255, 255, 255, .9) !important;
+  box-shadow: 0 12px 26px rgba(109, 91, 255, .12) !important;
+}
+
+.screen-listening .listening-vocab-prev-btn:hover {
+  transform: translateY(-2px) !important;
+  color: #ffffff !important;
+  background: linear-gradient(120deg, var(--vocab-grad-1), var(--vocab-grad-2)) !important;
+  box-shadow: 0 18px 34px rgba(109, 91, 255, .26) !important;
+}
+
+.screen-listening .listening-vocab-prev-btn svg,
+.screen-listening .listening-vocab-next-btn svg {
+  width: 20px !important;
+  height: 20px !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+@media (max-width: 640px) {
+  .screen-listening .listening-vocab-practice-actions {
+    gap: 10px !important;
+  }
+
+  .screen-listening .listening-vocab-prev-btn,
+  .screen-listening .listening-vocab-next-btn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ===== Mobile listening player compact layout ===== */
+@media (max-width: 640px) {
+  .screen-listening .listening-player-card {
+    min-height: 0 !important;
+    padding: 12px 14px 14px !important;
+    display: grid !important;
+    gap: 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .screen-listening .listening-player-card::before {
+    display: none !important;
+  }
+
+  .screen-listening .listening-player-status {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "text time"
+      "wave wave" !important;
+    gap: 2px 10px !important;
+    align-items: start !important;
+  }
+
+  .screen-listening .listening-player-status > div {
+    grid-area: text !important;
+    min-width: 0 !important;
+  }
+
+  .screen-listening .listening-player-status strong {
+    font-size: 14px !important;
+    line-height: 1.05 !important;
+  }
+
+  .screen-listening .listening-player-status small {
+    margin-top: 2px !important;
+    font-size: 11px !important;
+    line-height: 1.08 !important;
+  }
+
+  .screen-listening .listening-player-status > span {
+    grid-area: time !important;
+    align-self: center !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+  }
+
+  .screen-listening .listening-waveform {
+    grid-area: wave !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    margin-top: 2px !important;
+  }
+
+  .screen-listening .listening-track {
+    height: 5px !important;
+    margin: 0 !important;
+  }
+
+  .screen-listening .listening-player-card .listening-controls {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    grid-template-columns: none !important;
+    grid-template-areas: none !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 104px !important;
+    min-width: 104px !important;
+    flex: 0 0 104px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    min-height: 34px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-step-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    flex: 0 0 28px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-main-play {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    flex: 0 0 52px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-main-play svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    width: auto !important;
+    min-width: 98px !important;
+    min-height: 34px !important;
+    flex: 0 0 auto !important;
+    padding: 0 2px !important;
+    gap: 5px !important;
+    font-size: 11.5px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .screen-listening .listening-player-card .listening-controls {
+    gap: 4px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-speed-menu,
+  .screen-listening .listening-player-card .listening-speed-toggle {
+    width: 96px !important;
+    min-width: 96px !important;
+    flex-basis: 96px !important;
+  }
+
+  .screen-listening .listening-player-card .listening-replay-link {
+    min-width: 88px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ===== Mobile listening player hard reset ===== */
+@media (max-width: 900px) {
+  .screen-listening .listening-detail-spa > .listening-player-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto 5px auto !important;
+    gap: 9px !important;
+    padding: 12px 14px 14px !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto !important;
+    grid-template-areas:
+      "status time" !important;
+    gap: 3px 8px !important;
+    align-items: start !important;
+    justify-self: stretch !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status > div {
+    grid-area: status !important;
+    min-width: 0 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status > span {
+    grid-area: time !important;
+    align-self: center !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status > span:not(#listeningCurrentTime) {
+    display: none !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status strong {
+    display: block !important;
+    font-size: 14px !important;
+    line-height: 1.05 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-player-status small {
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-waveform {
+    display: none !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-time-row,
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-track-marker {
+    display: none !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-track {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    height: 5px !important;
+    margin: 0 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-controls {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(86px, 108px) 26px 52px 26px minmax(86px, 1fr) !important;
+    grid-template-rows: 52px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-speed-menu {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-speed-toggle {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 34px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card [data-listening-prev] {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-main-play {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    justify-self: center !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card [data-listening-next] {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-step-btn {
+    width: 26px !important;
+    height: 32px !important;
+    min-width: 26px !important;
+    justify-self: center !important;
+  }
+
+  .screen-listening .listening-detail-spa > .listening-player-card .listening-replay-link {
+    grid-column: 5 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 34px !important;
+    padding: 0 2px !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
   }
 }

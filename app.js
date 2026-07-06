@@ -5965,23 +5965,6 @@ function renderListeningDashboard() {
       <header class="listening-dashboard-topbar">
         <h1>${isVi ? "Chủ đề nghe" : "听力主题"}</h1>
         <div class="listening-dashboard-userbar" aria-label="${isVi ? "Thông tin học tập" : "学习信息"}">
-          <div class="listening-stat-pill">
-            <span class="listening-stat-icon listening-stat-icon--coin" aria-hidden="true">★</span>
-            <strong>820</strong>
-            <small>${isVi ? "Điểm tích lũy" : "积分"}</small>
-          </div>
-          <div class="listening-stat-pill">
-            <span class="listening-stat-icon listening-stat-icon--badge" aria-hidden="true">★</span>
-            <strong>HSK 3</strong>
-            <small>${isVi ? "Cấp hiện tại" : "当前级别"}</small>
-          </div>
-          <button class="listening-alert-btn" type="button" aria-label="${isVi ? "Thông báo" : "通知"}">
-            <span aria-hidden="true">!</span>
-          </button>
-          <button class="listening-profile-btn" type="button" data-home-nav="account">
-            <img src="assets/default-guest-avatar.png" alt="" />
-            <span>${isVi ? `Chào ${escapeHtml(userName)}` : `你好 ${escapeHtml(userName)}`}</span>
-          </button>
         </div>
       </header>
 
