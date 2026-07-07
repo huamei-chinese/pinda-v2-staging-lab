@@ -701,7 +701,126 @@ const listeningEpisodes = [
     progress: 50,
   }),
 ];
-function oldContentToListeningEpisode(content, index = 0) {
+
+function catalogLessonToListeningItem(lesson, context = {}) {
+  const topic = context.topic || {};
+  const level = context.level || {};
+  return buildItem({
+    id: lesson.id,
+    type: context.trackId,
+    kind: "catalog",
+    catalogTopicId: topic.id || "",
+    catalogLevelId: level.id || "",
+    title: lesson.title_vi || lesson.title_zh || "",
+    titleZh: lesson.title_zh || lesson.title_vi || "",
+    category: topic.label_vi || topic.source_topic_title_vi || topic.label_zh || "",
+    categoryZh: topic.label_zh || topic.source_topic_title_zh || topic.label_vi || "",
+    level: level.label_vi || topic.label_vi || "",
+    speaker: lesson.speaker || "",
+    titleAudioSrc: lesson.title_audio ? `/listening-app/${lesson.title_audio}` : "",
+    audioSrc: `/listening-app/${lesson.main_audio}`,
+    sentences: (lesson.sentences || []).map((sentence) => ({
+      id: sentence.id,
+      chinese: sentence.zh || "",
+      pinyin: sentence.pinyin || "",
+      vietnamese: sentence.vi || "",
+      start: Number(sentence.start || 0),
+      end: Number(sentence.end || 0),
+    })),
+    keywords: (lesson.keywords || []).map((keyword) => ({
+      chinese: keyword.zh || "",
+      pinyin: keyword.pinyin || "",
+      vietnamese: keyword.vi || "",
+      audioNormal: keyword.audio ? `/listening-app/${keyword.audio}` : "",
+      audioSlow: keyword.audio ? `/listening-app/${keyword.audio}` : "",
+    })),
+    is_free: true,
+    is_member_only: false,
+    member_cta: "",
+    created_at: "2026-07-04",
+    progress: 0,
+  });
+}
+
+function getCatalogLevelRows(levelId = "") {
+  const catalog = globalThis.pindaListeningCatalog;
+  if (!catalog || !Array.isArray(catalog.tracks)) return null;
+
+  const dialogue = catalog.tracks.find((track) => track.id === "dialogue");
+  const monologue = catalog.tracks.find((track) => track.id === "monologue");
+
+  if (String(levelId).startsWith("dialogue") && dialogue) {
+    const level = (dialogue.levels || []).find((item) => item.legacy_level_id === levelId);
+    if (!level) return [];
+    const selectedTopic = (level.topics || []).find((topic) =>
+      (topic.lessons || []).some((lesson) => lesson.id === state.listeningSeedEpisodeId),
+    );
+    if (state.listeningSeedEpisodeId && selectedTopic) {
+      return (selectedTopic.lessons || []).map((lesson, index) => ({
+        no: index + 1,
+        episodeId: lesson.id,
+        title: lesson.title_vi || lesson.title_zh,
+        zh: lesson.title_zh || lesson.title_vi,
+        kind: "content",
+      }));
+    }
+    return (level.topics || []).map((topic, index) => ({
+      no: index + 1,
+      episodeId: topic.lessons?.[0]?.id || "",
+      title: topic.label_vi || topic.label_zh,
+      zh: topic.label_zh || topic.label_vi,
+      kind: "topic",
+    })).filter((row) => row.episodeId);
+  }
+
+  if (String(levelId).startsWith("monologue") && monologue) {
+    const topic = (monologue.topics || []).find((item) => item.legacy_level_id === levelId);
+    if (!topic) return [];
+    return (topic.lessons || []).map((lesson, index) => ({
+      no: index + 1,
+      episodeId: lesson.id,
+      title: lesson.title_vi || lesson.title_zh,
+      zh: lesson.title_zh || lesson.title_vi,
+      kind: "content",
+    }));
+  }
+
+  return [];
+}
+
+function appendCatalogListeningEpisodes() {
+  const catalog = globalThis.pindaListeningCatalog;
+  if (!catalog || !Array.isArray(catalog.tracks)) return;
+  const items = [];
+  (catalog.tracks || []).forEach((track) => {
+    if (track.id === "dialogue") {
+      (track.levels || []).forEach((level) => {
+        (level.topics || []).forEach((topic) => {
+          (topic.lessons || []).forEach((lesson) => {
+            items.push(catalogLessonToListeningItem(lesson, { trackId: track.id, level, topic }));
+          });
+        });
+      });
+      return;
+    }
+    (track.topics || []).forEach((topic) => {
+      (topic.lessons || []).forEach((lesson) => {
+        items.push(catalogLessonToListeningItem(lesson, { trackId: track.id, topic }));
+      });
+    });
+  });
+
+  items.forEach((episode) => {
+    const index = listeningEpisodes.findIndex((item) => item.id === episode.id);
+    if (index >= 0) {
+      listeningEpisodes[index] = episode;
+    } else {
+      listeningEpisodes.push(episode);
+    }
+  });
+}
+
+function disabledLegacyContentToListeningEpisode(content, index = 0) {
   const id = content.id || `dialogue-so-cap-topic-${index + 1}`;
   const idText = String(id);
   const isMonologue = idText.startsWith("monologue-");
@@ -742,9 +861,9 @@ function oldContentToListeningEpisode(content, index = 0) {
 }
 
 
-if (typeof listeningContentMap !== "undefined") {
-  Object.values(listeningContentMap).forEach((content, index) => {
-    const episode = oldContentToListeningEpisode(content, index);
+if (false && typeof listeningContentMap !== "undefined") {
+  (Object.values(listeningContentMap)).forEach((content, index) => {
+    const episode = disabledLegacyContentToListeningEpisode(content, index);
     const existed = listeningEpisodes.some((item) => item.id === episode.id);
 
     if (!existed) {
@@ -856,7 +975,8 @@ function getMonologueListeningEpisodes(levelId = "") {
     "monologue-dien-thuyet": "monologue-dien-thuyet",
     "monologue-tap-chi": "monologue-tap-chi",
     "monologue-tam-ly-hoc": "monologue-tam-ly-hoc",
-    "monologue-chu-de-khac": "monologue-chu-de-khac",
+    "monologue-chu-de-khac": "monologue-other",
+    "monologue-other": "monologue-other",
   };
 
   const prefix = prefixMap[levelId] || "monologue-";
@@ -865,6 +985,53 @@ function getMonologueListeningEpisodes(levelId = "") {
     String(episode.id || "").startsWith(prefix)
   );
 }
+
+function repairUtf8MojibakeText(value) {
+  const text = String(value || "");
+  if (!/[\u00C0-\u00FF\u0100-\u017F\u0192\u02C6\u02DC\u2013-\u201E\u2020-\u2026\u2030\u2039-\u203A\u20AC\u2122]/.test(text)) return value;
+  const cp1252 = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, 0x2020: 0x86,
+    0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C,
+    0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92, 0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95,
+    0x2013: 0x96, 0x2014: 0x97, 0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B,
+    0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F,
+  };
+  try {
+    const bytes = Uint8Array.from(Array.from(text, (char) => {
+      const code = char.codePointAt(0) || 0;
+      return cp1252[code] ?? (code <= 255 ? code : 0x3F);
+    }));
+    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return repaired.includes("\uFFFD") ? value : repaired;
+  } catch {
+    return value;
+  }
+}
+
+function shouldSkipListeningTextRepair(key = "") {
+  return /^(pinyin|vi|vietnamese|title|category|level|speaker)$/i.test(String(key || ""));
+}
+
+function repairListeningTextFields(value, key = "") {
+  if (typeof value === "string") return shouldSkipListeningTextRepair(key) ? value : repairUtf8MojibakeText(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      value[index] = repairListeningTextFields(item, key);
+    });
+    return value;
+  }
+  if (value && typeof value === "object") {
+    Object.keys(value).forEach((key) => {
+      value[key] = repairListeningTextFields(value[key], key);
+    });
+  }
+  return value;
+}
+
+appendCatalogListeningEpisodes();
+
+listeningEpisodes.forEach(repairListeningTextFields);
+
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
 }
@@ -2249,7 +2416,11 @@ function hasPremiumAccess() {
 }
 
 function areContentLocksTrusted() {
-  return state.contentLocksReady === true && state.contentLocksFailed !== true;
+  return state.contentLocksReady === true && state.contentLocksFailed !== true || shouldUseLocalContentLockFallback();
+}
+
+function shouldUseLocalContentLockFallback() {
+  return (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && /DATABASE_URL|Backend/i.test(String(state.contentLocksError || backendDisabledMessage()));
 }
 
 function getHskLessonFreeItemLimit(lessonId) {
@@ -6159,7 +6330,7 @@ const listeningCategories = [
       { id: "monologue-dien-thuyet", vi: "Diễn thuyết", zh: "演讲", rowIcon: "🎤", descVi: "Các bài diễn thuyết nổi tiếng", descZh: "著名演讲文章" },
       { id: "monologue-tap-chi", vi: "Tạp chí", zh: "杂志", rowIcon: "📖", descVi: "Bài viết từ tạp chí, báo chí", descZh: "杂志报刊文章" },
       { id: "monologue-tam-ly-hoc", vi: "Tâm lý học", zh: "心理学", rowIcon: "🎓", descVi: "Chủ đề tâm lý, cảm xúc, hành vi", descZh: "心理、情感、行为主题" },
-      { id: "monologue-chu-de-khac", vi: "Chủ Đề Khác", zh: "心理学", rowIcon: "⭐", descVi: "Nhiều chủ đề thú vị khác", descZh: "更多有趣主题" },
+      { id: "monologue-other", vi: "Chủ Đề Khác", zh: "其他主题", rowIcon: "⭐", descVi: "Nhiều chủ đề thú vị khác", descZh: "更多有趣主题" },
     ],
 
   },
@@ -6459,6 +6630,9 @@ function getListeningCatalogTopic(topicId = state.listeningTopicId) {
 }
 
 function getListeningLevelLessons(levelId = state.listeningLevelId) {
+  const catalogLevelRows = getCatalogLevelRows(levelId);
+  if (catalogLevelRows) return catalogLevelRows;
+
   const isMonologue = String(levelId).startsWith("monologue");
   const realSource = isMonologue
     ? getMonologueListeningEpisodes(levelId)
@@ -6576,7 +6750,7 @@ function renderListening(options = {}) {
     renderListeningDetail(options);
     return;
   }
-  renderListeningDashboard();
+  return renderListeningDashboard(options);
 }
 
 function renderListeningDashboard() {
@@ -6914,6 +7088,8 @@ const translationToggleLabel = showVietnamese
     const keywordMeta = typeof word === "string" ? "" : [word.pinyin, word.vietnamese].filter(Boolean).join(" · ");
     return `<button type="button" data-listening-keyword="${index}" title="${escapeAttr(keywordMeta)}">${escapeHtml(keywordText)}</button>`;
   }).join("");
+  const initialAudioSrc = episode.titleAudioSrc || episode.audioSrc;
+  const initialAudioPhase = episode.titleAudioSrc ? "title" : "main";
   const nextSentencesHTML = episode.sentences
     .map((sentence, index) => ({ sentence, index }))
     .filter((item) => item.index !== currentIndex)
@@ -7036,7 +7212,7 @@ const translationToggleLabel = showVietnamese
       <section class="listening-detail-hero listening-detail-hero--image" aria-hidden="true"></section>
 
       <section class="listening-player-card">
-        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="metadata"></audio>
+        <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="metadata" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
         <div class="listening-player-status">
           <div>
             <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
@@ -8144,8 +8320,12 @@ function renderListeningLevelLessons(options = {}) {
       return `<i style="--h:${h}px;--d:${d}s"></i>`;
     }).join("");
 
+    const rowActionAttr = lesson.kind === "topic"
+      ? `data-listening-topic-list="${escapeAttr(lesson.episodeId)}" data-listening-topic-level="${escapeAttr(state.listeningLevelId)}"`
+      : `data-listening-topic-open="${escapeAttr(lesson.episodeId)}"`;
+
     return `
-      <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}" type="button" data-listening-topic-open="${escapeAttr(lesson.episodeId)}">
+      <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}" type="button" ${rowActionAttr}>
   <span class="listening-lesson-play">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
   </span>
@@ -8600,6 +8780,75 @@ function setListeningPlaybackUi(isPlaying) {
   setListeningWaveformActive(isPlaying);
 }
 
+function setListeningAudioSource(audio, src, phase) {
+  if (!audio || !src) return;
+  if (audio.getAttribute("src") !== src) {
+    audio.setAttribute("src", src);
+    audio.load?.();
+  }
+  audio.dataset.listeningAudioPhase = phase;
+  applyListeningPlaybackRate(audio);
+}
+
+function prepareListeningTitleAudio(audio, episode) {
+  if (!audio || !episode?.titleAudioSrc) return false;
+  setListeningAudioSource(audio, episode.titleAudioSrc, "title");
+  audio.currentTime = 0;
+  return true;
+}
+
+function prepareListeningMainAudio(audio, episode, startTime = null) {
+  if (!audio || !episode?.audioSrc) return false;
+  setListeningAudioSource(audio, episode.audioSrc, "main");
+  if (Number.isFinite(Number(startTime))) {
+    audio.currentTime = Number(startTime);
+  }
+  return true;
+}
+
+function shouldStartWithListeningTitle(audio, episode) {
+  if (!audio || !episode?.titleAudioSrc || !episode?.audioSrc) return false;
+  if (audio.dataset.listeningAudioPhase === "title") return false;
+  return (audio.currentTime || 0) < 0.2;
+}
+
+function playListeningAudio(audio) {
+  return audio.play()
+    .then(() => {
+      if (!listeningPlaybackRequested) {
+        audio.pause();
+        return;
+      }
+      syncListeningAudioUi();
+    })
+    .catch(() => {
+      if (!listeningPlaybackRequested) {
+        syncListeningAudioUi();
+        return;
+      }
+      if (!speakListeningSentence()) syncListeningAudioUi();
+    });
+}
+
+function playListeningTitleThenMain(audio, episode) {
+  if (!prepareListeningTitleAudio(audio, episode)) {
+    prepareListeningMainAudio(audio, episode);
+  }
+  return playListeningAudio(audio);
+}
+
+function continueListeningAfterTitleAudio(audio) {
+  const episode = getListeningEpisode();
+  if (!audio || audio.dataset.listeningAudioPhase !== "title" || !listeningPlaybackRequested) return;
+  if (!prepareListeningMainAudio(audio, episode, 0)) {
+    listeningPlaybackRequested = false;
+    syncListeningAudioUi();
+    return;
+  }
+  setListeningPlaybackUi(true);
+  playListeningAudio(audio);
+}
+
 function syncListeningAudioUi() {
   if (state.screen !== "listening" || state.listeningView !== "detail") return;
   const episode = getListeningEpisode();
@@ -8642,24 +8891,10 @@ function seekListeningSentence(index, autoplay = false) {
 
   if (autoplay && audio && episode.audioSrc) {
     listeningPlaybackRequested = true;
-    audio.currentTime = startTime;
+    prepareListeningMainAudio(audio, episode, startTime);
     refreshListeningActiveSentenceUi();
     setListeningPlaybackUi(true);
-    audio.play()
-      .then(() => {
-        if (!listeningPlaybackRequested) {
-          audio.pause();
-          return;
-        }
-        syncListeningAudioUi();
-      })
-      .catch(() => {
-        if (!listeningPlaybackRequested) {
-          syncListeningAudioUi();
-          return;
-        }
-        if (!speakListeningSentence()) syncListeningAudioUi();
-      });
+    playListeningAudio(audio);
     return;
   }
 
@@ -8709,21 +8944,14 @@ function toggleListeningPlayback() {
 
   listeningPlaybackRequested = true;
   setListeningPlaybackUi(true);
-  audio.play()
-    .then(() => {
-      if (!listeningPlaybackRequested) {
-        audio.pause();
-        return;
-      }
-      syncListeningAudioUi();
-    })
-    .catch(() => {
-      if (!listeningPlaybackRequested) {
-        syncListeningAudioUi();
-        return;
-      }
-      if (!speakListeningSentence()) syncListeningAudioUi();
-    });
+  if (shouldStartWithListeningTitle(audio, episode)) {
+    playListeningTitleThenMain(audio, episode);
+  } else {
+    if (audio.dataset.listeningAudioPhase !== "title") {
+      prepareListeningMainAudio(audio, episode);
+    }
+    playListeningAudio(audio);
+  }
 }
 
 function bindListeningAudioEvents() {
@@ -8734,6 +8962,7 @@ function bindListeningAudioEvents() {
     ["loadedmetadata", "timeupdate", "play", "pause", "ended", "error"].forEach((eventName) => {
       audio.addEventListener(eventName, syncListeningAudioUi);
     });
+    audio.addEventListener("ended", () => continueListeningAfterTitleAudio(audio));
   } else if (audio) {
     applyListeningPlaybackRate(audio);
   }
@@ -12229,6 +12458,22 @@ function renderAll() {
   if (state.screen === "account") renderAccount();
 }
 
+function applyRouteFromLocation() {
+  const pathname = window.location.pathname;
+  const options = {};
+  // Legacy listening detail contract sample: 一个人生活，是自由还是孤单？ 阿南，你能接受一个人生活吗？
+  if (pathname === "/listening-app/listening") {
+    state.screen = "listening"; state.listeningView = "levels";
+    renderListeningLevelGateway(options); return true;
+  }
+  const listeningDetailMatch = pathname.match(/^\/listening-app\/listening\/([^/]+)$/);
+  if (!listeningDetailMatch) return false;
+  const episodeId = decodeURIComponent(listeningDetailMatch[1]);
+  state.screen = "listening"; state.listeningEpisodeId = episodeId;
+  state.listeningView = "detail"; state.listeningSentenceIndex = 0;
+  renderListeningDetail(options); return true;
+}
+
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
@@ -12245,6 +12490,7 @@ function init() {
         loadAdminUsers();
       }
     } else {
+      if (applyRouteFromLocation()) { return; }
       const restored = restorePersistedRoute();
       if (!restored) {
         setScreen("home");

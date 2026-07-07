@@ -132,6 +132,31 @@ test("catalog importer uses monologue level id as the content category", async (
   assert.equal(other.lessons.length, 0);
 });
 
+test("catalog importer appends new monologue batches after existing lessons", async () => {
+  const { mergeManifestIntoCatalog } = await import(importerUrl);
+  let catalog = emptyCatalog();
+  const firstBatch = manifest("monologue", "topic-first-speech", "First speech", "speech");
+  firstBatch.lessons = [
+    lesson("daily-001", "monologue", "First 1"),
+    lesson("daily-002", "monologue", "First 2"),
+  ];
+  const secondBatch = manifest("monologue", "topic-second-speech", "Second speech", "speech");
+  secondBatch.lessons = [
+    lesson("daily-001", "monologue", "Second 1"),
+    lesson("daily-002", "monologue", "Second 2"),
+  ];
+
+  catalog = mergeManifestIntoCatalog(catalog, firstBatch);
+  catalog = mergeManifestIntoCatalog(catalog, secondBatch);
+
+  const monologue = catalog.tracks.find((track) => track.id === "monologue");
+  const speech = monologue.topics.find((topic) => topic.id === "speech");
+  assert.deepEqual(
+    speech.lessons.map((entry) => entry.title_zh),
+    ["First 1", "First 2", "Second 1", "Second 2"],
+  );
+});
+
 test("catalog importer can replace the current container to remove old test content", async () => {
   const { mergeManifestIntoCatalog } = await import(importerUrl);
   let catalog = emptyCatalog();

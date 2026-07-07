@@ -106,6 +106,34 @@ test("rejects title and intro lines inside sentence subtitles", async () => {
   assert.match(result.errors.join("\n"), /title or intro text must not be in sentences/);
 });
 
+test("rejects pinyin mojibake question marks before import", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  manifest.lessons[0].sentences[0].pinyin = "H?o, s?o m? k? y? ma?";
+  manifest.lessons[0].keywords[0].pinyin = "K? y?.";
+
+  const result = validateListeningManifest(manifest, new Set([
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]));
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /suspicious pinyin mojibake/);
+});
+
+test("allows real pinyin apostrophe syllables before question punctuation", async () => {
+  const { validateListeningManifest } = await loadValidator();
+  const manifest = validManifest();
+  manifest.lessons[0].sentences[0].pinyin = "Ránhòu shè yí ge gùdìng jīn’é?";
+
+  const result = validateListeningManifest(manifest, new Set([
+    "audio/main/daily-001-main.mp3",
+    "audio/words/daily-001-keyword-001.mp3",
+  ]));
+
+  assert.equal(result.ok, true);
+});
+
 test("allows short real dialogue greetings that appear inside a longer lesson title", async () => {
   const { validateListeningManifest } = await loadValidator();
   const manifest = validManifest();

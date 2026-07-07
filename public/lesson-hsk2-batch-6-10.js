@@ -27,7 +27,7 @@
       "items": [
         {
           "stage": "word",
-          "vi": "thoi tiet",
+          "vi": "thời tiết",
           "hanzi": "天气",
           "words": [
             {
@@ -35,7 +35,7 @@
               "pinyin": "tian qi",
               "tone": "tian qi",
               "pos": "noun",
-              "vi": "thoi tiet"
+              "vi": "thời tiết"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -44,7 +44,7 @@
         },
         {
           "stage": "word",
-          "vi": "mua",
+          "vi": "mưa",
           "hanzi": "下雨",
           "words": [
             {
@@ -52,7 +52,7 @@
               "pinyin": "xia yu",
               "tone": "xia yu",
               "pos": "verb",
-              "vi": "mua"
+              "vi": "mưa"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -61,7 +61,7 @@
         },
         {
           "stage": "word",
-          "vi": "troi am u",
+          "vi": "trời âm u",
           "hanzi": "阴天",
           "words": [
             {
@@ -69,7 +69,7 @@
               "pinyin": "yin tian",
               "tone": "yin tian",
               "pos": "noun",
-              "vi": "troi am u"
+              "vi": "trời âm u"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -78,7 +78,7 @@
         },
         {
           "stage": "word",
-          "vi": "troi nang",
+          "vi": "trời nắng",
           "hanzi": "晴天",
           "words": [
             {
@@ -86,7 +86,7 @@
               "pinyin": "qing tian",
               "tone": "qing tian",
               "pos": "noun",
-              "vi": "troi nang"
+              "vi": "trời nắng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -95,7 +95,7 @@
         },
         {
           "stage": "word",
-          "vi": "ben ngoai",
+          "vi": "bên ngoài",
           "hanzi": "外面",
           "words": [
             {
@@ -103,7 +103,7 @@
               "pinyin": "wai mian",
               "tone": "wai mian",
               "pos": "noun",
-              "vi": "ben ngoai"
+              "vi": "bên ngoài"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -112,7 +112,7 @@
         },
         {
           "stage": "word",
-          "vi": "lanh",
+          "vi": "lạnh",
           "hanzi": "冷",
           "words": [
             {
@@ -120,7 +120,7 @@
               "pinyin": "leng",
               "tone": "leng",
               "pos": "adj",
-              "vi": "lanh"
+              "vi": "lạnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -129,7 +129,7 @@
         },
         {
           "stage": "word",
-          "vi": "nong",
+          "vi": "nóng",
           "hanzi": "热",
           "words": [
             {
@@ -137,7 +137,7 @@
               "pinyin": "re",
               "tone": "re",
               "pos": "adj",
-              "vi": "nong"
+              "vi": "nóng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -146,7 +146,7 @@
         },
         {
           "stage": "word",
-          "vi": "mac",
+          "vi": "mặc",
           "hanzi": "穿",
           "words": [
             {
@@ -154,7 +154,7 @@
               "pinyin": "chuan",
               "tone": "chuan",
               "pos": "verb",
-              "vi": "mac"
+              "vi": "mặc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -163,7 +163,7 @@
         },
         {
           "stage": "word",
-          "vi": "van dong",
+          "vi": "vận động",
           "hanzi": "运动",
           "words": [
             {
@@ -171,7 +171,7 @@
               "pinyin": "yun dong",
               "tone": "yun dong",
               "pos": "verb",
-              "vi": "van dong"
+              "vi": "vận động"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -180,7 +180,7 @@
         },
         {
           "stage": "word",
-          "vi": "cong vien",
+          "vi": "công viên",
           "hanzi": "公园",
           "words": [
             {
@@ -188,7 +188,7 @@
               "pinyin": "gong yuan",
               "tone": "gong yuan",
               "pos": "noun",
-              "vi": "cong vien"
+              "vi": "công viên"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -197,7 +197,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "thoi tiet mua",
+          "vi": "thời tiết mưa",
           "hanzi": "天气下雨",
           "words": [
             {
@@ -205,14 +205,14 @@
               "pinyin": "tian qi",
               "tone": "tian qi",
               "pos": "noun",
-              "vi": "thoi tiet"
+              "vi": "thời tiết"
             },
             {
               "text": "下雨",
               "pinyin": "xia yu",
               "tone": "xia yu",
               "pos": "verb",
-              "vi": "mua"
+              "vi": "mưa"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -221,7 +221,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "troi am u troi nang",
+          "vi": "trời âm u trời nắng",
           "hanzi": "阴天晴天",
           "words": [
             {
@@ -229,14 +229,14 @@
               "pinyin": "yin tian",
               "tone": "yin tian",
               "pos": "noun",
-              "vi": "troi am u"
+              "vi": "trời âm u"
             },
             {
               "text": "晴天",
               "pinyin": "qing tian",
               "tone": "qing tian",
               "pos": "noun",
-              "vi": "troi nang"
+              "vi": "trời nắng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -245,7 +245,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "lanh ben ngoai",
+          "vi": "lạnh bên ngoài",
           "hanzi": "外面的冷",
           "words": [
             {
@@ -253,21 +253,21 @@
               "pinyin": "wai mian",
               "tone": "wai mian",
               "pos": "noun",
-              "vi": "ben ngoai"
+              "vi": "bên ngoài"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "冷",
               "pinyin": "leng",
               "tone": "leng",
               "pos": "adj",
-              "vi": "lanh"
+              "vi": "lạnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -276,7 +276,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "van dong cong vien",
+          "vi": "vận động công viên",
           "hanzi": "运动公园",
           "words": [
             {
@@ -284,14 +284,14 @@
               "pinyin": "yun dong",
               "tone": "yun dong",
               "pos": "verb",
-              "vi": "van dong"
+              "vi": "vận động"
             },
             {
               "text": "公园",
               "pinyin": "gong yuan",
               "tone": "gong yuan",
               "pos": "noun",
-              "vi": "cong vien"
+              "vi": "công viên"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -300,7 +300,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Toi muon troi am u troi nang.",
+          "vi": "Tôi muốn trời âm u trời nắng.",
           "hanzi": "我想阴天晴天。",
           "words": [
             {
@@ -308,28 +308,28 @@
               "pinyin": "wo",
               "tone": "wo",
               "pos": "pron",
-              "vi": "toi"
+              "vi": "tôi"
             },
             {
               "text": "想",
               "pinyin": "xiang",
               "tone": "xiang",
               "pos": "verb",
-              "vi": "muon"
+              "vi": "muốn"
             },
             {
               "text": "阴天",
               "pinyin": "yin tian",
               "tone": "yin tian",
               "pos": "noun",
-              "vi": "troi am u"
+              "vi": "trời âm u"
             },
             {
               "text": "晴天",
               "pinyin": "qing tian",
               "tone": "qing tian",
               "pos": "noun",
-              "vi": "troi nang"
+              "vi": "trời nắng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -338,7 +338,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "thoi tiet mua rat troi nang.",
+          "vi": "thời tiết mưa rất trời nắng.",
           "hanzi": "天气下雨很晴天。",
           "words": [
             {
@@ -346,28 +346,28 @@
               "pinyin": "tian qi",
               "tone": "tian qi",
               "pos": "noun",
-              "vi": "thoi tiet"
+              "vi": "thời tiết"
             },
             {
               "text": "下雨",
               "pinyin": "xia yu",
               "tone": "xia yu",
               "pos": "verb",
-              "vi": "mua"
+              "vi": "mưa"
             },
             {
               "text": "很",
               "pinyin": "hen",
               "tone": "hen",
               "pos": "adv",
-              "vi": "rat"
+              "vi": "rất"
             },
             {
               "text": "晴天",
               "pinyin": "qing tian",
               "tone": "qing tian",
               "pos": "noun",
-              "vi": "troi nang"
+              "vi": "trời nắng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -376,7 +376,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Vui long mac ben ngoai.",
+          "vi": "Vui lòng mặc bên ngoài.",
           "hanzi": "请穿外面。",
           "words": [
             {
@@ -384,21 +384,21 @@
               "pinyin": "qing",
               "tone": "qing",
               "pos": "verb",
-              "vi": "vui long"
+              "vi": "vui lòng"
             },
             {
               "text": "穿",
               "pinyin": "chuan",
               "tone": "chuan",
               "pos": "verb",
-              "vi": "mac"
+              "vi": "mặc"
             },
             {
               "text": "外面",
               "pinyin": "wai mian",
               "tone": "wai mian",
               "pos": "noun",
-              "vi": "ben ngoai"
+              "vi": "bên ngoài"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -407,7 +407,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Chung toi van dong cong vien.",
+          "vi": "Chúng tôi vận động công viên.",
           "hanzi": "我们运动公园。",
           "words": [
             {
@@ -415,21 +415,21 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "运动",
               "pinyin": "yun dong",
               "tone": "yun dong",
               "pos": "verb",
-              "vi": "van dong"
+              "vi": "vận động"
             },
             {
               "text": "公园",
               "pinyin": "gong yuan",
               "tone": "gong yuan",
               "pos": "noun",
-              "vi": "cong vien"
+              "vi": "công viên"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -438,7 +438,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "lanh ben ngoai o nong.",
+          "vi": "lạnh bên ngoài ở nóng.",
           "hanzi": "外面的冷在热。",
           "words": [
             {
@@ -446,35 +446,35 @@
               "pinyin": "wai mian",
               "tone": "wai mian",
               "pos": "noun",
-              "vi": "ben ngoai"
+              "vi": "bên ngoài"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "冷",
               "pinyin": "leng",
               "tone": "leng",
               "pos": "adj",
-              "vi": "lanh"
+              "vi": "lạnh"
             },
             {
               "text": "在",
               "pinyin": "zai",
               "tone": "zai",
               "pos": "prep",
-              "vi": "o tai"
+              "vi": "ở tại"
             },
             {
               "text": "热",
               "pinyin": "re",
               "tone": "re",
               "pos": "adj",
-              "vi": "nong"
+              "vi": "nóng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -483,7 +483,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "Chung toi di mua troi am u.",
+          "vi": "Chúng tôi đi mưa trời âm u.",
           "hanzi": "我们去下雨阴天。",
           "words": [
             {
@@ -491,28 +491,28 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "去",
               "pinyin": "qu",
               "tone": "qu",
               "pos": "verb",
-              "vi": "di"
+              "vi": "đi"
             },
             {
               "text": "下雨",
               "pinyin": "xia yu",
               "tone": "xia yu",
               "pos": "verb",
-              "vi": "mua"
+              "vi": "mưa"
             },
             {
               "text": "阴天",
               "pinyin": "yin tian",
               "tone": "yin tian",
               "pos": "noun",
-              "vi": "troi am u"
+              "vi": "trời âm u"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 6",
@@ -529,7 +529,7 @@
       "items": [
         {
           "stage": "word",
-          "vi": "xe buyt",
+          "vi": "xe buýt",
           "hanzi": "公共汽车",
           "words": [
             {
@@ -537,7 +537,7 @@
               "pinyin": "gong gong qi che",
               "tone": "gong gong qi che",
               "pos": "noun",
-              "vi": "xe buyt"
+              "vi": "xe buýt"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -546,7 +546,7 @@
         },
         {
           "stage": "word",
-          "vi": "tau dien ngam",
+          "vi": "tàu điện ngầm",
           "hanzi": "地铁",
           "words": [
             {
@@ -554,7 +554,7 @@
               "pinyin": "di tie",
               "tone": "di tie",
               "pos": "noun",
-              "vi": "tau dien ngam"
+              "vi": "tàu điện ngầm"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -563,7 +563,7 @@
         },
         {
           "stage": "word",
-          "vi": "tram xe",
+          "vi": "trạm xe",
           "hanzi": "车站",
           "words": [
             {
@@ -571,7 +571,7 @@
               "pinyin": "che zhan",
               "tone": "che zhan",
               "pos": "noun",
-              "vi": "tram xe"
+              "vi": "trạm xe"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -580,7 +580,7 @@
         },
         {
           "stage": "word",
-          "vi": "ve",
+          "vi": "vé",
           "hanzi": "票",
           "words": [
             {
@@ -588,7 +588,7 @@
               "pinyin": "piao",
               "tone": "piao",
               "pos": "noun",
-              "vi": "ve"
+              "vi": "vé"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -597,7 +597,7 @@
         },
         {
           "stage": "word",
-          "vi": "den noi",
+          "vi": "đến nơi",
           "hanzi": "到达",
           "words": [
             {
@@ -605,7 +605,7 @@
               "pinyin": "dao da",
               "tone": "dao da",
               "pos": "verb",
-              "vi": "den noi"
+              "vi": "đến nơi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -614,7 +614,7 @@
         },
         {
           "stage": "word",
-          "vi": "doi",
+          "vi": "đợi",
           "hanzi": "等",
           "words": [
             {
@@ -622,7 +622,7 @@
               "pinyin": "deng",
               "tone": "deng",
               "pos": "verb",
-              "vi": "doi"
+              "vi": "đợi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -631,7 +631,7 @@
         },
         {
           "stage": "word",
-          "vi": "cach",
+          "vi": "cách",
           "hanzi": "离",
           "words": [
             {
@@ -639,7 +639,7 @@
               "pinyin": "li",
               "tone": "li",
               "pos": "prep",
-              "vi": "cach"
+              "vi": "cách"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -648,7 +648,7 @@
         },
         {
           "stage": "word",
-          "vi": "gan",
+          "vi": "gần",
           "hanzi": "近",
           "words": [
             {
@@ -656,7 +656,7 @@
               "pinyin": "jin",
               "tone": "jin",
               "pos": "adj",
-              "vi": "gan"
+              "vi": "gần"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -682,7 +682,7 @@
         },
         {
           "stage": "word",
-          "vi": "di bo",
+          "vi": "đi bộ",
           "hanzi": "走路",
           "words": [
             {
@@ -690,7 +690,7 @@
               "pinyin": "zou lu",
               "tone": "zou lu",
               "pos": "verb",
-              "vi": "di bo"
+              "vi": "đi bộ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -699,7 +699,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "xe buyt tau dien ngam",
+          "vi": "xe buýt tàu điện ngầm",
           "hanzi": "公共汽车地铁",
           "words": [
             {
@@ -707,14 +707,14 @@
               "pinyin": "gong gong qi che",
               "tone": "gong gong qi che",
               "pos": "noun",
-              "vi": "xe buyt"
+              "vi": "xe buýt"
             },
             {
               "text": "地铁",
               "pinyin": "di tie",
               "tone": "di tie",
               "pos": "noun",
-              "vi": "tau dien ngam"
+              "vi": "tàu điện ngầm"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -723,7 +723,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "tram xe ve",
+          "vi": "trạm xe vé",
           "hanzi": "车站票",
           "words": [
             {
@@ -731,14 +731,14 @@
               "pinyin": "che zhan",
               "tone": "che zhan",
               "pos": "noun",
-              "vi": "tram xe"
+              "vi": "trạm xe"
             },
             {
               "text": "票",
               "pinyin": "piao",
               "tone": "piao",
               "pos": "noun",
-              "vi": "ve"
+              "vi": "vé"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -747,7 +747,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "doi den noi",
+          "vi": "đợi đến nơi",
           "hanzi": "到达的等",
           "words": [
             {
@@ -755,21 +755,21 @@
               "pinyin": "dao da",
               "tone": "dao da",
               "pos": "verb",
-              "vi": "den noi"
+              "vi": "đến nơi"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "等",
               "pinyin": "deng",
               "tone": "deng",
               "pos": "verb",
-              "vi": "doi"
+              "vi": "đợi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -778,7 +778,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "xa di bo",
+          "vi": "xa đi bộ",
           "hanzi": "远走路",
           "words": [
             {
@@ -793,7 +793,7 @@
               "pinyin": "zou lu",
               "tone": "zou lu",
               "pos": "verb",
-              "vi": "di bo"
+              "vi": "đi bộ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -802,7 +802,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Toi muon tram xe ve.",
+          "vi": "Tôi muốn trạm xe vé.",
           "hanzi": "我想车站票。",
           "words": [
             {
@@ -810,28 +810,28 @@
               "pinyin": "wo",
               "tone": "wo",
               "pos": "pron",
-              "vi": "toi"
+              "vi": "tôi"
             },
             {
               "text": "想",
               "pinyin": "xiang",
               "tone": "xiang",
               "pos": "verb",
-              "vi": "muon"
+              "vi": "muốn"
             },
             {
               "text": "车站",
               "pinyin": "che zhan",
               "tone": "che zhan",
               "pos": "noun",
-              "vi": "tram xe"
+              "vi": "trạm xe"
             },
             {
               "text": "票",
               "pinyin": "piao",
               "tone": "piao",
               "pos": "noun",
-              "vi": "ve"
+              "vi": "vé"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -840,7 +840,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "xe buyt tau dien ngam rat ve.",
+          "vi": "xe buýt tàu điện ngầm rất vé.",
           "hanzi": "公共汽车地铁很票。",
           "words": [
             {
@@ -848,28 +848,28 @@
               "pinyin": "gong gong qi che",
               "tone": "gong gong qi che",
               "pos": "noun",
-              "vi": "xe buyt"
+              "vi": "xe buýt"
             },
             {
               "text": "地铁",
               "pinyin": "di tie",
               "tone": "di tie",
               "pos": "noun",
-              "vi": "tau dien ngam"
+              "vi": "tàu điện ngầm"
             },
             {
               "text": "很",
               "pinyin": "hen",
               "tone": "hen",
               "pos": "adv",
-              "vi": "rat"
+              "vi": "rất"
             },
             {
               "text": "票",
               "pinyin": "piao",
               "tone": "piao",
               "pos": "noun",
-              "vi": "ve"
+              "vi": "vé"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -878,7 +878,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Vui long gan den noi.",
+          "vi": "Vui lòng gần đến nơi.",
           "hanzi": "请近到达。",
           "words": [
             {
@@ -886,21 +886,21 @@
               "pinyin": "qing",
               "tone": "qing",
               "pos": "verb",
-              "vi": "vui long"
+              "vi": "vui lòng"
             },
             {
               "text": "近",
               "pinyin": "jin",
               "tone": "jin",
               "pos": "adj",
-              "vi": "gan"
+              "vi": "gần"
             },
             {
               "text": "到达",
               "pinyin": "dao da",
               "tone": "dao da",
               "pos": "verb",
-              "vi": "den noi"
+              "vi": "đến nơi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -909,7 +909,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Chung toi xa di bo.",
+          "vi": "Chúng tôi xa đi bộ.",
           "hanzi": "我们远走路。",
           "words": [
             {
@@ -917,7 +917,7 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "远",
@@ -931,7 +931,7 @@
               "pinyin": "zou lu",
               "tone": "zou lu",
               "pos": "verb",
-              "vi": "di bo"
+              "vi": "đi bộ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -940,7 +940,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "doi den noi o cach.",
+          "vi": "đợi đến nơi ở cách.",
           "hanzi": "到达的等在离。",
           "words": [
             {
@@ -948,35 +948,35 @@
               "pinyin": "dao da",
               "tone": "dao da",
               "pos": "verb",
-              "vi": "den noi"
+              "vi": "đến nơi"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "等",
               "pinyin": "deng",
               "tone": "deng",
               "pos": "verb",
-              "vi": "doi"
+              "vi": "đợi"
             },
             {
               "text": "在",
               "pinyin": "zai",
               "tone": "zai",
               "pos": "prep",
-              "vi": "o tai"
+              "vi": "ở tại"
             },
             {
               "text": "离",
               "pinyin": "li",
               "tone": "li",
               "pos": "prep",
-              "vi": "cach"
+              "vi": "cách"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -985,7 +985,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "Chung toi di tau dien ngam tram xe.",
+          "vi": "Chúng tôi đi tàu điện ngầm trạm xe.",
           "hanzi": "我们去地铁车站。",
           "words": [
             {
@@ -993,28 +993,28 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "去",
               "pinyin": "qu",
               "tone": "qu",
               "pos": "verb",
-              "vi": "di"
+              "vi": "đi"
             },
             {
               "text": "地铁",
               "pinyin": "di tie",
               "tone": "di tie",
               "pos": "noun",
-              "vi": "tau dien ngam"
+              "vi": "tàu điện ngầm"
             },
             {
               "text": "车站",
               "pinyin": "che zhan",
               "tone": "che zhan",
               "pos": "noun",
-              "vi": "tram xe"
+              "vi": "trạm xe"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 7",
@@ -1031,7 +1031,7 @@
       "items": [
         {
           "stage": "word",
-          "vi": "khach san",
+          "vi": "khách sạn",
           "hanzi": "旅馆",
           "words": [
             {
@@ -1039,7 +1039,7 @@
               "pinyin": "lv guan",
               "tone": "lv guan",
               "pos": "noun",
-              "vi": "khach san"
+              "vi": "khách sạn"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1048,7 +1048,7 @@
         },
         {
           "stage": "word",
-          "vi": "phong",
+          "vi": "phòng",
           "hanzi": "房间",
           "words": [
             {
@@ -1056,7 +1056,7 @@
               "pinyin": "fang jian",
               "tone": "fang jian",
               "pos": "noun",
-              "vi": "phong"
+              "vi": "phòng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1065,7 +1065,7 @@
         },
         {
           "stage": "word",
-          "vi": "yen tinh",
+          "vi": "yên tĩnh",
           "hanzi": "安静",
           "words": [
             {
@@ -1073,7 +1073,7 @@
               "pinyin": "an jing",
               "tone": "an jing",
               "pos": "adj",
-              "vi": "yen tinh"
+              "vi": "yên tĩnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1082,7 +1082,7 @@
         },
         {
           "stage": "word",
-          "vi": "sach se",
+          "vi": "sạch sẽ",
           "hanzi": "干净",
           "words": [
             {
@@ -1090,7 +1090,7 @@
               "pinyin": "gan jing",
               "tone": "gan jing",
               "pos": "adj",
-              "vi": "sach se"
+              "vi": "sạch sẽ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1099,7 +1099,7 @@
         },
         {
           "stage": "word",
-          "vi": "o lai",
+          "vi": "ở lại",
           "hanzi": "住",
           "words": [
             {
@@ -1107,7 +1107,7 @@
               "pinyin": "zhu",
               "tone": "zhu",
               "pos": "verb",
-              "vi": "o lai"
+              "vi": "ở lại"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1116,7 +1116,7 @@
         },
         {
           "stage": "word",
-          "vi": "buoi toi",
+          "vi": "buổi tối",
           "hanzi": "晚上",
           "words": [
             {
@@ -1124,7 +1124,7 @@
               "pinyin": "wan shang",
               "tone": "wan shang",
               "pos": "noun",
-              "vi": "buoi toi"
+              "vi": "buổi tối"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1133,7 +1133,7 @@
         },
         {
           "stage": "word",
-          "vi": "mo cua",
+          "vi": "mở cửa",
           "hanzi": "开门",
           "words": [
             {
@@ -1141,7 +1141,7 @@
               "pinyin": "kai men",
               "tone": "kai men",
               "pos": "verb",
-              "vi": "mo cua"
+              "vi": "mở cửa"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1150,7 +1150,7 @@
         },
         {
           "stage": "word",
-          "vi": "nhan vien phuc vu",
+          "vi": "nhân viên phục vụ",
           "hanzi": "服务员",
           "words": [
             {
@@ -1158,7 +1158,7 @@
               "pinyin": "fu wu yuan",
               "tone": "fu wu yuan",
               "pos": "noun",
-              "vi": "nhan vien phuc vu"
+              "vi": "nhân viên phục vụ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1167,7 +1167,7 @@
         },
         {
           "stage": "word",
-          "vi": "tam",
+          "vi": "tắm",
           "hanzi": "洗澡",
           "words": [
             {
@@ -1175,7 +1175,7 @@
               "pinyin": "xi zao",
               "tone": "xi zao",
               "pos": "verb",
-              "vi": "tam"
+              "vi": "tắm"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1184,7 +1184,7 @@
         },
         {
           "stage": "word",
-          "vi": "may lanh",
+          "vi": "máy lạnh",
           "hanzi": "空调",
           "words": [
             {
@@ -1192,7 +1192,7 @@
               "pinyin": "kong tiao",
               "tone": "kong tiao",
               "pos": "noun",
-              "vi": "may lanh"
+              "vi": "máy lạnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1201,7 +1201,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "khach san phong",
+          "vi": "khách sạn phòng",
           "hanzi": "旅馆房间",
           "words": [
             {
@@ -1209,14 +1209,14 @@
               "pinyin": "lv guan",
               "tone": "lv guan",
               "pos": "noun",
-              "vi": "khach san"
+              "vi": "khách sạn"
             },
             {
               "text": "房间",
               "pinyin": "fang jian",
               "tone": "fang jian",
               "pos": "noun",
-              "vi": "phong"
+              "vi": "phòng"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1225,7 +1225,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "yen tinh sach se",
+          "vi": "yên tĩnh sạch sẽ",
           "hanzi": "安静干净",
           "words": [
             {
@@ -1233,14 +1233,14 @@
               "pinyin": "an jing",
               "tone": "an jing",
               "pos": "adj",
-              "vi": "yen tinh"
+              "vi": "yên tĩnh"
             },
             {
               "text": "干净",
               "pinyin": "gan jing",
               "tone": "gan jing",
               "pos": "adj",
-              "vi": "sach se"
+              "vi": "sạch sẽ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1249,7 +1249,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "buoi toi o lai",
+          "vi": "buổi tối ở lại",
           "hanzi": "住的晚上",
           "words": [
             {
@@ -1257,21 +1257,21 @@
               "pinyin": "zhu",
               "tone": "zhu",
               "pos": "verb",
-              "vi": "o lai"
+              "vi": "ở lại"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "晚上",
               "pinyin": "wan shang",
               "tone": "wan shang",
               "pos": "noun",
-              "vi": "buoi toi"
+              "vi": "buổi tối"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1280,7 +1280,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "tam may lanh",
+          "vi": "tắm máy lạnh",
           "hanzi": "洗澡空调",
           "words": [
             {
@@ -1288,14 +1288,14 @@
               "pinyin": "xi zao",
               "tone": "xi zao",
               "pos": "verb",
-              "vi": "tam"
+              "vi": "tắm"
             },
             {
               "text": "空调",
               "pinyin": "kong tiao",
               "tone": "kong tiao",
               "pos": "noun",
-              "vi": "may lanh"
+              "vi": "máy lạnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1304,7 +1304,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Toi muon yen tinh sach se.",
+          "vi": "Tôi muốn yên tĩnh sạch sẽ.",
           "hanzi": "我想安静干净。",
           "words": [
             {
@@ -1312,28 +1312,28 @@
               "pinyin": "wo",
               "tone": "wo",
               "pos": "pron",
-              "vi": "toi"
+              "vi": "tôi"
             },
             {
               "text": "想",
               "pinyin": "xiang",
               "tone": "xiang",
               "pos": "verb",
-              "vi": "muon"
+              "vi": "muốn"
             },
             {
               "text": "安静",
               "pinyin": "an jing",
               "tone": "an jing",
               "pos": "adj",
-              "vi": "yen tinh"
+              "vi": "yên tĩnh"
             },
             {
               "text": "干净",
               "pinyin": "gan jing",
               "tone": "gan jing",
               "pos": "adj",
-              "vi": "sach se"
+              "vi": "sạch sẽ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1342,7 +1342,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "khach san phong rat sach se.",
+          "vi": "khách sạn phòng rất sạch sẽ.",
           "hanzi": "旅馆房间很干净。",
           "words": [
             {
@@ -1350,28 +1350,28 @@
               "pinyin": "lv guan",
               "tone": "lv guan",
               "pos": "noun",
-              "vi": "khach san"
+              "vi": "khách sạn"
             },
             {
               "text": "房间",
               "pinyin": "fang jian",
               "tone": "fang jian",
               "pos": "noun",
-              "vi": "phong"
+              "vi": "phòng"
             },
             {
               "text": "很",
               "pinyin": "hen",
               "tone": "hen",
               "pos": "adv",
-              "vi": "rat"
+              "vi": "rất"
             },
             {
               "text": "干净",
               "pinyin": "gan jing",
               "tone": "gan jing",
               "pos": "adj",
-              "vi": "sach se"
+              "vi": "sạch sẽ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1380,7 +1380,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Vui long nhan vien phuc vu o lai.",
+          "vi": "Vui lòng nhân viên phục vụ ở lại.",
           "hanzi": "请服务员住。",
           "words": [
             {
@@ -1388,21 +1388,21 @@
               "pinyin": "qing",
               "tone": "qing",
               "pos": "verb",
-              "vi": "vui long"
+              "vi": "vui lòng"
             },
             {
               "text": "服务员",
               "pinyin": "fu wu yuan",
               "tone": "fu wu yuan",
               "pos": "noun",
-              "vi": "nhan vien phuc vu"
+              "vi": "nhân viên phục vụ"
             },
             {
               "text": "住",
               "pinyin": "zhu",
               "tone": "zhu",
               "pos": "verb",
-              "vi": "o lai"
+              "vi": "ở lại"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1411,7 +1411,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Chung toi tam may lanh.",
+          "vi": "Chúng tôi tắm máy lạnh.",
           "hanzi": "我们洗澡空调。",
           "words": [
             {
@@ -1419,21 +1419,21 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "洗澡",
               "pinyin": "xi zao",
               "tone": "xi zao",
               "pos": "verb",
-              "vi": "tam"
+              "vi": "tắm"
             },
             {
               "text": "空调",
               "pinyin": "kong tiao",
               "tone": "kong tiao",
               "pos": "noun",
-              "vi": "may lanh"
+              "vi": "máy lạnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1442,7 +1442,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "buoi toi o lai o mo cua.",
+          "vi": "buổi tối ở lại ở mở cửa.",
           "hanzi": "住的晚上在开门。",
           "words": [
             {
@@ -1450,35 +1450,35 @@
               "pinyin": "zhu",
               "tone": "zhu",
               "pos": "verb",
-              "vi": "o lai"
+              "vi": "ở lại"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "晚上",
               "pinyin": "wan shang",
               "tone": "wan shang",
               "pos": "noun",
-              "vi": "buoi toi"
+              "vi": "buổi tối"
             },
             {
               "text": "在",
               "pinyin": "zai",
               "tone": "zai",
               "pos": "prep",
-              "vi": "o tai"
+              "vi": "ở tại"
             },
             {
               "text": "开门",
               "pinyin": "kai men",
               "tone": "kai men",
               "pos": "verb",
-              "vi": "mo cua"
+              "vi": "mở cửa"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1487,7 +1487,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "Chung toi di phong yen tinh.",
+          "vi": "Chúng tôi đi phòng yên tĩnh.",
           "hanzi": "我们去房间安静。",
           "words": [
             {
@@ -1495,28 +1495,28 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "去",
               "pinyin": "qu",
               "tone": "qu",
               "pos": "verb",
-              "vi": "di"
+              "vi": "đi"
             },
             {
               "text": "房间",
               "pinyin": "fang jian",
               "tone": "fang jian",
               "pos": "noun",
-              "vi": "phong"
+              "vi": "phòng"
             },
             {
               "text": "安静",
               "pinyin": "an jing",
               "tone": "an jing",
               "pos": "adj",
-              "vi": "yen tinh"
+              "vi": "yên tĩnh"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 8",
@@ -1533,7 +1533,7 @@
       "items": [
         {
           "stage": "word",
-          "vi": "co the",
+          "vi": "cơ thể",
           "hanzi": "身体",
           "words": [
             {
@@ -1541,7 +1541,7 @@
               "pinyin": "shen ti",
               "tone": "shen ti",
               "pos": "noun",
-              "vi": "co the"
+              "vi": "cơ thể"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1550,7 +1550,7 @@
         },
         {
           "stage": "word",
-          "vi": "cam",
+          "vi": "cảm",
           "hanzi": "感冒",
           "words": [
             {
@@ -1558,7 +1558,7 @@
               "pinyin": "gan mao",
               "tone": "gan mao",
               "pos": "verb",
-              "vi": "cam"
+              "vi": "cảm"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1567,7 +1567,7 @@
         },
         {
           "stage": "word",
-          "vi": "sot",
+          "vi": "sốt",
           "hanzi": "发烧",
           "words": [
             {
@@ -1575,7 +1575,7 @@
               "pinyin": "fa shao",
               "tone": "fa shao",
               "pos": "verb",
-              "vi": "sot"
+              "vi": "sốt"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1584,7 +1584,7 @@
         },
         {
           "stage": "word",
-          "vi": "thuoc",
+          "vi": "thuốc",
           "hanzi": "药",
           "words": [
             {
@@ -1592,7 +1592,7 @@
               "pinyin": "yao",
               "tone": "yao",
               "pos": "noun",
-              "vi": "thuoc"
+              "vi": "thuốc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1601,7 +1601,7 @@
         },
         {
           "stage": "word",
-          "vi": "benh vien",
+          "vi": "bệnh viện",
           "hanzi": "医院",
           "words": [
             {
@@ -1609,7 +1609,7 @@
               "pinyin": "yi yuan",
               "tone": "yi yuan",
               "pos": "noun",
-              "vi": "benh vien"
+              "vi": "bệnh viện"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1618,7 +1618,7 @@
         },
         {
           "stage": "word",
-          "vi": "bac si",
+          "vi": "bác sĩ",
           "hanzi": "医生",
           "words": [
             {
@@ -1626,7 +1626,7 @@
               "pinyin": "yi sheng",
               "tone": "yi sheng",
               "pos": "noun",
-              "vi": "bac si"
+              "vi": "bác sĩ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1635,7 +1635,7 @@
         },
         {
           "stage": "word",
-          "vi": "nghi ngoi",
+          "vi": "nghỉ ngơi",
           "hanzi": "休息",
           "words": [
             {
@@ -1643,7 +1643,7 @@
               "pinyin": "xiu xi",
               "tone": "xiu xi",
               "pos": "verb",
-              "vi": "nghi ngoi"
+              "vi": "nghỉ ngơi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1652,7 +1652,7 @@
         },
         {
           "stage": "word",
-          "vi": "uong nuoc",
+          "vi": "uống nước",
           "hanzi": "喝水",
           "words": [
             {
@@ -1660,7 +1660,7 @@
               "pinyin": "he shui",
               "tone": "he shui",
               "pos": "verb",
-              "vi": "uong nuoc"
+              "vi": "uống nước"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1669,7 +1669,7 @@
         },
         {
           "stage": "word",
-          "vi": "ngu",
+          "vi": "ngủ",
           "hanzi": "睡觉",
           "words": [
             {
@@ -1677,7 +1677,7 @@
               "pinyin": "shui jiao",
               "tone": "shui jiao",
               "pos": "verb",
-              "vi": "ngu"
+              "vi": "ngủ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1686,7 +1686,7 @@
         },
         {
           "stage": "word",
-          "vi": "kha hon mot chut",
+          "vi": "khá hơn một chút",
           "hanzi": "好一点",
           "words": [
             {
@@ -1694,7 +1694,7 @@
               "pinyin": "hao yi dian",
               "tone": "hao yi dian",
               "pos": "adj",
-              "vi": "kha hon mot chut"
+              "vi": "khá hơn một chút"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1703,7 +1703,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "co the cam",
+          "vi": "cơ thể cảm",
           "hanzi": "身体感冒",
           "words": [
             {
@@ -1711,14 +1711,14 @@
               "pinyin": "shen ti",
               "tone": "shen ti",
               "pos": "noun",
-              "vi": "co the"
+              "vi": "cơ thể"
             },
             {
               "text": "感冒",
               "pinyin": "gan mao",
               "tone": "gan mao",
               "pos": "verb",
-              "vi": "cam"
+              "vi": "cảm"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1727,7 +1727,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "sot thuoc",
+          "vi": "sốt thuốc",
           "hanzi": "发烧药",
           "words": [
             {
@@ -1735,14 +1735,14 @@
               "pinyin": "fa shao",
               "tone": "fa shao",
               "pos": "verb",
-              "vi": "sot"
+              "vi": "sốt"
             },
             {
               "text": "药",
               "pinyin": "yao",
               "tone": "yao",
               "pos": "noun",
-              "vi": "thuoc"
+              "vi": "thuốc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1751,7 +1751,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "bac si benh vien",
+          "vi": "bác sĩ bệnh viện",
           "hanzi": "医院的医生",
           "words": [
             {
@@ -1759,21 +1759,21 @@
               "pinyin": "yi yuan",
               "tone": "yi yuan",
               "pos": "noun",
-              "vi": "benh vien"
+              "vi": "bệnh viện"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "医生",
               "pinyin": "yi sheng",
               "tone": "yi sheng",
               "pos": "noun",
-              "vi": "bac si"
+              "vi": "bác sĩ"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1782,7 +1782,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "ngu kha hon mot chut",
+          "vi": "ngủ khá hơn một chút",
           "hanzi": "睡觉好一点",
           "words": [
             {
@@ -1790,14 +1790,14 @@
               "pinyin": "shui jiao",
               "tone": "shui jiao",
               "pos": "verb",
-              "vi": "ngu"
+              "vi": "ngủ"
             },
             {
               "text": "好一点",
               "pinyin": "hao yi dian",
               "tone": "hao yi dian",
               "pos": "adj",
-              "vi": "kha hon mot chut"
+              "vi": "khá hơn một chút"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1806,7 +1806,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Toi muon sot thuoc.",
+          "vi": "Tôi muốn sốt thuốc.",
           "hanzi": "我想发烧药。",
           "words": [
             {
@@ -1814,28 +1814,28 @@
               "pinyin": "wo",
               "tone": "wo",
               "pos": "pron",
-              "vi": "toi"
+              "vi": "tôi"
             },
             {
               "text": "想",
               "pinyin": "xiang",
               "tone": "xiang",
               "pos": "verb",
-              "vi": "muon"
+              "vi": "muốn"
             },
             {
               "text": "发烧",
               "pinyin": "fa shao",
               "tone": "fa shao",
               "pos": "verb",
-              "vi": "sot"
+              "vi": "sốt"
             },
             {
               "text": "药",
               "pinyin": "yao",
               "tone": "yao",
               "pos": "noun",
-              "vi": "thuoc"
+              "vi": "thuốc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1844,7 +1844,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "co the cam rat thuoc.",
+          "vi": "cơ thể cảm rất thuốc.",
           "hanzi": "身体感冒很药。",
           "words": [
             {
@@ -1852,28 +1852,28 @@
               "pinyin": "shen ti",
               "tone": "shen ti",
               "pos": "noun",
-              "vi": "co the"
+              "vi": "cơ thể"
             },
             {
               "text": "感冒",
               "pinyin": "gan mao",
               "tone": "gan mao",
               "pos": "verb",
-              "vi": "cam"
+              "vi": "cảm"
             },
             {
               "text": "很",
               "pinyin": "hen",
               "tone": "hen",
               "pos": "adv",
-              "vi": "rat"
+              "vi": "rất"
             },
             {
               "text": "药",
               "pinyin": "yao",
               "tone": "yao",
               "pos": "noun",
-              "vi": "thuoc"
+              "vi": "thuốc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1882,7 +1882,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Vui long uong nuoc benh vien.",
+          "vi": "Vui lòng uống nước bệnh viện.",
           "hanzi": "请喝水医院。",
           "words": [
             {
@@ -1890,21 +1890,21 @@
               "pinyin": "qing",
               "tone": "qing",
               "pos": "verb",
-              "vi": "vui long"
+              "vi": "vui lòng"
             },
             {
               "text": "喝水",
               "pinyin": "he shui",
               "tone": "he shui",
               "pos": "verb",
-              "vi": "uong nuoc"
+              "vi": "uống nước"
             },
             {
               "text": "医院",
               "pinyin": "yi yuan",
               "tone": "yi yuan",
               "pos": "noun",
-              "vi": "benh vien"
+              "vi": "bệnh viện"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1913,7 +1913,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Chung toi ngu kha hon mot chut.",
+          "vi": "Chúng tôi ngủ khá hơn một chút.",
           "hanzi": "我们睡觉好一点。",
           "words": [
             {
@@ -1921,21 +1921,21 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "睡觉",
               "pinyin": "shui jiao",
               "tone": "shui jiao",
               "pos": "verb",
-              "vi": "ngu"
+              "vi": "ngủ"
             },
             {
               "text": "好一点",
               "pinyin": "hao yi dian",
               "tone": "hao yi dian",
               "pos": "adj",
-              "vi": "kha hon mot chut"
+              "vi": "khá hơn một chút"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1944,7 +1944,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "bac si benh vien o nghi ngoi.",
+          "vi": "bác sĩ bệnh viện ở nghỉ ngơi.",
           "hanzi": "医院的医生在休息。",
           "words": [
             {
@@ -1952,35 +1952,35 @@
               "pinyin": "yi yuan",
               "tone": "yi yuan",
               "pos": "noun",
-              "vi": "benh vien"
+              "vi": "bệnh viện"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "医生",
               "pinyin": "yi sheng",
               "tone": "yi sheng",
               "pos": "noun",
-              "vi": "bac si"
+              "vi": "bác sĩ"
             },
             {
               "text": "在",
               "pinyin": "zai",
               "tone": "zai",
               "pos": "prep",
-              "vi": "o tai"
+              "vi": "ở tại"
             },
             {
               "text": "休息",
               "pinyin": "xiu xi",
               "tone": "xiu xi",
               "pos": "verb",
-              "vi": "nghi ngoi"
+              "vi": "nghỉ ngơi"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -1989,7 +1989,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "Chung toi di cam sot.",
+          "vi": "Chúng tôi đi cảm sốt.",
           "hanzi": "我们去感冒发烧。",
           "words": [
             {
@@ -1997,28 +1997,28 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "去",
               "pinyin": "qu",
               "tone": "qu",
               "pos": "verb",
-              "vi": "di"
+              "vi": "đi"
             },
             {
               "text": "感冒",
               "pinyin": "gan mao",
               "tone": "gan mao",
               "pos": "verb",
-              "vi": "cam"
+              "vi": "cảm"
             },
             {
               "text": "发烧",
               "pinyin": "fa shao",
               "tone": "fa shao",
               "pos": "verb",
-              "vi": "sot"
+              "vi": "sốt"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 9",
@@ -2035,7 +2035,7 @@
       "items": [
         {
           "stage": "word",
-          "vi": "cong ty",
+          "vi": "công ty",
           "hanzi": "公司",
           "words": [
             {
@@ -2043,7 +2043,7 @@
               "pinyin": "gong si",
               "tone": "gong si",
               "pos": "noun",
-              "vi": "cong ty"
+              "vi": "công ty"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2052,7 +2052,7 @@
         },
         {
           "stage": "word",
-          "vi": "dong nghiep",
+          "vi": "đồng nghiệp",
           "hanzi": "同事",
           "words": [
             {
@@ -2060,7 +2060,7 @@
               "pinyin": "tong shi",
               "tone": "tong shi",
               "pos": "noun",
-              "vi": "dong nghiep"
+              "vi": "đồng nghiệp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2069,7 +2069,7 @@
         },
         {
           "stage": "word",
-          "vi": "quan ly",
+          "vi": "quản lý",
           "hanzi": "经理",
           "words": [
             {
@@ -2077,7 +2077,7 @@
               "pinyin": "jing li",
               "tone": "jing li",
               "pos": "noun",
-              "vi": "quan ly"
+              "vi": "quản lý"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2086,7 +2086,7 @@
         },
         {
           "stage": "word",
-          "vi": "hop",
+          "vi": "họp",
           "hanzi": "开会",
           "words": [
             {
@@ -2094,7 +2094,7 @@
               "pinyin": "kai hui",
               "tone": "kai hui",
               "pos": "verb",
-              "vi": "hop"
+              "vi": "họp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2103,7 +2103,7 @@
         },
         {
           "stage": "word",
-          "vi": "tai lieu",
+          "vi": "tài liệu",
           "hanzi": "文件",
           "words": [
             {
@@ -2111,7 +2111,7 @@
               "pinyin": "wen jian",
               "tone": "wen jian",
               "pos": "noun",
-              "vi": "tai lieu"
+              "vi": "tài liệu"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2120,7 +2120,7 @@
         },
         {
           "stage": "word",
-          "vi": "hoan thanh",
+          "vi": "hoàn thành",
           "hanzi": "完成",
           "words": [
             {
@@ -2128,7 +2128,7 @@
               "pinyin": "wan cheng",
               "tone": "wan cheng",
               "pos": "verb",
-              "vi": "hoan thanh"
+              "vi": "hoàn thành"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2137,7 +2137,7 @@
         },
         {
           "stage": "word",
-          "vi": "ban",
+          "vi": "bận",
           "hanzi": "忙",
           "words": [
             {
@@ -2145,7 +2145,7 @@
               "pinyin": "mang",
               "tone": "mang",
               "pos": "adj",
-              "vi": "ban"
+              "vi": "bận"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2154,7 +2154,7 @@
         },
         {
           "stage": "word",
-          "vi": "viec",
+          "vi": "việc",
           "hanzi": "事情",
           "words": [
             {
@@ -2162,7 +2162,7 @@
               "pinyin": "shi qing",
               "tone": "shi qing",
               "pos": "noun",
-              "vi": "viec"
+              "vi": "việc"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2171,7 +2171,7 @@
         },
         {
           "stage": "word",
-          "vi": "dien thoai",
+          "vi": "điện thoại",
           "hanzi": "电话",
           "words": [
             {
@@ -2179,7 +2179,7 @@
               "pinyin": "dian hua",
               "tone": "dian hua",
               "pos": "noun",
-              "vi": "dien thoai"
+              "vi": "điện thoại"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2205,7 +2205,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "cong ty dong nghiep",
+          "vi": "công ty đồng nghiệp",
           "hanzi": "公司同事",
           "words": [
             {
@@ -2213,14 +2213,14 @@
               "pinyin": "gong si",
               "tone": "gong si",
               "pos": "noun",
-              "vi": "cong ty"
+              "vi": "công ty"
             },
             {
               "text": "同事",
               "pinyin": "tong shi",
               "tone": "tong shi",
               "pos": "noun",
-              "vi": "dong nghiep"
+              "vi": "đồng nghiệp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2229,7 +2229,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "quan ly hop",
+          "vi": "quản lý họp",
           "hanzi": "经理开会",
           "words": [
             {
@@ -2237,14 +2237,14 @@
               "pinyin": "jing li",
               "tone": "jing li",
               "pos": "noun",
-              "vi": "quan ly"
+              "vi": "quản lý"
             },
             {
               "text": "开会",
               "pinyin": "kai hui",
               "tone": "kai hui",
               "pos": "verb",
-              "vi": "hop"
+              "vi": "họp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2253,7 +2253,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "hoan thanh tai lieu",
+          "vi": "hoàn thành tài liệu",
           "hanzi": "文件的完成",
           "words": [
             {
@@ -2261,21 +2261,21 @@
               "pinyin": "wen jian",
               "tone": "wen jian",
               "pos": "noun",
-              "vi": "tai lieu"
+              "vi": "tài liệu"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "完成",
               "pinyin": "wan cheng",
               "tone": "wan cheng",
               "pos": "verb",
-              "vi": "hoan thanh"
+              "vi": "hoàn thành"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2284,7 +2284,7 @@
         },
         {
           "stage": "phrase",
-          "vi": "dien thoai email",
+          "vi": "điện thoại email",
           "hanzi": "电话电子邮件",
           "words": [
             {
@@ -2292,7 +2292,7 @@
               "pinyin": "dian hua",
               "tone": "dian hua",
               "pos": "noun",
-              "vi": "dien thoai"
+              "vi": "điện thoại"
             },
             {
               "text": "电子邮件",
@@ -2308,7 +2308,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Toi muon quan ly hop.",
+          "vi": "Tôi muốn quản lý họp.",
           "hanzi": "我想经理开会。",
           "words": [
             {
@@ -2316,28 +2316,28 @@
               "pinyin": "wo",
               "tone": "wo",
               "pos": "pron",
-              "vi": "toi"
+              "vi": "tôi"
             },
             {
               "text": "想",
               "pinyin": "xiang",
               "tone": "xiang",
               "pos": "verb",
-              "vi": "muon"
+              "vi": "muốn"
             },
             {
               "text": "经理",
               "pinyin": "jing li",
               "tone": "jing li",
               "pos": "noun",
-              "vi": "quan ly"
+              "vi": "quản lý"
             },
             {
               "text": "开会",
               "pinyin": "kai hui",
               "tone": "kai hui",
               "pos": "verb",
-              "vi": "hop"
+              "vi": "họp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2346,7 +2346,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "cong ty dong nghiep rat hop.",
+          "vi": "công ty đồng nghiệp rất họp.",
           "hanzi": "公司同事很开会。",
           "words": [
             {
@@ -2354,28 +2354,28 @@
               "pinyin": "gong si",
               "tone": "gong si",
               "pos": "noun",
-              "vi": "cong ty"
+              "vi": "công ty"
             },
             {
               "text": "同事",
               "pinyin": "tong shi",
               "tone": "tong shi",
               "pos": "noun",
-              "vi": "dong nghiep"
+              "vi": "đồng nghiệp"
             },
             {
               "text": "很",
               "pinyin": "hen",
               "tone": "hen",
               "pos": "adv",
-              "vi": "rat"
+              "vi": "rất"
             },
             {
               "text": "开会",
               "pinyin": "kai hui",
               "tone": "kai hui",
               "pos": "verb",
-              "vi": "hop"
+              "vi": "họp"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2384,7 +2384,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Vui long viec tai lieu.",
+          "vi": "Vui lòng việc tài liệu.",
           "hanzi": "请事情文件。",
           "words": [
             {
@@ -2392,21 +2392,21 @@
               "pinyin": "qing",
               "tone": "qing",
               "pos": "verb",
-              "vi": "vui long"
+              "vi": "vui lòng"
             },
             {
               "text": "事情",
               "pinyin": "shi qing",
               "tone": "shi qing",
               "pos": "noun",
-              "vi": "viec"
+              "vi": "việc"
             },
             {
               "text": "文件",
               "pinyin": "wen jian",
               "tone": "wen jian",
               "pos": "noun",
-              "vi": "tai lieu"
+              "vi": "tài liệu"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2415,7 +2415,7 @@
         },
         {
           "stage": "sentence",
-          "vi": "Chung toi dien thoai email.",
+          "vi": "Chúng tôi điện thoại email.",
           "hanzi": "我们电话电子邮件。",
           "words": [
             {
@@ -2423,14 +2423,14 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "电话",
               "pinyin": "dian hua",
               "tone": "dian hua",
               "pos": "noun",
-              "vi": "dien thoai"
+              "vi": "điện thoại"
             },
             {
               "text": "电子邮件",
@@ -2446,7 +2446,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "hoan thanh tai lieu o ban.",
+          "vi": "hoàn thành tài liệu ở bận.",
           "hanzi": "文件的完成在忙。",
           "words": [
             {
@@ -2454,35 +2454,35 @@
               "pinyin": "wen jian",
               "tone": "wen jian",
               "pos": "noun",
-              "vi": "tai lieu"
+              "vi": "tài liệu"
             },
             {
               "text": "的",
               "pinyin": "de",
               "tone": "de",
               "pos": "particle",
-              "vi": "tro tu so huu"
+              "vi": "trợ từ sở hữu"
             },
             {
               "text": "完成",
               "pinyin": "wan cheng",
               "tone": "wan cheng",
               "pos": "verb",
-              "vi": "hoan thanh"
+              "vi": "hoàn thành"
             },
             {
               "text": "在",
               "pinyin": "zai",
               "tone": "zai",
               "pos": "prep",
-              "vi": "o tai"
+              "vi": "ở tại"
             },
             {
               "text": "忙",
               "pinyin": "mang",
               "tone": "mang",
               "pos": "adj",
-              "vi": "ban"
+              "vi": "bận"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",
@@ -2491,7 +2491,7 @@
         },
         {
           "stage": "mixed",
-          "vi": "Chung toi di dong nghiep quan ly.",
+          "vi": "Chúng tôi đi đồng nghiệp quản lý.",
           "hanzi": "我们去同事经理。",
           "words": [
             {
@@ -2499,28 +2499,28 @@
               "pinyin": "wo men",
               "tone": "wo men",
               "pos": "pron",
-              "vi": "chung toi"
+              "vi": "chúng tôi"
             },
             {
               "text": "去",
               "pinyin": "qu",
               "tone": "qu",
               "pos": "verb",
-              "vi": "di"
+              "vi": "đi"
             },
             {
               "text": "同事",
               "pinyin": "tong shi",
               "tone": "tong shi",
               "pos": "noun",
-              "vi": "dong nghiep"
+              "vi": "đồng nghiệp"
             },
             {
               "text": "经理",
               "pinyin": "jing li",
               "tone": "jing li",
               "pos": "noun",
-              "vi": "quan ly"
+              "vi": "quản lý"
             }
           ],
           "source": "HSK2 generated lab pack - Lesson 10",

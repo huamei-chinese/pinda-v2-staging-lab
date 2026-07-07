@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { pushPinyinGuardError } from "./listening-text-guards.mjs";
 
 const REQUIRED_SCHEMA_VERSION = "pinda_listening_catalog_v1";
 const REQUIRED_MODULE = "daily_listening";
@@ -47,6 +48,13 @@ function validateLesson(errors, lesson, pathLabel, seenLessonIds) {
   requireString(errors, lesson.main_audio, `${pathLabel} lesson main_audio`);
   requireArray(errors, lesson.sentences, `${pathLabel} lesson sentences`);
   requireArray(errors, lesson.keywords, `${pathLabel} lesson keywords`);
+
+  (Array.isArray(lesson.sentences) ? lesson.sentences : []).forEach((sentence, index) => {
+    pushPinyinGuardError(errors, sentence?.pinyin, `${pathLabel} lesson sentence ${index + 1} pinyin`);
+  });
+  (Array.isArray(lesson.keywords) ? lesson.keywords : []).forEach((keyword, index) => {
+    pushPinyinGuardError(errors, keyword?.pinyin, `${pathLabel} lesson keyword ${index + 1} pinyin`);
+  });
 }
 
 function validateTopic(errors, topic, pathLabel, seenLessonIds) {

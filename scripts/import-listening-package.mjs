@@ -141,10 +141,17 @@ function lessonToCatalogLesson(manifest, lesson, placement) {
 
 function upsertLessons(existingLessons, nextLessons) {
   const byId = new Map((existingLessons || []).map((lesson) => [lesson.id, lesson]));
-  nextLessons.forEach((lesson) => byId.set(lesson.id, lesson));
-  return [...byId.values()].sort((a, b) =>
-    String(a.source_lesson_id || a.id).localeCompare(String(b.source_lesson_id || b.id)),
-  );
+  const ordered = [];
+  for (const lesson of existingLessons || []) {
+    const replacement = nextLessons.find((nextLesson) => nextLesson.id === lesson.id);
+    ordered.push(replacement || lesson);
+  }
+  for (const lesson of nextLessons) {
+    if (!byId.has(lesson.id)) {
+      ordered.push(lesson);
+    }
+  }
+  return ordered;
 }
 
 function upsertTopic(topics, topic, nextLessons) {

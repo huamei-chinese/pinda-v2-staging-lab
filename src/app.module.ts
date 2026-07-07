@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
 import { ContentModule } from './content/content.module';
 import { ListeningModule } from './listening/listening.module';
+import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-local-preview.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ListeningModule } from './listening/listening.module';
     PaymentModule,
     ContentModule,
     ListeningModule,
+    AdminV2LocalPreviewModule,
   ],
 })
 export class AppModule {}

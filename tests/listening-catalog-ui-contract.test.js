@@ -4,13 +4,14 @@ const path = require("node:path");
 const test = require("node:test");
 
 const repoRoot = path.join(__dirname, "..");
+const packageJson = require("../package.json");
 const rootIndex = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
 const publicIndex = fs.readFileSync(path.join(repoRoot, "public", "index.html"), "utf8");
 const appSource = fs.readFileSync(path.join(repoRoot, "public", "app.js"), "utf8");
 
 function assertCatalogLoadedBeforeApp(html) {
   const catalogIndex = html.indexOf("listening-app/data/listening-catalog.js");
-  const appIndex = html.indexOf("app.js?v=title-audio-20260704");
+  const appIndex = html.search(/app\.js\?v=[^"']+/);
 
   assert.ok(catalogIndex > 0, "listening catalog data script should be loaded");
   assert.ok(appIndex > 0, "app.js should be loaded");
@@ -42,6 +43,14 @@ test("catalog level rows can be intentionally empty without falling back to demo
   assert.match(appSource, /if \(catalogLevelRows\) return catalogLevelRows;/);
 });
 
+test("listening UI keeps catalog hierarchy separate from visual-only UI", () => {
+  assert.match(appSource, /lesson\.kind === "topic"/);
+  assert.match(appSource, /data-listening-topic-level/);
+  assert.match(appSource, /state\.listeningSeedEpisodeId && selectedTopic/);
+  assert.match(appSource, /state\.listeningLevelId = listeningTopicListBtn\.dataset\.listeningTopicLevel \|\| state\.listeningLevelId/);
+  assert.doesNotMatch(appSource, /state\.listeningLevelId = "dialogue-so-cap";\s*renderListening\(\);/);
+});
+
 test("listening playback starts with title audio before the main lesson audio", () => {
   assert.match(appSource, /function playListeningTitleThenMain/);
   assert.match(appSource, /titleAudioSrc/);
@@ -50,4 +59,8 @@ test("listening playback starts with title audio before the main lesson audio", 
   assert.match(appSource, /listeningAudioPhase/);
   assert.match(appSource, /prepareListeningTitleAudio/);
   assert.match(appSource, /prepareListeningMainAudio/);
+});
+
+test("package exposes a listening rendering validation gate", () => {
+  assert.equal(packageJson.scripts["validate:listening-rendering"], "node ./scripts/validate-listening-rendering.mjs");
 });
