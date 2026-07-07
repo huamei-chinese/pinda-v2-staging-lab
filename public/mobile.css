@@ -11,7 +11,7 @@
   }
 
   .app-desktop-content:has(> .mobile-page-return-bar) {
-    padding-top: 48px !important;
+    /* padding-top: 48px !important; */
   }
 
   .mobile-page-return-bar {
