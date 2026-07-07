@@ -1,6 +1,68 @@
+const adminV2LanguageStorageKey = "admin-v2-language";
+
+function getInitialAdminV2Language() {
+  try {
+    return localStorage.getItem(adminV2LanguageStorageKey) === "vi" ? "vi" : "zh";
+  } catch {
+    return "zh";
+  }
+}
+
+const adminV2I18n = {
+  zh: {
+    documentTitle: "华美后台数据管理中心 V2 实验舱",
+    languageCurrent: "中文",
+    languageNext: "Tiếng Việt",
+    languageToggleLabel: "切换后台语言",
+    brandTitle: "华美后台数据管理中心 V2 实验舱",
+    brandSubtitle: "本地实验后台，不连接正式数据",
+    navOverview: "运营总览",
+    navUsers: "用户管理",
+    navLearning: "学习数据分析",
+    navSupport: "客服工作台",
+    navContent: "内容管理",
+    navUnlock: "VIP 与课程解锁",
+    navAgents: "代理与佣金",
+    navSystem: "系统与发布闸口",
+    navSync: "PR 与同步准备",
+    topEyebrow: "本地实验后台",
+    topSummary: "截图 1 做视觉，截图 2 做字段骨架，V2 桥接能力做内部控制台。",
+    statusLab: "实验版",
+    statusView: "当前视图：本地预览",
+    statusSource: "数据来源：实验静态层",
+    riskTitle: "开发环境安全提示",
+    riskCopy: "本版本为本地实验版，不可部署，不可连接线上数据库；所有危险写操作默认关闭。",
+  },
+  vi: {
+    documentTitle: "Trung tâm quản trị dữ liệu HuaMei V2 Lab",
+    languageCurrent: "Tiếng Việt",
+    languageNext: "中文",
+    languageToggleLabel: "Đổi ngôn ngữ quản trị",
+    brandTitle: "Trung tâm quản trị dữ liệu HuaMei V2 Lab",
+    brandSubtitle: "Bản thử nghiệm nội bộ, không kết nối dữ liệu chính thức",
+    navOverview: "Tổng quan vận hành",
+    navUsers: "Quản lý người dùng",
+    navLearning: "Dữ liệu học tập",
+    navSupport: "Bàn hỗ trợ khách hàng",
+    navContent: "Quản lý nội dung",
+    navUnlock: "VIP và mở khóa bài học",
+    navAgents: "Đại lý và hoa hồng",
+    navSystem: "Cổng hệ thống và phát hành",
+    navSync: "PR và đồng bộ",
+    topEyebrow: "Backend thử nghiệm nội bộ",
+    topSummary: "Dùng để kiểm tra giao diện, khung dữ liệu và năng lực kết nối Admin V2.",
+    statusLab: "Bản thử nghiệm",
+    statusView: "Chế độ xem: xem trước nội bộ",
+    statusSource: "Nguồn dữ liệu: lớp thử nghiệm tĩnh",
+    riskTitle: "Cảnh báo an toàn môi trường phát triển",
+    riskCopy: "Phiên bản này chỉ dùng cho thử nghiệm nội bộ, không triển khai, không kết nối cơ sở dữ liệu online; mọi thao tác ghi nguy hiểm đều tắt mặc định.",
+  },
+};
+
 const adminV2State = {
   activeTab: "overview",
   activeRole: "admin",
+  language: getInitialAdminV2Language(),
 };
 
 const adminV2ServiceState = {
@@ -1173,6 +1235,36 @@ function loadAdminV2LocalBridge() {
   refreshAdminV2BackendData();
 }
 
+function setAdminV2Language(language) {
+  const nextLanguage = language === "vi" ? "vi" : "zh";
+  const labels = adminV2I18n[nextLanguage] || adminV2I18n.zh;
+  adminV2State.language = nextLanguage;
+
+  document.documentElement.lang = nextLanguage === "vi" ? "vi" : "zh-CN";
+  document.title = labels.documentTitle;
+  document.querySelectorAll("[data-admin-v2-i18n]").forEach((node) => {
+    const key = node.dataset.adminV2I18n;
+    if (labels[key]) node.textContent = labels[key];
+  });
+
+  const languageButton = document.querySelector("[data-admin-v2-language-toggle]");
+  const current = document.querySelector("[data-admin-v2-language-current]");
+  const next = document.querySelector("[data-admin-v2-language-next]");
+  if (languageButton) languageButton.setAttribute("aria-label", labels.languageToggleLabel);
+  if (current) current.textContent = labels.languageCurrent;
+  if (next) next.textContent = labels.languageNext;
+
+  try {
+    localStorage.setItem(adminV2LanguageStorageKey, nextLanguage);
+  } catch {
+    // localStorage may be unavailable in embedded previews.
+  }
+}
+
+document.querySelector("[data-admin-v2-language-toggle]")?.addEventListener("click", () => {
+  setAdminV2Language(adminV2State.language === "zh" ? "vi" : "zh");
+});
+
 function setAdminV2Tab(tab, options = {}) {
   adminV2State.activeTab = tab;
   document.querySelectorAll("[data-admin-v2-tab]").forEach((button) => {
@@ -1226,6 +1318,7 @@ document.querySelectorAll("[data-admin-v2-role]").forEach((button) => {
   button.addEventListener("click", () => setAdminV2Role(button.dataset.adminV2Role));
 });
 
+setAdminV2Language(adminV2State.language);
 setAdminV2Role(adminV2State.activeRole);
 
 function setServicePreview(preview) {

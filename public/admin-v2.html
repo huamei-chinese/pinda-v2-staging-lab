@@ -12,41 +12,45 @@
       <div class="brand-block">
         <span>HM</span>
         <div>
-          <strong>华美后台数据管理中心 V2 实验舱</strong>
-          <small>本地实验后台，不连接正式数据</small>
+          <strong data-admin-v2-i18n="brandTitle">华美后台数据管理中心 V2 实验舱</strong>
+          <small data-admin-v2-i18n="brandSubtitle">本地实验后台，不连接正式数据</small>
         </div>
       </div>
 
       <nav class="side-nav">
-        <button class="active" type="button" data-admin-v2-tab="overview" data-menu-key="overview">运营总览</button>
-        <button type="button" data-admin-v2-tab="users" data-menu-key="users">用户管理</button>
-        <button type="button" data-admin-v2-tab="learning" data-menu-key="learning">学习数据分析</button>
-        <button type="button" data-admin-v2-tab="support" data-menu-key="support">客服工作台</button>
-        <button type="button" data-admin-v2-tab="content" data-menu-key="content">内容管理</button>
-        <button type="button" data-admin-v2-tab="unlock" data-menu-key="unlock">VIP 与课程解锁</button>
-        <button type="button" data-admin-v2-tab="agents" data-menu-key="agents">代理与佣金</button>
-        <button type="button" data-admin-v2-tab="system" data-menu-key="system">系统与发布闸口</button>
-        <button type="button" data-admin-v2-tab="sync" data-menu-key="sync">PR 与同步准备</button>
+        <button class="active" type="button" data-admin-v2-tab="overview" data-menu-key="overview" data-admin-v2-i18n="navOverview">运营总览</button>
+        <button type="button" data-admin-v2-tab="users" data-menu-key="users" data-admin-v2-i18n="navUsers">用户管理</button>
+        <button type="button" data-admin-v2-tab="learning" data-menu-key="learning" data-admin-v2-i18n="navLearning">学习数据分析</button>
+        <button type="button" data-admin-v2-tab="support" data-menu-key="support" data-admin-v2-i18n="navSupport">客服工作台</button>
+        <button type="button" data-admin-v2-tab="content" data-menu-key="content" data-admin-v2-i18n="navContent">内容管理</button>
+        <button type="button" data-admin-v2-tab="unlock" data-menu-key="unlock" data-admin-v2-i18n="navUnlock">VIP 与课程解锁</button>
+        <button type="button" data-admin-v2-tab="agents" data-menu-key="agents" data-admin-v2-i18n="navAgents">代理与佣金</button>
+        <button type="button" data-admin-v2-tab="system" data-menu-key="system" data-admin-v2-i18n="navSystem">系统与发布闸口</button>
+        <button type="button" data-admin-v2-tab="sync" data-menu-key="sync" data-admin-v2-i18n="navSync">PR 与同步准备</button>
       </nav>
     </aside>
 
     <section class="admin-main">
       <header class="admin-topbar">
         <div>
-          <span class="eyebrow">本地实验后台</span>
-          <h1>华美后台数据管理中心 V2 实验舱</h1>
-          <p>截图 1 做视觉，截图 2 做字段骨架，V2 桥接能力做内部控制台。</p>
+          <span class="eyebrow" data-admin-v2-i18n="topEyebrow">本地实验后台</span>
+          <h1 data-admin-v2-i18n="brandTitle">华美后台数据管理中心 V2 实验舱</h1>
+          <p data-admin-v2-i18n="topSummary">截图 1 做视觉，截图 2 做字段骨架，V2 桥接能力做内部控制台。</p>
         </div>
         <div class="status-stack" aria-label="实验状态">
-          <span>实验版</span>
-          <span>当前视图：本地预览</span>
-          <span>数据来源：实验静态层</span>
+          <button class="admin-v2-language-toggle" type="button" data-admin-v2-language-toggle aria-label="切换后台语言">
+            <span data-admin-v2-language-current>中文</span>
+            <small data-admin-v2-language-next>Tiếng Việt</small>
+          </button>
+          <span data-admin-v2-i18n="statusLab">实验版</span>
+          <span data-admin-v2-i18n="statusView">当前视图：本地预览</span>
+          <span data-admin-v2-i18n="statusSource">数据来源：实验静态层</span>
         </div>
       </header>
 
       <section class="risk-gate">
-        <strong>开发环境安全提示</strong>
-        <span>本版本为本地实验版，不可部署，不可连接线上数据库；所有危险写操作默认关闭。</span>
+        <strong data-admin-v2-i18n="riskTitle">开发环境安全提示</strong>
+        <span data-admin-v2-i18n="riskCopy">本版本为本地实验版，不可部署，不可连接线上数据库；所有危险写操作默认关闭。</span>
       </section>
 
       <section class="local-bridge" data-admin-v2-overview-only aria-label="本地前后端接入安全壳">
