@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>华美后台 V2 干净 UI 壳</title>
+  <link rel="stylesheet" href="admin-v2-clean.css" />
+</head>
+<body>
+  <main class="clean-admin-shell">
+    <aside class="clean-sidebar" aria-label="后台模块">
+      <div class="clean-brand">
+        <span>HM</span>
+        <div>
+          <strong>Admin V2 clean shell</strong>
+          <small>UI review only · no data</small>
+        </div>
+      </div>
+
+      <nav class="clean-nav">
+        <button class="active" type="button" data-clean-tab="overview">运营总览</button>
+        <button type="button" data-clean-tab="users">用户管理</button>
+        <button type="button" data-clean-tab="learning">学习数据</button>
+        <button type="button" data-clean-tab="support">客服工作台</button>
+        <button type="button" data-clean-tab="content">内容管理</button>
+        <button type="button" data-clean-tab="vip">VIP 与课程</button>
+        <button type="button" data-clean-tab="agents">代理与佣金</button>
+        <button type="button" data-clean-tab="system">系统设置</button>
+      </nav>
+    </aside>
+
+    <section class="clean-main">
+      <header class="clean-topbar">
+        <div>
+          <span class="clean-eyebrow">给阿辉的纯净后台</span>
+          <h1>华美后台数据管理中心 V2</h1>
+          <p>只保留后台结构、导航、空状态、筛选条、表格骨架和操作位，不接真实数据。</p>
+        </div>
+        <div class="clean-actions" aria-label="页面状态">
+          <button type="button" data-clean-language>中文 / Tiếng Việt</button>
+          <span>UI shell</span>
+          <span>no API</span>
+          <span>no database</span>
+        </div>
+      </header>
+
+      <section class="clean-warning">
+        <strong>设计验收边界</strong>
+        <span>此页面只给 UI 测试使用；没有用户数据、没有订单、没有 VIP 写入、没有支付回调、没有数据库连接。</span>
+      </section>
+
+      <section class="clean-panel active" data-clean-panel="overview">
+        <div class="clean-section-title">
+          <span>Overview</span>
+          <h2>运营总览</h2>
+        </div>
+        <div class="clean-metrics">
+          <article><span>今日注册</span><strong>--</strong><small>等待真实数据接入</small></article>
+          <article><span>今日学习</span><strong>--</strong><small>等待学习事件</small></article>
+          <article><span>待处理客服</span><strong>--</strong><small>等待客服队列</small></article>
+          <article><span>代理佣金</span><strong>--</strong><small>等待佣金契约</small></article>
+        </div>
+        <div class="clean-empty-block">
+          <h3>空总览状态</h3>
+          <p>阿辉可以在这里调整图表、数据卡和信息密度；当前不展示任何真实业务内容。</p>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="users">
+        <div class="clean-section-title">
+          <span>Users</span>
+          <h2>用户管理</h2>
+        </div>
+        <div class="clean-toolbar">
+          <label>搜索用户<input type="search" placeholder="姓名 / 邮箱 / ID" /></label>
+          <label>等级<select><option>全部等级</option></select></label>
+          <label>套餐<select><option>全部套餐</option></select></label>
+          <button type="button">刷新</button>
+        </div>
+        <table class="clean-table" aria-label="用户空表">
+          <thead>
+            <tr><th>姓名 / ID</th><th>Email / 注册时间</th><th>角色</th><th>等级</th><th>VIP</th><th>期限</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7">暂无用户数据 / Chưa có dữ liệu người dùng</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="learning">
+        <div class="clean-section-title">
+          <span>Learning</span>
+          <h2>学习数据</h2>
+        </div>
+        <div class="clean-empty-block">
+          <h3>学习记录空状态</h3>
+          <p>预留做题数、错题数、最近学习、学习事件列表位置。</p>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="support">
+        <div class="clean-section-title">
+          <span>Support</span>
+          <h2>客服工作台</h2>
+        </div>
+        <div class="clean-split">
+          <article><h3>客户卡片</h3><p>预留客户资料、VIP 状态、订单状态、备注位置。</p></article>
+          <article><h3>处理队列</h3><p>预留客服任务、跟进状态和操作记录位置。</p></article>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="content">
+        <div class="clean-section-title">
+          <span>Content</span>
+          <h2>内容管理</h2>
+        </div>
+        <div class="clean-empty-block">
+          <h3>素材工作流空状态</h3>
+          <p>预留素材上传、验收、草稿、发布、fallback、rollback 入口。</p>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="vip">
+        <div class="clean-section-title">
+          <span>VIP</span>
+          <h2>VIP 与课程</h2>
+        </div>
+        <div class="clean-empty-block">
+          <h3>权限配置空状态</h3>
+          <p>预留 VIP 授权、课程锁定、套餐规则位置；当前没有写入能力。</p>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="agents">
+        <div class="clean-section-title">
+          <span>Agents</span>
+          <h2>代理与佣金</h2>
+        </div>
+        <div class="clean-split">
+          <article><h3>代理归属</h3><p>预留客户来源、一级代理、二级代理、手动归因位置。</p></article>
+          <article><h3>佣金预览</h3><p>预留昨日、本周、本月、自定义时间范围。</p></article>
+        </div>
+      </section>
+
+      <section class="clean-panel" data-clean-panel="system">
+        <div class="clean-section-title">
+          <span>System</span>
+          <h2>系统设置</h2>
+        </div>
+        <div class="clean-empty-block">
+          <h3>发布闸口空状态</h3>
+          <p>预留环境、权限、审计日志、发布确认位置。</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="admin-v2-clean.js"></script>
+</body>
+</html>
