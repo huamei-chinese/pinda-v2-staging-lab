@@ -459,7 +459,7 @@
         "hanzi": "我一米七。",
         "pinyin": "Wǒ yì mǐ qī.",
         "vietnamese": "Tôi cao 1 mét 7.",
-        "segments_text": "我｜Đại từ 一｜Danh từ 米｜Danh từ 七｜Danh từ",
+        "segments_text": "我｜Đại từ 一｜Danh từ 米｜Lượng từ 七｜Danh từ",
         "segments": [
           {
             "text": "我",
@@ -471,7 +471,7 @@
           },
           {
             "text": "米",
-            "pos": "Danh từ"
+            "pos": "Lượng từ"
           },
           {
             "text": "七",

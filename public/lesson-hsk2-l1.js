@@ -22,7 +22,7 @@
   "items": [
     {
       "stage": "word",
-      "vi": "thang chin",
+      "vi": "tháng chín",
       "hanzi": "九月",
       "words": [
         {
@@ -30,7 +30,7 @@
           "pinyin": "jiu yue",
           "tone": "jiu yue",
           "pos": "noun",
-          "vi": "thang chin"
+          "vi": "tháng chín"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -39,7 +39,7 @@
     },
     {
       "stage": "word",
-      "vi": "Bac Kinh",
+      "vi": "Bắc Kinh",
       "hanzi": "北京",
       "words": [
         {
@@ -47,7 +47,7 @@
           "pinyin": "bei jing",
           "tone": "bei jing",
           "pos": "noun",
-          "vi": "Bac Kinh"
+          "vi": "Bắc Kinh"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -56,7 +56,7 @@
     },
     {
       "stage": "word",
-      "vi": "du lich",
+      "vi": "du lịch",
       "hanzi": "旅游",
       "words": [
         {
@@ -64,7 +64,7 @@
           "pinyin": "lv you",
           "tone": "lv you",
           "pos": "verb",
-          "vi": "du lich"
+          "vi": "du lịch"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -73,7 +73,7 @@
     },
     {
       "stage": "word",
-      "vi": "tot nhat",
+      "vi": "tốt nhất",
       "hanzi": "最好",
       "words": [
         {
@@ -81,7 +81,7 @@
           "pinyin": "zui hao",
           "tone": "zui hao",
           "pos": "adj",
-          "vi": "tot nhat"
+          "vi": "tốt nhất"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -90,7 +90,7 @@
     },
     {
       "stage": "word",
-      "vi": "moi",
+      "vi": "mới",
       "hanzi": "新",
       "words": [
         {
@@ -98,7 +98,7 @@
           "pinyin": "xin",
           "tone": "xin",
           "pos": "adj",
-          "vi": "moi"
+          "vi": "mới"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -107,7 +107,7 @@
     },
     {
       "stage": "word",
-      "vi": "ghe",
+      "vi": "ghế",
       "hanzi": "椅子",
       "words": [
         {
@@ -115,7 +115,7 @@
           "pinyin": "yi zi",
           "tone": "yi zi",
           "pos": "noun",
-          "vi": "ghe"
+          "vi": "ghế"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -124,7 +124,7 @@
     },
     {
       "stage": "word",
-      "vi": "phong",
+      "vi": "phòng",
       "hanzi": "房间",
       "words": [
         {
@@ -132,7 +132,7 @@
           "pinyin": "fang jian",
           "tone": "fang jian",
           "pos": "noun",
-          "vi": "phong"
+          "vi": "phòng"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -141,7 +141,7 @@
     },
     {
       "stage": "word",
-      "vi": "san bay",
+      "vi": "sân bay",
       "hanzi": "机场",
       "words": [
         {
@@ -149,7 +149,7 @@
           "pinyin": "ji chang",
           "tone": "ji chang",
           "pos": "noun",
-          "vi": "san bay"
+          "vi": "sân bay"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -158,7 +158,7 @@
     },
     {
       "stage": "word",
-      "vi": "buoi sang",
+      "vi": "buổi sáng",
       "hanzi": "早上",
       "words": [
         {
@@ -166,7 +166,7 @@
           "pinyin": "zao shang",
           "tone": "zao shang",
           "pos": "noun",
-          "vi": "buoi sang"
+          "vi": "buổi sáng"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -175,7 +175,7 @@
     },
     {
       "stage": "word",
-      "vi": "xuat phat",
+      "vi": "xuất phát",
       "hanzi": "出发",
       "words": [
         {
@@ -183,7 +183,7 @@
           "pinyin": "chu fa",
           "tone": "chu fa",
           "pos": "verb",
-          "vi": "xuat phat"
+          "vi": "xuất phát"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -192,7 +192,7 @@
     },
     {
       "stage": "phrase",
-      "vi": "cai ghe moi",
+      "vi": "cái ghế mới",
       "hanzi": "新的椅子",
       "words": [
         {
@@ -200,21 +200,21 @@
           "pinyin": "xin",
           "tone": "xin",
           "pos": "adj",
-          "vi": "moi"
+          "vi": "mới"
         },
         {
           "text": "的",
           "pinyin": "de",
           "tone": "de",
           "pos": "particle",
-          "vi": "tro tu so huu"
+          "vi": "trợ từ sở hữu"
         },
         {
           "text": "椅子",
           "pinyin": "yi zi",
           "tone": "yi zi",
           "pos": "noun",
-          "vi": "ghe"
+          "vi": "ghế"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -223,7 +223,7 @@
     },
     {
       "stage": "phrase",
-      "vi": "Bac Kinh thang chin",
+      "vi": "Bắc Kinh tháng chín",
       "hanzi": "九月北京",
       "words": [
         {
@@ -231,14 +231,14 @@
           "pinyin": "jiu yue",
           "tone": "jiu yue",
           "pos": "noun",
-          "vi": "thang chin"
+          "vi": "tháng chín"
         },
         {
           "text": "北京",
           "pinyin": "bei jing",
           "tone": "bei jing",
           "pos": "noun",
-          "vi": "Bac Kinh"
+          "vi": "Bắc Kinh"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -247,7 +247,7 @@
     },
     {
       "stage": "phrase",
-      "vi": "di du lich",
+      "vi": "đi du lịch",
       "hanzi": "去旅游",
       "words": [
         {
@@ -255,14 +255,14 @@
           "pinyin": "qu",
           "tone": "qu",
           "pos": "verb",
-          "vi": "di"
+          "vi": "đi"
         },
         {
           "text": "旅游",
           "pinyin": "lv you",
           "tone": "lv you",
           "pos": "verb",
-          "vi": "du lich"
+          "vi": "du lịch"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -271,7 +271,7 @@
     },
     {
       "stage": "phrase",
-      "vi": "xuat phat buoi sang",
+      "vi": "xuất phát buổi sáng",
       "hanzi": "早上出发",
       "words": [
         {
@@ -279,14 +279,14 @@
           "pinyin": "zao shang",
           "tone": "zao shang",
           "pos": "noun",
-          "vi": "buoi sang"
+          "vi": "buổi sáng"
         },
         {
           "text": "出发",
           "pinyin": "chu fa",
           "tone": "chu fa",
           "pos": "verb",
-          "vi": "xuat phat"
+          "vi": "xuất phát"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -295,7 +295,7 @@
     },
     {
       "stage": "sentence",
-      "vi": "Toi muon du lich tot nhat.",
+      "vi": "Tôi muốn du lịch tốt nhất.",
       "hanzi": "我想旅游最好。",
       "words": [
         {
@@ -303,28 +303,28 @@
           "pinyin": "wo",
           "tone": "wo",
           "pos": "pron",
-          "vi": "toi"
+          "vi": "tôi"
         },
         {
           "text": "想",
           "pinyin": "xiang",
           "tone": "xiang",
           "pos": "verb",
-          "vi": "muon"
+          "vi": "muốn"
         },
         {
           "text": "旅游",
           "pinyin": "lv you",
           "tone": "lv you",
           "pos": "verb",
-          "vi": "du lich"
+          "vi": "du lịch"
         },
         {
           "text": "最好",
           "pinyin": "zui hao",
           "tone": "zui hao",
           "pos": "adj",
-          "vi": "tot nhat"
+          "vi": "tốt nhất"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -333,7 +333,7 @@
     },
     {
       "stage": "sentence",
-      "vi": "thang chin Bac Kinh rat tot nhat.",
+      "vi": "tháng chín Bắc Kinh rất tốt nhất.",
       "hanzi": "九月北京很最好。",
       "words": [
         {
@@ -341,28 +341,28 @@
           "pinyin": "jiu yue",
           "tone": "jiu yue",
           "pos": "noun",
-          "vi": "thang chin"
+          "vi": "tháng chín"
         },
         {
           "text": "北京",
           "pinyin": "bei jing",
           "tone": "bei jing",
           "pos": "noun",
-          "vi": "Bac Kinh"
+          "vi": "Bắc Kinh"
         },
         {
           "text": "很",
           "pinyin": "hen",
           "tone": "hen",
           "pos": "adv",
-          "vi": "rat"
+          "vi": "rất"
         },
         {
           "text": "最好",
           "pinyin": "zui hao",
           "tone": "zui hao",
           "pos": "adj",
-          "vi": "tot nhat"
+          "vi": "tốt nhất"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -371,7 +371,7 @@
     },
     {
       "stage": "sentence",
-      "vi": "Vui long san bay moi.",
+      "vi": "Vui lòng sân bay mới.",
       "hanzi": "请机场新。",
       "words": [
         {
@@ -379,21 +379,21 @@
           "pinyin": "qing",
           "tone": "qing",
           "pos": "verb",
-          "vi": "vui long"
+          "vi": "vui lòng"
         },
         {
           "text": "机场",
           "pinyin": "ji chang",
           "tone": "ji chang",
           "pos": "noun",
-          "vi": "san bay"
+          "vi": "sân bay"
         },
         {
           "text": "新",
           "pinyin": "xin",
           "tone": "xin",
           "pos": "adj",
-          "vi": "moi"
+          "vi": "mới"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -402,7 +402,7 @@
     },
     {
       "stage": "sentence",
-      "vi": "Chung toi buoi sang xuat phat.",
+      "vi": "Chúng tôi buổi sáng xuất phát.",
       "hanzi": "我们早上出发。",
       "words": [
         {
@@ -410,21 +410,21 @@
           "pinyin": "wo men",
           "tone": "wo men",
           "pos": "pron",
-          "vi": "chung toi"
+          "vi": "chúng tôi"
         },
         {
           "text": "早上",
           "pinyin": "zao shang",
           "tone": "zao shang",
           "pos": "noun",
-          "vi": "buoi sang"
+          "vi": "buổi sáng"
         },
         {
           "text": "出发",
           "pinyin": "chu fa",
           "tone": "chu fa",
           "pos": "verb",
-          "vi": "xuat phat"
+          "vi": "xuất phát"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -433,7 +433,7 @@
     },
     {
       "stage": "mixed",
-      "vi": "ghe moi o phong.",
+      "vi": "ghế mới ở phòng.",
       "hanzi": "新的椅子在房间。",
       "words": [
         {
@@ -441,35 +441,35 @@
           "pinyin": "xin",
           "tone": "xin",
           "pos": "adj",
-          "vi": "moi"
+          "vi": "mới"
         },
         {
           "text": "的",
           "pinyin": "de",
           "tone": "de",
           "pos": "particle",
-          "vi": "tro tu so huu"
+          "vi": "trợ từ sở hữu"
         },
         {
           "text": "椅子",
           "pinyin": "yi zi",
           "tone": "yi zi",
           "pos": "noun",
-          "vi": "ghe"
+          "vi": "ghế"
         },
         {
           "text": "在",
           "pinyin": "zai",
           "tone": "zai",
           "pos": "prep",
-          "vi": "o tai"
+          "vi": "ở tại"
         },
         {
           "text": "房间",
           "pinyin": "fang jian",
           "tone": "fang jian",
           "pos": "noun",
-          "vi": "phong"
+          "vi": "phòng"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
@@ -478,7 +478,7 @@
     },
     {
       "stage": "mixed",
-      "vi": "Chung toi di Bac Kinh du lich.",
+      "vi": "Chúng tôi đi Bắc Kinh du lịch.",
       "hanzi": "我们去北京旅游。",
       "words": [
         {
@@ -486,28 +486,28 @@
           "pinyin": "wo men",
           "tone": "wo men",
           "pos": "pron",
-          "vi": "chung toi"
+          "vi": "chúng tôi"
         },
         {
           "text": "去",
           "pinyin": "qu",
           "tone": "qu",
           "pos": "verb",
-          "vi": "di"
+          "vi": "đi"
         },
         {
           "text": "北京",
           "pinyin": "bei jing",
           "tone": "bei jing",
           "pos": "noun",
-          "vi": "Bac Kinh"
+          "vi": "Bắc Kinh"
         },
         {
           "text": "旅游",
           "pinyin": "lv you",
           "tone": "lv you",
           "pos": "verb",
-          "vi": "du lich"
+          "vi": "du lịch"
         }
       ],
       "source": "HSK2 generated lab pack - Lesson 1",
