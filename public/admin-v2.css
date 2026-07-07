@@ -141,6 +141,31 @@ h1 {
   padding: 9px 12px;
 }
 
+.admin-v2-language-toggle {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line-hot);
+  background: #063c3a;
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-v2-language-toggle small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-v2-language-toggle:focus-visible {
+  outline: 2px solid var(--line-hot);
+  outline-offset: 2px;
+}
+
 .risk-gate {
   display: flex;
   gap: 12px;
