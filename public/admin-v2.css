@@ -379,6 +379,84 @@ h1 {
   padding: 12px;
 }
 
+.support-workbench {
+  border: 1px solid var(--line);
+  background: rgba(7, 28, 31, 0.86);
+  padding: 16px;
+}
+
+.support-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.2fr) max-content;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.support-toolbar label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.support-toolbar select,
+.support-toolbar input {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  background: rgba(2, 13, 20, 0.9);
+  color: var(--text);
+  padding: 9px 10px;
+}
+
+.support-toolbar button {
+  min-height: 40px;
+  border: 1px solid var(--line-hot);
+  background: rgba(0, 192, 182, 0.12);
+  color: #d8fffb;
+  padding: 9px 12px;
+  font-weight: 900;
+}
+
+.support-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.3fr);
+  gap: 12px;
+}
+
+.support-workbench-grid article span {
+  color: var(--line-hot);
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.support-workbench-grid dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.support-workbench-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.support-workbench-grid dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+
+.support-queue-table {
+  min-width: 760px;
+}
+
+.support-audit-panel {
+  grid-column: 1 / -1;
+}
+
 .learning-analytics-board {
   border: 1px solid var(--line);
   background: rgba(4, 16, 25, 0.7);
@@ -1623,6 +1701,8 @@ th {
   }
 
   .customer-toolbar,
+  .support-toolbar,
+  .support-workbench-grid,
   .customer-workspace-grid,
   .customer-detail-panel dl,
   .learning-kpi-grid,

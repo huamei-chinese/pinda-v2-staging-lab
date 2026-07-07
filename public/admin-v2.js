@@ -5,6 +5,7 @@ const adminV2State = {
 
 const adminV2ServiceState = {
   activePreview: "profile",
+  activeUserId: "",
 };
 
 const adminV2AnalyticsState = {
@@ -274,6 +275,7 @@ function renderAdminV2LocalData(data) {
   const realReadonlyContracts = Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [];
   const realReadonlyGaps = Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [];
   adminV2CustomerState.data = { ...data, users, auditLogs };
+  adminV2ServiceState.data = { ...data, users, auditLogs };
   adminV2LearningState.data = { ...data, learningRecords, learningEvents, learningSummary: data.learningSummary || {} };
   adminV2MaterialState.data = {
     ...data,
@@ -292,6 +294,9 @@ function renderAdminV2LocalData(data) {
   };
   if (!adminV2CustomerState.activeUserId && users[0]) {
     adminV2CustomerState.activeUserId = users[0].id;
+  }
+  if (!adminV2ServiceState.activeUserId && users[0]) {
+    adminV2ServiceState.activeUserId = users[0].id;
   }
   if (!adminV2LearningState.activeUserId && learningRecords[0]) {
     adminV2LearningState.activeUserId = learningRecords[0].userId;
@@ -352,6 +357,7 @@ function renderAdminV2LocalData(data) {
   }
   renderCustomerDetail(getActiveCustomer());
   renderAuditLogs(auditLogs);
+  renderSupportWorkbench(users, auditLogs);
   renderLearningUserFilter(learningRecords);
   renderLearningSummary(data.learningSummary || {});
   renderLearningRecords(learningRecords);
@@ -456,6 +462,103 @@ function renderAuditLogs(logs) {
       <td>${escapeHtml(log.note)}</td>
     </tr>
   `).join("");
+}
+
+function getActiveSupportUser() {
+  const users = adminV2ServiceState.data?.users || [];
+  return users.find((user) => user.id === adminV2ServiceState.activeUserId) || users[0] || null;
+}
+
+function renderSupportUserSelect(users) {
+  const select = document.querySelector("[data-support-user-select]");
+  if (!select) return;
+  const current = select.value || adminV2ServiceState.activeUserId;
+  select.innerHTML = users.map((user) => `
+    <option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} / ${escapeHtml(user.email)}</option>
+  `).join("");
+  select.value = current && users.some((user) => user.id === current) ? current : users[0]?.id || "";
+  adminV2ServiceState.activeUserId = select.value;
+}
+
+function renderSupportProfile(user) {
+  const target = document.querySelector("[data-support-profile]");
+  if (!target) return;
+  if (!user) {
+    target.innerHTML = "等待选择客户。";
+    return;
+  }
+
+  target.innerHTML = `
+    <h3>${escapeHtml(user.name)}</h3>
+    <dl>
+      <div><dt>Email</dt><dd>${escapeHtml(user.email)}</dd></div>
+      <div><dt>手机号</dt><dd>${escapeHtml(user.phone)}</dd></div>
+      <div><dt>VIP</dt><dd>${escapeHtml(user.vipStatus)} / ${escapeHtml(user.vipExpiresAt)}</dd></div>
+      <div><dt>代理归属</dt><dd>${escapeHtml(user.agentOwner)}</dd></div>
+      <div><dt>最近学习</dt><dd>${escapeHtml(user.recentLearning)}</dd></div>
+      <div><dt>服务备注</dt><dd>${escapeHtml(user.customerNotes || "暂无备注")}</dd></div>
+    </dl>
+  `;
+}
+
+function renderSupportQueue(users) {
+  const target = document.querySelector("[data-support-queue-body]");
+  if (!target) return;
+  if (!users.length) {
+    target.innerHTML = '<tr><td colspan="5">暂无客服队列。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = users.map((user) => `
+    <tr data-support-row="${escapeHtml(user.id)}">
+      <td>${escapeHtml(user.name)}<br><small>${escapeHtml(user.email)}</small></td>
+      <td><span class="status-badge">${escapeHtml(user.vipStatus)}</span><br><small>${escapeHtml(user.vipExpiresAt)}</small></td>
+      <td>${escapeHtml(user.agentOwner || "未归属")}</td>
+      <td>${escapeHtml(user.recentLearning || "暂无")}</td>
+      <td><button class="customer-row-action" type="button" data-support-select="${escapeHtml(user.id)}">处理</button></td>
+    </tr>
+  `).join("");
+}
+
+function renderSupportAudit(logs) {
+  const target = document.querySelector("[data-support-audit-body]");
+  if (!target) return;
+  const visibleLogs = Array.isArray(logs) ? logs.slice(0, 8) : [];
+  if (!visibleLogs.length) {
+    target.innerHTML = '<tr><td colspan="4">暂无客服操作记录。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = visibleLogs.map((log) => `
+    <tr>
+      <td>${escapeHtml(log.time)}</td>
+      <td>${escapeHtml(log.action)}</td>
+      <td>${escapeHtml(log.userEmail || log.userId)}</td>
+      <td>${escapeHtml(log.note)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderSupportWorkbench(users, logs) {
+  renderSupportUserSelect(users);
+  renderSupportProfile(getActiveSupportUser());
+  renderSupportQueue(users);
+  renderSupportAudit(logs);
+}
+
+function performSupportAction(action) {
+  if (action !== "addNote") return;
+  const user = getActiveSupportUser();
+  if (!user) return;
+  const value = document.querySelector("[data-support-note]")?.value || "";
+
+  fetch(adminV2LocalBridge.customerActionUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, userId: user.id, value }),
+  })
+    .then((response) => response.json())
+    .then(() => refreshAdminV2BackendData());
 }
 
 function performCustomerAction(action) {
@@ -1140,6 +1243,24 @@ document.querySelectorAll("[data-service-preview]").forEach((button) => {
 });
 
 setServicePreview(adminV2ServiceState.activePreview);
+
+document.querySelector("[data-support-user-select]")?.addEventListener("change", (event) => {
+  adminV2ServiceState.activeUserId = event.target.value;
+  renderSupportProfile(getActiveSupportUser());
+});
+
+document.querySelector("[data-support-queue-body]")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-support-select]");
+  if (!button) return;
+  adminV2ServiceState.activeUserId = button.dataset.supportSelect;
+  const select = document.querySelector("[data-support-user-select]");
+  if (select) select.value = adminV2ServiceState.activeUserId;
+  renderSupportProfile(getActiveSupportUser());
+});
+
+document.querySelectorAll("[data-support-action]").forEach((button) => {
+  button.addEventListener("click", () => performSupportAction(button.dataset.supportAction));
+});
 
 function setAnalyticsPreview(preview) {
   adminV2AnalyticsState.activePreview = preview;

@@ -62,3 +62,32 @@ test("admin v2 P3 has service styling and preview state hooks", () => {
   assert.match(js, /setServicePreview/);
   assert.match(js, /data-service-preview/);
 });
+
+test("admin v2 support tab has an operational local support workbench", () => {
+  for (const required of [
+    'data-admin-v2-panel="support"',
+    "support-workbench",
+    "data-support-user-select",
+    "data-support-queue-body",
+    "data-support-profile",
+    "data-support-note",
+    'data-support-action="addNote"',
+    "data-support-audit-body",
+  ]) {
+    assert.match(html, new RegExp(required), `support workbench should include ${required}`);
+  }
+
+  for (const required of [
+    "renderSupportWorkbench",
+    "renderSupportQueue",
+    "renderSupportProfile",
+    "performSupportAction",
+    "customerActionUrl",
+  ]) {
+    assert.match(js, new RegExp(required), `support workbench JS should include ${required}`);
+  }
+
+  assert.match(css, /\.support-workbench/);
+  assert.match(css, /\.support-workbench-grid/);
+  assert.match(css, /\.support-queue-table/);
+});
