@@ -15,6 +15,7 @@
     "validate:high-frequency": "node ./scripts/validate-high-frequency-generation.mjs && node --test ./tests/high-frequency-content.test.js ./tests/high-frequency-segments-standard.test.js",
     "acceptance:lab": "node ./scripts/run-staging-lab-acceptance.mjs",
     "safety:lab": "node ./scripts/check-staging-lab-safety.mjs",
+    "guard:admin-v2": "node ./scripts/check-admin-v2-risk-guard.mjs",
     "smoke:lab": "node ./scripts/smoke-staging-lab.mjs",
     "validate:ajie-listening": "node ./scripts/normalize-ajie-listening-files.mjs --asset-root public/listening-app",
     "validate:listening-catalog": "node ./scripts/validate-listening-catalog.mjs",

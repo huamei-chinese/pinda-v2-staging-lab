@@ -1,0 +1,1342 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>华美后台数据管理中心 V2 实验舱</title>
+  <link rel="stylesheet" href="admin-v2.css" />
+</head>
+<body>
+  <main class="admin-shell">
+    <aside class="admin-sidebar" aria-label="后台模块">
+      <div class="brand-block">
+        <span>HM</span>
+        <div>
+          <strong>华美后台数据管理中心 V2 实验舱</strong>
+          <small>本地实验后台，不连接正式数据</small>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="active" type="button" data-admin-v2-tab="overview" data-menu-key="overview">运营总览</button>
+        <button type="button" data-admin-v2-tab="users" data-menu-key="users">用户管理</button>
+        <button type="button" data-admin-v2-tab="learning" data-menu-key="learning">学习数据分析</button>
+        <button type="button" data-admin-v2-tab="support" data-menu-key="support">客服工作台</button>
+        <button type="button" data-admin-v2-tab="content" data-menu-key="content">内容管理</button>
+        <button type="button" data-admin-v2-tab="unlock" data-menu-key="unlock">VIP 与课程解锁</button>
+        <button type="button" data-admin-v2-tab="agents" data-menu-key="agents">代理与佣金</button>
+        <button type="button" data-admin-v2-tab="system" data-menu-key="system">系统与发布闸口</button>
+        <button type="button" data-admin-v2-tab="sync" data-menu-key="sync">PR 与同步准备</button>
+      </nav>
+    </aside>
+
+    <section class="admin-main">
+      <header class="admin-topbar">
+        <div>
+          <span class="eyebrow">本地实验后台</span>
+          <h1>华美后台数据管理中心 V2 实验舱</h1>
+          <p>截图 1 做视觉，截图 2 做字段骨架，V2 桥接能力做内部控制台。</p>
+        </div>
+        <div class="status-stack" aria-label="实验状态">
+          <span>实验版</span>
+          <span>当前视图：本地预览</span>
+          <span>数据来源：实验静态层</span>
+        </div>
+      </header>
+
+      <section class="risk-gate">
+        <strong>开发环境安全提示</strong>
+        <span>本版本为本地实验版，不可部署，不可连接线上数据库；所有危险写操作默认关闭。</span>
+      </section>
+
+      <section class="local-bridge" data-admin-v2-overview-only aria-label="本地前后端接入安全壳">
+        <div class="section-title">
+          <span>本地前后端接入安全壳</span>
+          <h2>老板验收重点</h2>
+          <p>确认页面已经具备接入结构，但当前数据源仍是本地 mock；真实 API、数据库、支付和 VIP 写入全部保持关闭。</p>
+        </div>
+        <div class="bridge-status-grid" data-local-bridge-status>
+          <article>
+            <span>当前数据源：本地 mock</span>
+            <strong data-local-source-label>admin-v2-local-data.json</strong>
+            <small>只读取 public 下的本地实验 JSON。</small>
+          </article>
+          <article>
+            <span data-local-api-label>本地后端 API：连接检测中</span>
+            <strong data-local-api-status>checking</strong>
+            <small data-local-api-path>正在请求 /api/admin-v2/local-preview</small>
+          </article>
+          <article>
+            <span>数据库：未连接</span>
+            <strong>DATABASE_URL off</strong>
+            <small>不触发 schema 初始化，不读取正式用户数据。</small>
+          </article>
+          <article>
+            <span>支付/VIP 写入：禁止</span>
+            <strong>read-only</strong>
+            <small>不创建订单，不处理回调，不修改 VIP。</small>
+          </article>
+        </div>
+        <div class="local-metrics-strip" data-local-metrics>
+          <span>今日注册：加载中</span>
+          <span>本周学习：加载中</span>
+          <span>待审核素材：加载中</span>
+          <span>代理佣金：只读</span>
+        </div>
+        <div class="backend-pulse" aria-label="本地后端实时刷新">
+          <button type="button" data-refresh-backend>刷新后端数据</button>
+          <span>最近同步：<strong data-api-last-sync>等待请求</strong></span>
+          <span>接口状态：<strong data-api-request-status>未请求</strong></span>
+          <span>返回用户数：<strong data-api-user-count>0</strong></span>
+          <span>数据版本：<strong data-api-version>mock-v0</strong></span>
+        </div>
+      </section>
+
+      <section class="role-control" data-admin-v2-overview-only aria-label="P2 角色与菜单权限骨架">
+        <div class="section-title">
+          <span>P2：角色与菜单权限骨架</span>
+          <h2>老板验收重点</h2>
+          <p>确认 admin、staff、content_manager、agent 四类账号的菜单边界；当前只是角色切换预览，正式登录未接入，支付、VIP、数据库写入仍然关闭。</p>
+        </div>
+        <div class="role-switcher" aria-label="角色切换预览">
+          <button class="active" type="button" data-admin-v2-role="admin">admin · 系统管理员</button>
+          <button type="button" data-admin-v2-role="staff">staff · 运营员工</button>
+          <button type="button" data-admin-v2-role="content_manager">content_manager · 内容管理员</button>
+          <button type="button" data-admin-v2-role="agent">agent · 代理账号</button>
+        </div>
+        <article class="role-scope-card">
+          <span>当前角色说明</span>
+          <strong data-role-label>系统管理员</strong>
+          <p data-role-summary>admin 可看全后台；支付、VIP、数据库写入仍然关闭。</p>
+        </article>
+        <div class="matrix-label">权限矩阵</div>
+        <div class="permission-matrix table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>角色</th>
+                <th>可见菜单</th>
+                <th>不可见或只读范围</th>
+                <th>风险边界</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>admin / 系统管理员</td>
+                <td>admin 可看全后台：运营、用户、学习、客服、内容、VIP 解锁、代理与佣金、系统闸口、PR 与同步准备</td>
+                <td>写操作继续只读预览</td>
+                <td>发布、Git push、支付、VIP、数据库变更都需要老板确认</td>
+              </tr>
+              <tr>
+                <td>staff / 运营员工</td>
+                <td>运营总览、用户管理、学习数据分析、客服工作台、内容状态</td>
+                <td>staff 不看佣金导出和系统设置</td>
+                <td>不能改 VIP 定价、不能发布、不能导出佣金</td>
+              </tr>
+              <tr>
+                <td>content_manager / 内容管理员</td>
+                <td>内容管理、每日听力、拼打/写字、草稿审核入口</td>
+                <td>content_manager 不看营收、佣金、VIP 定价</td>
+                <td>只能提交草稿，不能发布到前台</td>
+              </tr>
+              <tr>
+                <td>agent / 代理账号</td>
+                <td>自己的推广、客户、VIP 客户、佣金概览</td>
+                <td>agent 只看自己的推广、客户、佣金</td>
+                <td>不能看全站用户、学习详情、系统设置</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="service-board" data-admin-v2-overview-only aria-label="P3 用户客服 VIP 服务视图">
+        <div class="section-title">
+          <span>P3：用户 / 客服 / VIP 服务视图</span>
+          <h2>老板验收重点</h2>
+          <p>确认客服能围绕同一个用户看到账号、VIP、订单、代理归因、最近学习和服务备注；当前只读预览，不写入真实 VIP，不修改用户数据，不触发支付回调。</p>
+        </div>
+        <div class="service-tabs" aria-label="服务视图切换">
+          <button class="active" type="button" data-service-preview="profile">用户详情卡</button>
+          <button type="button" data-service-preview="queue">客服处理队列</button>
+          <button type="button" data-service-preview="vip">VIP 服务状态</button>
+          <button type="button" data-service-preview="agent">代理归因记录</button>
+        </div>
+        <div class="service-grid">
+          <article class="customer-profile active" data-service-panel="profile">
+            <span>用户详情卡</span>
+            <h3>示例用户 A</h3>
+            <dl>
+              <div><dt>手机号</dt><dd>本地实验占位</dd></div>
+              <div><dt>邮箱</dt><dd>demo-user@example.local</dd></div>
+              <div><dt>最近学习轨迹</dt><dd>HSK2 第 6 课、每日听力 A2 主题</dd></div>
+              <div><dt>订单与付款状态</dt><dd>待接本地实验订单表；不触发支付回调</dd></div>
+            </dl>
+          </article>
+          <article class="customer-profile" data-service-panel="queue">
+            <span>客服处理队列</span>
+            <h3>待处理事项</h3>
+            <ul>
+              <li>核对手机号与邮箱是否匹配</li>
+              <li>确认用户反馈的锁课位置</li>
+              <li>客服备注待接本地实验表</li>
+            </ul>
+          </article>
+          <article class="vip-service-board" data-service-panel="vip">
+            <span>VIP 服务状态</span>
+            <h3>当前状态：待接入</h3>
+            <p>VIP 开通、延期、取消仍需老板确认；当前按钮只展示流程，不写入真实 VIP。</p>
+            <div class="readonly-actions">
+              <button class="readonly-action" type="button" disabled>开通 VIP</button>
+              <button class="readonly-action" type="button" disabled>延期 VIP</button>
+              <button class="readonly-action" type="button" disabled>取消 VIP</button>
+            </div>
+          </article>
+          <article class="vip-service-board" data-service-panel="agent">
+            <span>代理归因记录</span>
+            <h3>归属：待接入</h3>
+            <p>只读显示代理来源、绑定时间、备注和调整历史；正式变更必须记录原因并走老板确认。</p>
+          </article>
+        </div>
+        <div class="service-note">
+          <strong>服务备注</strong>
+          <p>当前阶段只展示客服工作流结构。真实客服备注、VIP 状态、订单与付款状态、代理归因后续只允许接入本地实验表。</p>
+        </div>
+      </section>
+
+      <section class="metric-grid" data-admin-v2-overview-only aria-label="运营总览">
+        <article>
+          <span>今日注册</span>
+          <strong>待接入</strong>
+          <small>后续读取本地实验事件，不读取正式用户数据。</small>
+        </article>
+        <article>
+          <span>今日新增 VIP</span>
+          <strong>待接入</strong>
+          <small>只展示预估口径，不等同银行到账。</small>
+        </article>
+        <article>
+          <span>今日学习人数</span>
+          <strong>待接入</strong>
+          <small>来自 learning_events 实验表规划。</small>
+        </article>
+        <article>
+          <span>是否影响正式站</span>
+          <strong>否</strong>
+          <small>正式站未部署，正式数据库未连接。</small>
+        </article>
+      </section>
+
+      <section class="admin-panel active" data-admin-v2-panel="overview">
+        <div class="section-title">
+          <span>运营总览</span>
+          <h2>前台桥接状态</h2>
+        </div>
+        <div class="bridge-grid">
+          <article>
+            <b>当前前台读取来源</b>
+            <p>静态默认；后台草稿和已发布实验内容将在后续阶段分开接入。</p>
+          </article>
+          <article>
+            <b>每日听力桥接状态</b>
+            <p>素材验收、导入、审核、发布、fallback、rollback 均保留独立控制区。</p>
+          </article>
+          <article>
+            <b>拼打/写字桥接状态</b>
+            <p>与每日听力分开管理，字段和素材池不互相污染。</p>
+          </article>
+          <article>
+            <b>VIP 锁课规则状态</b>
+            <p>先展示规则和兜底来源，真实配置写入必须老板确认。</p>
+          </article>
+          <article>
+            <b>fallback 状态</b>
+            <p>实验内容不可用时回到前台静态默认内容。</p>
+          </article>
+          <article>
+            <b>rollback 状态</b>
+            <p>发布前保留可回退版本，回退动作后续进入操作日志。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="users">
+        <div class="section-title">
+          <span>用户管理</span>
+          <h2>账号、VIP、归因预览</h2>
+        </div>
+        <div class="real-readonly-center">
+          <div class="section-title">
+            <span>第 6 阶段：真实数据只读接入</span>
+            <h2>老板验收重点</h2>
+            <p>确认真实后台字段契约已经进入实验舱，但当前只读预览仍来自本地契约数据；不连接真实数据库，不读取正式用户表，不写入 VIP、订单、支付、代理佣金。</p>
+          </div>
+          <div class="real-readonly-grid">
+            <article>
+              <span>真实数据接入状态</span>
+              <strong data-real-readonly-status>等待只读预览</strong>
+              <small>本地 endpoint 只返回字段契约和脱敏样例。</small>
+            </article>
+            <article>
+              <span>真实学习数据：暂无真实表</span>
+              <strong>gap</strong>
+              <small>当前发布后台没有学习记录、学习事件真实来源。</small>
+            </article>
+            <article>
+              <span>真实代理佣金：暂无真实表</span>
+              <strong>gap</strong>
+              <small>当前发布后台没有代理客户、代理佣金真实来源。</small>
+            </article>
+            <article>
+              <span>写入边界</span>
+              <strong>read-only</strong>
+              <small>不调用正式 API，不接库，不处理支付回调。</small>
+            </article>
+          </div>
+          <div class="backend-pulse real-readonly-actions">
+            <button type="button" data-real-readonly-action="previewRealUsers">刷新只读真实预览</button>
+            <span>数据源：<strong>local-contract-preview</strong></span>
+            <span>真实库：<strong>未连接</strong></span>
+            <span>写入：<strong>关闭</strong></span>
+          </div>
+          <div class="real-readonly-tables">
+            <article class="table-shell">
+              <h3>只读真实用户预览</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>姓名</th>
+                    <th>Email</th>
+                    <th>角色</th>
+                    <th>等级</th>
+                    <th>VIP</th>
+                    <th>到期</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-users-body>
+                  <tr><td colspan="8">等待加载只读真实用户预览。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>真实后台字段契约</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>真实表</th>
+                    <th>真实字段</th>
+                    <th>实验舱字段</th>
+                    <th>风险边界</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-contract-body>
+                  <tr><td colspan="4">等待加载字段契约。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell real-readonly-gap">
+              <h3>真实数据缺口</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>缺口</th>
+                    <th>当前状态</th>
+                    <th>后续动作</th>
+                  </tr>
+                </thead>
+                <tbody data-real-readonly-gaps-body>
+                  <tr><td colspan="3">等待加载缺口列表。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </div>
+        <div class="customer-command-center">
+          <div class="section-title">
+            <span>战役 A：用户/VIP/客服闭环</span>
+            <h2>客户服务操作台</h2>
+            <p>搜索客户、查看详情、写客服备注、做本地实验 VIP 操作，并把每次动作写入本地操作日志。</p>
+          </div>
+          <div class="customer-toolbar">
+            <label>
+              搜索客户
+              <input type="search" data-customer-search placeholder="姓名 / 邮箱 / 手机 / ID" />
+            </label>
+            <label>
+              设到期
+              <input type="date" data-customer-expiry />
+            </label>
+            <label>
+              客服备注
+              <input type="text" data-customer-note placeholder="输入本地实验备注" />
+            </label>
+          </div>
+          <div class="customer-workspace-grid">
+            <article class="customer-detail-panel">
+              <span>当前客户</span>
+              <div data-customer-detail>等待选择客户。</div>
+            </article>
+            <article>
+              <span>本地实验动作</span>
+              <div class="customer-action-grid">
+                <button type="button" data-customer-action="vip7d">VIP 7d</button>
+                <button type="button" data-customer-action="vip30d">VIP 30d</button>
+                <button type="button" data-customer-action="setExpiry">设到期</button>
+                <button type="button" data-customer-action="cancelVip">取消 VIP</button>
+                <button type="button" data-customer-action="makeStaff">设为客服管理员</button>
+                <button type="button" data-customer-action="addNote">客服备注</button>
+              </div>
+            </article>
+            <article class="audit-log-panel">
+              <span>操作日志</span>
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>动作</th>
+                    <th>用户</th>
+                    <th>备注</th>
+                  </tr>
+                </thead>
+                <tbody data-audit-log-body>
+                  <tr>
+                    <td colspan="4">暂无操作日志。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>邮箱</th>
+                <th>姓名</th>
+                <th>手机号</th>
+                <th>注册时间</th>
+                <th>来源</th>
+                <th>代理归属</th>
+                <th>VIP 状态</th>
+                <th>VIP 到期</th>
+                <th>最近学习</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody data-local-users-body>
+              <tr>
+                <td colspan="10">暂无用户数据；后续只读接入本地实验数据后显示。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="learning">
+        <div class="section-title">
+          <span>P4：学习数据与事件分析</span>
+          <h2>老板验收重点</h2>
+          <p>确认学习事件口径、模块学习漏斗、热门课程排行、VIP 弹窗与锁课触发是否覆盖核心学习业务；当前为只读学习事件规划，不读取正式用户学习数据，不写入正式埋点表。</p>
+        </div>
+        <div class="stage7-schema-center">
+          <div class="section-title">
+            <span>第 7 阶段：缺失真实数据 Schema 契约</span>
+            <h2>老板验收重点</h2>
+            <p>确认真实学习数据、代理归因、佣金结算三类缺口已经被拆成字段契约、采集边界和审批闸口；当前只做 schema 契约，不建表，不接库，不采集正式用户行为。</p>
+          </div>
+          <div class="stage7-schema-grid">
+            <article>
+              <span>学习事件 schema</span>
+              <strong data-stage7-schema-status>等待加载契约</strong>
+              <small>先定义事件字段，不写正式埋点表。</small>
+            </article>
+            <article>
+              <span>代理归因 schema</span>
+              <strong>阿杰确认</strong>
+              <small>先确认 agent_code、绑定来源、归属变更日志。</small>
+            </article>
+            <article>
+              <span>佣金结算 schema</span>
+              <strong>老板验收后才允许进入真实表设计</strong>
+              <small>不从订单直接推断佣金，不触发付款。</small>
+            </article>
+            <article>
+              <span>UI 对齐</span>
+              <strong>阿辉确认</strong>
+              <small>后续确认客服、学习、代理三条工作流是否易操作。</small>
+            </article>
+          </div>
+          <div class="backend-pulse stage7-schema-actions">
+            <button type="button" data-stage7-schema-action="refreshContract">刷新 schema 契约</button>
+            <span>真实库：<strong>未连接</strong></span>
+            <span>写入：<strong>关闭</strong></span>
+            <span>下一步：<strong>只做契约评审</strong></span>
+          </div>
+          <div class="stage7-schema-tables">
+            <article class="table-shell">
+              <h3>学习事件 schema</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>事件</th>
+                    <th>字段</th>
+                    <th>来源</th>
+                    <th>边界</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-learning-schema-body>
+                  <tr><td colspan="4">等待加载学习 schema。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>代理与佣金 schema</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>对象</th>
+                    <th>字段</th>
+                    <th>负责人</th>
+                    <th>边界</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-agent-schema-body>
+                  <tr><td colspan="4">等待加载代理 schema。</td></tr>
+                </tbody>
+              </table>
+            </article>
+            <article class="table-shell">
+              <h3>接入闸口</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>负责人</th>
+                    <th>确认项</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage7-gate-body>
+                  <tr><td colspan="3">等待加载接入闸口。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </div>
+        <div class="learning-command-center">
+          <div class="section-title">
+            <span>战役 B：学习数据闭环</span>
+            <h2>学习记录与事件操作台</h2>
+            <p>查看每个用户的学习记录、做题数、错题数、最近学习，并把学习事件写入本地实验 JSON。</p>
+          </div>
+          <div class="learning-kpi-grid">
+            <article><span>今日学习人数</span><strong data-learning-active-users>0</strong></article>
+            <article><span>做题数</span><strong data-learning-question-count>0</strong></article>
+            <article><span>错题数</span><strong data-learning-wrong-count>0</strong></article>
+            <article><span>平均正确率</span><strong data-learning-accuracy>0%</strong></article>
+          </div>
+          <div class="learning-toolbar">
+            <label>
+              学习记录
+              <select data-learning-user-filter>
+                <option value="">全部用户</option>
+              </select>
+            </label>
+            <label>
+              最近学习模块
+              <select data-learning-module>
+                <option>HSK 学习</option>
+                <option>每日听力</option>
+                <option>拼打练习</option>
+                <option>写字练习</option>
+                <option>高频汉语</option>
+              </select>
+            </label>
+            <label>
+              学习课程
+              <input type="text" data-learning-lesson placeholder="例如 HSK2 第 6 课" />
+            </label>
+          </div>
+          <div class="learning-action-grid">
+            <button type="button" data-learning-action="lesson_opened">记录 lesson_opened</button>
+            <button type="button" data-learning-action="question_answered">记录 question_answered</button>
+            <button type="button" data-learning-action="wrong_answer">记录 wrong_answer</button>
+            <button type="button" data-learning-action="listening_audio_played">记录 listening_audio_played</button>
+          </div>
+          <div class="learning-loop-grid">
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>用户</th>
+                    <th>模块</th>
+                    <th>课程</th>
+                    <th>做题数</th>
+                    <th>错题数</th>
+                    <th>正确率</th>
+                    <th>最近学习</th>
+                  </tr>
+                </thead>
+                <tbody data-learning-records-body>
+                  <tr><td colspan="7">等待本地学习数据。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <article class="learning-event-panel">
+              <span>学习事件</span>
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>事件</th>
+                    <th>用户</th>
+                    <th>课程</th>
+                  </tr>
+                </thead>
+                <tbody data-learning-events-body>
+                  <tr><td colspan="4">暂无学习事件。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </div>
+        <div class="learning-analytics-board">
+          <div class="analytics-tabs" aria-label="学习分析视图切换">
+            <button class="active" type="button" data-analytics-preview="events">学习事件口径</button>
+            <button type="button" data-analytics-preview="funnel">模块学习漏斗</button>
+            <button type="button" data-analytics-preview="ranking">热门课程排行</button>
+            <button type="button" data-analytics-preview="vip">VIP 弹窗与锁课触发</button>
+          </div>
+          <article class="analytics-card active" data-analytics-panel="events">
+            <span>学习事件口径</span>
+            <h3>第一版事件清单</h3>
+            <p>lesson_opened、question_answered、paywall_shown、vip_modal_opened、listening_audio_played、writing_practice_submitted。</p>
+            <div class="event-grid">
+              <b>每日听力学习</b>
+              <b>拼打/写字练习</b>
+              <b>HSK 学习</b>
+              <b>高频汉语练习</b>
+            </div>
+          </article>
+          <article class="analytics-card" data-analytics-panel="funnel">
+            <span>模块学习漏斗</span>
+            <h3>从进入到付费触发</h3>
+            <ol class="funnel-list">
+              <li>打开课程：lesson_opened</li>
+              <li>完成练习：question_answered</li>
+              <li>遇到锁课：paywall_shown</li>
+              <li>打开 VIP 弹窗：vip_modal_opened</li>
+            </ol>
+          </article>
+          <article class="analytics-card" data-analytics-panel="ranking">
+            <span>热门课程排行</span>
+            <h3>待接入本地实验事件</h3>
+            <p>按模块统计打开次数、完成次数、平均完成率和最近 7 天趋势；后续只允许接入本地实验表。</p>
+          </article>
+          <article class="analytics-card" data-analytics-panel="vip">
+            <span>VIP 弹窗与锁课触发</span>
+            <h3>转化线索预览</h3>
+            <p>观察锁课展示、VIP 弹窗打开、来源模块和课程位置；本阶段只展示分析口径，不修改 VIP、不触发支付。</p>
+          </article>
+        </div>
+        <div class="analytics-boundary">
+          <strong>数据安全边界</strong>
+          <p>不读取正式用户学习数据，不写入正式埋点表，不连接真实分析服务；后续只允许接入本地实验表。</p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="support">
+        <div class="section-title">
+          <span>客服工作台</span>
+          <h2>客户查询与备注</h2>
+        </div>
+        <div class="bridge-grid">
+          <article><b>搜索客户</b><p>按邮箱或手机号查询本地实验用户。</p></article>
+          <article><b>VIP 处理</b><p>开通、取消、延期等真实写操作当前禁用。</p></article>
+          <article><b>代理归属</b><p>后续可手动绑定，但必须填写备注并记录日志。</p></article>
+          <article><b>客服备注</b><p>第一版保留备注入口，写入需进入后续审批阶段。</p></article>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="content">
+        <div class="section-title">
+          <span>P6：内容与素材流程</span>
+          <h2>老板验收重点</h2>
+          <p>确认素材包验收、每日听力素材、拼打/写字内容池、审核发布流程、fallback / rollback 是否清楚；当前不上传文件、不调用 Noiz、不写正式内容数据。</p>
+        </div>
+        <div class="material-command-center">
+          <div class="section-title">
+            <span>战役 C：内容/素材闭环</span>
+            <h2>素材上传验收与发布控制台</h2>
+            <p>素材上传验收、草稿、发布、fallback、rollback 都只写本地实验 JSON；缺素材就阻断，不替代内容。</p>
+          </div>
+          <div class="material-status-grid">
+            <article><span>素材包</span><strong data-material-total>0</strong></article>
+            <article><span>待审核</span><strong data-material-pending>0</strong></article>
+            <article><span>草稿</span><strong data-material-drafts>0</strong></article>
+            <article><span>本地发布</span><strong data-material-published>0</strong></article>
+            <article><span>fallback</span><strong data-material-fallback>0</strong></article>
+            <article><span>rollback</span><strong data-material-rollback>0</strong></article>
+          </div>
+          <div class="material-toolbar">
+            <label>
+              素材上传验收
+              <select data-material-filter>
+                <option value="">全部素材包</option>
+              </select>
+            </label>
+            <label>
+              备注
+              <input type="text" data-material-note placeholder="输入本地验收备注" />
+            </label>
+          </div>
+          <div class="material-action-grid">
+            <button type="button" data-material-action="approveIntake">验收通过</button>
+            <button type="button" data-material-action="blockIntake">验收阻断</button>
+            <button type="button" data-material-action="submitDraft">提交草稿</button>
+            <button type="button" data-material-action="publishLocal">本地发布</button>
+            <button type="button" data-material-action="fallbackLocal">执行 fallback</button>
+            <button type="button" data-material-action="rollbackLocal">执行 rollback</button>
+          </div>
+          <div class="material-loop-grid">
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>素材包</th>
+                    <th>类型</th>
+                    <th>课程/主题</th>
+                    <th>音频</th>
+                    <th>上传</th>
+                    <th>审核</th>
+                    <th>草稿</th>
+                    <th>发布</th>
+                    <th>fallback/rollback</th>
+                  </tr>
+                </thead>
+                <tbody data-materials-body>
+                  <tr><td colspan="9">等待本地素材数据。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <article class="material-audit-panel">
+              <span>素材操作日志</span>
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>动作</th>
+                    <th>素材包</th>
+                    <th>备注</th>
+                  </tr>
+                </thead>
+                <tbody data-material-audit-body>
+                  <tr><td colspan="4">暂无素材操作日志。</td></tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+        </div>
+        <div class="content-flow-board">
+          <div class="content-tabs" aria-label="内容流程预览切换">
+            <button class="active" type="button" data-content-preview="intake">素材包验收</button>
+            <button type="button" data-content-preview="listening">每日听力素材</button>
+            <button type="button" data-content-preview="writing">拼打/写字内容池</button>
+            <button type="button" data-content-preview="publish">审核发布流程</button>
+            <button type="button" data-content-preview="rollback">fallback / rollback</button>
+          </div>
+          <article class="content-card active" data-content-panel="intake">
+            <span>素材包验收</span>
+            <h3>接收前先验收，不合格就阻断</h3>
+            <ul class="material-checklist">
+              <li>检查素材包结构、课程数量、主题数量</li>
+              <li>检查对话素材、独白/短文素材是否完整</li>
+              <li>检查音频状态、上传状态、审核状态</li>
+              <li>缺素材就阻断，不替代内容</li>
+            </ul>
+          </article>
+          <article class="content-card" data-content-panel="listening">
+            <span>每日听力素材</span>
+            <h3>对话与独白/短文分流</h3>
+            <p>对话素材、独白/短文素材、主题数量、课程数量、音频状态、上传状态、审核状态、是否发布到前台都独立显示。</p>
+          </article>
+          <article class="content-card" data-content-panel="writing">
+            <span>拼打/写字内容池</span>
+            <h3>与每日听力隔离</h3>
+            <p>内容池、课程、词语、拼音、越南语、练习状态独立管理，不与每日听力字段互相污染。</p>
+          </article>
+          <article class="content-card" data-content-panel="publish">
+            <span>审核发布流程</span>
+            <h3>只展示发布链路，不执行发布</h3>
+            <ol class="material-checklist">
+              <li>素材上传待接本地实验表</li>
+              <li>内容管理员提交草稿</li>
+              <li>管理员审核</li>
+              <li>老板确认后才允许发布</li>
+            </ol>
+          </article>
+          <article class="content-card" data-content-panel="rollback">
+            <span>fallback / rollback</span>
+            <h3>内容不可用时回退</h3>
+            <p>实验内容不可用时 fallback 到静态默认内容；发布前保留 rollback 版本，回退动作后续写入操作日志。</p>
+          </article>
+        </div>
+        <div class="content-risk-note">
+          <strong>污染防线</strong>
+          <p>不从旧污染目录复制，不调用 Noiz，不写正式内容数据，不发布到正式站；缺素材就阻断，不替代内容。</p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="unlock">
+        <div class="section-title">
+          <span>P5：VIP 与课程解锁配置</span>
+          <h2>老板验收重点</h2>
+          <p>确认试看规则矩阵、解锁范围矩阵、审批闸口、fallback / rollback 是否覆盖核心课程；当前是只读配置预览，不改 VIP 定价，不写入真实解锁规则，不修改用户 VIP 状态，不触发支付。</p>
+        </div>
+        <div class="unlock-config-board">
+          <div class="unlock-tabs" aria-label="解锁配置预览切换">
+            <button class="active" type="button" data-unlock-preview="trial">试看规则矩阵</button>
+            <button type="button" data-unlock-preview="scope">解锁范围矩阵</button>
+            <button type="button" data-unlock-preview="approval">审批闸口</button>
+            <button type="button" data-unlock-preview="fallback">fallback / rollback</button>
+          </div>
+          <article class="unlock-card active" data-unlock-panel="trial">
+            <span>试看规则矩阵</span>
+            <h3>免费试看边界</h3>
+            <div class="unlock-matrix">
+              <b>HSK</b><p>HSK1-HSK4 前 3 课免费试看；后续课程进入 VIP 解锁范围。</p>
+              <b>高频汉语</b><p>高频汉语前 3 个主题免费试看；后续主题试看前 5 题。</p>
+              <b>每日听力：对话</b><p>按等级、主题、课程控制，未配置时 fallback 到静态默认。</p>
+              <b>每日听力：独白/短文</b><p>按分类、主题、课程控制，未配置时 fallback 到静态默认。</p>
+              <b>拼打/写字</b><p>按内容池和课程控制，当前只展示实验默认规则。</p>
+            </div>
+          </article>
+          <article class="unlock-card" data-unlock-panel="scope">
+            <span>解锁范围矩阵</span>
+            <h3>VIP 可访问范围</h3>
+            <p>VIP 解锁对应等级完整课程、对应内容池练习、每日听力已发布课程；后续只允许接入本地实验配置表。</p>
+          </article>
+          <article class="unlock-card" data-unlock-panel="approval">
+            <span>审批闸口</span>
+            <h3>高风险操作必须停在确认前</h3>
+            <ul class="approval-gate-list">
+              <li>发布需要老板确认</li>
+              <li>Git push 需要老板确认</li>
+              <li>VIP 定价调整需要老板确认</li>
+              <li>课程解锁规则写入需要老板确认</li>
+            </ul>
+          </article>
+          <article class="unlock-card" data-unlock-panel="fallback">
+            <span>fallback / rollback</span>
+            <h3>配置不可用时的兜底</h3>
+            <p>实验配置缺失时回到静态默认锁课规则；发布前保留 rollback 版本，回退动作后续进入操作日志。</p>
+          </article>
+        </div>
+        <div class="unlock-risk-note">
+          <strong>风险边界</strong>
+          <p>只读配置预览，不改 VIP 定价，不写入真实解锁规则，不修改用户 VIP 状态，不触发支付；后续只允许接入本地实验配置表。</p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="agents">
+        <div class="section-title">
+          <span>P7：代理与佣金</span>
+          <h2>老板验收重点</h2>
+          <p>确认代理账号只看自己的数据：代理总览、推广链接与来源、我的客户、VIP 客户、佣金概览、团队范围；当前是只读佣金预览，不导出佣金，不结算佣金，不触发付款。</p>
+        </div>
+        <div class="commission-range-filter" aria-label="佣金时间范围筛选">
+          <div>
+            <span>时间范围</span>
+            <strong>结算周期</strong>
+          </div>
+          <div class="commission-range-actions">
+            <button type="button" data-commission-range="yesterday">昨天</button>
+            <button class="active" type="button" data-commission-range="thisWeek">本周</button>
+            <button type="button" data-commission-range="thisMonth">本月</button>
+            <button type="button" data-commission-range="custom">自定义日期</button>
+          </div>
+          <p data-commission-range-summary>统计口径时间戳：本周 2026-07-06 00:00 至 2026-07-12 23:59，本地实验占位。</p>
+        </div>
+        <div class="agent-command-center">
+          <div class="section-title">
+            <span>战役 D：代理/佣金闭环</span>
+            <h2>代理客户、VIP 客户、佣金与团队长视图</h2>
+            <p>确认代理客户、VIP 客户、佣金、结算状态、团队长视图已经串成一个本地闭环；当前只写本地 JSON，不导出佣金，不结算佣金，不触发付款。</p>
+          </div>
+          <div class="agent-kpi-grid">
+            <article>
+              <span>代理人数</span>
+              <strong data-agent-total>0</strong>
+            </article>
+            <article>
+              <span>代理客户</span>
+              <strong data-agent-customers>0</strong>
+            </article>
+            <article>
+              <span>VIP 客户</span>
+              <strong data-agent-vip-customers>0</strong>
+            </article>
+            <article>
+              <span>佣金</span>
+              <strong data-agent-commission-preview>0</strong>
+            </article>
+            <article>
+              <span>结算状态：待结算</span>
+              <strong data-agent-pending>0</strong>
+            </article>
+            <article>
+              <span>结算状态：已复核</span>
+              <strong data-agent-reviewed>0</strong>
+            </article>
+            <article>
+              <span>结算状态：冻结</span>
+              <strong data-agent-frozen>0</strong>
+            </article>
+            <article>
+              <span>团队长视图</span>
+              <strong data-agent-team-leader>S-leader</strong>
+            </article>
+          </div>
+          <div class="agent-toolbar">
+            <label>
+              代理筛选
+              <select data-agent-filter>
+                <option value="">全部代理</option>
+              </select>
+            </label>
+            <label>
+              操作备注
+              <input type="text" data-agent-note placeholder="输入本地佣金复核备注" />
+            </label>
+          </div>
+          <div class="agent-action-grid">
+            <button type="button" data-agent-action="markPendingSettlement">标记待结算</button>
+            <button type="button" data-agent-action="markReviewed">标记已复核</button>
+            <button type="button" data-agent-action="freezeCommission">冻结佣金</button>
+            <button type="button" data-agent-action="restorePreview">恢复预览</button>
+          </div>
+          <div class="agent-loop-grid">
+            <article>
+              <span>代理客户</span>
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>代理</th>
+                      <th>客户</th>
+                      <th>来源</th>
+                      <th>VIP 客户</th>
+                      <th>佣金</th>
+                      <th>团队长视图</th>
+                      <th>注册时间</th>
+                      <th>最近动态</th>
+                    </tr>
+                  </thead>
+                  <tbody data-agent-customers-body>
+                    <tr>
+                      <td colspan="8">等待代理客户数据。</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <article>
+              <span>佣金与结算状态</span>
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>代理</th>
+                      <th>客户</th>
+                      <th>来源</th>
+                      <th>订单占位</th>
+                      <th>佣金</th>
+                      <th>状态</th>
+                      <th>结算状态</th>
+                      <th>周期</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody data-agent-commission-body>
+                    <tr>
+                      <td colspan="9">等待佣金数据。</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <article class="agent-audit-panel">
+              <span>操作记录</span>
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>时间</th>
+                      <th>动作</th>
+                      <th>佣金记录</th>
+                      <th>备注</th>
+                    </tr>
+                  </thead>
+                  <tbody data-agent-audit-body>
+                    <tr>
+                      <td colspan="4">暂无代理佣金操作日志。</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="agent-console-board">
+          <div class="agent-tabs" aria-label="代理佣金预览切换">
+            <button class="active" type="button" data-agent-preview="overview">代理总览</button>
+            <button type="button" data-agent-preview="promotion">推广链接与来源</button>
+            <button type="button" data-agent-preview="customers">我的客户</button>
+            <button type="button" data-agent-preview="vip">VIP 客户</button>
+            <button type="button" data-agent-preview="commission">佣金概览</button>
+            <button type="button" data-agent-preview="team">团队范围</button>
+          </div>
+          <article class="agent-card active" data-agent-panel="overview">
+            <span>代理总览</span>
+            <h3>S-leader 团队代理预览</h3>
+            <div class="agent-metric-grid">
+              <b>推广来源：本地实验占位</b>
+              <b>我的客户：待接入实验客户表</b>
+              <b>VIP 客户：只读统计</b>
+              <b>佣金概览：不可结算</b>
+            </div>
+          </article>
+          <article class="agent-card" data-agent-panel="promotion">
+            <span>推广链接与来源</span>
+            <h3>仅展示来源结构</h3>
+            <p>展示代理码、推广链接、注册来源、绑定时间和备注字段；不读取正式订单，不修改代理归属。</p>
+          </article>
+          <article class="agent-card" data-agent-panel="customers">
+            <span>我的客户</span>
+            <h3>代理账号只看自己的数据</h3>
+            <p>客户列表后续只允许接入本地实验客户表，代理角色不能查看全站用户、学习详情或客服备注。</p>
+          </article>
+          <article class="agent-card" data-agent-panel="vip">
+            <span>VIP 客户</span>
+            <h3>VIP 客户只读预览</h3>
+            <p>展示 VIP 状态、到期时间、来源代理和最近学习摘要；不修改用户 VIP 状态，不触发付款。</p>
+          </article>
+          <article class="agent-card" data-agent-panel="commission">
+            <span>佣金概览</span>
+            <h3>只读佣金预览</h3>
+            <p data-commission-card-summary>结算周期：本周；统计口径时间戳：2026-07-06 00:00 至 2026-07-12 23:59；金额为实验占位，不代表真实可结算佣金。</p>
+            <ul class="commission-action-list">
+              <li>不导出佣金</li>
+              <li>不结算佣金</li>
+              <li>不触发付款</li>
+              <li>佣金导出需要老板确认</li>
+              <li>佣金结算需要老板确认</li>
+            </ul>
+          </article>
+          <article class="agent-card" data-agent-panel="team">
+            <span>团队范围</span>
+            <h3>S-leader 团队</h3>
+            <p>团队视图只展示层级、归属范围和只读汇总；团队佣金、跨级归因和结算规则后续必须单独审批。</p>
+          </article>
+        </div>
+        <div class="commission-risk-note">
+          <strong>风险边界</strong>
+          <p>只读佣金预览，时间筛选只改变预览口径，不导出佣金，不结算佣金，不触发付款，不读取正式订单，不修改代理归属；佣金导出需要老板确认，佣金结算需要老板确认；后续只允许接入本地实验佣金表。</p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="system">
+        <div class="section-title">
+          <span>P8：系统设置与审计日志</span>
+          <h2>老板验收重点</h2>
+          <p>确认系统设置总览、审计日志、发布闸口、错误 hook 提醒和环境边界是否清楚；当前是只读系统预览，不连接正式数据库，不部署正式站，不修改 .env。</p>
+        </div>
+        <div class="stage8-api-handoff">
+          <div class="section-title">
+            <span>第 8 阶段：本地只读 API 联调验收</span>
+            <h2>本地 API 验收通道</h2>
+            <p>确认静态预览服务器可以返回本地 JSON API，前端刷新按钮有真实本地响应；真实库：不连接，写入：关闭，不部署正式站。</p>
+          </div>
+          <div class="stage8-api-grid">
+            <article><span>联调状态</span><strong data-stage8-api-status>等待请求</strong></article>
+            <article><span>数据源</span><strong data-stage8-api-source>public/admin-v2-local-data.json</strong></article>
+            <article><span>真实库</span><strong data-stage8-api-database>不连接</strong></article>
+            <article><span>写入</span><strong data-stage8-api-write>关闭</strong></article>
+            <article><span>部署</span><strong data-stage8-api-deploy>不可发布</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage8-api-action="refreshHandoff">刷新本地 API 验收</button>
+            <span>只读 API：<strong>/api/admin-v2/stage8-local-api-handoff</strong></span>
+          </div>
+          <div class="table-shell stage8-endpoint-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>接口</th>
+                  <th>状态</th>
+                  <th>来源</th>
+                </tr>
+              </thead>
+              <tbody data-stage8-endpoint-body>
+                <tr><td colspan="3">等待加载本地 API 验收清单。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="system-control-board">
+          <div class="system-tabs" aria-label="系统设置预览切换">
+            <button class="active" type="button" data-system-preview="settings">系统设置总览</button>
+            <button type="button" data-system-preview="audit">审计日志</button>
+            <button type="button" data-system-preview="release">发布闸口</button>
+            <button type="button" data-system-preview="hooks">错误 hook 提醒</button>
+          </div>
+          <article class="system-card active" data-system-panel="settings">
+            <span>系统设置总览</span>
+            <h3>环境边界</h3>
+            <div class="system-setting-grid">
+              <b>不连接正式数据库</b>
+              <b>正式支付未连接</b>
+              <b>不部署正式站</b>
+              <b>不修改 .env</b>
+              <b>只读系统预览</b>
+            </div>
+          </article>
+          <article class="system-card" data-system-panel="audit">
+            <span>审计日志</span>
+            <h3>操作记录预览</h3>
+            <div class="audit-log-table table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>操作人</th>
+                    <th>操作时间</th>
+                    <th>操作类型</th>
+                    <th>风险等级</th>
+                    <th>结果</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>老板确认</td>
+                    <td>2026-07-06 本地时间</td>
+                    <td>P8 系统预览验收</td>
+                    <td>低</td>
+                    <td>仅读取静态实验页</td>
+                  </tr>
+                  <tr>
+                    <td>Codex</td>
+                    <td>2026-07-06 本地时间</td>
+                    <td>安全扫描</td>
+                    <td>中</td>
+                    <td>不触碰支付/VIP/数据库</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <article class="system-card" data-system-panel="release">
+            <span>发布闸口</span>
+            <h3>高风险动作停在确认前</h3>
+            <ul class="release-gate-list">
+              <li>Git push 需要老板确认</li>
+              <li>发布需要老板确认</li>
+              <li>支付/VIP/数据库变更需要老板确认</li>
+              <li>生产环境变量变更需要单独审批</li>
+            </ul>
+          </article>
+          <article class="system-card" data-system-panel="hooks">
+            <span>错误 hook 提醒</span>
+            <h3>出错立即记录防错误 hook 提醒</h3>
+            <p>当出现误连生产、误改支付/VIP、误动数据库、误部署、误 push、路径漂移、预览打不开或覆盖旧安全基线字段时，立即记录原因、阻断条件和下次检查点。</p>
+          </article>
+        </div>
+        <div class="hook-reminder-note">
+          <strong>风险边界</strong>
+          <p>只读系统预览，不连接正式数据库，不部署正式站，不修改 .env；Git push 需要老板确认，发布需要老板确认，支付/VIP/数据库变更需要老板确认。</p>
+        </div>
+      </section>
+
+      <section class="admin-panel" data-admin-v2-panel="sync">
+        <div class="section-title">
+          <span>P9：PR / 同步 / 生产准备</span>
+          <h2>老板验收重点</h2>
+          <p>确认 GitHub 同步准备、阿辉 UI 设计、阿杰功能开发、老板验收、PR 清单、生产前检查、差异确认、冲突风险和回滚计划是否清楚；当前只读同步准备，不 push，不部署，不合并 main。</p>
+        </div>
+        <div class="stage9-pr-readiness">
+          <div class="section-title">
+            <span>第 9 阶段：PR / 团队同步 / 生产前检查</span>
+            <h2>老板验收重点</h2>
+            <p>确认当前是否可以提交、当前是否可以 push、是否可以交给阿辉 UI review 和阿杰功能 review；当前仍不部署正式站，不合并 main。</p>
+          </div>
+          <div class="stage9-readiness-grid">
+            <article><span>验收状态</span><strong data-stage9-readiness-status>等待请求</strong></article>
+            <article><span>Git 状态</span><strong data-stage9-git-status>等待请求</strong></article>
+            <article><span>当前是否可以提交</span><strong data-stage9-can-commit>不允许</strong></article>
+            <article><span>当前是否可以 push</span><strong data-stage9-can-push>不允许</strong></article>
+            <article><span>部署正式站</span><strong data-stage9-can-deploy>不允许</strong></article>
+            <article><span>合并 main</span><strong data-stage9-can-merge>不允许</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage9-action="refreshReadiness">刷新 PR 准备状态</button>
+            <span>下一步：<strong data-stage9-next-action>老板统一验收后再决定。</strong></span>
+          </div>
+          <div class="stage9-tables">
+            <div class="table-shell">
+              <h3>团队 review 分工</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>人员</th>
+                    <th>范围</th>
+                    <th>状态</th>
+                    <th>重点</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-team-body>
+                  <tr><td colspan="4">等待加载团队 review 清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>PR 闸口清单</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>项目</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-checklist-body>
+                  <tr><td colspan="2">等待加载 PR 闸口清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>生产前阻断项</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>风险</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage9-risk-body>
+                  <tr><td colspan="2">等待加载生产阻断项。</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="stage10-final-acceptance">
+          <div class="section-title">
+            <span>第 10 阶段：总体验收包 / 最终提交前决策</span>
+            <h2>老板最终决策</h2>
+            <p>P1-P9 总体验收后，由老板决定是否允许 commit、push、创建 PR；当前仍不部署正式站，不合并 main。</p>
+          </div>
+          <div class="stage10-decision-grid">
+            <article><span>最终状态</span><strong data-stage10-final-status>等待请求</strong></article>
+            <article><span>是否允许 commit</span><strong data-stage10-can-commit>不允许</strong></article>
+            <article><span>是否允许 push</span><strong data-stage10-can-push>不允许</strong></article>
+            <article><span>是否允许创建 PR</span><strong data-stage10-can-pr>不允许</strong></article>
+            <article><span>是否允许部署正式站</span><strong data-stage10-can-deploy>不允许</strong></article>
+          </div>
+          <div class="backend-pulse">
+            <button type="button" data-stage10-action="refreshFinalAcceptance">刷新最终验收包</button>
+            <span>决策说明：<strong data-stage10-decision-note>老板最终确认之前，不提交、不 push、不创建 PR、不部署正式站。</strong></span>
+          </div>
+          <div class="stage10-tables">
+            <div class="table-shell">
+              <h3>P1-P9 总体验收</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>阶段</th>
+                    <th>内容</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-stage-body>
+                  <tr><td colspan="3">等待加载 P1-P9 总体验收清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>最终提交前清单</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>项目</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-checklist-body>
+                  <tr><td colspan="2">等待加载最终提交前清单。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-shell">
+              <h3>风险锁与回滚计划</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>风险锁</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody data-stage10-risk-body>
+                  <tr><td colspan="2">等待加载风险锁。</td></tr>
+                </tbody>
+              </table>
+              <p>Superpower 验收通过后，仍需要老板最终确认；回滚计划保留为本地实验舱回退，不影响正式站。</p>
+            </div>
+          </div>
+        </div>
+        <div class="sync-readiness-board">
+          <div class="sync-tabs" aria-label="同步准备预览切换">
+            <button class="active" type="button" data-sync-preview="github">GitHub 同步准备</button>
+            <button type="button" data-sync-preview="team">团队协作</button>
+            <button type="button" data-sync-preview="pr">PR 清单</button>
+            <button type="button" data-sync-preview="production">生产前检查</button>
+          </div>
+          <article class="sync-card active" data-sync-panel="github">
+            <span>GitHub 同步准备</span>
+            <h3>差异确认</h3>
+            <ul class="handoff-checklist">
+              <li>确认本 worktree 只包含后台实验舱文件</li>
+              <li>确认 main 分支同步前不合并 main</li>
+              <li>确认创建 PR 需要老板确认</li>
+              <li>确认不 push、不部署、不改正式站</li>
+            </ul>
+          </article>
+          <article class="sync-card" data-sync-panel="team">
+            <span>团队协作</span>
+            <h3>阿辉 UI 设计 / 阿杰功能开发 / 老板验收</h3>
+            <p>阿辉 UI 设计负责视觉一致性；阿杰功能开发负责后续真实功能接入；老板验收负责确认错误修改、素材上传和上线前范围。与阿辉、阿杰同步后再进入生产。</p>
+          </article>
+          <article class="sync-card" data-sync-panel="pr">
+            <span>PR 清单</span>
+            <h3>冲突风险</h3>
+            <ul class="handoff-checklist">
+              <li>列出本地文件清单与测试结果</li>
+              <li>检查是否碰到支付/VIP/数据库</li>
+              <li>检查是否存在正式站域名或生产环境变量</li>
+              <li>准备 PR 描述，但不创建 PR</li>
+            </ul>
+          </article>
+          <article class="sync-card" data-sync-panel="production">
+            <span>生产前检查</span>
+            <h3>回滚计划</h3>
+            <p>生产前必须完成老板验收、阿辉 UI 复核、阿杰功能复核、安全扫描、构建验证、回滚计划和发布窗口确认；当前不改支付/VIP/数据库。</p>
+          </article>
+        </div>
+        <div class="production-readiness-note">
+          <strong>风险边界</strong>
+          <p>只读同步准备，不 push，不部署，不合并 main，不改正式站，不改支付/VIP/数据库；创建 PR 需要老板确认，与阿辉、阿杰同步后再进入生产。</p>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="admin-v2.js"></script>
+</body>
+</html>

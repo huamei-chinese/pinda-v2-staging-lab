@@ -1,0 +1,1206 @@
+{
+  "meta": {
+    "mode": "mock",
+    "sourceLabel": "本地 mock 数据 / admin-v2-local-data.json",
+    "productionSafe": true,
+    "databaseConnected": false,
+    "paymentWritesEnabled": false,
+    "writeScope": "local-json-only",
+    "updatedAt": "2026-07-06T11:15:29.909Z"
+  },
+  "metrics": {
+    "todayRegistrations": 5,
+    "weeklyLearners": 18,
+    "pendingMaterials": 3,
+    "agentCommissionLabel": "只读预览"
+  },
+  "users": [
+    {
+      "id": "6340D662",
+      "email": "mai444662@gmail.com",
+      "name": "Truong Quynh Mai",
+      "phone": "mock-phone-001",
+      "role": "普通用户",
+      "level": "HSK2",
+      "plan": "Free",
+      "registeredAt": "2026/07/06 15:22",
+      "source": "自然注册",
+      "agentOwner": "未绑定",
+      "vipStatus": "Free",
+      "vipExpiresAt": "N/A",
+      "recentLearning": "HSK2 ? 6 ?",
+      "customerNotes": "截图来源用户，待客服确认需求。"
+    },
+    {
+      "id": "99026EFE",
+      "email": "tnhan793@gmail.com",
+      "name": "Thanh Nhan",
+      "phone": "mock-phone-002",
+      "role": "普通用户",
+      "level": "HSK2",
+      "plan": "Free",
+      "registeredAt": "2026/07/06 15:17",
+      "source": "自然注册",
+      "agentOwner": "未绑定",
+      "vipStatus": "Free",
+      "vipExpiresAt": "N/A",
+      "recentLearning": "每日听力 A2",
+      "customerNotes": "待确认是否需要体验 VIP。"
+    },
+    {
+      "id": "CFC7CBF6",
+      "email": "anhthy1810@gmail.com",
+      "name": "Le thy",
+      "phone": "mock-phone-003",
+      "role": "普通用户",
+      "level": "HSK2",
+      "plan": "Free",
+      "registeredAt": "2026/07/06 15:16",
+      "source": "自然注册",
+      "agentOwner": "S-leader",
+      "vipStatus": "Free",
+      "vipExpiresAt": "N/A",
+      "recentLearning": "拼打练习 第 3 组",
+      "customerNotes": "代理归属待复核。"
+    },
+    {
+      "id": "820F7D80",
+      "email": "dothihaily20112007@gmail.com",
+      "name": "Do Thi Hai Ly",
+      "phone": "mock-phone-004",
+      "role": "普通用户",
+      "level": "HSK2",
+      "plan": "Free",
+      "registeredAt": "2026/07/06 15:07",
+      "source": "代理归因",
+      "agentOwner": "S-leader",
+      "vipStatus": "Free",
+      "vipExpiresAt": "N/A",
+      "recentLearning": "写字练习 基础笔画",
+      "customerNotes": "客服可记录续费意向。"
+    },
+    {
+      "id": "ECB85941",
+      "email": "tranlinh2242003@gmail.com",
+      "name": "Tran Linh",
+      "phone": "mock-phone-005",
+      "role": "普通用户",
+      "level": "HSK2",
+      "plan": "Free",
+      "registeredAt": "2026/07/06 14:55",
+      "source": "自然注册",
+      "agentOwner": "未绑定",
+      "vipStatus": "Free",
+      "vipExpiresAt": "N/A",
+      "recentLearning": "HSK2 词汇复习",
+      "customerNotes": "暂无备注。"
+    }
+  ],
+  "learningSummary": {
+    "activeLearnersToday": 5,
+    "questionsAnsweredToday": 87,
+    "wrongAnswersToday": 18,
+    "averageAccuracy": "79%",
+    "lastEventAt": "2026-07-06T10:45:07.737Z",
+    "writeScope": "local-json-only"
+  },
+  "learningRecords": [
+    {
+      "userId": "6340D662",
+      "userEmail": "mai444662@gmail.com",
+      "name": "Truong Quynh Mai",
+      "module": "HSK ??",
+      "lesson": "HSK2 ? 6 ?",
+      "questionsAnswered": 19,
+      "wrongAnswers": 4,
+      "accuracy": "79%",
+      "lastStudiedAt": "2026-07-06T10:45:07.737Z",
+      "recentLearning": "wrong_answer / HSK2 ? 6 ?"
+    },
+    {
+      "userId": "99026EFE",
+      "userEmail": "tnhan793@gmail.com",
+      "name": "Thanh Nhan",
+      "module": "每日听力",
+      "lesson": "A2 城市交通",
+      "questionsAnswered": 22,
+      "wrongAnswers": 5,
+      "accuracy": "77%",
+      "lastStudiedAt": "2026-07-06T15:32:00+07:00",
+      "recentLearning": "播放听力 3 次，完成选择题。"
+    },
+    {
+      "userId": "CFC7CBF6",
+      "userEmail": "anhthy1810@gmail.com",
+      "name": "Le thy",
+      "module": "拼打练习",
+      "lesson": "第 3 组 高频词",
+      "questionsAnswered": 16,
+      "wrongAnswers": 2,
+      "accuracy": "88%",
+      "lastStudiedAt": "2026-07-06T15:20:00+07:00",
+      "recentLearning": "拼打正确率提升，仍需复习声调。"
+    },
+    {
+      "userId": "820F7D80",
+      "userEmail": "dothihaily20112007@gmail.com",
+      "name": "Do Thi Hai Ly",
+      "module": "写字练习",
+      "lesson": "基础笔画",
+      "questionsAnswered": 12,
+      "wrongAnswers": 4,
+      "accuracy": "67%",
+      "lastStudiedAt": "2026-07-06T15:12:00+07:00",
+      "recentLearning": "提交写字练习，横折笔画需加强。"
+    },
+    {
+      "userId": "ECB85941",
+      "userEmail": "tranlinh2242003@gmail.com",
+      "name": "Tran Linh",
+      "module": "高频汉语",
+      "lesson": "生活表达 01",
+      "questionsAnswered": 18,
+      "wrongAnswers": 3,
+      "accuracy": "83%",
+      "lastStudiedAt": "2026-07-06T14:58:00+07:00",
+      "recentLearning": "完成高频表达复习。"
+    }
+  ],
+  "learningEvents": [
+    {
+      "id": "learn-1783334707737",
+      "time": "2026-07-06T10:45:07.737Z",
+      "eventName": "wrong_answer",
+      "userId": "6340D662",
+      "userEmail": "mai444662@gmail.com",
+      "module": "HSK ??",
+      "lesson": "HSK2 ? 6 ?",
+      "questionsDelta": 1,
+      "wrongDelta": 1,
+      "scope": "local-json-only"
+    },
+    {
+      "id": "learn-seed-001",
+      "time": "2026-07-06T15:40:00+07:00",
+      "eventName": "lesson_opened",
+      "userId": "6340D662",
+      "userEmail": "mai444662@gmail.com",
+      "module": "HSK 学习",
+      "lesson": "HSK2 第 6 课",
+      "questionsDelta": 0,
+      "wrongDelta": 0,
+      "scope": "local-json-only"
+    },
+    {
+      "id": "learn-seed-002",
+      "time": "2026-07-06T15:33:00+07:00",
+      "eventName": "question_answered",
+      "userId": "99026EFE",
+      "userEmail": "tnhan793@gmail.com",
+      "module": "每日听力",
+      "lesson": "A2 城市交通",
+      "questionsDelta": 1,
+      "wrongDelta": 0,
+      "scope": "local-json-only"
+    },
+    {
+      "id": "learn-seed-003",
+      "time": "2026-07-06T15:21:00+07:00",
+      "eventName": "wrong_answer",
+      "userId": "CFC7CBF6",
+      "userEmail": "anhthy1810@gmail.com",
+      "module": "拼打练习",
+      "lesson": "第 3 组 高频词",
+      "questionsDelta": 1,
+      "wrongDelta": 1,
+      "scope": "local-json-only"
+    },
+    {
+      "id": "learn-seed-004",
+      "time": "2026-07-06T15:13:00+07:00",
+      "eventName": "listening_audio_played",
+      "userId": "820F7D80",
+      "userEmail": "dothihaily20112007@gmail.com",
+      "module": "每日听力",
+      "lesson": "A2 城市交通",
+      "questionsDelta": 0,
+      "wrongDelta": 0,
+      "scope": "local-json-only"
+    }
+  ],
+  "materialSummary": {
+    "totalPackages": 4,
+    "pendingReview": 1,
+    "draftsReady": 0,
+    "publishedLocal": 0,
+    "fallbackActive": 0,
+    "rollbackReady": 4,
+    "writeScope": "local-json-only"
+  },
+  "materialPackages": [
+    {
+      "id": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "type": "每日听力素材",
+      "lessonCount": 6,
+      "topicCount": 3,
+      "audioStatus": "已验收",
+      "uploadStatus": "本地已接收",
+      "reviewStatus": "验收通过",
+      "draftStatus": "不能提交",
+      "publishStatus": "已回滚",
+      "fallbackStatus": "静态默认可用",
+      "rollbackVersion": "rb-20260706-a2-001"
+    },
+    {
+      "id": "mat-dialogue-hsk2-006",
+      "title": "HSK2 第 6 课 对话素材",
+      "type": "对话素材",
+      "lessonCount": 1,
+      "topicCount": 2,
+      "audioStatus": "缺音频",
+      "uploadStatus": "本地待补",
+      "reviewStatus": "验收阻断",
+      "draftStatus": "不能提交",
+      "publishStatus": "未发布",
+      "fallbackStatus": "静态默认可用",
+      "rollbackVersion": "rb-20260706-hsk2-006"
+    },
+    {
+      "id": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "type": "拼打/写字内容池",
+      "lessonCount": 4,
+      "topicCount": 4,
+      "audioStatus": "不需要音频",
+      "uploadStatus": "本地已接收",
+      "reviewStatus": "验收阻断",
+      "draftStatus": "不能提交",
+      "publishStatus": "已回滚",
+      "fallbackStatus": "静态默认可用",
+      "rollbackVersion": "rb-20260706-writing-001"
+    },
+    {
+      "id": "mat-shorttext-a2-002",
+      "title": "独白/短文 A2 日常购物",
+      "type": "独白/短文素材",
+      "lessonCount": 3,
+      "topicCount": 2,
+      "audioStatus": "已验收",
+      "uploadStatus": "本地已接收",
+      "reviewStatus": "待审核",
+      "draftStatus": "草稿待提交",
+      "publishStatus": "未发布",
+      "fallbackStatus": "静态默认可用",
+      "rollbackVersion": "rb-20260706-shorttext-002"
+    }
+  ],
+  "materialAuditLogs": [
+    {
+      "id": "material-audit-1783336015882",
+      "time": "2026-07-06T11:06:55.882Z",
+      "operator": "local-admin-v2",
+      "action": "rollbackLocal",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336015344",
+      "time": "2026-07-06T11:06:55.344Z",
+      "operator": "local-admin-v2",
+      "action": "fallbackLocal",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336014072",
+      "time": "2026-07-06T11:06:54.072Z",
+      "operator": "local-admin-v2",
+      "action": "fallbackLocal",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336013639",
+      "time": "2026-07-06T11:06:53.639Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336013136",
+      "time": "2026-07-06T11:06:53.136Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336012736",
+      "time": "2026-07-06T11:06:52.736Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336012385",
+      "time": "2026-07-06T11:06:52.385Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336011896",
+      "time": "2026-07-06T11:06:51.896Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336009471",
+      "time": "2026-07-06T11:06:49.471Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783336008768",
+      "time": "2026-07-06T11:06:48.768Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335944712",
+      "time": "2026-07-06T11:05:44.712Z",
+      "operator": "local-admin-v2",
+      "action": "rollbackLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335943289",
+      "time": "2026-07-06T11:05:43.289Z",
+      "operator": "local-admin-v2",
+      "action": "rollbackLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335937016",
+      "time": "2026-07-06T11:05:37.016Z",
+      "operator": "local-admin-v2",
+      "action": "fallbackLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335936192",
+      "time": "2026-07-06T11:05:36.192Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335935553",
+      "time": "2026-07-06T11:05:35.553Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335934968",
+      "time": "2026-07-06T11:05:34.968Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335934168",
+      "time": "2026-07-06T11:05:34.168Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335933431",
+      "time": "2026-07-06T11:05:33.431Z",
+      "operator": "local-admin-v2",
+      "action": "publishLocal",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335932695",
+      "time": "2026-07-06T11:05:32.695Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335931879",
+      "time": "2026-07-06T11:05:31.879Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335931423",
+      "time": "2026-07-06T11:05:31.423Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335930416",
+      "time": "2026-07-06T11:05:30.416Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335929815",
+      "time": "2026-07-06T11:05:29.815Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335928679",
+      "time": "2026-07-06T11:05:28.679Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335927631",
+      "time": "2026-07-06T11:05:27.631Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335926600",
+      "time": "2026-07-06T11:05:26.600Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335925954",
+      "time": "2026-07-06T11:05:25.954Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335925440",
+      "time": "2026-07-06T11:05:25.440Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335923657",
+      "time": "2026-07-06T11:05:23.657Z",
+      "operator": "local-admin-v2",
+      "action": "submitDraft",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335922559",
+      "time": "2026-07-06T11:05:22.559Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335921586",
+      "time": "2026-07-06T11:05:21.586Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335912920",
+      "time": "2026-07-06T11:05:12.920Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335910720",
+      "time": "2026-07-06T11:05:10.720Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335910019",
+      "time": "2026-07-06T11:05:10.019Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335894460",
+      "time": "2026-07-06T11:04:54.460Z",
+      "operator": "local-admin-v2",
+      "action": "blockIntake",
+      "packageId": "mat-writing-basic-001",
+      "note": "本地素材实验操作",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-1783335789203",
+      "time": "2026-07-06T11:03:09.203Z",
+      "operator": "local-admin-v2",
+      "action": "approveIntake",
+      "packageId": "mat-daily-a2-001",
+      "note": "HTTP ??:??????",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "material-audit-seed-001",
+      "time": "2026-07-06T15:45:00+07:00",
+      "operator": "local-admin-v2",
+      "action": "seed",
+      "packageId": "mat-daily-a2-001",
+      "note": "本地素材实验数据初始化。",
+      "scope": "local-json-only"
+    }
+  ],
+  "releaseHistory": [
+    {
+      "id": "release-1783336015882",
+      "time": "2026-07-06T11:06:55.882Z",
+      "packageId": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "status": "已回滚",
+      "rollbackVersion": "rb-20260706-writing-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783336015344",
+      "time": "2026-07-06T11:06:55.344Z",
+      "packageId": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "status": "本地暂停",
+      "rollbackVersion": "rb-20260706-writing-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783336014072",
+      "time": "2026-07-06T11:06:54.072Z",
+      "packageId": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "status": "本地暂停",
+      "rollbackVersion": "rb-20260706-writing-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783336013136",
+      "time": "2026-07-06T11:06:53.136Z",
+      "packageId": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-writing-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335944712",
+      "time": "2026-07-06T11:05:44.712Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "已回滚",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335943289",
+      "time": "2026-07-06T11:05:43.289Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "已回滚",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335937016",
+      "time": "2026-07-06T11:05:37.016Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "本地暂停",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335936192",
+      "time": "2026-07-06T11:05:36.192Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335935553",
+      "time": "2026-07-06T11:05:35.553Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335934968",
+      "time": "2026-07-06T11:05:34.968Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335934168",
+      "time": "2026-07-06T11:05:34.168Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-1783335933431",
+      "time": "2026-07-06T11:05:33.431Z",
+      "packageId": "mat-daily-a2-001",
+      "title": "每日听力 A2 城市交通",
+      "status": "未发布",
+      "rollbackVersion": "rb-20260706-a2-001",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "release-local-001",
+      "time": "2026-07-06T15:50:00+07:00",
+      "packageId": "mat-writing-basic-001",
+      "title": "写字练习 基础笔画",
+      "status": "本地已发布",
+      "rollbackVersion": "rb-20260706-writing-001",
+      "scope": "local-json-only"
+    }
+  ],
+  "agentSummary": {
+    "agentCount": 3,
+    "customerCount": 5,
+    "vipCustomerCount": 2,
+    "commissionPreview": 420000,
+    "pendingSettlement": 0,
+    "reviewedCommissions": 2,
+    "frozenCommissions": 1,
+    "teamLeader": "S-leader",
+    "writeScope": "local-json-only"
+  },
+  "agentCustomers": [
+    {
+      "id": "agent-customer-001",
+      "agentId": "agent-s-leader",
+      "agentName": "S-leader",
+      "customerName": "Le thy",
+      "customerEmail": "anhthy1810@gmail.com",
+      "source": "推广链接 / hsk2-campaign",
+      "vipStatus": "Free",
+      "commissionStatus": "无佣金",
+      "teamScope": "S-leader 团队"
+    },
+    {
+      "id": "agent-customer-002",
+      "agentId": "agent-s-leader",
+      "agentName": "S-leader",
+      "customerName": "Do Thi Hai Ly",
+      "customerEmail": "dothihaily20112007@gmail.com",
+      "source": "代理归因 / daily-listening",
+      "vipStatus": "VIP",
+      "commissionStatus": "已复核",
+      "teamScope": "S-leader 团队"
+    },
+    {
+      "id": "agent-customer-003",
+      "agentId": "agent-a001",
+      "agentName": "Agent A001",
+      "customerName": "Truong Quynh Mai",
+      "customerEmail": "mai444662@gmail.com",
+      "source": "自然注册转代理备注",
+      "vipStatus": "Free",
+      "commissionStatus": "无佣金",
+      "teamScope": "S-leader 团队 / Agent A001"
+    },
+    {
+      "id": "agent-customer-004",
+      "agentId": "agent-a002",
+      "agentName": "Agent A002",
+      "customerName": "Thanh Nhan",
+      "customerEmail": "tnhan793@gmail.com",
+      "source": "推广二维码",
+      "vipStatus": "VIP",
+      "commissionStatus": "已复核",
+      "teamScope": "S-leader 团队 / Agent A002"
+    },
+    {
+      "id": "agent-customer-005",
+      "agentId": "agent-a002",
+      "agentName": "Agent A002",
+      "customerName": "Tran Linh",
+      "customerEmail": "tranlinh2242003@gmail.com",
+      "source": "短链注册",
+      "vipStatus": "Free",
+      "commissionStatus": "冻结预览",
+      "teamScope": "S-leader 团队 / Agent A002"
+    }
+  ],
+  "agentCommissions": [
+    {
+      "id": "commission-001",
+      "agentId": "agent-s-leader",
+      "agentName": "S-leader",
+      "customerEmail": "dothihaily20112007@gmail.com",
+      "period": "thisWeek",
+      "amount": 180000,
+      "status": "已复核",
+      "settlementStatus": "不可付款",
+      "teamScope": "S-leader 团队"
+    },
+    {
+      "id": "commission-002",
+      "agentId": "agent-a002",
+      "agentName": "Agent A002",
+      "customerEmail": "tnhan793@gmail.com",
+      "period": "thisWeek",
+      "amount": 160000,
+      "status": "已复核",
+      "settlementStatus": "不可付款",
+      "teamScope": "S-leader 团队 / Agent A002"
+    },
+    {
+      "id": "commission-003",
+      "agentId": "agent-a002",
+      "agentName": "Agent A002",
+      "customerEmail": "tranlinh2242003@gmail.com",
+      "period": "thisMonth",
+      "amount": 80000,
+      "status": "冻结预览",
+      "settlementStatus": "冻结",
+      "teamScope": "S-leader 团队 / Agent A002"
+    },
+    {
+      "id": "commission-004",
+      "agentId": "agent-a001",
+      "agentName": "Agent A001",
+      "customerEmail": "mai444662@gmail.com",
+      "period": "yesterday",
+      "amount": 0,
+      "status": "无佣金",
+      "settlementStatus": "无结算",
+      "teamScope": "S-leader 团队 / Agent A001"
+    }
+  ],
+  "agentTeamMembers": [
+    {
+      "agentId": "agent-s-leader",
+      "agentName": "S-leader",
+      "role": "团队长",
+      "parentAgentId": "",
+      "customerCount": 2,
+      "commissionPreview": 180000
+    },
+    {
+      "agentId": "agent-a001",
+      "agentName": "Agent A001",
+      "role": "一级代理",
+      "parentAgentId": "agent-s-leader",
+      "customerCount": 1,
+      "commissionPreview": 0
+    },
+    {
+      "agentId": "agent-a002",
+      "agentName": "Agent A002",
+      "role": "一级代理",
+      "parentAgentId": "agent-s-leader",
+      "customerCount": 2,
+      "commissionPreview": 240000
+    }
+  ],
+  "agentAuditLogs": [
+    {
+      "id": "agent-audit-1783336529909",
+      "time": "2026-07-06T11:15:29.909Z",
+      "operator": "local-admin-v2",
+      "action": "markReviewed",
+      "commissionId": "commission-001",
+      "note": "HTTP ??:????????",
+      "scope": "local-json-only"
+    },
+    {
+      "id": "agent-audit-seed-001",
+      "time": "2026-07-06T16:10:00+07:00",
+      "operator": "local-admin-v2",
+      "action": "seed",
+      "commissionId": "commission-001",
+      "note": "本地代理佣金实验数据初始化。",
+      "scope": "local-json-only"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "audit-seed-001",
+      "time": "2026-07-06T15:30:00+07:00",
+      "operator": "local-admin-v2",
+      "action": "seed",
+      "userId": "6340D662",
+      "userEmail": "mai444662@gmail.com",
+      "note": "本地实验数据初始化。",
+      "scope": "local-json-only"
+    }
+  ],
+  "realReadonlyMeta": {
+    "source": "local-contract-preview",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "notes": "第 6 阶段只做真实后台字段契约和脱敏样例预览，不连接真实数据库。"
+  },
+  "realReadonlyUsers": [
+    {
+      "id": "5E802A4",
+      "fullName": "lixiang001",
+      "email": "lixiang001@gmail.com",
+      "role": "普通用户",
+      "currentLevel": "HSK2",
+      "vipStatus": "Free",
+      "premiumUntil": "N/A",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    },
+    {
+      "id": "9AB59000",
+      "fullName": "Felix",
+      "email": "langkhai01082002@gmail.com",
+      "role": "普通用户",
+      "currentLevel": "HSK2",
+      "vipStatus": "VIP 7d",
+      "premiumUntil": "2026-07-08",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    },
+    {
+      "id": "8E6320AE",
+      "fullName": "lixiang",
+      "email": "huameizhongxin@gmail.com",
+      "role": "超级管理员",
+      "currentLevel": "HSK2",
+      "vipStatus": "VIP",
+      "premiumUntil": "N/A",
+      "isActive": true,
+      "sourceTable": "users",
+      "readOnly": true
+    }
+  ],
+  "realReadonlyContracts": [
+    {
+      "sourceTable": "users",
+      "sourceFields": "id, full_name, email, role, current_level, is_premium, premium_until, vip_plan_id, is_active",
+      "adminV2Fields": "用户ID、姓名、Email、角色、等级、VIP状态、VIP到期、状态",
+      "riskBoundary": "第 6 阶段只读展示，不允许修改用户、VIP或角色。"
+    },
+    {
+      "sourceTable": "payment_plans",
+      "sourceFields": "id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order",
+      "adminV2Fields": "套餐名称、时长、价格、启用状态、排序",
+      "riskBoundary": "只读核对套餐字段，不调整定价。"
+    },
+    {
+      "sourceTable": "payment_orders",
+      "sourceFields": "id, user_id, plan_id, amount, transfer_code, status, created_at, paid_at, expires_at",
+      "adminV2Fields": "订单号、用户、套餐、金额、转账码、状态、创建/支付/过期时间",
+      "riskBoundary": "只读核对订单字段，不创建订单，不处理回调。"
+    },
+    {
+      "sourceTable": "hsk_lesson_locks / daily_theme_locks",
+      "sourceFields": "level, lesson_id, free_limit, is_locked, updated_at",
+      "adminV2Fields": "课程等级、课节、免费限制、锁课状态、更新时间",
+      "riskBoundary": "只读核对锁课配置，不改 VIP 锁定。"
+    }
+  ],
+  "realReadonlyGaps": [
+    {
+      "key": "learning_records",
+      "label": "真实学习记录",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "第 7 阶段先定义学习事件 schema，再决定是否采集。"
+    },
+    {
+      "key": "learning_events",
+      "label": "真实学习事件",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "先保持本地 mock，禁止伪造为真实数据。"
+    },
+    {
+      "key": "agent_referrals",
+      "label": "真实代理归因",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "后续由阿杰确认代理归因表设计。"
+    },
+    {
+      "key": "agent_commissions",
+      "label": "真实代理佣金",
+      "status": "当前发布后台暂无真实表或 API 来源",
+      "nextStep": "后续必须先有订单归因和结算规则，不能从支付订单直接推断。"
+    }
+  ],
+  "stage7SchemaMeta": {
+    "status": "schema-contract-only",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "notes": "第 7 阶段只定义缺失真实数据 schema 契约，不建表、不接库、不写正式用户行为。"
+  },
+  "stage7LearningEventSchemas": [
+    {
+      "key": "learning_event",
+      "label": "学习事件 schema",
+      "fields": "event_id, user_id, module, lesson_id, event_name, occurred_at, client_source",
+      "source": "前台学习行为",
+      "boundary": "只定义契约，不采集正式用户行为。"
+    },
+    {
+      "key": "learning_summary",
+      "label": "学习汇总 schema",
+      "fields": "user_id, date, questions_answered, wrong_answers, accuracy, last_studied_at",
+      "source": "学习事件聚合",
+      "boundary": "只读分析口径，不写正式统计表。"
+    },
+    {
+      "key": "wrong_answer_event",
+      "label": "错题事件 schema",
+      "fields": "user_id, lesson_id, question_id, answer_value, correct_value, occurred_at",
+      "source": "练习答题结果",
+      "boundary": "不保存敏感内容，不影响 VIP 锁课。"
+    }
+  ],
+  "stage7AgentDataSchemas": [
+    {
+      "key": "agent_referral",
+      "label": "代理归因 schema",
+      "fields": "agent_code, user_id, source_url, bound_at, changed_by, change_reason",
+      "owner": "阿杰确认",
+      "boundary": "只定义归因字段，不绑定正式用户。"
+    },
+    {
+      "key": "agent_customer",
+      "label": "代理客户 schema",
+      "fields": "agent_id, user_id, vip_status, first_seen_at, last_activity_at, visibility_scope",
+      "owner": "阿杰确认",
+      "boundary": "代理账号只看自己客户，不看全站用户。"
+    },
+    {
+      "key": "agent_commission_preview",
+      "label": "佣金结算 schema",
+      "fields": "agent_id, user_id, vip_plan, amount, period, status, reviewed_by",
+      "owner": "老板确认",
+      "boundary": "只做预览，不结算，不付款。"
+    }
+  ],
+  "stage7AcceptanceGates": [
+    {
+      "owner": "老板",
+      "item": "确认是否允许进入真实表设计",
+      "status": "required-before-real-db"
+    },
+    {
+      "owner": "阿杰",
+      "item": "确认学习事件、代理归因、佣金字段是否能落地",
+      "status": "pending-review"
+    },
+    {
+      "owner": "阿辉",
+      "item": "确认客服、学习、代理三条后台操作路径是否易用",
+      "status": "pending-ui-review"
+    }
+  ],
+  "stage8LocalApiHandoff": {
+    "status": "local-api-ready",
+    "source": "public/admin-v2-local-data.json",
+    "realDatabaseConnected": false,
+    "writeEnabled": false,
+    "productionDeployEnabled": false,
+    "notes": "第 8 阶段只打通本地静态预览服务器的只读 JSON API，不连接真实数据库，不写 VIP、支付、订单、代理佣金。"
+  },
+  "stage9PrReadiness": {
+    "status": "waiting-boss-acceptance",
+    "gitStatus": "worktree-changes-not-committed",
+    "canCommit": false,
+    "canPush": false,
+    "canDeployProduction": false,
+    "canMergeMain": false,
+    "nextAllowedAction": "老板统一验收通过后，才允许进入提交/推送准备。",
+    "teamReviews": [
+      {
+        "owner": "老板",
+        "scope": "统一验收",
+        "status": "required",
+        "focus": "确认 P1-P9 是否符合后台落地目标，不触碰正式站、支付、VIP、数据库。"
+      },
+      {
+        "owner": "阿辉",
+        "scope": "UI review",
+        "status": "pending-after-boss",
+        "focus": "检查后台视觉密度、表格、筛选、状态 Badge、操作区是否适合管理人员使用。"
+      },
+      {
+        "owner": "阿杰",
+        "scope": "功能 review",
+        "status": "pending-after-boss",
+        "focus": "检查本地 API 契约、真实数据缺口、后续数据库表设计和后台接口落地路线。"
+      }
+    ],
+    "checklist": [
+      {
+        "item": "当前是否可以提交",
+        "status": "blocked-until-boss-acceptance"
+      },
+      {
+        "item": "当前是否可以 push",
+        "status": "blocked-until-boss-acceptance"
+      },
+      {
+        "item": "是否可以给阿辉阿杰 review",
+        "status": "prepare-after-boss"
+      },
+      {
+        "item": "是否可以部署正式站",
+        "status": "blocked"
+      },
+      {
+        "item": "是否可以合并 main",
+        "status": "blocked"
+      }
+    ],
+    "productionBlockers": [
+      {
+        "key": "real_db_not_connected",
+        "label": "真实数据库未连接",
+        "status": "blocked"
+      },
+      {
+        "key": "production_deploy_blocked",
+        "label": "不部署正式站",
+        "status": "blocked"
+      },
+      {
+        "key": "payment_vip_untouched",
+        "label": "支付、VIP、用户数据未触碰",
+        "status": "protected"
+      }
+    ]
+  },
+  "stage10FinalAcceptance": {
+    "status": "waiting-boss-final-acceptance",
+    "canCommit": false,
+    "canPush": false,
+    "canCreatePr": false,
+    "canDeployProduction": false,
+    "requiresBossApproval": true,
+    "decisionNote": "老板最终确认之前，不提交、不 push、不创建 PR、不部署正式站。",
+    "stageSummaries": [
+      { "stage": "P1", "label": "后台视觉骨架", "status": "ready-for-boss-review" },
+      { "stage": "P2", "label": "角色与菜单权限骨架", "status": "ready-for-boss-review" },
+      { "stage": "P3", "label": "用户 / 客服 / VIP 服务视图", "status": "ready-for-boss-review" },
+      { "stage": "P4", "label": "学习数据分析口径", "status": "ready-for-boss-review" },
+      { "stage": "P5", "label": "VIP 与课程解锁配置", "status": "ready-for-boss-review" },
+      { "stage": "P6", "label": "内容与素材流程", "status": "ready-for-boss-review" },
+      { "stage": "P7", "label": "缺失真实数据 Schema 契约", "status": "superpower-accepted" },
+      { "stage": "P8", "label": "本地只读 API 联调验收", "status": "superpower-accepted" },
+      { "stage": "P9", "label": "PR / 团队同步 / 生产前检查", "status": "superpower-accepted" }
+    ],
+    "finalChecklist": [
+      { "item": "P1-P9 总体验收", "status": "waiting-boss" },
+      { "item": "Superpower 验收", "status": "required-before-commit" },
+      { "item": "阿辉 UI review", "status": "optional-after-boss" },
+      { "item": "阿杰功能 review", "status": "optional-after-boss" },
+      { "item": "回滚计划", "status": "documented-local-only" }
+    ],
+    "riskLocks": [
+      { "key": "production_site_locked", "label": "不部署正式站", "status": "locked" },
+      { "key": "payment_vip_locked", "label": "支付、VIP、订单、佣金不写入", "status": "locked" },
+      { "key": "database_locked", "label": "真实数据库不连接", "status": "locked" },
+      { "key": "main_merge_locked", "label": "不合并 main", "status": "locked" }
+    ]
+  },
+  "blockedEndpoints": [
+    "/api/payments/orders",
+    "/api/webhooks/sepay",
+    "/api/admin/users/:id/role",
+    "/api/admin/plans",
+    "/api/admin/content",
+    "/api/analytics/events"
+  ]
+}
