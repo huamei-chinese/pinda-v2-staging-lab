@@ -8128,11 +8128,7 @@ function renderListeningRepeatLesson(options = {}) {
     <em>${escapeHtml(word.status)}</em>
   </div>
 `).join("");
-  const sentenceFeedIndexes = [
-    ...(currentIndex > 0 ? [currentIndex - 1] : []),
-    currentIndex,
-    ...(currentIndex + 1 < total ? [currentIndex + 1] : []),
-  ];
+const sentenceFeedIndexes = [currentIndex];
   const sentenceFeedHTML = sentenceFeedIndexes.map((index) => {
     const item = episode.sentences[index] || {};
     const isActive = index === currentIndex;
@@ -8162,7 +8158,9 @@ function renderListeningRepeatLesson(options = {}) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
         <div class="listening-repeat-feed-index">${escapeHtml(sentenceNumber)}</div>
-        <div class="listening-repeat-listen-content listening-repeat-feed-active-content">
+        <div class="listening-repeat-listen-content listening-repeat-feed-active-content ${
+          (item.chinese || "").length > 28 ? "is-very-long" : (item.chinese || "").length > 18 ? "is-long" : ""
+        }">
           <strong data-listening-repeat-original>${buildListeningRepeatOriginalHTML(item.chinese || "")}</strong>
           <small>${escapeHtml(item.pinyin || "")}</small>
           <em>${escapeHtml(item.vietnamese || "")}</em>
@@ -8190,17 +8188,6 @@ function renderListeningRepeatLesson(options = {}) {
       <button class="listening-repeat-corner-back" type="button" data-listening-repeat-back aria-label="${isVi ? "Quay trở lại" : "Back"}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
-      <header class="listening-repeat-lesson-topbar listening-repeat-lesson-topbar--compact">
-        <div class="listening-repeat-title-block">
-          <h1>${isVi ? "Nói theo" : "Shadowing"}</h1>
-          <p>${escapeHtml(isVi ? (episode.category || "Chủ đề bài nghe") : (episode.categoryZh || "Listening topic"))}</p>
-        </div>
-        <div class="listening-repeat-progress listening-repeat-progress--compact">
-          <strong>${isVi ? "Câu" : "Sentence"} ${currentIndex + 1}/${total}</strong>
-          <i><b style="width:${progress}%"></b></i>
-        </div>
-      </header>
-
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
         <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
         <div class="listening-repeat-practice-grid">
@@ -8211,13 +8198,6 @@ function renderListeningRepeatLesson(options = {}) {
       </section>
     </div>
   `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
-
-  requestAnimationFrame(() => {
-    document.querySelector("[data-listening-repeat-active]")?.scrollIntoView({
-      block: "center",
-      behavior: options.instantScroll ? "auto" : "smooth",
-    });
-  });
   updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
   setListeningRepeatListenUi(listeningRepeatSpeechState);
   return;
@@ -12169,4 +12149,3 @@ function init() {
 }
 
 init();
-
