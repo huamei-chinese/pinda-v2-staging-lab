@@ -6387,6 +6387,59 @@ function getContinueListeningLesson() {
   return candidates[0] || null;
 }
 
+function renderIntermediateListeningSuggestionsHTML(isVi) {
+  const suggestedImages = [
+    "assets/anhthanhphan1.png",
+    "assets/anhthanhphan2.png",
+    "assets/anhthanhphan3.png",
+    "assets/anhthanhphan4.jpg",
+    "assets/anhthanhphan5.png",
+  ];
+  const suggestedTopics = listeningCatalogTopics
+    .filter((topic) => topic.levelId === "dialogue-trung-cap")
+    .filter((topic) => Array.isArray(topic.lessons) && topic.lessons.length > 0)
+    .slice(0, 5);
+
+  if (!suggestedTopics.length) return "";
+
+  return `
+    <section class="listening-suggested-lessons-v3" aria-label="${isVi ? "Bài học đề xuất" : "推荐课程"}">
+      <h2>${isVi ? "Bài học đề xuất" : "推荐课程"}</h2>
+      <div class="listening-suggested-list-v3">
+        ${suggestedTopics.map((topic, index) => {
+          const progress = getListeningTopicProgressPercent(topic.lessons);
+          const lessonCount = topic.lessons.length;
+          const openId = topic.lessons[0]?.id || topic.id;
+          const lessonNumber = Math.max(1, listeningEpisodes.findIndex((episode) => episode.id === openId) + 1);
+          const title = isVi ? (topic.label_vi || topic.label_zh || topic.id) : (topic.label_zh || topic.label_vi || topic.id);
+          const levelLabel = isVi ? (topic.levelLabelVi || "Đối thoại trung cấp") : (topic.levelLabelZh || "中级对话");
+          return `
+            <button
+              class="listening-suggested-item-v3"
+              type="button"
+              data-listening-topic-list="${escapeAttr(openId)}"
+              data-listening-level-id="dialogue-trung-cap"
+              data-listening-topic-id="${escapeAttr(topic.id || "")}"
+            >
+              <img src="${escapeAttr(suggestedImages[index % suggestedImages.length])}" alt="" loading="lazy" />
+              <span class="listening-suggested-copy-v3">
+                <strong>${isVi ? `Bài ${lessonNumber}: ${escapeHtml(title)}` : `第${lessonNumber}课：${escapeHtml(title)}`}</strong>
+                <small>${escapeHtml(levelLabel)}</small>
+                <span class="listening-suggested-progress-row-v3">
+                  <span class="listening-suggested-progress-v3"><i style="width:${progress}%"></i></span>
+                  <em>${progress}%</em>
+                  <span>${lessonCount} ${isVi ? "bài học" : "课"}</span>
+                </span>
+              </span>
+              <span class="listening-suggested-arrow-v3" aria-hidden="true">›</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function getListeningCatalogTopic(topicId = state.listeningTopicId) {
   const selectedTopicId = String(topicId || "");
   if (selectedTopicId) {
@@ -6732,52 +6785,6 @@ function renderListeningDashboard() {
         </div>
 
         <aside class="listening-dashboard-rail listening-dashboard-rail-v3" aria-label="${isVi ? "Tiến độ nghe" : "听力进度"}">
-  <section class="listening-overview-v3">
-    <h2>${isVi ? "Tiến độ tổng quan" : "总览进度"}</h2>
-
-    <div class="listening-overview-ring-v3" style="--listen-progress:${progressPercent}%">
-      <strong>${progressPercent}<span>%</span></strong>
-      <small>${isVi ? "Mục tiêu tháng" : "月目标"}</small>
-    </div>
-
-    <div class="listening-overview-stats-v3">
-      <span>
-        <i class="green">${desktopNavIcon("listening")}</i>
-        <b>${isVi ? "Bài nghe" : "听力"}</b>
-        <strong>34 / 50</strong>
-      </span>
-      <span>
-        <i class="orange">◷</i>
-        <b>${isVi ? "Phút đã nghe" : "已听分钟"}</b>
-        <strong>${listenedMinutes} / ${targetMinutes}</strong>
-      </span>
-      <span>
-        <i class="blue">✓</i>
-        <b>${isVi ? "Hoàn thành" : "完成"}</b>
-        <strong>24</strong>
-      </span>
-    </div>
-  </section>
-
-  <section class="listening-level-v3">
-    <span class="listening-level-medal-v3">★</span>
-    <div>
-      <strong>Level 12</strong>
-      <i><b style="width:66%"></b></i>
-      <small>XP 1.580 / 2.400</small>
-    </div>
-  </section>
-
-  <section class="listening-streak-v3">
-    <h2>${isVi ? "Chuỗi ngày hiện tại" : "当前连续"} <strong>12 ngày</strong></h2>
-    <ol>
-      ${[18, 19, 20, 21, 22, 23].map((day) => `
-        <li class="done"><span>✓</span><small>${day}</small></li>
-      `).join("")}
-      <li class="today"><span>●</span><small>${isVi ? "Hôm nay" : "今天"}</small></li>
-    </ol>
-  </section>
-
   <section class="listening-continue-v3">
     <h2>${isVi ? "Tiếp tục học" : "继续学习"}</h2>
 
@@ -6801,6 +6808,8 @@ function renderListeningDashboard() {
       <button type="button" data-listening-open="${escapeAttr(recommended.id || "ep-001")}">${isVi ? "Học tiếp" : "继续"}</button>
     </footer>
   </section>
+
+  ${renderIntermediateListeningSuggestionsHTML(isVi)}
 </aside>
       </main>
     </div>
@@ -6919,7 +6928,90 @@ const translationToggleLabel = showVietnamese
       </button>
     `).join("");
 
-  setScreenWithDesktopShell("listening", `
+  const isMobileListeningLayout = Boolean(window.matchMedia?.("(max-width: 640px)")?.matches);
+  const listeningDetailHTML = isMobileListeningLayout ? `
+    <div class="listening-detail-spa listening-detail-mobile">
+      <section class="listening-mobile-hero" aria-label="${isVi ? "Luyện nghe" : "听力练习"}">
+        <button class="listening-back-btn listening-mobile-back-btn" type="button" data-listening-back aria-label="${isVi ? "Quay lại" : "返回"}">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        </button>
+      </section>
+
+      <section class="listening-player-card listening-player-card--mobile">
+        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="metadata"></audio>
+        <div class="listening-mobile-cover" aria-hidden="true"></div>
+        <div class="listening-player-status">
+          <div>
+            <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
+            <small id="listeningStatusSub">${episode.audioSrc ? (isVi ? "Âm thanh thật đã sẵn sàng" : "真实音频已准备") : (isVi ? "Chế độ demo không cần file âm thanh" : "演示模式")}</small>
+          </div>
+          <span id="listeningCurrentTime">0:00</span>
+          <div class="listening-waveform" aria-hidden="true"><i></i></div>
+          <span>${listeningFormatTime(episode.duration)}</span>
+        </div>
+        <div class="listening-track listening-track--with-markers" data-listening-track>
+          <i id="listeningProgress"></i>
+        </div>
+        <div class="listening-controls listening-controls--mobile">
+          <div class="listening-speed-menu" aria-label="${isVi ? "Tốc độ nghe" : "播放速度"}">
+            <button class="listening-speed-toggle" type="button" data-listening-speed-toggle aria-haspopup="true" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a8 8 0 1 1 16 0"/><path d="M12 14l4-4"/><path d="M12 18h.01"/></svg>
+              <span data-listening-speed-label>${getListeningRateLabel()}</span>
+            </button>
+            <div class="listening-speed-options" role="menu">${speedButtonsHTML}</div>
+          </div>
+          <button class="listening-step-btn listening-step-btn--icon" type="button" data-listening-prev aria-label="${isVi ? "Câu trước" : "上一句"}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 19 4 12l7-7"/><path d="M20 19 13 12l7-7"/></svg>
+          </button>
+          <button class="listening-main-play" type="button" data-listening-play aria-label="${isVi ? "Phát" : "播放"}">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="listening-step-btn listening-step-btn--icon" type="button" data-listening-next aria-label="${isVi ? "Câu sau" : "下一句"}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 5 7 7-7 7"/><path d="m4 5 7 7-7 7"/></svg>
+          </button>
+          <button class="listening-replay-link" type="button" data-listening-replay>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v6h6"/></svg>
+            ${isVi ? "Nghe lại câu này" : "重听本句"}
+          </button>
+        </div>
+      </section>
+
+      <section class="listening-script-card listening-script-card--mobile">
+        <div class="listening-mobile-section-title">
+          <span aria-hidden="true"></span>
+          <h2 class="listening-script-title">${isVi ? "Nội dung nghe" : "听力内容"}</h2>
+        </div>
+        <div class="listening-script-head">
+          <div class="listening-subtitle-actions">
+            ${subtitleButtonsHTML}
+          </div>
+        </div>
+        <div class="listening-sentence-list">${sentencesHTML}</div>
+      </section>
+
+
+      <section class="listening-translation-panel listening-mobile-card">
+        <h2>${isVi ? "Xem bản dịch" : "查看翻译"}</h2>
+        <p>${isVi ? "Xem toàn bộ bản dịch tiếng Việt của bài nghe." : "查看本课完整越南语翻译。"}</p>
+        <button class="listening-translation-side-btn" type="button" data-listening-translation>${translationToggleLabel}</button>
+      </section>
+
+      <section class="listening-quick-links-card listening-mobile-card">
+        <h2>${isVi ? "Luyện tập nhanh" : "快速练习"}</h2>
+        <div class="listening-script-quick-actions" aria-label="${isVi ? "Lối tắt luyện tập" : "练习快捷入口"}">
+          <button type="button" data-listening-jump="vocab">
+            ${desktopNavIcon("vocab")}
+            <span>${isVi ? "Từ vựng" : "词汇"}</span>
+          </button>
+          <button type="button" data-listening-jump="repeat">
+            ${desktopNavIcon("listening")}
+            <span>${isVi ? "Nói theo" : "跟读"}</span>
+          </button>
+        </div>
+      </section>
+      <section class="listening-vocab-practice-panel hidden" id="listeningVocabPracticePanel" aria-live="polite"></section>
+    </div>
+  ` : `
     <div class="listening-detail-spa">
       <header class="listening-detail-topbar">
         <button class="listening-back-btn" type="button" data-listening-back>
@@ -7026,7 +7118,9 @@ const translationToggleLabel = showVietnamese
       </div>
       </div>
 
-  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  `;
+
+  setScreenWithDesktopShell("listening", listeningDetailHTML, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
 
   requestAnimationFrame(() => {
     bindListeningAudioEvents();
@@ -8715,6 +8809,10 @@ function renderHomeDesktopLayoutHTML(isVi) {
 
 
         ${renderHomeDesktopModulesHTML(isVi)}
+        <div class="home-mobile-only-block">
+          ${renderHomeMobileModulesHTML(isVi)}
+          ${renderHomeMobileTopicsHTML(isVi, 4)}
+        </div>
 
         <section class="home-desktop-saved-section">
           <div class="home-desktop-section-head">
@@ -8982,8 +9080,8 @@ function renderHomeMobileChallengeHTML(isVi) {
   `;
 }
 
-function renderHomeMobileTopicsHTML(isVi) {
-  const topics = dailyThemes.slice(0, 6);
+function renderHomeMobileTopicsHTML(isVi, limit = 6) {
+  const topics = dailyThemes.slice(0, limit);
   return `
     <section class="home-mobile-topics-section" aria-label="${isVi ? "Chủ đề" : "主题"}">
       <div class="home-mobile-topics-head">
@@ -9998,8 +10096,8 @@ function renderVocabListHTML() {
       <div class="vocab-item-card" data-vocab-hanzi="${escapeAttr(item.hanzi)}">
         <div class="vocab-item-header">
           <span class="vocab-stage-badge stage-${item.stage || 'word'}">${badgeLabel}</span>
-          <button class="vocab-delete-btn" type="button" aria-label="${isVi ? "Xóa" : "删除"}">
-            &times;
+          <button class="vocab-delete-btn" type="button" aria-label="${isVi ? "Xóa khỏi từ đã lưu" : "从收藏中删除"}">
+            ★
           </button>
         </div>
         <h3 class="vocab-hanzi">${item.hanzi}</h3>
@@ -10081,6 +10179,13 @@ function renderVocab() {
           <button class="${state.vocabFilterTab === "phrase" ? "active" : ""}" type="button" data-vocab-filter="phrase">${isVi ? "Cụm từ" : "短语"}</button>
         </div>
 
+      </div>
+
+      <div class="vocab-mobile-saved-head">
+        <h2><span class="saved-heading-star">★</span>${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h2>
+        <button type="button" data-vocab-filter="all">
+          ${isVi ? "Xem tất cả" : "查看全部"} <span aria-hidden="true">›</span>
+        </button>
       </div>
 
       <div class="vocab-grid">
