@@ -8197,7 +8197,7 @@ const sentenceFeedIndexes = [currentIndex];
         </div>
       </section>
     </div>
-  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  `, "app-desktop-shell--listening app-desktop-shell--listening-repeat", "listening", { preserveScroll: Boolean(options.preserveScroll) });
   updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
   setListeningRepeatListenUi(listeningRepeatSpeechState);
   return;
