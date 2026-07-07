@@ -18,6 +18,9 @@ test("admin v2 clean shell exists as a separate UI-only page for design review",
     "admin-v2-clean.js",
     'data-clean-tab="users"',
     'data-clean-panel="users"',
+    'data-clean-i18n="navUsers"',
+    'data-clean-i18n="sectionUsersTitle"',
+    'data-clean-i18n="emptyUsers"',
     "暂无用户数据",
   ]) {
     assert.match(html, new RegExp(required), `clean shell should include ${required}`);
@@ -27,6 +30,25 @@ test("admin v2 clean shell exists as a separate UI-only page for design review",
   assert.match(css, /\.clean-table/);
   assert.match(js, /setCleanAdminTab/);
   assert.match(js, /setCleanAdminLanguage/);
+});
+
+test("admin v2 clean shell language switch covers navigation tables modules and empty states", () => {
+  for (const required of [
+    "document.querySelectorAll(\"[data-clean-i18n]\")",
+    "document.querySelectorAll(\"[data-clean-i18n-placeholder]\")",
+    "Quản lý người dùng",
+    "Bàn hỗ trợ khách hàng",
+    "Tên / ID",
+    "Chưa có dữ liệu người dùng",
+    "Trạng thái tổng quan trống",
+    "Đại lý và hoa hồng",
+    "Cài đặt hệ thống",
+  ]) {
+    assert.match(js, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `clean language switch should include ${required}`);
+  }
+
+  const i18nKeyCount = (html.match(/data-clean-i18n=/g) || []).length;
+  assert.ok(i18nKeyCount >= 55, `expected broad clean-shell i18n coverage, got ${i18nKeyCount}`);
 });
 
 test("admin v2 clean shell does not connect to backend APIs production data or write paths", () => {

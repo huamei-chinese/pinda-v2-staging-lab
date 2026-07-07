@@ -12,144 +12,144 @@
       <div class="clean-brand">
         <span>HM</span>
         <div>
-          <strong>Admin V2 clean shell</strong>
-          <small>UI review only · no data</small>
+          <strong data-clean-i18n="brandTitle">Admin V2 clean shell</strong>
+          <small data-clean-i18n="brandSubtitle">UI review only · no data</small>
         </div>
       </div>
 
       <nav class="clean-nav">
-        <button class="active" type="button" data-clean-tab="overview">运营总览</button>
-        <button type="button" data-clean-tab="users">用户管理</button>
-        <button type="button" data-clean-tab="learning">学习数据</button>
-        <button type="button" data-clean-tab="support">客服工作台</button>
-        <button type="button" data-clean-tab="content">内容管理</button>
-        <button type="button" data-clean-tab="vip">VIP 与课程</button>
-        <button type="button" data-clean-tab="agents">代理与佣金</button>
-        <button type="button" data-clean-tab="system">系统设置</button>
+        <button class="active" type="button" data-clean-tab="overview" data-clean-i18n="navOverview">运营总览</button>
+        <button type="button" data-clean-tab="users" data-clean-i18n="navUsers">用户管理</button>
+        <button type="button" data-clean-tab="learning" data-clean-i18n="navLearning">学习数据</button>
+        <button type="button" data-clean-tab="support" data-clean-i18n="navSupport">客服工作台</button>
+        <button type="button" data-clean-tab="content" data-clean-i18n="navContent">内容管理</button>
+        <button type="button" data-clean-tab="vip" data-clean-i18n="navVip">VIP 与课程</button>
+        <button type="button" data-clean-tab="agents" data-clean-i18n="navAgents">代理与佣金</button>
+        <button type="button" data-clean-tab="system" data-clean-i18n="navSystem">系统设置</button>
       </nav>
     </aside>
 
     <section class="clean-main">
       <header class="clean-topbar">
         <div>
-          <span class="clean-eyebrow">给阿辉的纯净后台</span>
-          <h1>华美后台数据管理中心 V2</h1>
-          <p>只保留后台结构、导航、空状态、筛选条、表格骨架和操作位，不接真实数据。</p>
+          <span class="clean-eyebrow" data-clean-i18n="topEyebrow">给阿辉的纯净后台</span>
+          <h1 data-clean-i18n="topTitle">华美后台数据管理中心 V2</h1>
+          <p data-clean-i18n="topSummary">只保留后台结构、导航、空状态、筛选条、表格骨架和操作位，不接真实数据。</p>
         </div>
         <div class="clean-actions" aria-label="页面状态">
-          <button type="button" data-clean-language>中文 / Tiếng Việt</button>
-          <span>UI shell</span>
-          <span>no API</span>
-          <span>no database</span>
+          <button type="button" data-clean-language data-clean-i18n="language">中文 / Tiếng Việt</button>
+          <span data-clean-i18n="statusShell">UI shell</span>
+          <span data-clean-i18n="statusApi">no API</span>
+          <span data-clean-i18n="statusDb">no database</span>
         </div>
       </header>
 
       <section class="clean-warning">
-        <strong>设计验收边界</strong>
-        <span>此页面只给 UI 测试使用；没有用户数据、没有订单、没有 VIP 写入、没有支付回调、没有数据库连接。</span>
+        <strong data-clean-i18n="warningTitle">设计验收边界</strong>
+        <span data-clean-i18n="warningCopy">此页面只给 UI 测试使用；没有用户数据、没有订单、没有 VIP 写入、没有支付回调、没有数据库连接。</span>
       </section>
 
       <section class="clean-panel active" data-clean-panel="overview">
         <div class="clean-section-title">
-          <span>Overview</span>
-          <h2>运营总览</h2>
+          <span data-clean-i18n="sectionOverviewEyebrow">Overview</span>
+          <h2 data-clean-i18n="sectionOverviewTitle">运营总览</h2>
         </div>
         <div class="clean-metrics">
-          <article><span>今日注册</span><strong>--</strong><small>等待真实数据接入</small></article>
-          <article><span>今日学习</span><strong>--</strong><small>等待学习事件</small></article>
-          <article><span>待处理客服</span><strong>--</strong><small>等待客服队列</small></article>
-          <article><span>代理佣金</span><strong>--</strong><small>等待佣金契约</small></article>
+          <article><span data-clean-i18n="metricSignup">今日注册</span><strong>--</strong><small data-clean-i18n="metricSignupHint">等待真实数据接入</small></article>
+          <article><span data-clean-i18n="metricLearning">今日学习</span><strong>--</strong><small data-clean-i18n="metricLearningHint">等待学习事件</small></article>
+          <article><span data-clean-i18n="metricSupport">待处理客服</span><strong>--</strong><small data-clean-i18n="metricSupportHint">等待客服队列</small></article>
+          <article><span data-clean-i18n="metricAgents">代理佣金</span><strong>--</strong><small data-clean-i18n="metricAgentsHint">等待佣金契约</small></article>
         </div>
         <div class="clean-empty-block">
-          <h3>空总览状态</h3>
-          <p>阿辉可以在这里调整图表、数据卡和信息密度；当前不展示任何真实业务内容。</p>
+          <h3 data-clean-i18n="overviewEmptyTitle">空总览状态</h3>
+          <p data-clean-i18n="overviewEmptyCopy">阿辉可以在这里调整图表、数据卡和信息密度；当前不展示任何真实业务内容。</p>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="users">
         <div class="clean-section-title">
-          <span>Users</span>
-          <h2>用户管理</h2>
+          <span data-clean-i18n="sectionUsersEyebrow">Users</span>
+          <h2 data-clean-i18n="sectionUsersTitle">用户管理</h2>
         </div>
         <div class="clean-toolbar">
-          <label>搜索用户<input type="search" placeholder="姓名 / 邮箱 / ID" /></label>
-          <label>等级<select><option>全部等级</option></select></label>
-          <label>套餐<select><option>全部套餐</option></select></label>
-          <button type="button">刷新</button>
+          <label><span data-clean-i18n="filterSearch">搜索用户</span><input type="search" placeholder="姓名 / 邮箱 / ID" data-clean-i18n-placeholder="filterSearchPlaceholder" /></label>
+          <label><span data-clean-i18n="filterLevel">等级</span><select><option data-clean-i18n="filterAllLevels">全部等级</option></select></label>
+          <label><span data-clean-i18n="filterPlan">套餐</span><select><option data-clean-i18n="filterAllPlans">全部套餐</option></select></label>
+          <button type="button" data-clean-i18n="refresh">刷新</button>
         </div>
         <table class="clean-table" aria-label="用户空表">
           <thead>
-            <tr><th>姓名 / ID</th><th>Email / 注册时间</th><th>角色</th><th>等级</th><th>VIP</th><th>期限</th><th>操作</th></tr>
+            <tr><th data-clean-i18n="thName">姓名 / ID</th><th data-clean-i18n="thEmail">Email / 注册时间</th><th data-clean-i18n="thRole">角色</th><th data-clean-i18n="thLevel">等级</th><th>VIP</th><th data-clean-i18n="thExpiry">期限</th><th data-clean-i18n="thAction">操作</th></tr>
           </thead>
           <tbody>
-            <tr><td colspan="7">暂无用户数据 / Chưa có dữ liệu người dùng</td></tr>
+            <tr><td colspan="7" data-clean-i18n="emptyUsers">暂无用户数据 / Chưa có dữ liệu người dùng</td></tr>
           </tbody>
         </table>
       </section>
 
       <section class="clean-panel" data-clean-panel="learning">
         <div class="clean-section-title">
-          <span>Learning</span>
-          <h2>学习数据</h2>
+          <span data-clean-i18n="sectionLearningEyebrow">Learning</span>
+          <h2 data-clean-i18n="sectionLearningTitle">学习数据</h2>
         </div>
         <div class="clean-empty-block">
-          <h3>学习记录空状态</h3>
-          <p>预留做题数、错题数、最近学习、学习事件列表位置。</p>
+          <h3 data-clean-i18n="learningEmptyTitle">学习记录空状态</h3>
+          <p data-clean-i18n="learningEmptyCopy">预留做题数、错题数、最近学习、学习事件列表位置。</p>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="support">
         <div class="clean-section-title">
-          <span>Support</span>
-          <h2>客服工作台</h2>
+          <span data-clean-i18n="sectionSupportEyebrow">Support</span>
+          <h2 data-clean-i18n="sectionSupportTitle">客服工作台</h2>
         </div>
         <div class="clean-split">
-          <article><h3>客户卡片</h3><p>预留客户资料、VIP 状态、订单状态、备注位置。</p></article>
-          <article><h3>处理队列</h3><p>预留客服任务、跟进状态和操作记录位置。</p></article>
+          <article><h3 data-clean-i18n="supportCardTitle">客户卡片</h3><p data-clean-i18n="supportCardCopy">预留客户资料、VIP 状态、订单状态、备注位置。</p></article>
+          <article><h3 data-clean-i18n="supportQueueTitle">处理队列</h3><p data-clean-i18n="supportQueueCopy">预留客服任务、跟进状态和操作记录位置。</p></article>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="content">
         <div class="clean-section-title">
-          <span>Content</span>
-          <h2>内容管理</h2>
+          <span data-clean-i18n="sectionContentEyebrow">Content</span>
+          <h2 data-clean-i18n="sectionContentTitle">内容管理</h2>
         </div>
         <div class="clean-empty-block">
-          <h3>素材工作流空状态</h3>
-          <p>预留素材上传、验收、草稿、发布、fallback、rollback 入口。</p>
+          <h3 data-clean-i18n="contentEmptyTitle">素材工作流空状态</h3>
+          <p data-clean-i18n="contentEmptyCopy">预留素材上传、验收、草稿、发布、fallback、rollback 入口。</p>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="vip">
         <div class="clean-section-title">
           <span>VIP</span>
-          <h2>VIP 与课程</h2>
+          <h2 data-clean-i18n="sectionVipTitle">VIP 与课程</h2>
         </div>
         <div class="clean-empty-block">
-          <h3>权限配置空状态</h3>
-          <p>预留 VIP 授权、课程锁定、套餐规则位置；当前没有写入能力。</p>
+          <h3 data-clean-i18n="vipEmptyTitle">权限配置空状态</h3>
+          <p data-clean-i18n="vipEmptyCopy">预留 VIP 授权、课程锁定、套餐规则位置；当前没有写入能力。</p>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="agents">
         <div class="clean-section-title">
-          <span>Agents</span>
-          <h2>代理与佣金</h2>
+          <span data-clean-i18n="sectionAgentsEyebrow">Agents</span>
+          <h2 data-clean-i18n="sectionAgentsTitle">代理与佣金</h2>
         </div>
         <div class="clean-split">
-          <article><h3>代理归属</h3><p>预留客户来源、一级代理、二级代理、手动归因位置。</p></article>
-          <article><h3>佣金预览</h3><p>预留昨日、本周、本月、自定义时间范围。</p></article>
+          <article><h3 data-clean-i18n="agentAttributionTitle">代理归属</h3><p data-clean-i18n="agentAttributionCopy">预留客户来源、一级代理、二级代理、手动归因位置。</p></article>
+          <article><h3 data-clean-i18n="commissionTitle">佣金预览</h3><p data-clean-i18n="commissionCopy">预留昨日、本周、本月、自定义时间范围。</p></article>
         </div>
       </section>
 
       <section class="clean-panel" data-clean-panel="system">
         <div class="clean-section-title">
-          <span>System</span>
-          <h2>系统设置</h2>
+          <span data-clean-i18n="sectionSystemEyebrow">System</span>
+          <h2 data-clean-i18n="sectionSystemTitle">系统设置</h2>
         </div>
         <div class="clean-empty-block">
-          <h3>发布闸口空状态</h3>
-          <p>预留环境、权限、审计日志、发布确认位置。</p>
+          <h3 data-clean-i18n="systemEmptyTitle">发布闸口空状态</h3>
+          <p data-clean-i18n="systemEmptyCopy">预留环境、权限、审计日志、发布确认位置。</p>
         </div>
       </section>
     </section>
