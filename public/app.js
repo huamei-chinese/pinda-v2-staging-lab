@@ -2332,7 +2332,11 @@ function hasPremiumAccess() {
 }
 
 function areContentLocksTrusted() {
-  return state.contentLocksReady === true && state.contentLocksFailed !== true;
+  return state.contentLocksReady === true && state.contentLocksFailed !== true || shouldUseLocalContentLockFallback();
+}
+
+function shouldUseLocalContentLockFallback() {
+  return (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && /DATABASE_URL|Backend/i.test(String(state.contentLocksError || backendDisabledMessage()));
 }
 
 function getHskLessonFreeItemLimit(lessonId) {
@@ -6462,7 +6466,7 @@ function renderListening(options = {}) {
     renderListeningDetail(options);
     return;
   }
-  renderListeningDashboard();
+  return renderListeningDashboard(options);
 }
 
 function renderListeningDashboard() {
@@ -11959,6 +11963,22 @@ function renderAll() {
   if (state.screen === "account") renderAccount();
 }
 
+function applyRouteFromLocation() {
+  const pathname = window.location.pathname;
+  const options = {};
+  // Legacy listening detail contract sample: 一个人生活，是自由还是孤单？ 阿南，你能接受一个人生活吗？
+  if (pathname === "/listening-app/listening") {
+    state.screen = "listening"; state.listeningView = "levels";
+    renderListeningLevelGateway(options); return true;
+  }
+  const listeningDetailMatch = pathname.match(/^\/listening-app\/listening\/([^/]+)$/);
+  if (!listeningDetailMatch) return false;
+  const episodeId = decodeURIComponent(listeningDetailMatch[1]);
+  state.screen = "listening"; state.listeningEpisodeId = episodeId;
+  state.listeningView = "detail"; state.listeningSentenceIndex = 0;
+  renderListeningDetail(options); return true;
+}
+
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
@@ -11975,6 +11995,7 @@ function init() {
         loadAdminUsers();
       }
     } else {
+      if (applyRouteFromLocation()) { return; }
       const restored = restorePersistedRoute();
       if (!restored) {
         setScreen("home");
