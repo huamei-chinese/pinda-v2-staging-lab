@@ -302,21 +302,20 @@
           <div class="real-readonly-tables">
             <article class="table-shell">
               <h3>只读真实用户预览</h3>
-              <table>
+              <table class="real-readonly-user-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>姓名</th>
-                    <th>Email</th>
+                    <th>姓名 / ID</th>
+                    <th>Email / 注册时间</th>
                     <th>角色</th>
                     <th>等级</th>
-                    <th>VIP</th>
-                    <th>到期</th>
-                    <th>状态</th>
+                    <th>套餐</th>
+                    <th>期限</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody data-real-readonly-users-body>
-                  <tr><td colspan="8">等待加载只读真实用户预览。</td></tr>
+                  <tr><td colspan="7">等待加载只读真实用户预览。</td></tr>
                 </tbody>
               </table>
             </article>
@@ -909,6 +908,35 @@
               操作备注
               <input type="text" data-agent-note placeholder="输入本地佣金复核备注" />
             </label>
+          </div>
+          <div class="agent-attribution-console">
+            <div>
+              <span>代理归属手动追溯</span>
+              <strong data-agent-attribution-summary>选择客户、目标代理和来源备注后，只写入本地实验 JSON。</strong>
+            </div>
+            <div class="agent-attribution-grid">
+              <label>
+                客户
+                <select data-agent-attribution-customer>
+                  <option value="">等待客户数据</option>
+                </select>
+              </label>
+              <label>
+                目标代理
+                <select data-agent-attribution-agent>
+                  <option value="">等待代理数据</option>
+                </select>
+              </label>
+              <label>
+                来源
+                <input type="text" data-agent-attribution-source placeholder="例如：直播间 / 微信 / 手动绑定" />
+              </label>
+              <label>
+                备注
+                <input type="text" data-agent-attribution-note placeholder="说明为什么调整归属" />
+              </label>
+              <button type="button" data-agent-action="reassignCustomerAgent">保存本地归属</button>
+            </div>
           </div>
           <div class="agent-action-grid">
             <button type="button" data-agent-action="markPendingSettlement">标记待结算</button>

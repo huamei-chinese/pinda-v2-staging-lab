@@ -331,15 +331,17 @@ export class AdminV2LocalPreviewController {
   }
 
   @Post("agent-action")
-  agentAction(@Body() body: { action?: string; commissionId?: string; note?: string }) {
-    const allowedActions = ['markPendingSettlement', 'markReviewed', 'freezeCommission', 'restorePreview'];
+  agentAction(@Body() body: { action?: string; commissionId?: string; note?: string; customerId?: string; targetAgentId?: string; source?: string }) {
+    const allowedActions = ['markPendingSettlement', 'markReviewed', 'freezeCommission', 'restorePreview', 'reassignCustomerAgent'];
     const data = this.readLocalData();
     const commissions = Array.isArray(data.agentCommissions) ? data.agentCommissions : [];
     const customers = Array.isArray(data.agentCustomers) ? data.agentCustomers : [];
     const teamMembers = Array.isArray(data.agentTeamMembers) ? data.agentTeamMembers : [];
     const commission = commissions.find((entry: { id?: string }) => entry.id === body.commissionId);
+    const customer = customers.find((entry: { id?: string }) => entry.id === body.customerId);
+    const targetAgent = teamMembers.find((entry: { agentId?: string }) => entry.agentId === body.targetAgentId);
 
-    if (!commission || !body.action || !allowedActions.includes(body.action)) {
+    if (!body.action || !allowedActions.includes(body.action)) {
       return {
         ok: false,
         reason: 'missing-agent-commission-or-action',
@@ -349,6 +351,38 @@ export class AdminV2LocalPreviewController {
 
     const now = new Date();
     const note = typeof body.note === 'string' && body.note.trim() ? body.note.trim() : '本地代理佣金实验操作';
+
+    if (body.action === 'reassignCustomerAgent') {
+      if (!customer || !targetAgent) {
+        return {
+          ok: false,
+          reason: 'missing-agent-customer-or-target-agent',
+          scope: 'local-json-only',
+        };
+      }
+
+      customer.agentId = targetAgent.agentId;
+      customer.agentName = targetAgent.agentName;
+      customer.source = typeof body.source === 'string' && body.source.trim() ? body.source.trim() : customer.source;
+      customer.teamScope = this.buildAgentTeamScope(targetAgent, teamMembers);
+
+      commissions
+        .filter((entry: { customerEmail?: string }) => entry.customerEmail === customer.customerEmail)
+        .forEach((entry: { agentId?: string; agentName?: string; source?: string; teamScope?: string }) => {
+          entry.agentId = targetAgent.agentId;
+          entry.agentName = targetAgent.agentName;
+          entry.source = customer.source;
+          entry.teamScope = customer.teamScope;
+        });
+    }
+
+    if (body.action !== 'reassignCustomerAgent' && !commission) {
+      return {
+        ok: false,
+        reason: 'missing-agent-commission-or-action',
+        scope: 'local-json-only',
+      };
+    }
 
     if (body.action === 'markPendingSettlement') {
       commission.status = '待结算';
@@ -382,7 +416,9 @@ export class AdminV2LocalPreviewController {
       time: now.toISOString(),
       operator: 'local-admin-v2',
       action: body.action,
-      commissionId: commission.id,
+      commissionId: commission?.id || '',
+      customerId: customer?.id || '',
+      targetAgentId: targetAgent?.agentId || '',
       note,
       scope: 'local-json-only',
     });
@@ -406,6 +442,7 @@ export class AdminV2LocalPreviewController {
     return {
       ok: true,
       commission,
+      customer,
       agentCustomers: customers,
       agentCommissions: commissions,
       agentAuditLogs,
@@ -454,6 +491,7 @@ export class AdminV2LocalPreviewController {
       id: user.id,
       fullName: user.name || user.fullName || 'unknown',
       email: user.email,
+      registeredAt: user.registeredAt || user.createdAt || user.created_at || 'pending',
       role: user.role || '普通用户',
       currentLevel: user.level || user.currentLevel || 'HSK2',
       vipStatus: user.vipStatus || user.plan || 'Free',
@@ -462,6 +500,12 @@ export class AdminV2LocalPreviewController {
       sourceTable: 'users',
       readOnly: true,
     }));
+  }
+
+  private buildAgentTeamScope(agent: any, teamMembers: any[]) {
+    if (!agent?.parentAgentId) return agent?.agentName || 'unknown-agent';
+    const parent = teamMembers.find((member) => member.agentId === agent.parentAgentId);
+    return `${this.buildAgentTeamScope(parent, teamMembers)} / ${agent.agentName}`;
   }
 
   private addDays(date: Date, days: number) {

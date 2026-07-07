@@ -883,8 +883,8 @@
     {
       "agentId": "agent-a002",
       "agentName": "Agent A002",
-      "role": "一级代理",
-      "parentAgentId": "agent-s-leader",
+      "role": "二级代理",
+      "parentAgentId": "agent-a001",
       "customerCount": 2,
       "commissionPreview": 240000
     }

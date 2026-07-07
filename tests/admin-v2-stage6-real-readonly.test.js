@@ -39,6 +39,28 @@ test("stage 6 exposes a real-data read-only preview surface", () => {
 
   assert.match(css, /\.real-readonly-grid/);
   assert.match(css, /\.real-readonly-gap/);
+  assert.match(html, /real-readonly-user-table/);
+});
+
+test("stage 6 real user preview follows the old admin table reading pattern", () => {
+  assert.match(html, /姓名 \/ ID/);
+  assert.match(html, /Email \/ 注册时间/);
+  assert.match(html, /套餐/);
+  assert.match(html, /操作/);
+
+  assert.match(js, /class="real-readonly-user-identity"/);
+  assert.match(js, /ID: \$\{escapeHtml\(user\.id\)\}/);
+  assert.match(js, /class="real-readonly-email-block"/);
+  assert.match(js, /注册时间：\$\{escapeHtml\(user\.registeredAt \|\| user\.createdAt \|\| "待接入"\)\}/);
+  assert.match(js, />VIP 7d</);
+  assert.match(js, />VIP 30d</);
+  assert.match(js, />VIP 90d</);
+  assert.match(js, /aria-label="自定义 VIP 到期日期"/);
+  assert.match(js, /只读预览，不写入数据库/);
+
+  assert.match(css, /\.real-readonly-user-identity/);
+  assert.match(css, /\.real-readonly-email-block/);
+  assert.match(css, /\.real-readonly-vip-actions/);
 });
 
 test("stage 6 uses only the local read-only adapter, never the production admin API", () => {

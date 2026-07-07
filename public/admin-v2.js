@@ -123,6 +123,7 @@ const adminV2RealReadonlyFallback = {
       id: "5E802A4",
       fullName: "lixiang001",
       email: "lixiang001@gmail.com",
+      registeredAt: "2026/07/02 22:49",
       role: "普通用户",
       currentLevel: "HSK2",
       vipStatus: "Free",
@@ -133,6 +134,7 @@ const adminV2RealReadonlyFallback = {
       id: "9AB59000",
       fullName: "Felix",
       email: "langkhai01082002@gmail.com",
+      registeredAt: "2026/07/01 19:29",
       role: "普通用户",
       currentLevel: "HSK2",
       vipStatus: "VIP 7d",
@@ -143,6 +145,7 @@ const adminV2RealReadonlyFallback = {
       id: "8E6320AE",
       fullName: "lixiang",
       email: "huameizhongxin@gmail.com",
+      registeredAt: "2026/06/28 22:45",
       role: "超级管理员",
       currentLevel: "HSK2",
       vipStatus: "VIP",
@@ -229,7 +232,7 @@ const adminV2AgentDataState = {
   },
 };
 
-const adminV2AgentActions = ["markPendingSettlement", "markReviewed", "freezeCommission", "restorePreview"];
+const adminV2AgentActions = ["markPendingSettlement", "markReviewed", "freezeCommission", "restorePreview", "reassignCustomerAgent"];
 
 const adminV2Roles = {
   admin: {
@@ -358,6 +361,7 @@ function renderAdminV2LocalData(data) {
   renderMaterialPackages(materialPackages);
   renderMaterialAudit(materialAuditLogs);
   renderAgentFilter(agentTeamMembers);
+  renderAgentAttributionControls(agentCustomers, agentTeamMembers);
   renderAgentSummary(data.agentSummary || {});
   renderAgentCustomers(agentCustomers);
   renderAgentCommissionRows(agentCommissions);
@@ -670,6 +674,29 @@ function renderAgentFilter(teamMembers) {
   filter.value = current && teamMembers.some((member) => member.agentId === current) ? current : "";
 }
 
+function renderAgentAttributionControls(customers, teamMembers) {
+  const customerSelect = document.querySelector("[data-agent-attribution-customer]");
+  const agentSelect = document.querySelector("[data-agent-attribution-agent]");
+  if (!customerSelect || !agentSelect) return;
+
+  const currentCustomerId = customerSelect.value;
+  const currentAgentId = agentSelect.value;
+
+  customerSelect.innerHTML = customers.map((customer) => `
+    <option value="${escapeHtml(customer.id)}">${escapeHtml(customer.customerName)} / ${escapeHtml(customer.customerEmail)} / ${escapeHtml(customer.agentName)}</option>
+  `).join("");
+  agentSelect.innerHTML = teamMembers.map((member) => `
+    <option value="${escapeHtml(member.agentId)}">${escapeHtml(member.agentName)} / ${escapeHtml(member.role)}</option>
+  `).join("");
+
+  if (currentCustomerId && customers.some((customer) => customer.id === currentCustomerId)) {
+    customerSelect.value = currentCustomerId;
+  }
+  if (currentAgentId && teamMembers.some((member) => member.agentId === currentAgentId)) {
+    agentSelect.value = currentAgentId;
+  }
+}
+
 function renderAgentSummary(summary) {
   const bindings = [
     ["[data-agent-total]", summary.agentCount],
@@ -768,13 +795,35 @@ function renderAgentAudit(logs) {
 
 function performAgentAction(action) {
   if (!adminV2AgentActions.includes(action)) return;
+  const note = action === "reassignCustomerAgent"
+    ? document.querySelector("[data-agent-attribution-note]")?.value || ""
+    : document.querySelector("[data-agent-note]")?.value || "";
+
+  if (action === "reassignCustomerAgent") {
+    const customerId = document.querySelector("[data-agent-attribution-customer]")?.value || "";
+    const targetAgentId = document.querySelector("[data-agent-attribution-agent]")?.value || "";
+    const source = document.querySelector("[data-agent-attribution-source]")?.value || "";
+    if (!customerId || !targetAgentId) return;
+
+    fetch(adminV2LocalBridge.agentActionUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, customerId, targetAgentId, source, note }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const summary = document.querySelector("[data-agent-attribution-summary]");
+        if (summary && data?.ok) summary.textContent = "本地归属已更新，不写真实数据库。";
+        refreshAdminV2BackendData();
+      });
+    return;
+  }
+
   const commissions = adminV2AgentDataState.data.agentCommissions || [];
   const visibleCommissions = getVisibleAgentRows(commissions);
   const fallbackCommission = visibleCommissions[0] || commissions[0];
   const commissionId = adminV2AgentDataState.activeCommissionId || fallbackCommission?.id;
   if (!commissionId) return;
-
-  const note = document.querySelector("[data-agent-note]")?.value || "";
 
   fetch(adminV2LocalBridge.agentActionUrl, {
     method: "POST",
@@ -789,20 +838,41 @@ function renderRealReadonlyUsers(users) {
   const target = document.querySelector("[data-real-readonly-users-body]");
   if (!target) return;
   if (!users.length) {
-    target.innerHTML = '<tr><td colspan="8">暂无只读真实用户预览。</td></tr>';
+    target.innerHTML = '<tr><td colspan="7">暂无只读真实用户预览。</td></tr>';
     return;
   }
 
   target.innerHTML = users.map((user) => `
-    <tr>
-      <td>${escapeHtml(user.id)}</td>
-      <td>${escapeHtml(user.fullName)}</td>
-      <td>${escapeHtml(user.email)}</td>
+    <tr class="real-readonly-user-row">
+      <td>
+        <div class="real-readonly-user-identity">
+          <span class="real-readonly-avatar">${escapeHtml(getCustomerInitials(user.fullName || user.email || user.id))}</span>
+          <div>
+            <strong>${escapeHtml(user.fullName || "未命名用户")}</strong>
+            <small>ID: ${escapeHtml(user.id)}</small>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="real-readonly-email-block">
+          <strong>${escapeHtml(user.email)}</strong>
+          <small>注册时间：${escapeHtml(user.registeredAt || user.createdAt || "待接入")}</small>
+        </div>
+      </td>
       <td><span class="status-badge">${escapeHtml(user.role)}</span></td>
       <td>${escapeHtml(user.currentLevel)}</td>
       <td>${escapeHtml(user.vipStatus)}</td>
       <td>${escapeHtml(user.premiumUntil)}</td>
-      <td>${user.readOnly ? "只读" : "禁止写入"}</td>
+      <td>
+        <div class="real-readonly-vip-actions">
+          <button type="button" disabled>VIP 7d</button>
+          <button type="button" disabled>VIP 30d</button>
+          <button type="button" disabled>VIP 90d</button>
+          <input type="date" disabled aria-label="自定义 VIP 到期日期" />
+          <button type="button" disabled>自定义</button>
+          <small>${user.readOnly ? "只读预览，不写入数据库" : "禁止写入"}</small>
+        </div>
+      </td>
     </tr>
   `).join("");
 }
@@ -1427,6 +1497,13 @@ document.querySelector("[data-agent-filter]")?.addEventListener("change", (event
   adminV2AgentDataState.activeCommissionId = "";
   renderAgentCustomers(adminV2AgentDataState.data.agentCustomers || []);
   renderAgentCommissionRows(adminV2AgentDataState.data.agentCommissions || []);
+});
+
+document.querySelector("[data-agent-attribution-customer]")?.addEventListener("change", (event) => {
+  const customers = adminV2AgentDataState.data.agentCustomers || [];
+  const customer = customers.find((item) => item.id === event.target.value);
+  const source = document.querySelector("[data-agent-attribution-source]");
+  if (source && customer) source.value = customer.source || "";
 });
 
 document.querySelector("[data-agent-commission-body]")?.addEventListener("click", (event) => {

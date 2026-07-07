@@ -62,6 +62,32 @@ test("battle D frontend calls only the local experimental agent action API", () 
   assert.doesNotMatch(js, /exportCommissionNow|settleCommissionNow|payAgentNow|connectProductionOrders/);
 });
 
+test("battle D supports manual customer-to-agent attribution in the local lab only", () => {
+  for (const required of [
+    "agent-attribution-console",
+    "data-agent-attribution-customer",
+    "data-agent-attribution-agent",
+    "data-agent-attribution-source",
+    "data-agent-attribution-note",
+    'data-agent-action="reassignCustomerAgent"',
+  ]) {
+    assert.match(html, new RegExp(required), `manual attribution UI should include ${required}`);
+  }
+
+  for (const required of [
+    "renderAgentAttributionControls",
+    "reassignCustomerAgent",
+    "targetAgentId",
+    "customerId",
+    "data-agent-attribution-summary",
+  ]) {
+    assert.match(js, new RegExp(required), `manual attribution JS should include ${required}`);
+  }
+
+  assert.match(css, /\.agent-attribution-console/);
+  assert.match(css, /\.agent-attribution-grid/);
+});
+
 test("battle D backend agent endpoint writes only local experiment data", () => {
   assert.match(controller, /@Post\("agent-action"\)/);
   assert.match(controller, /agent-action/);
@@ -70,6 +96,9 @@ test("battle D backend agent endpoint writes only local experiment data", () => 
   assert.match(controller, /markReviewed/);
   assert.match(controller, /freezeCommission/);
   assert.match(controller, /restorePreview/);
+  assert.match(controller, /reassignCustomerAgent/);
+  assert.match(controller, /targetAgentId/);
+  assert.match(controller, /customerId/);
   assert.match(controller, /local-json-only/);
 
   for (const forbidden of [
@@ -84,6 +113,16 @@ test("battle D backend agent endpoint writes only local experiment data", () => 
   ]) {
     assert.doesNotMatch(controller, new RegExp(forbidden), `Battle D endpoint must not use ${forbidden}`);
   }
+});
+
+test("battle D agent hierarchy has one first-level and one second-level agent", () => {
+  const a001 = localData.agentTeamMembers.find((member) => member.agentId === "agent-a001");
+  const a002 = localData.agentTeamMembers.find((member) => member.agentId === "agent-a002");
+
+  assert.equal(a001.role, "一级代理");
+  assert.equal(a001.parentAgentId, "agent-s-leader");
+  assert.equal(a002.role, "二级代理");
+  assert.equal(a002.parentAgentId, "agent-a001");
 });
 
 test("battle D local data has agent summary customers commissions team and audit logs", () => {
