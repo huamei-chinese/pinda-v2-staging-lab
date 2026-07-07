@@ -13716,6 +13716,12 @@ p {
   display: none;
 }
 
+@media (min-width: 901px) {
+  .screen-home .home-mobile-topics-section {
+    display: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .screen-home .home-mobile-topbar {
     display: grid;
@@ -13936,6 +13942,10 @@ p {
   .screen-home .home-mobile-modules {
     display: block;
     padding: 10px;
+  }
+
+  .screen-home .home-mobile-saved-section {
+    display: none !important;
   }
 
   .home-mobile-saved-section {
@@ -28165,7 +28175,7 @@ background:
     min-height: 190px !important;
     padding: 24px 18px !important;
     border-radius: 22px !important;
-    margin-top: 50px;
+    margin-top: 10px;
     background:
       linear-gradient(90deg, rgba(255,245,252,.95), rgba(255,245,252,.72), rgba(255,245,252,.2)),
       url("assets/backgroundchudenghe.png") center / cover no-repeat !important;
@@ -30817,6 +30827,7 @@ background:
   .screen-home .home-desktop-saved-section {
     padding: 18px 16px !important;
     border-radius: 22px !important;
+        display: none !important;
   }
 
   .screen-home .home-desktop-section-head {
@@ -32361,6 +32372,7 @@ background:
   .home-desktop-feature-strip {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+    margin-top: 20px;
   }
 
   .home-desktop-feature-card {
@@ -33490,6 +33502,7 @@ background:
     padding: 56px 16px 16px !important;
     margin-bottom: 12px !important;
     border-radius: 20px !important;
+    padding-top: 10px;
   }
 
   .screen-listening .listening-gateway-stats-row {
@@ -34494,6 +34507,7 @@ background:
   .screen-home .home-desktop-saved-section {
     padding: 18px 22px !important;
     border-radius: 24px !important;
+
   }
 
   .screen-home .home-desktop-section-head {
@@ -34636,7 +34650,7 @@ background:
 
   .screen-listening .listening-gateway-hero {
     padding-top: 22px !important;
-    margin-top: 60px;
+    margin-top: 10px;
   }
 
   .screen-listening .listening-detail-topbar {
