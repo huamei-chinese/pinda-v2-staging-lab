@@ -1,9 +1,12 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { AdminV2RealReadonlyService } from './admin-v2-real-readonly.service';
 
 @Controller("api/admin-v2")
 export class AdminV2LocalPreviewController {
+  constructor(private readonly realReadonlyService: AdminV2RealReadonlyService) {}
+
   @Get("local-preview")
   getLocalPreview() {
     const data = this.readLocalData();
@@ -22,7 +25,7 @@ export class AdminV2LocalPreviewController {
 
   @Get("real-users-readonly-preview")
   getRealUsersReadonlyPreview() {
-    return this.buildRealReadonlyPreview(this.readLocalData());
+    return this.realReadonlyService.getPreview(this.readLocalData());
   }
 
   @Get("stage7-schema-contract")
