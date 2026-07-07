@@ -6029,7 +6029,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <span class="home-desktop-brand-icon" aria-hidden="true">✎</span>
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
-          <small>${isVi ? "Viết đúng - Nhớ lâu" : "写好字 · 记得牢"}</small>
+          <small>${isVi ? "Học đúng - Nhớ lâu" : "学得准 – 记得稳"}</small>
         </div>
       </div>
       <nav class="home-desktop-nav">
@@ -8798,8 +8798,8 @@ function renderHomeDesktopLayoutHTML(isVi) {
       <div class="home-desktop-main">
         <header class="home-desktop-topbar">
           <div>
-            <h1>${isVi ? "Luyện viết tiếng Trung" : "中文书写练习"}</h1>
-            <p>${isVi ? "Viết đúng – Nhớ lâu" : "正确书写 · 终身受益"}</p>
+            <h1>${isVi ? "Học Trung - HuaMei" : "学习中文 - 华美"}</h1>
+            <p>${isVi ? "Học đúng – Nhớ lâu" : "正确书写 · 终身受益"}</p>
           </div>
           <button type="button" class="home-desktop-lang-btn" id="homeDesktopTopbarLanguageBtn" aria-label="${isVi ? "Đổi ngôn ngữ" : "切换语言"}">
             <span class="${isVi ? "active" : ""}">VI</span>

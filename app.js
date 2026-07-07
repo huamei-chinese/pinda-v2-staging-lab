@@ -7653,7 +7653,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
       <div class="home-desktop-main">
         <header class="home-desktop-topbar">
           <div>
-            <h1>${isVi ? "Luyện viết tiếng Trung" : "中文书写练习"}</h1>
+            <h1>${isVi ? "Học Trung - HuaMei" : "学习中文 - 华美"}</h1>
             <p>${isVi ? "Viết đúng – Nhớ lâu" : "正确书写 · 终身受益"}</p>
           </div>
           <button type="button" class="home-desktop-lang-btn" id="homeDesktopTopbarLanguageBtn" aria-label="${isVi ? "Đổi ngôn ngữ" : "切换语言"}">
