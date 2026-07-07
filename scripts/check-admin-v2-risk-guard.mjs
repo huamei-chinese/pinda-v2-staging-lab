@@ -38,6 +38,9 @@ const allowedDisplayOnly = [
   { file: "public/admin-v2-local-data.json", label: "server payment dependency", includes: "/api/webhooks/sepay" },
 ];
 
+const realReadonlyAdapterFile = "src/admin-v2-local-preview/admin-v2-real-readonly.service.ts";
+const forbiddenRealReadonlySql = /\bINSERT\s+INTO\b|\bUPDATE\s+\w+\s+SET\b|\bDELETE\s+FROM\b|\bCREATE\s+TABLE\b|\bALTER\s+TABLE\b|\bDROP\s+TABLE\b|\bTRUNCATE\b|\bGRANT\b|\bCOPY\b|\bFOR\s+UPDATE\b/i;
+
 function normalize(filePath) {
   return filePath.replaceAll("\\", "/");
 }
@@ -64,6 +67,10 @@ function listExistingTargets() {
 
 function isAllowed(filePath, label, line) {
   const normalized = normalize(filePath);
+  if (normalized === realReadonlyAdapterFile && label === "server database dependency") {
+    return !forbiddenRealReadonlySql.test(line);
+  }
+
   return allowedDisplayOnly.some(
     (entry) => entry.file === normalized && entry.label === label && line.includes(entry.includes),
   );
