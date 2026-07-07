@@ -6029,7 +6029,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <span class="home-desktop-brand-icon" aria-hidden="true">✎</span>
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
-          <small>${isVi ? "Học đúng - Nhớ lâu" : "学得准 – 记得稳"}</small>
+          <small>${isVi ? "Học đúng - Nhớ lâu" : "写好字 · 记得牢"}</small>
         </div>
       </div>
       <nav class="home-desktop-nav">
