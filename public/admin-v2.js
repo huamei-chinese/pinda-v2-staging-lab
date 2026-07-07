@@ -5,6 +5,7 @@ const adminV2State = {
 
 const adminV2ServiceState = {
   activePreview: "profile",
+  activeUserId: "",
 };
 
 const adminV2AnalyticsState = {
@@ -123,6 +124,7 @@ const adminV2RealReadonlyFallback = {
       id: "5E802A4",
       fullName: "lixiang001",
       email: "lixiang001@gmail.com",
+      registeredAt: "2026/07/02 22:49",
       role: "普通用户",
       currentLevel: "HSK2",
       vipStatus: "Free",
@@ -133,6 +135,7 @@ const adminV2RealReadonlyFallback = {
       id: "9AB59000",
       fullName: "Felix",
       email: "langkhai01082002@gmail.com",
+      registeredAt: "2026/07/01 19:29",
       role: "普通用户",
       currentLevel: "HSK2",
       vipStatus: "VIP 7d",
@@ -143,6 +146,7 @@ const adminV2RealReadonlyFallback = {
       id: "8E6320AE",
       fullName: "lixiang",
       email: "huameizhongxin@gmail.com",
+      registeredAt: "2026/06/28 22:45",
       role: "超级管理员",
       currentLevel: "HSK2",
       vipStatus: "VIP",
@@ -229,7 +233,7 @@ const adminV2AgentDataState = {
   },
 };
 
-const adminV2AgentActions = ["markPendingSettlement", "markReviewed", "freezeCommission", "restorePreview"];
+const adminV2AgentActions = ["markPendingSettlement", "markReviewed", "freezeCommission", "restorePreview", "reassignCustomerAgent"];
 
 const adminV2Roles = {
   admin: {
@@ -271,6 +275,7 @@ function renderAdminV2LocalData(data) {
   const realReadonlyContracts = Array.isArray(data.realReadonlyContracts) ? data.realReadonlyContracts : [];
   const realReadonlyGaps = Array.isArray(data.realReadonlyGaps) ? data.realReadonlyGaps : [];
   adminV2CustomerState.data = { ...data, users, auditLogs };
+  adminV2ServiceState.data = { ...data, users, auditLogs };
   adminV2LearningState.data = { ...data, learningRecords, learningEvents, learningSummary: data.learningSummary || {} };
   adminV2MaterialState.data = {
     ...data,
@@ -289,6 +294,9 @@ function renderAdminV2LocalData(data) {
   };
   if (!adminV2CustomerState.activeUserId && users[0]) {
     adminV2CustomerState.activeUserId = users[0].id;
+  }
+  if (!adminV2ServiceState.activeUserId && users[0]) {
+    adminV2ServiceState.activeUserId = users[0].id;
   }
   if (!adminV2LearningState.activeUserId && learningRecords[0]) {
     adminV2LearningState.activeUserId = learningRecords[0].userId;
@@ -349,6 +357,7 @@ function renderAdminV2LocalData(data) {
   }
   renderCustomerDetail(getActiveCustomer());
   renderAuditLogs(auditLogs);
+  renderSupportWorkbench(users, auditLogs);
   renderLearningUserFilter(learningRecords);
   renderLearningSummary(data.learningSummary || {});
   renderLearningRecords(learningRecords);
@@ -358,6 +367,7 @@ function renderAdminV2LocalData(data) {
   renderMaterialPackages(materialPackages);
   renderMaterialAudit(materialAuditLogs);
   renderAgentFilter(agentTeamMembers);
+  renderAgentAttributionControls(agentCustomers, agentTeamMembers);
   renderAgentSummary(data.agentSummary || {});
   renderAgentCustomers(agentCustomers);
   renderAgentCommissionRows(agentCommissions);
@@ -452,6 +462,103 @@ function renderAuditLogs(logs) {
       <td>${escapeHtml(log.note)}</td>
     </tr>
   `).join("");
+}
+
+function getActiveSupportUser() {
+  const users = adminV2ServiceState.data?.users || [];
+  return users.find((user) => user.id === adminV2ServiceState.activeUserId) || users[0] || null;
+}
+
+function renderSupportUserSelect(users) {
+  const select = document.querySelector("[data-support-user-select]");
+  if (!select) return;
+  const current = select.value || adminV2ServiceState.activeUserId;
+  select.innerHTML = users.map((user) => `
+    <option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} / ${escapeHtml(user.email)}</option>
+  `).join("");
+  select.value = current && users.some((user) => user.id === current) ? current : users[0]?.id || "";
+  adminV2ServiceState.activeUserId = select.value;
+}
+
+function renderSupportProfile(user) {
+  const target = document.querySelector("[data-support-profile]");
+  if (!target) return;
+  if (!user) {
+    target.innerHTML = "等待选择客户。";
+    return;
+  }
+
+  target.innerHTML = `
+    <h3>${escapeHtml(user.name)}</h3>
+    <dl>
+      <div><dt>Email</dt><dd>${escapeHtml(user.email)}</dd></div>
+      <div><dt>手机号</dt><dd>${escapeHtml(user.phone)}</dd></div>
+      <div><dt>VIP</dt><dd>${escapeHtml(user.vipStatus)} / ${escapeHtml(user.vipExpiresAt)}</dd></div>
+      <div><dt>代理归属</dt><dd>${escapeHtml(user.agentOwner)}</dd></div>
+      <div><dt>最近学习</dt><dd>${escapeHtml(user.recentLearning)}</dd></div>
+      <div><dt>服务备注</dt><dd>${escapeHtml(user.customerNotes || "暂无备注")}</dd></div>
+    </dl>
+  `;
+}
+
+function renderSupportQueue(users) {
+  const target = document.querySelector("[data-support-queue-body]");
+  if (!target) return;
+  if (!users.length) {
+    target.innerHTML = '<tr><td colspan="5">暂无客服队列。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = users.map((user) => `
+    <tr data-support-row="${escapeHtml(user.id)}">
+      <td>${escapeHtml(user.name)}<br><small>${escapeHtml(user.email)}</small></td>
+      <td><span class="status-badge">${escapeHtml(user.vipStatus)}</span><br><small>${escapeHtml(user.vipExpiresAt)}</small></td>
+      <td>${escapeHtml(user.agentOwner || "未归属")}</td>
+      <td>${escapeHtml(user.recentLearning || "暂无")}</td>
+      <td><button class="customer-row-action" type="button" data-support-select="${escapeHtml(user.id)}">处理</button></td>
+    </tr>
+  `).join("");
+}
+
+function renderSupportAudit(logs) {
+  const target = document.querySelector("[data-support-audit-body]");
+  if (!target) return;
+  const visibleLogs = Array.isArray(logs) ? logs.slice(0, 8) : [];
+  if (!visibleLogs.length) {
+    target.innerHTML = '<tr><td colspan="4">暂无客服操作记录。</td></tr>';
+    return;
+  }
+
+  target.innerHTML = visibleLogs.map((log) => `
+    <tr>
+      <td>${escapeHtml(log.time)}</td>
+      <td>${escapeHtml(log.action)}</td>
+      <td>${escapeHtml(log.userEmail || log.userId)}</td>
+      <td>${escapeHtml(log.note)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderSupportWorkbench(users, logs) {
+  renderSupportUserSelect(users);
+  renderSupportProfile(getActiveSupportUser());
+  renderSupportQueue(users);
+  renderSupportAudit(logs);
+}
+
+function performSupportAction(action) {
+  if (action !== "addNote") return;
+  const user = getActiveSupportUser();
+  if (!user) return;
+  const value = document.querySelector("[data-support-note]")?.value || "";
+
+  fetch(adminV2LocalBridge.customerActionUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, userId: user.id, value }),
+  })
+    .then((response) => response.json())
+    .then(() => refreshAdminV2BackendData());
 }
 
 function performCustomerAction(action) {
@@ -670,6 +777,29 @@ function renderAgentFilter(teamMembers) {
   filter.value = current && teamMembers.some((member) => member.agentId === current) ? current : "";
 }
 
+function renderAgentAttributionControls(customers, teamMembers) {
+  const customerSelect = document.querySelector("[data-agent-attribution-customer]");
+  const agentSelect = document.querySelector("[data-agent-attribution-agent]");
+  if (!customerSelect || !agentSelect) return;
+
+  const currentCustomerId = customerSelect.value;
+  const currentAgentId = agentSelect.value;
+
+  customerSelect.innerHTML = customers.map((customer) => `
+    <option value="${escapeHtml(customer.id)}">${escapeHtml(customer.customerName)} / ${escapeHtml(customer.customerEmail)} / ${escapeHtml(customer.agentName)}</option>
+  `).join("");
+  agentSelect.innerHTML = teamMembers.map((member) => `
+    <option value="${escapeHtml(member.agentId)}">${escapeHtml(member.agentName)} / ${escapeHtml(member.role)}</option>
+  `).join("");
+
+  if (currentCustomerId && customers.some((customer) => customer.id === currentCustomerId)) {
+    customerSelect.value = currentCustomerId;
+  }
+  if (currentAgentId && teamMembers.some((member) => member.agentId === currentAgentId)) {
+    agentSelect.value = currentAgentId;
+  }
+}
+
 function renderAgentSummary(summary) {
   const bindings = [
     ["[data-agent-total]", summary.agentCount],
@@ -768,13 +898,35 @@ function renderAgentAudit(logs) {
 
 function performAgentAction(action) {
   if (!adminV2AgentActions.includes(action)) return;
+  const note = action === "reassignCustomerAgent"
+    ? document.querySelector("[data-agent-attribution-note]")?.value || ""
+    : document.querySelector("[data-agent-note]")?.value || "";
+
+  if (action === "reassignCustomerAgent") {
+    const customerId = document.querySelector("[data-agent-attribution-customer]")?.value || "";
+    const targetAgentId = document.querySelector("[data-agent-attribution-agent]")?.value || "";
+    const source = document.querySelector("[data-agent-attribution-source]")?.value || "";
+    if (!customerId || !targetAgentId) return;
+
+    fetch(adminV2LocalBridge.agentActionUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, customerId, targetAgentId, source, note }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const summary = document.querySelector("[data-agent-attribution-summary]");
+        if (summary && data?.ok) summary.textContent = "本地归属已更新，不写真实数据库。";
+        refreshAdminV2BackendData();
+      });
+    return;
+  }
+
   const commissions = adminV2AgentDataState.data.agentCommissions || [];
   const visibleCommissions = getVisibleAgentRows(commissions);
   const fallbackCommission = visibleCommissions[0] || commissions[0];
   const commissionId = adminV2AgentDataState.activeCommissionId || fallbackCommission?.id;
   if (!commissionId) return;
-
-  const note = document.querySelector("[data-agent-note]")?.value || "";
 
   fetch(adminV2LocalBridge.agentActionUrl, {
     method: "POST",
@@ -789,20 +941,41 @@ function renderRealReadonlyUsers(users) {
   const target = document.querySelector("[data-real-readonly-users-body]");
   if (!target) return;
   if (!users.length) {
-    target.innerHTML = '<tr><td colspan="8">暂无只读真实用户预览。</td></tr>';
+    target.innerHTML = '<tr><td colspan="7">暂无只读真实用户预览。</td></tr>';
     return;
   }
 
   target.innerHTML = users.map((user) => `
-    <tr>
-      <td>${escapeHtml(user.id)}</td>
-      <td>${escapeHtml(user.fullName)}</td>
-      <td>${escapeHtml(user.email)}</td>
+    <tr class="real-readonly-user-row">
+      <td>
+        <div class="real-readonly-user-identity">
+          <span class="real-readonly-avatar">${escapeHtml(getCustomerInitials(user.fullName || user.email || user.id))}</span>
+          <div>
+            <strong>${escapeHtml(user.fullName || "未命名用户")}</strong>
+            <small>ID: ${escapeHtml(user.id)}</small>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="real-readonly-email-block">
+          <strong>${escapeHtml(user.email)}</strong>
+          <small>注册时间：${escapeHtml(user.registeredAt || user.createdAt || "待接入")}</small>
+        </div>
+      </td>
       <td><span class="status-badge">${escapeHtml(user.role)}</span></td>
       <td>${escapeHtml(user.currentLevel)}</td>
       <td>${escapeHtml(user.vipStatus)}</td>
       <td>${escapeHtml(user.premiumUntil)}</td>
-      <td>${user.readOnly ? "只读" : "禁止写入"}</td>
+      <td>
+        <div class="real-readonly-vip-actions">
+          <button type="button" disabled>VIP 7d</button>
+          <button type="button" disabled>VIP 30d</button>
+          <button type="button" disabled>VIP 90d</button>
+          <input type="date" disabled aria-label="自定义 VIP 到期日期" />
+          <button type="button" disabled>自定义</button>
+          <small>${user.readOnly ? "只读预览，不写入数据库" : "禁止写入"}</small>
+        </div>
+      </td>
     </tr>
   `).join("");
 }
@@ -1070,6 +1243,24 @@ document.querySelectorAll("[data-service-preview]").forEach((button) => {
 });
 
 setServicePreview(adminV2ServiceState.activePreview);
+
+document.querySelector("[data-support-user-select]")?.addEventListener("change", (event) => {
+  adminV2ServiceState.activeUserId = event.target.value;
+  renderSupportProfile(getActiveSupportUser());
+});
+
+document.querySelector("[data-support-queue-body]")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-support-select]");
+  if (!button) return;
+  adminV2ServiceState.activeUserId = button.dataset.supportSelect;
+  const select = document.querySelector("[data-support-user-select]");
+  if (select) select.value = adminV2ServiceState.activeUserId;
+  renderSupportProfile(getActiveSupportUser());
+});
+
+document.querySelectorAll("[data-support-action]").forEach((button) => {
+  button.addEventListener("click", () => performSupportAction(button.dataset.supportAction));
+});
 
 function setAnalyticsPreview(preview) {
   adminV2AnalyticsState.activePreview = preview;
@@ -1427,6 +1618,13 @@ document.querySelector("[data-agent-filter]")?.addEventListener("change", (event
   adminV2AgentDataState.activeCommissionId = "";
   renderAgentCustomers(adminV2AgentDataState.data.agentCustomers || []);
   renderAgentCommissionRows(adminV2AgentDataState.data.agentCommissions || []);
+});
+
+document.querySelector("[data-agent-attribution-customer]")?.addEventListener("change", (event) => {
+  const customers = adminV2AgentDataState.data.agentCustomers || [];
+  const customer = customers.find((item) => item.id === event.target.value);
+  const source = document.querySelector("[data-agent-attribution-source]");
+  if (source && customer) source.value = customer.source || "";
 });
 
 document.querySelector("[data-agent-commission-body]")?.addEventListener("click", (event) => {
