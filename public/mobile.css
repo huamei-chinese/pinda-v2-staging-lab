@@ -11,7 +11,7 @@
   }
 
   .app-desktop-content:has(> .mobile-page-return-bar) {
-    /* padding-top: 48px !important; */
+    padding-top: 0 !important;
   }
 
   .mobile-page-return-bar {
@@ -482,5 +482,67 @@
   .account-side-nav,
   .account-help-card {
     display: none !important;
+  }
+}
+
+/* Noi theo only: no sidebar, no bottom nav, no return-bar padding gap. */
+.app-desktop-content:has(> .mobile-page-return-bar) {
+  padding-top: 0 !important;
+}
+
+#listeningScreen .app-desktop-shell--listening-repeat .home-desktop-sidebar,
+#listeningScreen .app-desktop-shell--listening-repeat .app-desktop-sidebar,
+#listeningScreen .app-desktop-shell--listening-repeat .home-desktop-sidebar-panda {
+  display: none !important;
+}
+
+@media (min-width: 901px) {
+  #listeningScreen .app-desktop-shell--listening-repeat {
+    --desktop-sidebar-width: 0px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening-repeat .app-desktop-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body:has(#listeningScreen .app-desktop-shell--listening-repeat),
+  body.has-mobile-bottom-nav:has(#listeningScreen .app-desktop-shell--listening-repeat) {
+    height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
+  }
+
+  body:has(#listeningScreen .app-desktop-shell--listening-repeat) .mobile-bottom-nav,
+  body:has(#listeningScreen .app-desktop-shell--listening-repeat) .app-mobile-nav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #app:has(#listeningScreen .app-desktop-shell--listening-repeat),
+  #listeningScreen:has(.app-desktop-shell--listening-repeat),
+  #listeningScreen .app-desktop-shell--listening-repeat,
+  #listeningScreen .app-desktop-shell--listening-repeat .app-desktop-content {
+    height: 100svh !important;
+    max-height: 100svh !important;
+    overflow: hidden !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening-repeat .app-desktop-content {
+    display: grid !important;
+    grid-template-rows: 68px minmax(0, 1fr) !important;
+    padding-top: 0 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen--compact {
+    height: calc(100svh - 68px) !important;
+    max-height: calc(100svh - 68px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 }
