@@ -8253,7 +8253,7 @@ const sentenceFeedIndexes = [currentIndex];
         </button>
         <div class="listening-repeat-feed-index">${escapeHtml(sentenceNumber)}</div>
         <div class="listening-repeat-listen-content listening-repeat-feed-active-content ${
-          (item.chinese || "").length > 28 ? "is-very-long" : (item.chinese || "").length > 18 ? "is-long" : ""
+          (item.chinese || "").length > 22 ? "is-very-long" : (item.chinese || "").length > 14 ? "is-long" : ""
         }">
           <strong data-listening-repeat-original>${buildListeningRepeatOriginalHTML(item.chinese || "")}</strong>
           <small>${escapeHtml(item.pinyin || "")}</small>
