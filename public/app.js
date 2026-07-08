@@ -11240,7 +11240,6 @@ function renderWriteCommunicationCourseHTML() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <img src="assets/hsk-level-hero.png" alt="" aria-hidden="true" />
       </div>
 
       <header class="write-communication-header">
