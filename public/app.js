@@ -477,6 +477,7 @@ const state = {
   listeningSubtitleMode: localStorage.getItem("v2-listening-subtitle-mode") || "pinyin-zh",
   listeningPlaybackRate: [0.75, 1, 1.25, 1.5].includes(Number(localStorage.getItem("v2-listening-rate"))) ? Number(localStorage.getItem("v2-listening-rate")) : 1,
   listeningSaved: new Set(JSON.parse(localStorage.getItem("v2-listening-saved") || "[]")),
+  mobileReturnTarget: null,
   user: readStoredStudentUser(),
   adminUser: readStoredAdminUser(),
   activities: JSON.parse(localStorage.getItem("v2-activities") || "[]"),
@@ -3211,7 +3212,89 @@ function logoutAdminUser() {
   return true;
 }
 
-function navigatePrimaryTab(target) {
+function captureMobileReturnTarget() {
+  return {
+    screen: state.screen,
+    module: state.module,
+    level: state.level,
+    hskLevelPicker: state.hskLevelPicker,
+    hskPendingLessonId: state.hskPendingLessonId,
+    hskContentType: state.hskContentType,
+    dailyPendingThemeId: state.dailyPendingThemeId,
+    dailyContentType: state.dailyContentType,
+    vocabFilterTab: state.vocabFilterTab,
+    listeningView: state.listeningView,
+    listeningLevelId: state.listeningLevelId,
+    listeningEpisodeId: state.listeningEpisodeId,
+    listeningSentenceIndex: state.listeningSentenceIndex,
+    listeningLessonsBackTarget: state.listeningLessonsBackTarget,
+    listeningBackTarget: state.listeningBackTarget,
+    listeningSeedEpisodeId: state.listeningSeedEpisodeId,
+    listeningTopicId: state.listeningTopicId,
+  };
+}
+
+function restoreMobileReturnTarget() {
+  const target = state.mobileReturnTarget;
+  state.mobileReturnTarget = null;
+
+  if (!target || !target.screen) {
+    navigatePrimaryTab("home", { skipMobileReturnCapture: true });
+    return;
+  }
+
+  if (target.module) state.module = target.module;
+  if (target.level && hskLevels[target.level]) state.level = target.level;
+  if (typeof target.hskLevelPicker === "boolean") state.hskLevelPicker = target.hskLevelPicker;
+  if (target.hskPendingLessonId !== undefined) state.hskPendingLessonId = target.hskPendingLessonId;
+  if (target.hskContentType !== undefined) state.hskContentType = target.hskContentType;
+  if (target.dailyPendingThemeId !== undefined) state.dailyPendingThemeId = target.dailyPendingThemeId;
+  if (target.dailyContentType !== undefined) state.dailyContentType = target.dailyContentType;
+  if (target.vocabFilterTab) state.vocabFilterTab = target.vocabFilterTab;
+  if (target.listeningView) state.listeningView = target.listeningView;
+  if (target.listeningLevelId) state.listeningLevelId = target.listeningLevelId;
+  if (target.listeningEpisodeId) state.listeningEpisodeId = target.listeningEpisodeId;
+  if (Number.isInteger(target.listeningSentenceIndex)) state.listeningSentenceIndex = target.listeningSentenceIndex;
+  if (target.listeningLessonsBackTarget) state.listeningLessonsBackTarget = target.listeningLessonsBackTarget;
+  if (target.listeningBackTarget !== undefined) state.listeningBackTarget = target.listeningBackTarget;
+  if (target.listeningSeedEpisodeId !== undefined) state.listeningSeedEpisodeId = target.listeningSeedEpisodeId;
+  if (target.listeningTopicId !== undefined) state.listeningTopicId = target.listeningTopicId;
+
+  if (target.screen === "course") {
+    renderCourse();
+    setScreen("course");
+  } else if (target.screen === "vocab") {
+    renderVocab();
+    setScreen("vocab");
+  } else if (target.screen === "listening") {
+    renderListening();
+    setScreen("listening");
+  } else if (target.screen === "account" && state.user) {
+    renderAccount();
+    setScreen("account");
+  } else if (target.screen === "subscriptions") {
+    setScreen("subscriptions");
+  } else {
+    navigatePrimaryTab("home", { skipMobileReturnCapture: true });
+    return;
+  }
+
+  scrollAppToTop();
+  $("#mobileMenu")?.classList.remove("active");
+}
+
+function currentPrimaryTargetForMobileReturn() {
+  if (state.screen === "course") return state.module === "daily" ? "daily" : "hsk";
+  if (state.screen === "listening") return "listening";
+  return state.screen;
+}
+
+function navigatePrimaryTab(target, options = {}) {
+  const normalizedTarget = target === "write" ? "hsk" : target === "listen" ? "listening" : target;
+  if (!options.skipMobileReturnCapture && (normalizedTarget === "hsk" || normalizedTarget === "listening") && currentPrimaryTargetForMobileReturn() !== normalizedTarget) {
+    state.mobileReturnTarget = captureMobileReturnTarget();
+  }
+
   state.fromRoadmap = false;
   state.dailyPendingThemeId = "";
   state.dailyContentType = "";
@@ -3314,6 +3397,12 @@ function readPersistedRoute() {
     return JSON.parse(localStorage.getItem(APP_ROUTE_STORAGE_KEY) || "null");
   } catch {
     return null;
+  }
+}
+
+function saveActiveRoute(screenKey) {
+  if (state.screen === screenKey) {
+    savePersistedRoute();
   }
 }
 
@@ -6081,7 +6170,7 @@ function renderMobilePageReturnBar(activeNav = "") {
   };
   return `
     <div class="mobile-page-return-bar mobile-page-return-bar--${escapeAttr(activeNav)}" aria-label="${escapeAttr(labels[activeNav] || "")}">
-      <button type="button" class="mobile-page-return-btn" data-mobile-page-back aria-label="${state.lang === "vi" ? "Quay lại trang chủ" : "返回首页"}">
+      <button type="button" class="mobile-page-return-btn" data-mobile-page-back aria-label="${state.lang === "vi" ? "Quay lại trang trước" : "返回上一页"}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M15 18l-6-6 6-6" />
         </svg>
@@ -6130,6 +6219,7 @@ function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", active
   if (!node) return;
   const scrollSnapshot = options.preserveScroll ? getAppScrollSnapshot() : null;
   node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav);
+  saveActiveRoute(screenKey);
   if (scrollSnapshot) restoreAppScrollSnapshot(scrollSnapshot);
   else scrollAppToTop();
 }
@@ -6209,7 +6299,7 @@ function renderListeningLevelGateway(options = {}) {
   setScreenWithDesktopShell("listening", `
     <section class="listening-gateway-screen">
       <header class="listening-gateway-hero">
-        <button class="listening-gateway-back-btn" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
+        <button class="listening-gateway-back-btn" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại trang trước" : "返回上一页"}">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -9219,7 +9309,7 @@ function handleMobilePageBack() {
       return;
     }
 
-    navigatePrimaryTab("home");
+    restoreMobileReturnTarget();
     return;
   }
 
@@ -9239,6 +9329,11 @@ function handleMobilePageBack() {
         backToHskLevelPicker();
       }
       scrollAppToTop();
+      return;
+    }
+
+    if (state.module === "hsk" && state.hskLevelPicker) {
+      restoreMobileReturnTarget();
       return;
     }
   }
@@ -9390,7 +9485,7 @@ function renderHskLevelPickerHTML() {
   return `
     <section class="hsk-level-picker">
 <div class="hsk-level-hero">
-        <button class="hsk-level-hero-back-btn" type="button" data-hsk-level-picker-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
+        <button class="hsk-level-hero-back-btn" type="button" data-hsk-level-picker-back aria-label="${isVi ? "Quay lại trang trước" : "返回上一页"}">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -10332,6 +10427,7 @@ function renderPractice() {
       <button id="nextBtn" class="primary" type="button"><span>↵</span>${t("next")}</button>
     </footer>
   `;
+  saveActiveRoute("practice");
   focusInput();
 }
 
@@ -10570,6 +10666,7 @@ function renderComplete() {
       </div>
     </section>
   `;
+  saveActiveRoute("complete");
 }
 
 function chooseChineseVoice() {
@@ -10770,7 +10867,7 @@ function bindEvents() {
     if (state.screen === "listening") {
       const listeningGatewayBackBtn = event.target.closest("[data-listening-gateway-back]");
       if (listeningGatewayBackBtn) {
-        navigatePrimaryTab("home");
+        restoreMobileReturnTarget();
         return;
       }
       const listeningStartBtn = event.target.closest("[data-listening-start]");
@@ -11779,7 +11876,7 @@ function bindEvents() {
     }
     const hskLevelPickerBackBtn = event.target.closest("[data-hsk-level-picker-back]");
     if (hskLevelPickerBackBtn) {
-      navigatePrimaryTab("home");
+      restoreMobileReturnTarget();
       return;
     }
     const hskLevelBackBtn = event.target.closest("[data-hsk-level-back]");
@@ -12232,6 +12329,7 @@ function renderAll() {
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
   bindEvents();
+  window.addEventListener("beforeunload", savePersistedRoute);
   Promise.allSettled([
     refreshCurrentUserStatus(),
     loadContentLocks(),

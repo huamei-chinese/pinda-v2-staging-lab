@@ -40727,6 +40727,169 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 }
 
+/* ===== HOME TITLE FINAL OVERRIDE: NO WHITE FRAME ===== */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.screen-home .home-desktop-topbar h1,
+.screen-home .home-desktop-topbar p {
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
+/* ===== HOME TITLE FINAL OVERRIDE: WHITE FRAME ONLY BEHIND H1 ===== */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar h1 {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 380px) !important;
+  margin: 0 !important;
+  padding: 8px 14px 10px !important;
+  border: 1px solid rgba(255, 255, 255, .78) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .70) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+  backdrop-filter: blur(12px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .65) !important;
+}
+
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar h1 {
+    max-width: calc(100vw - 134px) !important;
+    padding: 7px 11px 9px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ===== HOME SUBTITLE FINAL OVERRIDE: SMALL WHITE FRAME BEHIND P ===== */
+.screen-home .home-desktop-topbar p {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 240px) !important;
+  margin: 6px 0 0 !important;
+  padding: 4px 10px 5px !important;
+  border: 1px solid rgba(255, 255, 255, .62) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .56) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .72) !important;
+  backdrop-filter: blur(9px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(9px) saturate(1.05) !important;
+  color: #475569 !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .58) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar p {
+    max-width: calc(100vw - 176px) !important;
+    margin-top: 5px !important;
+    padding: 3px 8px 4px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ===== NOI THEO MOBILE: LIFT ACTIVE SENTENCE CARD SLIGHTLY ===== */
+@media (max-width: 700px) {
+  #listeningScreen .listening-repeat-feed-active-content,
+  #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content {
+    top: calc(47% - 56px) !important;
+  }
+}
+
+
+/* ===== HOME TITLE FINAL OVERRIDE: WHITE FRAME ONLY BEHIND H1 ===== */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar h1 {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 380px) !important;
+  margin: 0 !important;
+  padding: 8px 14px 10px !important;
+  border: 1px solid rgba(255, 255, 255, .78) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .70) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+  backdrop-filter: blur(12px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .65) !important;
+}
+
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar h1 {
+    max-width: calc(100vw - 134px) !important;
+    padding: 7px 11px 9px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ===== HOME TITLE: REMOVE WHITE FRAME, KEEP TEXT READABLE ===== */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar h1,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar > div:first-child {
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.screen-home .home-desktop-topbar h1,
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
 /* ===== MOBILE HOME: translucent text backplates ===== */
 @media (max-width: 700px) {
   .screen-home .home-desktop-topbar > div:first-child,
@@ -40750,5 +40913,269 @@ body:has(#practiceScreen:not(.hidden)) {
   .screen-home .home-mobile-topics-head {
     padding: 9px 12px !important;
     margin: 0 0 12px !important;
+  }
+}
+/* ===== MOBILE HOME: dùng backgroundienthoai2.png ===== */
+@media (max-width: 700px) {
+  .screen-home,
+  .screen-home body,
+  .screen-home .app-desktop-shell,
+  .screen-home .app-desktop-shell--home,
+  .screen-home .app-desktop-content,
+  .screen-home .home-desktop-layout,
+  .screen-home .home-desktop-main {
+    background: transparent !important;
+  }
+
+  .screen-home {
+    background:
+      linear-gradient(rgba(239, 255, 248, 0.38), rgba(239, 255, 248, 0.38)),
+      url("/assets/backgroundienthoai2.png") center top / cover no-repeat fixed !important;
+  }
+
+  .screen-home::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+/* ===== HOME TITLE FINAL OVERRIDE: WHITE FRAME ONLY BEHIND H1 ===== */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar > div:first-child {
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.screen-home .home-desktop-topbar h1 {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 380px) !important;
+  margin: 0 !important;
+  padding: 8px 14px 10px !important;
+  border: 1px solid rgba(255, 255, 255, .78) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .70) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+  backdrop-filter: blur(12px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .65) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar h1 {
+    max-width: calc(100vw - 134px) !important;
+    padding: 7px 11px 9px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* ===== HOME SUBTITLE FINAL OVERRIDE: SMALL WHITE FRAME BEHIND P ===== */
+.screen-home .home-desktop-topbar p {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 240px) !important;
+  margin: 6px 0 0 !important;
+  padding: 4px 10px 5px !important;
+  border: 1px solid rgba(255, 255, 255, .62) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .56) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .72) !important;
+  backdrop-filter: blur(9px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(9px) saturate(1.05) !important;
+  color: #475569 !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .58) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar p {
+    max-width: calc(100vw - 176px) !important;
+    margin-top: 5px !important;
+    padding: 3px 8px 4px !important;
+    border-radius: 12px !important;
+  }
+}
+/* ===== MOBILE NÓI THEO: kéo khung câu lên cao hơn ===== */
+@media (max-width: 700px) {
+  .screen-listening .listening-repeat-practice-grid,
+  .screen-listening .listening-repeat-sentence-feed {
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }
+
+  .screen-listening .listening-repeat-feed-card--active {
+    margin-top: -150px !important;
+    transform: translateY(-72px) !important;
+  }
+}
+
+/* ===== DESKTOP LISTENING LESSONS: compact header box ===== */
+@media (min-width: 901px) {
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-screen {
+    padding-top: clamp(12px, 1.8vw, 22px) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero {
+    min-height: 112px !important;
+    margin-bottom: 14px !important;
+    padding: 22px clamp(24px, 4vw, 58px) 22px 92px !important;
+    border-radius: 24px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-back {
+    left: 28px !important;
+    top: 22px !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero::after {
+    left: 92px !important;
+    right: 28px !important;
+    height: 34px !important;
+    opacity: .34 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero h1 {
+    max-width: 780px !important;
+    margin-bottom: 6px !important;
+    font-size: clamp(30px, 3.2vw, 42px) !important;
+    line-height: 1.04 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero p {
+    font-size: clamp(15px, 1.35vw, 18px) !important;
+    line-height: 1.25 !important;
+  }
+}
+
+/* ===== DESKTOP LISTENING LESSONS: no scroll + smaller topic boxes ===== */
+@media (min-width: 901px) {
+  html:has(#listeningScreen .listening-lessons-screen),
+  body:has(#listeningScreen .listening-lessons-screen) {
+    overflow: hidden !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat),
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .app-desktop-content {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-screen {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    padding: 14px clamp(16px, 2.4vw, 32px) 12px !important;
+    overflow: hidden !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero {
+    min-height: 94px !important;
+    margin-bottom: 10px !important;
+    padding: 16px clamp(22px, 3.4vw, 48px) 16px 82px !important;
+    border-radius: 20px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-back {
+    left: 24px !important;
+    top: 18px !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero::after {
+    left: 82px !important;
+    right: 24px !important;
+    height: 26px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero h1 {
+    max-width: 720px !important;
+    margin-bottom: 3px !important;
+    font-size: clamp(26px, 2.8vw, 36px) !important;
+    line-height: 1.02 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-hero p {
+    font-size: clamp(13px, 1.18vw, 16px) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lessons-list {
+    gap: 8px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-row {
+    grid-template-columns: 60px minmax(0, 1fr) minmax(120px, 210px) 48px 14px !important;
+    min-height: 76px !important;
+    gap: clamp(10px, 1.6vw, 18px) !important;
+    padding: 8px clamp(14px, 2.2vw, 26px) !important;
+    border-radius: 20px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-play {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 20px var(--lesson-glow), 0 0 0 8px var(--lesson-soft) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-copy {
+    gap: 6px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-row strong {
+    font-size: clamp(16px, 1.35vw, 20px) !important;
+    line-height: 1.12 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-meta {
+    gap: 6px 14px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-status {
+    min-height: 22px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-duration {
+    font-size: 12px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-wave {
+    height: 30px !important;
+    gap: 4px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-wave i {
+    width: 3px !important;
+    max-height: 26px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-row em {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    font-size: 23px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:not(.app-desktop-shell--listening-repeat) .listening-lesson-arrow {
+    font-size: 25px !important;
   }
 }
