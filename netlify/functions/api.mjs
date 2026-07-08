@@ -575,7 +575,7 @@ async function ensureSchema() {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'student',
+        role TEXT NOT NULL DEFAULT 'user',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         current_level TEXT NOT NULL DEFAULT 'HSK2',
         avatar_url TEXT,
@@ -586,6 +586,9 @@ async function ensureSchema() {
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
+        ref TEXT,
+        src TEXT,
+        vip INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_login_at TIMESTAMPTZ
@@ -600,6 +603,9 @@ async function ensureSchema() {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_code_hash TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;");
     await db.query(`
       CREATE TABLE IF NOT EXISTS payment_orders (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -687,6 +693,26 @@ async function ensureSchema() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS learning_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        event_type TEXT NOT NULL,
+        module TEXT,
+        level TEXT,
+        lesson_id TEXT,
+        topic_id TEXT,
+        question_id TEXT,
+        is_correct BOOLEAN,
+        source TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_created_at ON learning_events(created_at);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_type_created ON learning_events(event_type, created_at);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_lesson ON learning_events(lesson_id);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_source ON learning_events(source);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);`);
   })();
   return schemaReady;
 }
@@ -711,12 +737,15 @@ function publicUser(row) {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
-    role: row.role,
+    role: normalizePublicRole(row.role),
+    ref: row.ref || "",
+    src: row.src || "",
     isActive: row.is_active,
     currentLevel: row.current_level || "HSK2",
     avatarUrl: row.avatar_url || "",
     isPremium,
     plan: isPremium ? "PREMIUM" : "FREE",
+    vip: Number(row.vip || 0),
     premiumUntil: row.premium_until || null,
     dailyReminderEnabled: row.daily_reminder_enabled !== false,
     emailVerified: Boolean(row.email_verified_at),
@@ -725,6 +754,43 @@ function publicUser(row) {
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
   };
+}
+
+function normalizePublicRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "sales") return "sales";
+  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "content" || normalized === "content_manager") return "content";
+  return "user";
+}
+
+function normalizeEditableRole(role) {
+  const normalized = normalizePublicRole(role);
+  return ["user", "sales", "ctv", "content"].includes(normalized) ? normalized : "user";
+}
+
+function isEditableRoleValue(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["user", "sales", "ctv", "content", "staff", "employee", "content_manager"].includes(normalized);
+}
+
+function normalizeReferralRef(ref) {
+  const normalized = String(ref || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 64);
+  return normalized || null;
+}
+
+function normalizeSource(source) {
+  const normalized = String(source || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 40);
+  return normalized || null;
 }
 
 function formatVnd(amount) {
@@ -865,16 +931,18 @@ async function register(body) {
   const fullName = String(body.fullName || body.name || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
+  const ref = normalizeReferralRef(body.ref);
+  const src = normalizeSource(body.src);
   if (fullName.length < 2) throw apiError("Vui lòng nhập họ và tên.", 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw apiError("Email không hợp lệ.", 400);
   if (password.length < 6) throw apiError("Mật khẩu cần tối thiểu 6 ký tự.", 400);
 
   try {
     const result = await query(
-      `INSERT INTO users (full_name, email, password_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password)],
+      `INSERT INTO users (full_name, email, password_hash, ref, src)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password), ref, src],
     );
     return json({ user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -895,7 +963,7 @@ async function login(body) {
   const updated = await query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [user.id],
   );
   return json({ user: publicUser(updated.rows[0]) });
@@ -933,7 +1001,7 @@ async function updateOwnProfile(req, id, body) {
            email_verification_expires_at = CASE WHEN email = $2 THEN email_verification_expires_at ELSE NULL END,
            updated_at = NOW()
        WHERE id = $6
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, currentLevel, avatarUrl || null, dailyReminderEnabled, id],
     );
     if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -954,7 +1022,7 @@ async function updateOwnAvatar(req, id, body) {
     `UPDATE users
      SET avatar_url = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [avatarUrl, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1001,7 +1069,7 @@ async function updateOwnReminderSettings(req, id, body) {
     `UPDATE users
      SET daily_reminder_enabled = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [enabled, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1110,16 +1178,35 @@ async function confirmEmailVerificationCode(req, id, body) {
          email_verification_expires_at = NULL,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [id],
   );
   return json({ ok: true, user: publicUser(updated.rows[0]) });
 }
 
+async function recalculateCtvVipCounts() {
+  await query(`UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee')`);
+  await query(
+    `UPDATE users c
+     SET vip = sub.cnt
+     FROM (
+       SELECT lower(btrim(u.ref)) AS ref, COUNT(*) AS cnt
+       FROM users u
+       WHERE u.ref IS NOT NULL AND btrim(u.ref) <> ''
+         AND u.is_premium = TRUE
+         AND (u.premium_until IS NULL OR u.premium_until > NOW())
+       GROUP BY lower(btrim(u.ref))
+     ) sub
+     WHERE lower(btrim(c.ref)) = sub.ref
+       AND c.role IN ('ctv', 'staff', 'employee')`,
+  );
+}
+
 async function listUsers(req) {
   await assertAdmin(req);
+  await recalculateCtvVipCounts();
   const result = await query(
-    `SELECT id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, created_at, updated_at, last_login_at
+    `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
      FROM users
      ORDER BY created_at DESC`,
   );
@@ -1139,7 +1226,7 @@ async function createUser(req, body) {
   const fullName = String(body.fullName || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
-  const role = String(body.role || "student").trim();
+  const role = normalizeEditableRole(body.role);
   const currentLevel = String(body.currentLevel || "HSK2").trim().toUpperCase();
   const plan = String(body.plan || "FREE").trim().toUpperCase();
   const isActive = body.isActive !== false;
@@ -1157,8 +1244,8 @@ async function createUser(req, body) {
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), role || "student", isActive, currentLevel, isPremium, premiumUntil],
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil],
     );
     return json({ user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -1171,7 +1258,7 @@ async function updateUser(req, id, body) {
   await assertAdmin(req);
   const fullName = String(body.fullName || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
-  const role = String(body.role || "student").trim();
+  const role = normalizeEditableRole(body.role);
   const isActive = body.isActive === true;
   const currentLevel = String(body.currentLevel || "HSK2").trim().toUpperCase();
   if (!fullName || !email) throw apiError("Tên và email không được để trống.", 400);
@@ -1179,10 +1266,66 @@ async function updateUser(req, id, body) {
     `UPDATE users
      SET full_name = $1, email = $2, role = $3, is_active = $4, current_level = $5, updated_at = NOW()
      WHERE id = $6
-     RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [fullName, email, role, isActive, currentLevel, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy user.", 404);
+  return json({ user: publicUser(result.rows[0]) });
+}
+
+async function updateUserRole(req, id, body) {
+  await assertAdmin(req);
+  if (!isEditableRoleValue(body.role)) {
+    throw apiError("Role must be user, sales, ctv or content.", 400);
+  }
+  const nextRole = normalizeEditableRole(body.role);
+  const current = await query(
+    `SELECT id, role
+     FROM users
+     WHERE id = $1`,
+    [id],
+  );
+  const currentUser = current.rows[0];
+  if (!currentUser) throw apiError("Khong tim thay user.", 404);
+  if (normalizePublicRole(currentUser.role) === "admin") {
+    throw apiError("Cannot modify admin accounts.", 403);
+  }
+
+  const result = await query(
+    `UPDATE users
+     SET role = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+    [nextRole, id],
+  );
+  return json({ user: publicUser(result.rows[0]) });
+}
+
+async function updateUserRef(req, id, body) {
+  await assertAdmin(req);
+  const ref = normalizeReferralRef(body.ref);
+  if (!ref) throw apiError("Mã ref không hợp lệ.", 400);
+
+  const current = await query(
+    `SELECT id, role
+     FROM users
+     WHERE id = $1`,
+    [id],
+  );
+  const currentUser = current.rows[0];
+  if (!currentUser) throw apiError("Không tìm thấy user.", 404);
+  if (normalizePublicRole(currentUser.role) !== "ctv") {
+    throw apiError("Chỉ tài khoản CTV mới được tạo link ref.", 400);
+  }
+
+  const result = await query(
+    `UPDATE users
+     SET ref = $1,
+         updated_at = NOW()
+     WHERE id = $2
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+    [ref, id],
+  );
   return json({ user: publicUser(result.rows[0]) });
 }
 
@@ -1859,10 +2002,260 @@ async function markWebhookProcessed(sepayId, orderId) {
   );
 }
 
+const ALLOWED_LEARNING_EVENTS = new Set([
+  "lesson_opened",
+  "question_answered",
+  "paywall_shown",
+  "vip_modal_opened",
+]);
+const LEARNING_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeEventText(value, maxLength = 120) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return null;
+  return normalized.slice(0, maxLength);
+}
+
+function normalizeEventSource(value) {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 40);
+  return normalized || null;
+}
+
+function normalizeEventUserId(value) {
+  const normalized = String(value ?? "").trim();
+  return LEARNING_UUID_REGEX.test(normalized) ? normalized : null;
+}
+
+function normalizeEventBoolean(value) {
+  if (value === true || value === false) return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
+function normalizeLearningEvent(raw, fallbackUserId) {
+  const eventType = String(raw?.eventType ?? raw?.event_type ?? "").trim();
+  if (!ALLOWED_LEARNING_EVENTS.has(eventType)) return null;
+  return {
+    userId: normalizeEventUserId(raw?.userId ?? raw?.user_id ?? fallbackUserId),
+    eventType,
+    module: normalizeEventText(raw?.module),
+    level: normalizeEventText(raw?.level, 20),
+    lessonId: normalizeEventText(raw?.lessonId ?? raw?.lesson_id),
+    topicId: normalizeEventText(raw?.topicId ?? raw?.topic_id),
+    questionId: normalizeEventText(raw?.questionId ?? raw?.question_id),
+    isCorrect: normalizeEventBoolean(raw?.isCorrect ?? raw?.is_correct),
+    source: normalizeEventSource(raw?.source),
+  };
+}
+
+async function recordLearningEvents(req, body) {
+  const fallbackUserId = normalizeEventUserId(req.headers.get("x-user-id"));
+  const rawEvents = Array.isArray(body?.events)
+    ? body.events
+    : Array.isArray(body)
+      ? body
+      : [body];
+  const events = rawEvents
+    .map((raw) => normalizeLearningEvent(raw, fallbackUserId))
+    .filter((event) => event !== null)
+    .slice(0, 100);
+
+  if (events.length === 0) return json({ ok: true, inserted: 0 }, 202);
+
+  const values = [];
+  const placeholders = events.map((event, index) => {
+    const base = index * 9;
+    values.push(
+      event.userId,
+      event.eventType,
+      event.module,
+      event.level,
+      event.lessonId,
+      event.topicId,
+      event.questionId,
+      event.isCorrect,
+      event.source,
+    );
+    return `((SELECT id FROM users WHERE id = $${base + 1}::uuid), $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9})`;
+  });
+
+  await query(
+    `INSERT INTO learning_events
+       (user_id, event_type, module, level, lesson_id, topic_id, question_id, is_correct, source)
+     VALUES ${placeholders.join(", ")}`,
+    values,
+  );
+  return json({ ok: true, inserted: events.length }, 202);
+}
+
+const ANALYTICS_TZ = "Asia/Ho_Chi_Minh";
+const ANALYTICS_MAX_SPAN_DAYS = 1000;
+
+function analyticsToYmd(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function analyticsYmdToUtcDate(ymd) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function analyticsSpanDays(fromYmd, toYmd) {
+  return Math.round((analyticsYmdToUtcDate(toYmd).getTime() - analyticsYmdToUtcDate(fromYmd).getTime()) / 86400000) + 1;
+}
+
+function resolveAnalyticsRange(searchParams) {
+  const ymdPattern = /^\d{4}-\d{2}-\d{2}$/;
+  let fromYmd = ymdPattern.test(String(searchParams.get("from") || "").trim()) ? String(searchParams.get("from")).trim() : "";
+  let toYmd = ymdPattern.test(String(searchParams.get("to") || "").trim()) ? String(searchParams.get("to")).trim() : "";
+
+  if (fromYmd && toYmd) {
+    if (fromYmd > toYmd) [fromYmd, toYmd] = [toYmd, fromYmd];
+  } else {
+    const days = Math.min(ANALYTICS_MAX_SPAN_DAYS, Math.max(1, Math.floor(Number(searchParams.get("days")) || 30)));
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - (days - 1));
+    fromYmd = analyticsToYmd(start);
+    toYmd = analyticsToYmd(today);
+  }
+
+  if (analyticsSpanDays(fromYmd, toYmd) > ANALYTICS_MAX_SPAN_DAYS) {
+    const end = analyticsYmdToUtcDate(toYmd);
+    const start = new Date(end);
+    start.setUTCDate(end.getUTCDate() - (ANALYTICS_MAX_SPAN_DAYS - 1));
+    fromYmd = start.toISOString().slice(0, 10);
+  }
+
+  return { fromYmd, toYmd, days: analyticsSpanDays(fromYmd, toYmd) };
+}
+
+function buildLearningDailySeries(rows, fromYmd, toYmd) {
+  const byDay = new Map();
+  for (const row of rows) byDay.set(String(row.day), Number(row.value) || 0);
+  const series = [];
+  const cursor = analyticsYmdToUtcDate(fromYmd);
+  const end = analyticsYmdToUtcDate(toYmd);
+  let guard = 0;
+  while (cursor.getTime() <= end.getTime() && guard <= ANALYTICS_MAX_SPAN_DAYS) {
+    const key = cursor.toISOString().slice(0, 10);
+    series.push({ date: key, value: byDay.get(key) || 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    guard += 1;
+  }
+  return series;
+}
+
+async function getLearningAnalytics(req, searchParams) {
+  await assertAdmin(req);
+  const { fromYmd, toYmd, days } = resolveAnalyticsRange(searchParams);
+  const withinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const params = [fromYmd, toYmd];
+
+  const [
+    dailyLearners,
+    dailyAttempts,
+    topLessons,
+    sourceBreakdown,
+    vipModalOpens,
+    registeredCount,
+    learnersCount,
+    popupCount,
+    vipCount,
+  ] = await Promise.all([
+    query(
+      `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
+       FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    query(
+      `SELECT ${dayBucket} AS day, COUNT(*) AS value
+       FROM learning_events
+       WHERE ${withinRange} AND event_type = 'question_answered'
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    query(
+      `SELECT lesson_id, level, COUNT(*) AS value, COUNT(DISTINCT user_id) AS learners
+       FROM learning_events
+       WHERE ${withinRange} AND event_type = 'lesson_opened' AND lesson_id IS NOT NULL
+       GROUP BY lesson_id, level ORDER BY value DESC LIMIT 10`,
+      params,
+    ),
+    query(
+      `SELECT COALESCE(NULLIF(source, ''), 'direct') AS source, COUNT(*) AS events, COUNT(DISTINCT user_id) AS users
+       FROM learning_events
+       WHERE ${withinRange}
+       GROUP BY 1 ORDER BY events DESC`,
+      params,
+    ),
+    query(
+      `SELECT COUNT(*) AS value FROM learning_events WHERE ${withinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    query(`SELECT COUNT(*) AS value FROM users WHERE ${withinRange}`, params),
+    query(
+      `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
+      params,
+    ),
+    query(
+      `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('paywall_shown', 'vip_modal_opened') AND user_id IS NOT NULL`,
+      params,
+    ),
+    query(
+      `SELECT COUNT(*) AS value FROM users
+       WHERE ${withinRange} AND is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())`,
+      params,
+    ),
+  ]);
+
+  const num = (result) => Number(result.rows[0]?.value || 0);
+
+  return json({
+    meta: { days, from: fromYmd, to: toYmd },
+    dailyLearners: buildLearningDailySeries(dailyLearners.rows, fromYmd, toYmd),
+    dailyAttempts: buildLearningDailySeries(dailyAttempts.rows, fromYmd, toYmd),
+    topLessons: topLessons.rows.map((row) => ({
+      lessonId: row.lesson_id,
+      level: row.level || "",
+      opens: Number(row.value) || 0,
+      learners: Number(row.learners) || 0,
+    })),
+    sources: sourceBreakdown.rows.map((row) => ({
+      source: row.source,
+      events: Number(row.events) || 0,
+      users: Number(row.users) || 0,
+    })),
+    vipModalOpens: num(vipModalOpens),
+    funnel: {
+      registered: num(registeredCount),
+      learned: num(learnersCount),
+      popup: num(popupCount),
+      vip: num(vipCount),
+    },
+  });
+}
+
 async function route(req) {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/\.netlify\/functions\/api/, "/api");
   const body = await readBody(req);
+
+  if (req.method === "POST" && path === "/api/events") return recordLearningEvents(req, body);
+  if (req.method === "GET" && path === "/api/admin/analytics/overview") return getLearningAnalytics(req, url.searchParams);
 
   if (req.method === "POST" && path === "/api/register") return register(body);
   if (req.method === "POST" && path === "/api/login") return login(body);
@@ -1881,6 +2274,10 @@ async function route(req) {
   if (ownProfileMatch && req.method === "PATCH") return updateOwnProfile(req, decodeURIComponent(ownProfileMatch[1]), body);
   if (req.method === "GET" && path === "/api/admin/users") return listUsers(req);
   if (req.method === "POST" && path === "/api/admin/users") return createUser(req, body);
+  const adminUserRoleMatch = path.match(/^\/api\/admin\/users\/([^/]+)\/role$/);
+  if (adminUserRoleMatch && req.method === "PATCH") return updateUserRole(req, decodeURIComponent(adminUserRoleMatch[1]), body);
+  const adminUserRefMatch = path.match(/^\/api\/admin\/users\/([^/]+)\/ref$/);
+  if (adminUserRefMatch && req.method === "PATCH") return updateUserRef(req, decodeURIComponent(adminUserRefMatch[1]), body);
   const adminUserMatch = path.match(/^\/api\/admin\/users\/([^/]+)$/);
   if (adminUserMatch && req.method === "PATCH") return updateUser(req, decodeURIComponent(adminUserMatch[1]), body);
   if (adminUserMatch && req.method === "DELETE") return deleteUser(req, decodeURIComponent(adminUserMatch[1]));
