@@ -140,8 +140,12 @@ const tr = (key) => (i18n[currentLang] || i18n.vi)[key] || i18n.vi[key] || key;
 
 function getAdminUserId() {
   try {
-    const user = JSON.parse(localStorage.getItem("v2-user") || "null");
-    return user?.role === "admin" ? user.id : "";
+    const user = JSON.parse(
+      localStorage.getItem("huamei_admin_user")
+        || localStorage.getItem("v2-user")
+        || "null",
+    );
+    return String(user?.role || "").toLowerCase() === "admin" ? user.id : "";
   } catch {
     return "";
   }
