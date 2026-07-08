@@ -125,6 +125,54 @@ function normalizeReferralRef(ref) {
   return normalized || null;
 }
 
+const ANALYTICS_TZ = "Asia/Ho_Chi_Minh";
+const ANALYTICS_MAX_SPAN_DAYS = 1000;
+
+function analyticsToYmd(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function analyticsYmdToUtcDate(ymd) {
+  const [year, month, day] = String(ymd || "").split("-").map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function resolveAnalyticsRange(searchParams) {
+  const today = new Date();
+  const days = Math.min(ANALYTICS_MAX_SPAN_DAYS, Math.max(1, Number(searchParams.get("days") || 30) || 30));
+  const fromParam = String(searchParams.get("from") || "").trim();
+  const toParam = String(searchParams.get("to") || "").trim();
+  const toDate = analyticsYmdToUtcDate(toParam) || today;
+  const fromDate = analyticsYmdToUtcDate(fromParam) || new Date(toDate.getTime() - (days - 1) * 86400000);
+  const spanDays = Math.max(1, Math.floor((toDate.getTime() - fromDate.getTime()) / 86400000) + 1);
+  if (spanDays > ANALYTICS_MAX_SPAN_DAYS) {
+    fromDate.setTime(toDate.getTime() - (ANALYTICS_MAX_SPAN_DAYS - 1) * 86400000);
+  }
+  return {
+    fromYmd: analyticsToYmd(fromDate),
+    toYmd: analyticsToYmd(toDate),
+    days: Math.min(spanDays, ANALYTICS_MAX_SPAN_DAYS),
+  };
+}
+
+function buildDailySeries(rows, fromYmd, toYmd) {
+  const values = new Map(rows.map((row) => [String(row.day), Number(row.value) || 0]));
+  const start = analyticsYmdToUtcDate(fromYmd);
+  const end = analyticsYmdToUtcDate(toYmd);
+  const series = [];
+  if (!start || !end) return series;
+  for (const cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    const day = analyticsToYmd(cursor);
+    series.push({ day, value: values.get(day) || 0 });
+  }
+  return series;
+}
+
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.pbkdf2Sync(password, salt, 120000, 64, "sha512").toString("hex");
   return `${salt}:${hash}`;
@@ -716,6 +764,25 @@ async function ensureSchema() {
     );
   `);
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS learning_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      event_type TEXT NOT NULL,
+      module TEXT,
+      level TEXT,
+      lesson_id TEXT,
+      topic_id TEXT,
+      question_id TEXT,
+      is_correct BOOLEAN,
+      source TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS idx_learning_events_created_at ON learning_events(created_at);");
+  await pool.query("CREATE INDEX IF NOT EXISTS idx_learning_events_event_type ON learning_events(event_type);");
 }
 
 async function handleRegister(req, res) {
@@ -910,6 +977,108 @@ async function handleAdminUsers(req, res, url) {
   sendJson(res, 405, { error: "Method không được hỗ trợ." });
 }
 
+async function handleAdminAnalyticsOverview(req, res, url) {
+  if (!requireDatabase(res)) return;
+  if (!(await isAdminRequest(req))) {
+    sendJson(res, 401, { error: "Vui lòng đăng nhập bằng tài khoản admin." });
+    return;
+  }
+
+  const { fromYmd, toYmd, days } = resolveAnalyticsRange(url.searchParams);
+  const withinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const params = [fromYmd, toYmd];
+
+  const [
+    dailyLearners,
+    dailyAttempts,
+    topLessons,
+    sourceBreakdown,
+    vipModalOpens,
+    registeredCount,
+    learnersCount,
+    popupCount,
+    vipCount,
+  ] = await Promise.all([
+    pool.query(
+      `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
+       FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    pool.query(
+      `SELECT ${dayBucket} AS day, COUNT(*) AS value
+       FROM learning_events
+       WHERE ${withinRange} AND event_type = 'question_answered'
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    pool.query(
+      `SELECT lesson_id, level, COUNT(*) AS value, COUNT(DISTINCT user_id) AS learners
+       FROM learning_events
+       WHERE ${withinRange} AND event_type = 'lesson_opened' AND lesson_id IS NOT NULL
+       GROUP BY lesson_id, level ORDER BY value DESC LIMIT 10`,
+      params,
+    ),
+    pool.query(
+      `SELECT COALESCE(NULLIF(source, ''), 'direct') AS source, COUNT(*) AS events, COUNT(DISTINCT user_id) AS users
+       FROM learning_events
+       WHERE ${withinRange}
+       GROUP BY 1 ORDER BY events DESC`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS value FROM learning_events WHERE ${withinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS value FROM users WHERE ${withinRange}`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
+       WHERE ${withinRange} AND event_type IN ('paywall_shown', 'vip_modal_opened') AND user_id IS NOT NULL`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS value FROM users
+       WHERE ${withinRange} AND is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())`,
+      params,
+    ),
+  ]);
+  const num = (result) => Number(result.rows[0]?.value || 0);
+
+  sendJson(res, 200, {
+    meta: { days, from: fromYmd, to: toYmd },
+    dailyLearners: buildDailySeries(dailyLearners.rows, fromYmd, toYmd),
+    dailyAttempts: buildDailySeries(dailyAttempts.rows, fromYmd, toYmd),
+    topLessons: topLessons.rows.map((row) => ({
+      lessonId: row.lesson_id,
+      level: row.level || "",
+      opens: Number(row.value) || 0,
+      learners: Number(row.learners) || 0,
+    })),
+    sources: sourceBreakdown.rows.map((row) => ({
+      source: row.source,
+      events: Number(row.events) || 0,
+      users: Number(row.users) || 0,
+    })),
+    vipModalOpens: num(vipModalOpens),
+    funnel: {
+      registered: num(registeredCount),
+      learned: num(learnersCount),
+      popup: num(popupCount),
+      vip: num(vipCount),
+    },
+  });
+}
+
 function serveStatic(req, res, url) {
   // Local lab fallback for /listening-app/typing/ep-* exported routes.
   const usesTypingFallback = /^\/listening-app\/typing\/ep-\d+\/?$/.test(url.pathname);
@@ -952,6 +1121,10 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === "/api/listening/pronunciation-assessment" && req.method === "POST") {
       await handlePronunciationAssessment(req, res);
+      return;
+    }
+    if (url.pathname === "/api/admin/analytics/overview" && req.method === "GET") {
+      await handleAdminAnalyticsOverview(req, res, url);
       return;
     }
     if (url.pathname.startsWith("/api/")) {
