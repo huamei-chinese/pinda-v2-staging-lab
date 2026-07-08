@@ -24,7 +24,7 @@ test("admin API calls use admin user id instead of student user id", () => {
 });
 
 test("student login cannot store an admin account as the frontend learner", () => {
-  assert.match(appSource, /\["admin", "staff", "employee", "sales", "ctv", "content"\]\.includes\(String\(data\.user\?\.role/);
+  assert.match(appSource, /\["admin", "staff", "employee"\]\.includes\(String\(data\.user\?\.role/);
   assert.match(appSource, /state\.user\s*=\s*data\.user/);
 });
 

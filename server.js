@@ -88,41 +88,12 @@ function publicUser(row) {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
-    role: normalizePublicRole(row.role),
-    ref: row.ref || "",
+    role: row.role,
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
   };
-}
-
-function normalizePublicRole(role) {
-  const normalized = String(role || "").trim().toLowerCase();
-  if (normalized === "admin") return "admin";
-  if (normalized === "sales") return "sales";
-  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
-  if (normalized === "content" || normalized === "content_manager") return "content";
-  return "user";
-}
-
-function normalizeEditableRole(role) {
-  const normalized = normalizePublicRole(role);
-  return ["user", "sales", "ctv", "content"].includes(normalized) ? normalized : "user";
-}
-
-function isEditableRoleValue(role) {
-  const normalized = String(role || "").trim().toLowerCase();
-  return ["user", "sales", "ctv", "content", "staff", "employee", "content_manager"].includes(normalized);
-}
-
-function normalizeReferralRef(ref) {
-  const normalized = String(ref || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "")
-    .slice(0, 64);
-  return normalized || null;
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -707,15 +678,13 @@ async function ensureSchema() {
       full_name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
-      ref TEXT,
+      role TEXT NOT NULL DEFAULT 'student',
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ
     );
   `);
-  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
 }
 
 async function handleRegister(req, res) {
@@ -724,7 +693,6 @@ async function handleRegister(req, res) {
   const fullName = String(body.fullName || body.name || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
-  const ref = normalizeReferralRef(body.ref);
 
   if (fullName.length < 2) {
     sendJson(res, 400, { error: "Vui lòng nhập họ và tên." });
@@ -741,10 +709,10 @@ async function handleRegister(req, res) {
 
   try {
     const result = await pool.query(
-      `INSERT INTO users (full_name, email, password_hash, ref)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), ref],
+      `INSERT INTO users (full_name, email, password_hash)
+       VALUES ($1, $2, $3)
+       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password)],
     );
     sendJson(res, 201, { user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -776,7 +744,7 @@ async function handleLogin(req, res) {
   const updated = await pool.query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
     [user.id],
   );
   sendJson(res, 200, { user: publicUser(updated.rows[0]) });
@@ -791,80 +759,11 @@ async function handleAdminUsers(req, res, url) {
 
   if (req.method === "GET") {
     const result = await pool.query(
-      `SELECT id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, role, is_active, created_at, updated_at, last_login_at
        FROM users
        ORDER BY created_at DESC`,
     );
     sendJson(res, 200, { users: result.rows.map(publicUser) });
-    return;
-  }
-
-  const roleMatch = url.pathname.match(/^\/api\/admin\/users\/([0-9a-f-]+)\/role$/i);
-  if (roleMatch && req.method === "PATCH") {
-    const body = await readBody(req);
-    if (!isEditableRoleValue(body.role)) {
-      sendJson(res, 400, { error: "Role must be user, sales, ctv or content." });
-      return;
-    }
-    const nextRole = normalizeEditableRole(body.role);
-    const current = await pool.query(
-      `SELECT id, role
-       FROM users
-       WHERE id = $1`,
-      [roleMatch[1]],
-    );
-    const currentUser = current.rows[0];
-    if (!currentUser) {
-      sendJson(res, 404, { error: "Khong tim thay user." });
-      return;
-    }
-    if (normalizePublicRole(currentUser.role) === "admin") {
-      sendJson(res, 403, { error: "Cannot modify admin accounts." });
-      return;
-    }
-
-    const result = await pool.query(
-      `UPDATE users
-       SET role = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
-      [nextRole, roleMatch[1]],
-    );
-    sendJson(res, 200, { user: publicUser(result.rows[0]) });
-    return;
-  }
-
-  const refMatch = url.pathname.match(/^\/api\/admin\/users\/([0-9a-f-]+)\/ref$/i);
-  if (refMatch && req.method === "PATCH") {
-    const body = await readBody(req);
-    const ref = normalizeReferralRef(body.ref);
-    if (!ref) {
-      sendJson(res, 400, { error: "Mã ref không hợp lệ." });
-      return;
-    }
-    const current = await pool.query(
-      `SELECT id, role
-       FROM users
-       WHERE id = $1`,
-      [refMatch[1]],
-    );
-    const currentUser = current.rows[0];
-    if (!currentUser) {
-      sendJson(res, 404, { error: "Không tìm thấy user." });
-      return;
-    }
-    if (normalizePublicRole(currentUser.role) !== "ctv") {
-      sendJson(res, 400, { error: "Chỉ tài khoản CTV mới được tạo link ref." });
-      return;
-    }
-    const result = await pool.query(
-      `UPDATE users
-       SET ref = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
-      [ref, refMatch[1]],
-    );
-    sendJson(res, 200, { user: publicUser(result.rows[0]) });
     return;
   }
 
@@ -878,7 +777,7 @@ async function handleAdminUsers(req, res, url) {
     const body = await readBody(req);
     const fullName = String(body.fullName || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
-    const role = normalizeEditableRole(body.role);
+    const role = String(body.role || "student").trim();
     const isActive = body.isActive === true;
 
     if (!fullName || !email) {
@@ -890,8 +789,8 @@ async function handleAdminUsers(req, res, url) {
       `UPDATE users
        SET full_name = $1, email = $2, role = $3, is_active = $4, updated_at = NOW()
        WHERE id = $5
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
-      [fullName, email, role, isActive, idMatch[1]],
+       RETURNING id, full_name, email, role, is_active, created_at, updated_at, last_login_at`,
+      [fullName, email, role || "student", isActive, idMatch[1]],
     );
     if (!result.rows[0]) {
       sendJson(res, 404, { error: "Không tìm thấy user." });

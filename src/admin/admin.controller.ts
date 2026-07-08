@@ -29,15 +29,6 @@ export class AdminController {
     return this.adminService.updateUserRole(id, body, headers);
   }
 
-  @Patch(':id/ref')
-  async updateUserRef(
-    @Param('id') id: string,
-    @Body() body: any,
-    @Headers() headers: Record<string, string>
-  ) {
-    return this.adminService.updateUserRef(id, body, headers);
-  }
-
   @Patch(':id')
   async updateUser(
     @Param('id') id: string,

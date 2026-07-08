@@ -10,9 +10,7 @@ export class AuthController {
     const fullName = String(body.fullName || body.name || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
-    const ref = String(body.ref || '').trim();
-    const src = String(body.src || '').trim();
-    return this.authService.register(fullName, email, password, ref, src);
+    return this.authService.register(fullName, email, password);
   }
 
   @Post('login')

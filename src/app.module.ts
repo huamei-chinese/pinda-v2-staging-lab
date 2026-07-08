@@ -7,14 +7,13 @@ import { AdminModule } from './admin/admin.module';
 import { PaymentModule } from './payment/payment.module';
 import { ContentModule } from './content/content.module';
 import { ListeningModule } from './listening/listening.module';
-import { EventsModule } from './events/events.module';
 import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-local-preview.module';
 
 @Module({
   imports: [
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), 'public'),
-      exclude: ['/api/*path'],
+      exclude: ['/api/(.*)'],
     }),
     DatabaseModule,
     AuthModule,
@@ -22,7 +21,6 @@ import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-loc
     PaymentModule,
     ContentModule,
     ListeningModule,
-    EventsModule,
     AdminV2LocalPreviewModule,
   ],
 })

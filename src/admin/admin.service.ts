@@ -13,24 +13,11 @@ export class AdminService {
     private readonly authService: AuthService,
   ) {}
 
-  private normalizeRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'staff' | 'admin' {
+  private normalizeRole(role: string | null | undefined): 'user' | 'staff' | 'admin' {
     const normalized = String(role || '').trim().toLowerCase();
     if (normalized === 'admin') return 'admin';
-    if (normalized === 'sales') return 'sales';
-    if (normalized === 'ctv' || normalized === 'staff' || normalized === 'employee') return 'ctv';
-    if (normalized === 'content' || normalized === 'content_manager') return 'content';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
     return 'user';
-  }
-
-  private normalizeEditableRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' {
-    const normalized = this.normalizeRole(role);
-    if (normalized === 'sales' || normalized === 'ctv' || normalized === 'content') return normalized;
-    return 'user';
-  }
-
-  private isEditableRoleValue(role: string | null | undefined): boolean {
-    const normalized = String(role || '').trim().toLowerCase();
-    return ['user', 'sales', 'ctv', 'content', 'staff', 'employee', 'content_manager'].includes(normalized);
   }
 
   publicUser(row: any) {
@@ -48,14 +35,11 @@ export class AdminService {
       fullName: row.full_name,
       email: row.email,
       role,
-      ref: row.ref || '',
-      src: row.src || '',
       isActive: row.is_active,
       currentLevel: row.current_level || 'HSK2',
       avatarUrl: row.avatar_url || '',
       isPremium,
       plan,
-      vip: Number(row.vip || 0),
       vipPlanId,
       vipPlanName: vipPlanId === '7d' ? 'VIP 7 ngày' : vipPlanId === '30d' ? 'VIP 30 ngày' : null,
       vipPlanNameZh: vipPlanId === '7d' ? '7天VIP' : vipPlanId === '30d' ? '30天VIP' : null,
@@ -96,7 +80,7 @@ export class AdminService {
 
   private async assertAdminOrStaff(headers: Record<string, string | string[] | undefined>) {
     const requester = await this.getAdminRequester(headers);
-    if (!requester || !['admin', 'staff', 'sales', 'ctv', 'content'].includes(requester.role)) {
+    if (!requester || !['admin', 'staff'].includes(requester.role)) {
       throw new HttpException('Vui lòng đăng nhập bằng tài khoản admin.', HttpStatus.UNAUTHORIZED);
     }
     return requester;
@@ -106,9 +90,8 @@ export class AdminService {
     await this.assertAdminOrStaff(headers);
 
     try {
-      await this.recalculateCtvVipCounts();
       const result = await this.db.query(
-        `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+        `SELECT id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at
          FROM users
          ORDER BY created_at DESC`,
       );
@@ -117,26 +100,6 @@ export class AdminService {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  }
-
-  private async recalculateCtvVipCounts() {
-    await this.db.query(
-      `UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee')`,
-    );
-    await this.db.query(
-      `UPDATE users c
-       SET vip = sub.cnt
-       FROM (
-         SELECT lower(btrim(u.ref)) AS ref, COUNT(*) AS cnt
-         FROM users u
-         WHERE u.ref IS NOT NULL AND btrim(u.ref) <> ''
-           AND u.is_premium = TRUE
-           AND (u.premium_until IS NULL OR u.premium_until > NOW())
-         GROUP BY lower(btrim(u.ref))
-       ) sub
-       WHERE lower(btrim(c.ref)) = sub.ref
-         AND c.role IN ('ctv', 'staff', 'employee')`,
-    );
   }
 
   private calculatePremiumUntil(plan: string, durationDays: number): string | null {
@@ -173,13 +136,13 @@ export class AdminService {
     const fullName = String(body.fullName || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
-    const role = this.normalizeEditableRole(body.role || 'user');
+    const role = this.normalizeRole(body.role || 'user');
     const currentLevel = String(body.currentLevel || 'HSK2').trim().toUpperCase();
     const plan = String(body.plan || 'FREE').trim().toUpperCase();
     const isActive = body.isActive !== false;
     const durationDays = Math.max(0, Number(body.durationDays || 0));
     const isPremium = plan === 'PREMIUM';
-    const roleToSave = plan === 'EMPLOYEE' ? 'ctv' : role || 'user';
+    const roleToSave = plan === 'EMPLOYEE' ? 'staff' : role || 'user';
     const premiumUntil = this.calculatePremiumUntil(plan, durationDays);
     const vipPlanId = isPremium ? this.vipPlanIdFromDuration(null, durationDays) : null;
 
@@ -203,7 +166,7 @@ export class AdminService {
       const result = await this.db.query(
         `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
         [
           fullName,
           email,
@@ -244,7 +207,7 @@ export class AdminService {
 
     const fullName = String(body.fullName || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
-    const requestedRole = this.normalizeEditableRole(body.role || 'user');
+    const requestedRole = this.normalizeRole(body.role || 'user');
     const isActive = body.isActive === true;
     const currentLevel = String(body.currentLevel || 'HSK2').trim().toUpperCase();
     const plan = String(body.plan || '').trim().toUpperCase();
@@ -289,7 +252,7 @@ export class AdminService {
         throw new HttpException('Kh么ng t矛m th岷 user.', HttpStatus.NOT_FOUND);
       }
       const currentRole = this.normalizeRole(currentUser.role);
-      if (requester.role !== 'admin') {
+      if (requester.role === 'staff') {
         if (currentRole === 'admin') {
           throw new HttpException('Staff cannot modify admin accounts.', HttpStatus.FORBIDDEN);
         }
@@ -302,6 +265,9 @@ export class AdminService {
         ) {
           throw new HttpException('Staff can only update VIP status.', HttpStatus.FORBIDDEN);
         }
+      }
+      if (currentRole !== 'admin' && requestedRole === 'admin') {
+        throw new HttpException('Cannot set admin role from this endpoint.', HttpStatus.FORBIDDEN);
       }
       const roleToSave = currentRole === 'admin' ? currentUser.role : requestedRole;
       const result = await this.db.query(
@@ -329,7 +295,7 @@ export class AdminService {
              END,
              updated_at = NOW()
          WHERE id = $6
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+         RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
         [
           fullName,
           email,
@@ -362,15 +328,12 @@ export class AdminService {
   ) {
     const requester = await this.getAdminRequester(headers);
     if (requester?.role !== 'admin') {
-      throw new HttpException('Only admin can manage user roles.', requester ? HttpStatus.FORBIDDEN : HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Only admin can manage staff roles.', requester ? HttpStatus.FORBIDDEN : HttpStatus.UNAUTHORIZED);
     }
-    if (!this.isEditableRoleValue(body.role)) {
-      throw new HttpException('Role must be user, sales, ctv or content.', HttpStatus.BAD_REQUEST);
-    }
-    const nextRole = this.normalizeEditableRole(body.role);
+    const nextRole = this.normalizeRole(body.role);
 
-    if (!['user', 'sales', 'ctv', 'content'].includes(nextRole)) {
-      throw new HttpException('Role must be user, sales, ctv or content.', HttpStatus.BAD_REQUEST);
+    if (!['user', 'staff'].includes(nextRole)) {
+      throw new HttpException('Role must be user or staff.', HttpStatus.BAD_REQUEST);
     }
     if (String(requester.id) === String(id)) {
       throw new HttpException('Cannot change your own admin role.', HttpStatus.FORBIDDEN);
@@ -395,44 +358,8 @@ export class AdminService {
        SET role = $1,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
       [nextRole, id],
-    );
-    return { user: this.publicUser(result.rows[0]) };
-  }
-
-  async updateUserRef(
-    id: string,
-    body: { ref?: string },
-    headers: Record<string, string | string[] | undefined>,
-  ) {
-    await this.assertAdmin(headers);
-    const ref = this.authService.normalizeReferralRef(body.ref);
-    if (!ref) {
-      throw new HttpException('Mã ref không hợp lệ.', HttpStatus.BAD_REQUEST);
-    }
-
-    const current = await this.db.query(
-      `SELECT id, role
-       FROM users
-       WHERE id = $1`,
-      [id],
-    );
-    const currentUser = current.rows[0];
-    if (!currentUser) {
-      throw new HttpException('Không tìm thấy user.', HttpStatus.NOT_FOUND);
-    }
-    if (this.normalizeRole(currentUser.role) !== 'ctv') {
-      throw new HttpException('Chỉ tài khoản CTV mới được tạo link ref.', HttpStatus.BAD_REQUEST);
-    }
-
-    const result = await this.db.query(
-      `UPDATE users
-       SET ref = $1,
-           updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
-      [ref, id],
     );
     return { user: this.publicUser(result.rows[0]) };
   }
@@ -574,177 +501,6 @@ export class AdminService {
     await this.assertAdmin(headers);
     try {
       return await this.contentService.saveHskLevelCovers(body.covers || []);
-    } catch (error: any) {
-      if (error instanceof HttpException) throw error;
-      throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  private static readonly ANALYTICS_TZ = 'Asia/Ho_Chi_Minh';
-  private static readonly ANALYTICS_MAX_SPAN_DAYS = 1000;
-
-  private toYmd(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  private ymdToUtcDate(ymd: string): Date {
-    const [year, month, day] = ymd.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-  }
-
-  private spanDays(fromYmd: string, toYmd: string): number {
-    return Math.round((this.ymdToUtcDate(toYmd).getTime() - this.ymdToUtcDate(fromYmd).getTime()) / 86400000) + 1;
-  }
-
-  private resolveAnalyticsRange(options: { days?: number | string; from?: string; to?: string }) {
-    const ymdPattern = /^\d{4}-\d{2}-\d{2}$/;
-    let fromYmd = ymdPattern.test(String(options.from || '').trim()) ? String(options.from).trim() : '';
-    let toYmd = ymdPattern.test(String(options.to || '').trim()) ? String(options.to).trim() : '';
-
-    if (fromYmd && toYmd) {
-      if (fromYmd > toYmd) [fromYmd, toYmd] = [toYmd, fromYmd];
-    } else {
-      const days = Math.min(AdminService.ANALYTICS_MAX_SPAN_DAYS, Math.max(1, Math.floor(Number(options.days) || 30)));
-      const today = new Date();
-      const start = new Date(today);
-      start.setDate(today.getDate() - (days - 1));
-      fromYmd = this.toYmd(start);
-      toYmd = this.toYmd(today);
-    }
-
-    if (this.spanDays(fromYmd, toYmd) > AdminService.ANALYTICS_MAX_SPAN_DAYS) {
-      const end = this.ymdToUtcDate(toYmd);
-      const start = new Date(end);
-      start.setUTCDate(end.getUTCDate() - (AdminService.ANALYTICS_MAX_SPAN_DAYS - 1));
-      fromYmd = start.toISOString().slice(0, 10);
-    }
-
-    return { fromYmd, toYmd, days: this.spanDays(fromYmd, toYmd) };
-  }
-
-  private buildDailySeries(rows: Array<{ day: string; value: string | number }>, fromYmd: string, toYmd: string) {
-    const byDay = new Map<string, number>();
-    for (const row of rows) byDay.set(String(row.day), Number(row.value) || 0);
-
-    const series: Array<{ date: string; value: number }> = [];
-    const cursor = this.ymdToUtcDate(fromYmd);
-    const end = this.ymdToUtcDate(toYmd);
-    let guard = 0;
-    while (cursor.getTime() <= end.getTime() && guard <= AdminService.ANALYTICS_MAX_SPAN_DAYS) {
-      const key = cursor.toISOString().slice(0, 10);
-      series.push({ date: key, value: byDay.get(key) || 0 });
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-      guard += 1;
-    }
-    return series;
-  }
-
-  async getLearningAnalytics(
-    headers: Record<string, string | string[] | undefined>,
-    options: { days?: number | string; from?: string; to?: string } = {},
-  ) {
-    await this.assertAdmin(headers);
-
-    const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
-    const tz = AdminService.ANALYTICS_TZ;
-    // Range boundaries and daily buckets are aligned to Ho Chi Minh calendar days.
-    const withinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
-    const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${tz}'), 'YYYY-MM-DD')`;
-    const params = [fromYmd, toYmd];
-
-    try {
-      const [
-        dailyLearners,
-        dailyAttempts,
-        topLessons,
-        sourceBreakdown,
-        vipModalOpens,
-        registeredCount,
-        learnersCount,
-        popupCount,
-        vipCount,
-      ] = await Promise.all([
-        this.db.query(
-          `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
-           FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
-           GROUP BY 1 ORDER BY 1`,
-          params,
-        ),
-        this.db.query(
-          `SELECT ${dayBucket} AS day, COUNT(*) AS value
-           FROM learning_events
-           WHERE ${withinRange} AND event_type = 'question_answered'
-           GROUP BY 1 ORDER BY 1`,
-          params,
-        ),
-        this.db.query(
-          `SELECT lesson_id, level, COUNT(*) AS value, COUNT(DISTINCT user_id) AS learners
-           FROM learning_events
-           WHERE ${withinRange} AND event_type = 'lesson_opened' AND lesson_id IS NOT NULL
-           GROUP BY lesson_id, level ORDER BY value DESC LIMIT 10`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COALESCE(NULLIF(source, ''), 'direct') AS source, COUNT(*) AS events, COUNT(DISTINCT user_id) AS users
-           FROM learning_events
-           WHERE ${withinRange}
-           GROUP BY 1 ORDER BY events DESC`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM learning_events WHERE ${withinRange} AND event_type = 'vip_modal_opened'`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM users WHERE ${withinRange}`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('paywall_shown', 'vip_modal_opened') AND user_id IS NOT NULL`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM users
-           WHERE ${withinRange} AND is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())`,
-          params,
-        ),
-      ]);
-
-      const num = (result: any) => Number(result.rows[0]?.value || 0);
-
-      return {
-        meta: { days, from: fromYmd, to: toYmd },
-        dailyLearners: this.buildDailySeries(dailyLearners.rows, fromYmd, toYmd),
-        dailyAttempts: this.buildDailySeries(dailyAttempts.rows, fromYmd, toYmd),
-        topLessons: topLessons.rows.map((row) => ({
-          lessonId: row.lesson_id,
-          level: row.level || '',
-          opens: Number(row.value) || 0,
-          learners: Number(row.learners) || 0,
-        })),
-        sources: sourceBreakdown.rows.map((row) => ({
-          source: row.source,
-          events: Number(row.events) || 0,
-          users: Number(row.users) || 0,
-        })),
-        vipModalOpens: num(vipModalOpens),
-        funnel: {
-          registered: num(registeredCount),
-          learned: num(learnersCount),
-          popup: num(popupCount),
-          vip: num(vipCount),
-        },
-      };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
