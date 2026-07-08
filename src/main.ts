@@ -38,6 +38,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(json({ limit: '30mb' }));
   app.use(urlencoded({ extended: true, limit: '30mb' }));
+  app.use('/admin', (req: any, res: any, next: any) => {
+    if (req.method !== 'GET') return next();
+    return res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+  });
 
   // Enable CORS for frontend API calls
   app.enableCors();

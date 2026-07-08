@@ -10,9 +10,9 @@
     color: #ffffff;
   }
 
-  .app-desktop-content:has(> .mobile-page-return-bar) {
+  /* .app-desktop-content:has(> .mobile-page-return-bar) {
     padding-top: 48px !important;
-  }
+  } */
 
   .mobile-page-return-bar {
     position: fixed !important;
@@ -482,5 +482,105 @@
   .account-side-nav,
   .account-help-card {
     display: none !important;
+  }
+}
+
+/* Home title: remove the white frame, keep text readable with subtle shadow. */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar h1,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar > div:first-child {
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+.screen-home .home-desktop-topbar h1,
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
+/* Home title: white translucent frame only behind the main title. */
+.screen-home .home-desktop-topbar > div,
+.screen-home .home-desktop-topbar > div:first-child,
+.screen-home .home-desktop-topbar p {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.screen-home .home-desktop-topbar h1 {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 380px) !important;
+  margin: 0 !important;
+  padding: 8px 14px 10px !important;
+  border: 1px solid rgba(255, 255, 255, .78) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, .70) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+  backdrop-filter: blur(12px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.08) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .65) !important;
+}
+
+.screen-home .home-desktop-topbar p {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, .92), 0 1px 2px rgba(15, 23, 42, .14) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar h1 {
+    max-width: calc(100vw - 134px) !important;
+    padding: 7px 11px 9px !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* Home subtitle: smaller translucent frame behind the subtitle only. */
+.screen-home .home-desktop-topbar p {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: min(100%, 240px) !important;
+  margin: 6px 0 0 !important;
+  padding: 4px 10px 5px !important;
+  border: 1px solid rgba(255, 255, 255, .62) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, .56) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .72) !important;
+  backdrop-filter: blur(9px) saturate(1.05) !important;
+  -webkit-backdrop-filter: blur(9px) saturate(1.05) !important;
+  color: #475569 !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .58) !important;
+}
+
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar p {
+    max-width: calc(100vw - 176px) !important;
+    margin-top: 5px !important;
+    padding: 3px 8px 4px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* Noi theo mobile: lift the active sentence card slightly. */
+@media (max-width: 700px) {
+  #listeningScreen .listening-repeat-feed-active-content,
+  #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content {
+    top: calc(47% - 56px) !important;
   }
 }
