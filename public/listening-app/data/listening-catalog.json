@@ -264,7 +264,8 @@
                       "vi": "Bạn bè",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-001-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dì yī cì zài kā fēi diàn yù dào zhōng guó rén"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-002",
@@ -509,7 +510,8 @@
                       "vi": "Nói chuyện, trò chuyện",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-002-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shuō wán “nǐ hǎo” yǐ hòu bù zhī dào shuō shén me"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-003",
@@ -754,7 +756,8 @@
                       "vi": "Cố lên",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-003-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "nǐ xué zhōng wén duō jiǔ le？"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-004",
@@ -989,7 +992,8 @@
                       "vi": "Tiến bộ",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-004-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zhōng guó rén shuō dé tài kuài le"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-005",
@@ -1224,7 +1228,8 @@
                       "vi": "Không nên",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-005-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ de zhōng wén shuō dé hái bú tài hǎo"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-006",
@@ -1459,7 +1464,8 @@
                       "vi": "Liên lạc nhiều hơn",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-006-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hé zhōng guó péng yǒu jiā lián xì fāng shì"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-007",
@@ -1694,7 +1700,8 @@
                       "vi": "Đến lúc đó",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-007-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yòng zhōng wén jiè shào yuè nán"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-008",
@@ -1929,7 +1936,8 @@
                       "vi": "Dẫn, mang theo",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-008-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wèn zhōng guó péng yǒu lái zì nǎ gè chéng shì"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-009",
@@ -2164,7 +2172,8 @@
                       "vi": "Đi cùng nhau",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hé zhōng guó rén liáo sān fēn zhōng"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-001-daily-010",
@@ -2439,7 +2448,8 @@
                       "vi": "Tự tin",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-001/words/daily-010-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "cóng bù gǎn shuō dào néng shuō yí duàn zhōng wén"
                 }
               ]
             },
@@ -2768,7 +2778,8 @@
                       "vi": "Thích nghi",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-001-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ shì xīn yuán gōng"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-002",
@@ -3089,7 +3100,8 @@
                       "vi": "Nghiêm túc, cẩn thận",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-002-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jīn tiān wǒ kāi shǐ shàng bān"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-003",
@@ -3410,7 +3422,8 @@
                       "vi": "Một phần",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-003-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "lǎo bǎn jiāo dài gōng zuò， wǒ hái méi tīng dǒng"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-004",
@@ -3731,7 +3744,8 @@
                       "vi": "Sửa, chỉnh sửa",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-004-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zhè jiàn shì zěn me zuò？"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-005",
@@ -4052,7 +4066,8 @@
                       "vi": "Chú ý; sự chú ý",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-005-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ zuò wán le"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-006",
@@ -4373,7 +4388,8 @@
                       "vi": "Sửa lại cho đúng",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-006-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ zuò cuò le， duì bù qǐ"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-007",
@@ -4694,7 +4710,8 @@
                       "vi": "Đến muộn",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-007-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jǐ diǎn kāi huì？"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-008",
@@ -5015,7 +5032,8 @@
                       "vi": "Hoàn thành",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-008-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "máng lù de gōng zuò rì"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-009",
@@ -5336,7 +5354,8 @@
                       "vi": "Gọi",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǔ cān yāo qǐng"
                 },
                 {
                   "id": "dialogue-beginner-topic-work-with-chinese-boss-colleagues-001-daily-010",
@@ -5669,7 +5688,8 @@
                       "vi": "Tiếp tục cố gắng",
                       "audio": "audio/catalog/dialogue/beginner/topic-work-with-chinese-boss-colleagues-001/words/daily-010-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yòng zhōng wén guò yì tiān de gōng zuò"
                 }
               ]
             },
@@ -5938,7 +5958,8 @@
                       "vi": "Bất cứ lúc nào",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-001-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xún wèn chǎn pǐn jià gé"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-002",
@@ -6199,7 +6220,8 @@
                       "vi": "Thông tin",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-002-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "kè hù wèn hái yǒu huò ma"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-003",
@@ -6460,7 +6482,8 @@
                       "vi": "Chọn",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-003-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "kè hù xiǎng kàn qí tā yán sè"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-004",
@@ -6721,7 +6744,8 @@
                       "vi": "Liên hệ, liên lạc",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-004-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "kè hù wèn shén me shí hòu fā huò"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-005",
@@ -6982,7 +7006,8 @@
                       "vi": "Buổi tối",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-005-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qǐng kè hù děng yí xià"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-006",
@@ -7243,7 +7268,8 @@
                       "vi": "Giải thích; hướng dẫn",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-006-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gěi kè hù fā tú piàn hé chǎn pǐn xìn xī"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-007",
@@ -7504,7 +7530,8 @@
                       "vi": "Đợi",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-007-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wèn kè hù xū yào duō shǎo shù liàng"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-008",
@@ -7765,7 +7792,8 @@
                       "vi": "Tin nhắn, tin tức",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-008-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zhè ge jià gé yǐ jīng zuì dī le"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-009",
@@ -8026,7 +8054,8 @@
                       "vi": "Vui vẻ",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gǎn xiè kè hù xià dān"
                 },
                 {
                   "id": "dialogue-beginner-topic-chat-with-chinese-customers-001-daily-010",
@@ -8307,7 +8336,8 @@
                       "vi": "Đã nhận được rồi",
                       "audio": "audio/catalog/dialogue/beginner/topic-chat-with-chinese-customers-001/words/daily-010-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wán zhěng de xiāo shòu liáo tiān"
                 }
               ]
             },
@@ -8576,7 +8606,8 @@
                       "vi": "Nói nhiều hơn",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-001-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qǐng duì fāng fàng màn yǔ sù"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-002",
@@ -8837,7 +8868,8 @@
                       "vi": "Đừng vội, đừng lo",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-002-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ mí lù le， zěn me zǒu？"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-003",
@@ -9098,7 +9130,8 @@
                       "vi": "Chú ý thời gian",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-003-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shàng bān chí dào hòu de shuō míng"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-004",
@@ -9359,7 +9392,8 @@
                       "vi": "Thanh toán xong",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-004-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "fù kuǎn yù dào xiǎo zhuàng kuàng"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-005",
@@ -9620,7 +9654,8 @@
                       "vi": "Giúp đỡ",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-005-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xún zhǎo diū shī wù pǐn"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-006",
@@ -9881,7 +9916,8 @@
                       "vi": "Xin nghỉ",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-006-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ dù zǐ téng"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-007",
@@ -10142,7 +10178,8 @@
                       "vi": "Hiểu; rõ ràng",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-007-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shēn tǐ bù shū fú shí qǐng jià"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-008",
@@ -10403,7 +10440,8 @@
                       "vi": "Thật ra",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-008-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wǒ bú huì yòng zhè ge chǎng jǐng"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-009",
@@ -10664,7 +10702,8 @@
                       "vi": "Tạm biệt",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bō cuò hào mǎ hòu de chǔ lǐ"
                 },
                 {
                   "id": "dialogue-beginner-topic-handle-emergencies-in-chinese-001-daily-010",
@@ -10945,7 +10984,8 @@
                       "vi": "Thu hoạch, điều học được",
                       "audio": "audio/catalog/dialogue/beginner/topic-handle-emergencies-in-chinese-001/words/daily-010-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "lián xù yù dào xiǎo zhuàng kuàng"
                 }
               ]
             },
@@ -11234,7 +11274,8 @@
                       "vi": "Thanh toán",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-001-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dì yī cì yòng zhōng wén diǎn nǎi chá"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-002",
@@ -11515,7 +11556,8 @@
                       "vi": "Đợi một lát",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-002-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "tiáo zhěng nǎi chá kǒu wèi"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-003",
@@ -11796,7 +11838,8 @@
                       "vi": "Phần, suất",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-003-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xún wèn cài de là dù"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-004",
@@ -12077,7 +12120,8 @@
                       "vi": "Lát nữa gặp",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-004-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yuē zhōng guó péng yǒu yì qǐ chī fàn"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-005",
@@ -12358,7 +12402,8 @@
                       "vi": "Trà nóng",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-005-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bù zhī dào diǎn shén me cài"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-006",
@@ -12639,7 +12684,8 @@
                       "vi": "Nói thế nào?",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-006-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "liáo liáo fàn cài de jià gé"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-007",
@@ -12920,7 +12966,8 @@
                       "vi": "Chúc dùng bữa ngon miệng",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-007-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zài yào mǐ fàn、 shuǐ hé zhǐ jīn"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-008",
@@ -13201,7 +13248,8 @@
                       "vi": "Hẹn",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-008-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "chī fàn shí biǎo dá gòu le"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-009",
@@ -13494,7 +13542,8 @@
                       "vi": "Lần sau lại đến",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jié zhàng fāng shì"
                 },
                 {
                   "id": "dialogue-beginner-topic-order-milk-tea-and-meals-001-daily-010",
@@ -13847,7 +13896,8 @@
                       "vi": "Tự mình, bản thân",
                       "audio": "audio/catalog/dialogue/beginner/topic-order-milk-tea-and-meals-001/words/daily-010-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "cóng diǎn cài dào mǎi dān"
                 }
               ]
             }
@@ -14174,7 +14224,8 @@
                       "vi": "Ở chung, hòa hợp",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-001-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú chǔ fāng shì de xuǎn zé"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-002",
@@ -14485,7 +14536,8 @@
                       "vi": "Phụ thuộc",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-002-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú zì yòng cān de gǎn shòu"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-003",
@@ -14806,7 +14858,8 @@
                       "vi": "Cảm giác thành tựu",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-003-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bān chū qù zhù de yā lì"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-004",
@@ -15117,7 +15170,8 @@
                       "vi": "Chịu trách nhiệm với bản thân",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-004-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zì wǒ guǎn lǐ de tiǎo zhàn"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-005",
@@ -15428,7 +15482,8 @@
                       "vi": "Xảy ra chuyện",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-005-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shēng bìng shí de yī kào"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-006",
@@ -15739,7 +15794,8 @@
                       "vi": "Kết nối với người khác",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-006-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú lì shēng huó de chéng zhǎng"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-007",
@@ -16050,7 +16106,8 @@
                       "vi": "Sống qua ngày, sống cuộc sống",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-007-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gǎn qíng zhuàng tài hé shēng huó zhì liàng"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-008",
@@ -16361,7 +16418,8 @@
                       "vi": "Chuyến du lịch ngắn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-008-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú zì chū xíng de yǒng qì"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-009",
@@ -16672,7 +16730,8 @@
                       "vi": "Mở lòng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-009-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bǎo chí qīn jìn de néng lì"
                 },
                 {
                   "id": "dialogue-intermediate-topic-living-alone-intermediate-001-daily-010",
@@ -16993,7 +17052,8 @@
                       "vi": "Lựa chọn sống cùng ai",
                       "audio": "audio/catalog/dialogue/intermediate/topic-living-alone-intermediate-001/words/daily-010-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú lì shēng huó de jī běn gōng"
                 }
               ]
             },
@@ -17332,7 +17392,8 @@
                       "vi": "Chí tiến thủ",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-001-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gǎn qíng kāi shǐ de shí jī"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-002",
@@ -17653,7 +17714,8 @@
                       "vi": "Giữ được bản thân",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-002-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "nián qīng rén de liàn ài jié zòu"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-003",
@@ -17974,7 +18036,8 @@
                       "vi": "Trân trọng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-003-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zé ǒu biāo zhǔn de qǔ shě"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-004",
@@ -18285,7 +18348,8 @@
                       "vi": "Ấm áp",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-004-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "làng màn yǔ xiàn shí de píng héng"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-005",
@@ -18596,7 +18660,8 @@
                       "vi": "Cùng một lòng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-005-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jīng jì jī chǔ yǔ guān xì wěn dìng"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-006",
@@ -18917,7 +18982,8 @@
                       "vi": "Đẩy ra, đẩy đi",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-006-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shì yè yōu xiān de jiē duàn"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-007",
@@ -19218,7 +19284,8 @@
                       "vi": "Gánh vác, đảm nhận",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-007-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiā rén yì jiàn yǔ gè rén xuǎn zé"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-008",
@@ -19529,7 +19596,8 @@
                       "vi": "Rõ ràng, xác định rõ",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-008-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jù lí dài lái de kǎo yàn"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-009",
@@ -19830,7 +19898,8 @@
                       "vi": "Đi xa, kéo dài lâu",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-009-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shōu rù yā lì xià de fēn shǒu"
                 },
                 {
                   "id": "dialogue-intermediate-topic-love-and-money-intermediate-001-daily-010",
@@ -20151,7 +20220,8 @@
                       "vi": "Cùng đối mặt",
                       "audio": "audio/catalog/dialogue/intermediate/topic-love-and-money-intermediate-001/words/daily-010-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiàn kāng guān xì de zhuàng tài"
                 }
               ]
             },
@@ -20470,7 +20540,8 @@
                       "vi": "May mắn, vận may",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-001-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "péng yǒu shù liàng hé nèi xīn jù lí"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-002",
@@ -20781,7 +20852,8 @@
                       "vi": "Trân trọng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-002-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shǎo shù zhēn xīn guān xì"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-003",
@@ -21092,7 +21164,8 @@
                       "vi": "Chúc phúc, lời chúc",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-003-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiàn xíng jiàn yuǎn de jiù yǒu"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-004",
@@ -21403,7 +21476,8 @@
                       "vi": "Thể diện, sĩ diện",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-004-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yǒu qíng lǐ de jīn qián biān jiè"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-005",
@@ -21714,7 +21788,8 @@
                       "vi": "Nhớ bạn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-005-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "lián xì pín lǜ hé qīn mì gǎn"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-006",
@@ -22025,7 +22100,8 @@
                       "vi": "Đối mặt khó khăn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-006-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "kùn nán shí de péi bàn"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-007",
@@ -22336,7 +22412,8 @@
                       "vi": "Biết, hiểu được cách",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-007-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "tǎn chéng gōu tōng de biān jiè"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-008",
@@ -22647,7 +22724,8 @@
                       "vi": "Bỏ ra, cho đi, nỗ lực",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-008-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "péng yǒu chéng gōng shí de fù zá xīn qíng"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-009",
@@ -22958,7 +23036,8 @@
                       "vi": "Giữ khoảng cách",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-009-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yì xìng yǒu yì de biān jiè"
                 },
                 {
                   "id": "dialogue-intermediate-topic-true-friends-intermediate-001-daily-010",
@@ -23269,7 +23348,8 @@
                       "vi": "Than phiền, oán trách",
                       "audio": "audio/catalog/dialogue/intermediate/topic-true-friends-intermediate-001/words/daily-010-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "chéng nián hòu de yǒu qíng wèi zhì"
                 }
               ]
             },
@@ -23588,7 +23668,8 @@
                       "vi": "Bình yên, yên tĩnh trong lòng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-001-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yǒu qián jiù zhēn de gèng xìng fú ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-002",
@@ -23899,7 +23980,8 @@
                       "vi": "Công bằng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-002-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qióng dàn kuài lè， shì zhēn de ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-003",
@@ -24210,7 +24292,8 @@
                       "vi": "Giai đoạn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-003-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gōng zī gāo dàn hěn lèi， zhí dé ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-004",
@@ -24521,7 +24604,8 @@
                       "vi": "Nhói lòng, chạm vào nỗi đau",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-004-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "mǎi dào xǐ huan de dōng xī， huì ràng rén kuài lè gèng jiǔ ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-005",
@@ -24832,7 +24916,8 @@
                       "vi": "Sắp xếp lại phương hướng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-005-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hé péng yǒu bǐ jiào shōu rù， huì ràng rén bú kuài lè ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-006",
@@ -25143,7 +25228,8 @@
                       "vi": "Cân bằng",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-006-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "nián qīng rén yīng gāi cún qián， hái shì xiǎng shòu shēng huó？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-007",
@@ -25454,7 +25540,8 @@
                       "vi": "Quyết định con người/tương lai của tôi",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-007-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiā tíng tiáo jiàn bù hǎo， huì yǐng xiǎng mèng xiǎng ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-008",
@@ -25765,7 +25852,8 @@
                       "vi": "Bị tiền kiểm soát",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-008-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qián néng mǎi dào zì yóu ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-009",
@@ -26076,7 +26164,8 @@
                       "vi": "Định nghĩa lại",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-009-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qián shén me shí hòu cái gòu？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-money-and-happiness-intermediate-001-daily-010",
@@ -26397,7 +26486,8 @@
                       "vi": "Cảm nhận cuộc sống",
                       "audio": "audio/catalog/dialogue/intermediate/topic-money-and-happiness-intermediate-001/words/daily-010-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zhēn zhèng de xìng fú lái zì nǎ lǐ？"
                 }
               ]
             },
@@ -26716,7 +26806,8 @@
                       "vi": "Thời hạn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-001-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "nián qīng rén yīng gāi lí kāi jiā xiāng qù dài chéng shì ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-002",
@@ -27037,7 +27128,8 @@
                       "vi": "Cái giá, sự trả giá",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-002-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dài chéng shì jī huì duō， yā lì yě dà"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-003",
@@ -27348,7 +27440,8 @@
                       "vi": "Lựa chọn nghiêm túc",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-003-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "liú zài jiā xiāng gèng wěn dìng， hái shì bèi xiàn zhì？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-004",
@@ -27659,7 +27752,8 @@
                       "vi": "Tính rõ",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-004-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dài chéng shì de fáng zū， zhí dé ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-005",
@@ -27980,7 +28074,8 @@
                       "vi": "Trở nên mạnh mẽ hơn",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-005-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yí gè rén zài mò shēng chéng shì， huì gū dān ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-006",
@@ -28291,7 +28386,8 @@
                       "vi": "Cuộc đời vẫn là do bạn tự đi",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-006-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "fù mǔ bù xī wàng hái zi qù yuǎn fāng， zěn me bàn？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-007",
@@ -28602,7 +28698,8 @@
                       "vi": "Chuẩn bị tốt bản thân",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-007-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "péng yǒu dōu qù le dài chéng shì， wǒ yě yào gēn zhe qù ma？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-008",
@@ -28923,7 +29020,8 @@
                       "vi": "Nhận thua",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-008-keyword-015.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "rú guǒ zài dài chéng shì shī bài le， yào bu yào huí jiā xiāng？"
                 },
                 {
                   "id": "dialogue-intermediate-topic-leave-hometown-big-city-intermediate-001-daily-009",
@@ -29204,7 +29302,8 @@
                       "vi": "Chủ động thay đổi",
                       "audio": "audio/catalog/dialogue/intermediate/topic-leave-hometown-big-city-intermediate-001/words/daily-009-keyword-010.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dài chéng shì zhēn de néng gǎi biàn mìng yùn ma？"
                 }
               ]
             }
@@ -29571,7 +29670,8 @@
                       "vi": "Chọn bước tiếp theo",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-001-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shén me shì wěn dìng？ chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-002",
@@ -29932,7 +30032,8 @@
                       "vi": "Tổn thương, làm hại",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-002-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shén me shì zì yóu？ chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-003",
@@ -30293,7 +30394,8 @@
                       "vi": "Bị sự ổn định sử dụng",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-003-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wěn dìng zhí yè de xuǎn zé"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-004",
@@ -30654,7 +30756,8 @@
                       "vi": "Đứng yên tại chỗ",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-004-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hài pà fēng xiǎn chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-005",
@@ -31015,7 +31118,8 @@
                       "vi": "Thực tế",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-005-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zì yóu xū yào qián"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-006",
@@ -31366,7 +31470,8 @@
                       "vi": "Vừa… vừa…",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-006-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gǎi biàn shú xī de huán jìng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-007",
@@ -31727,7 +31832,8 @@
                       "vi": "Phù hợp",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-007-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bù xiǎng bèi kùn zhù"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-008",
@@ -32078,7 +32184,8 @@
                       "vi": "Thực hiện quy tắc",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-008-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "cháng qī xuǎn zé de lì liàng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-009",
@@ -32459,7 +32566,8 @@
                       "vi": "Liên tục điều chỉnh",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-009-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xuǎn cuò le zěn me bàn？ chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-stability-or-freedom-advanced-001-daily-010",
@@ -32820,7 +32928,8 @@
                       "vi": "Sự cân bằng phù hợp",
                       "audio": "audio/catalog/dialogue/advanced/topic-stability-or-freedom-advanced-001/words/daily-010-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "zhǎo dào píng héng"
                 }
               ]
             },
@@ -33199,7 +33308,8 @@
                       "vi": "Vật tiêu hao",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-001-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "shēn xīn píng héng de dài jià"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-002",
@@ -33580,7 +33690,8 @@
                       "vi": "Dũng khí",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-002-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gāo xīn xuǎn zé de qǔ shě"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-003",
@@ -33951,7 +34062,8 @@
                       "vi": "Bỏ qua, lơ là",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-003-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gōng zuò yǔ qīn qíng de píng héng"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-004",
@@ -34342,7 +34454,8 @@
                       "vi": "Bị sự xuất sắc trói buộc",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-004-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "gāo biāo zhǔn bèi hòu de yā lì"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-005",
@@ -34723,7 +34836,8 @@
                       "vi": "Phương hướng",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-005-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "mù biāo gǎn de liǎng miàn"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-006",
@@ -35104,7 +35218,8 @@
                       "vi": "Động lực",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-006-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bǐ jiào dài lái de yā lì"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-007",
@@ -35495,7 +35610,8 @@
                       "vi": "Sống trong kỳ vọng",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-007-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "píng fán shēng huó de jià zhí"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-008",
@@ -35886,7 +36002,8 @@
                       "vi": "Chạy sai hướng",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-008-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "chéng jiù zhī hòu de kōng luò gǎn"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-009",
@@ -36267,7 +36384,8 @@
                       "vi": "Phản tỉnh, suy ngẫm lại",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-009-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "cuò zhé dài lái de tí xǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-cost-of-success-advanced-001-daily-010",
@@ -36668,7 +36786,8 @@
                       "vi": "Định nghĩa lại",
                       "audio": "audio/catalog/dialogue/advanced/topic-cost-of-success-advanced-001/words/daily-010-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "chóng xīn lǐ jiě rén shēng mù biāo"
                 }
               ]
             },
@@ -37057,7 +37176,8 @@
                       "vi": "Đóng gói phóng đại",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-001-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "pǔ tōng shēng huó de dìng wèi"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-002",
@@ -37438,7 +37558,8 @@
                       "vi": "Đả kích, đánh vào",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-002-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiǎn shǎo bǐ jiào de liàn xí"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-003",
@@ -37809,7 +37930,8 @@
                       "vi": "Ranh giới nội tâm",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-003-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "ān quán gǎn hé shōu rù biān jiè"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-004",
@@ -38170,7 +38292,8 @@
                       "vi": "Biết sống",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-004-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "rì cháng xiǎo shì de mǎn zú gǎn"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-005",
@@ -38551,7 +38674,8 @@
                       "vi": "Xem nhẹ quá",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-005-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "nèi xīn ān wěn de jià zhí"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-006",
@@ -38932,7 +39056,8 @@
                       "vi": "Nhịp độ trưởng thành",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-006-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jié zòu gǎn de xuǎn zé"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-007",
@@ -39313,7 +39438,8 @@
                       "vi": "Chân thật",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-007-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bú yào yǎn yě kě yǐ"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-008",
@@ -39694,7 +39820,8 @@
                       "vi": "Xứng đáng có",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-008-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jiē shòu zì jǐ chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-009",
@@ -40075,7 +40202,8 @@
                       "vi": "Giống chính mình hơn",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-009-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bù tóng rén shēng de mǎn zú gǎn"
                 },
                 {
                   "id": "dialogue-advanced-topic-ordinary-happiness-advanced-001-daily-010",
@@ -40456,7 +40584,8 @@
                       "vi": "Thành công chân thật",
                       "audio": "audio/catalog/dialogue/advanced/topic-ordinary-happiness-advanced-001/words/daily-010-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "rèn zhēn shēng huó de dá àn"
                 }
               ]
             },
@@ -40825,7 +40954,8 @@
                       "vi": "Nói thật lòng",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-001-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "péng yǒu yuè lái yuè shǎo chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-002",
@@ -41186,7 +41316,8 @@
                       "vi": "Cô đơn, lẻ loi",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-002-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bèi lǐ jiě de kě wàng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-003",
@@ -41547,7 +41678,8 @@
                       "vi": "Không cần người khác",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-003-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "yí gè rén káng yā lì chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-004",
@@ -41908,7 +42040,8 @@
                       "vi": "Có ranh giới",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-004-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hěn nán dǎ kāi zì jǐ chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-005",
@@ -42289,7 +42422,8 @@
                       "vi": "Tôn trọng lẫn nhau",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-005-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "pà má fán bié rén chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-006",
@@ -42650,7 +42784,8 @@
                       "vi": "Sống chân thật",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-006-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "máng lù bèi hòu de kōng luò gǎn"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-007",
@@ -43011,7 +43146,8 @@
                       "vi": "Quan hệ chân thật",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-007-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qiǎn lián jiē de jù lí"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-008",
@@ -43372,7 +43508,8 @@
                       "vi": "Được giao tiếp, được tôn trọng",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-008-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "qīn jìn guān xì de yóu yù"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-009",
@@ -43733,7 +43870,8 @@
                       "vi": "Tùy tiện bám lấy",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-009-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "dú chǔ néng lì de chéng zhǎng"
                 },
                 {
                   "id": "dialogue-advanced-topic-loneliness-after-growing-up-advanced-001-daily-010",
@@ -44094,7 +44232,8 @@
                       "vi": "Khó tránh khỏi",
                       "audio": "audio/catalog/dialogue/advanced/topic-loneliness-after-growing-up-advanced-001/words/daily-010-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "chóng xīn lǐ jiě dú chǔ"
                 }
               ]
             },
@@ -44473,7 +44612,8 @@
                       "vi": "Vong ơn bội nghĩa",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-001-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "tīng shuí de？"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-002",
@@ -44844,7 +44984,8 @@
                       "vi": "Lựa chọn có phán đoán",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-002-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xiào shùn jiù shì tīng huà ma？"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-003",
@@ -45235,7 +45376,8 @@
                       "vi": "Tranh thủ, giành lấy",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-003-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "xuǎn zé zì jǐ de lù"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-004",
@@ -45616,7 +45758,8 @@
                       "vi": "Khí thế, sức bật",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-004-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wěn dìng hái shì mào xiǎn？"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-005",
@@ -45997,7 +46140,8 @@
                       "vi": "Tình thân",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-005-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "lí jiā shì zì sī ma？"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-006",
@@ -46378,7 +46522,8 @@
                       "vi": "Đứng vững",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-006-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "wèi jiā lǐ zhuàn qián"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-007",
@@ -46749,7 +46894,8 @@
                       "vi": "Bị nỗi lo kéo đi",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-007-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "bèi cuī hūn"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-008",
@@ -47130,7 +47276,8 @@
                       "vi": "Không mâu thuẫn",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-008-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "jù jué jiā rén chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-009",
@@ -47521,7 +47668,8 @@
                       "vi": "Từ bỏ phán đoán",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-009-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "“dōu shì wèi le nǐ” chǎng jǐng"
                 },
                 {
                   "id": "dialogue-advanced-topic-live-for-whom-advanced-001-daily-010",
@@ -47902,7 +48050,8 @@
                       "vi": "Đây là cuộc đời của tôi",
                       "audio": "audio/catalog/dialogue/advanced/topic-live-for-whom-advanced-001/words/daily-010-keyword-020.mp3"
                     }
-                  ]
+                  ],
+                  "title_pinyin": "hé jiā rén píng héng"
                 }
               ]
             }
@@ -48266,7 +48415,8 @@
                   "vi": "kỳ vọng; mong đợi",
                   "audio": "audio/catalog/monologue/speech/topic-self-growth-speech-001/words/daily-001-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "gǎi biàn zì jǐ， cóng rèn shi zì jǐ kāi shǐ"
             },
             {
               "id": "monologue-speech-topic-self-growth-speech-001-daily-002",
@@ -48612,7 +48762,8 @@
                   "vi": "trật tự",
                   "audio": "audio/catalog/monologue/speech/topic-self-growth-speech-001/words/daily-002-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "zì lǜ bú shì bī zì jǐ， ér shì guǎn lǐ zì jǐ"
             },
             {
               "id": "monologue-speech-topic-self-growth-speech-001-daily-003",
@@ -48958,7 +49109,8 @@
                   "vi": "chỗ cũ; tại chỗ",
                   "audio": "audio/catalog/monologue/speech/topic-self-growth-speech-001/words/daily-003-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "màn màn biàn hǎo， yě shì yì zhǒng jìn bù"
             },
             {
               "id": "monologue-speech-topic-self-growth-speech-001-daily-004",
@@ -49304,7 +49456,8 @@
                   "vi": "tài liệu; chất liệu",
                   "audio": "audio/catalog/monologue/speech/topic-self-growth-speech-001/words/daily-004-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "xué huì fù pán， cái huì zhēn zhèng chéng zhǎng"
             },
             {
               "id": "monologue-speech-topic-self-growth-speech-001-daily-005",
@@ -49650,7 +49803,8 @@
                   "vi": "quyền lợi; quyền",
                   "audio": "audio/catalog/monologue/speech/topic-self-growth-speech-001/words/daily-005-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "bú yào hài pà chóng xīn kāi shǐ"
             },
             {
               "id": "monologue-speech-topic-social-view-speech-001-daily-001",
@@ -49986,7 +50140,8 @@
                   "vi": "giá trị",
                   "audio": "audio/catalog/monologue/speech/topic-social-view-speech-001/words/daily-001-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "nián qīng rén yí dìng yào chéng gōng ma？"
             },
             {
               "id": "monologue-speech-topic-social-view-speech-001-daily-002",
@@ -50322,7 +50477,8 @@
                   "vi": "mưu sinh; kiếm sống",
                   "audio": "audio/catalog/monologue/speech/topic-social-view-speech-001/words/daily-002-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "gōng zuò zhǐ shì wèi le zhuàn qián ma？"
             },
             {
               "id": "monologue-speech-topic-social-view-speech-001-daily-003",
@@ -50668,7 +50824,8 @@
                   "vi": "kiểm soát; sự kiểm soát",
                   "audio": "audio/catalog/monologue/speech/topic-social-view-speech-001/words/daily-003-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "wǎng luò píng jià néng dài biǎo zhēn shí jià zhí ma？"
             },
             {
               "id": "monologue-speech-topic-social-view-speech-001-daily-004",
@@ -51184,7 +51341,8 @@
                   "vi": "nguyên tắc",
                   "audio": "audio/catalog/monologue/speech/topic-social-view-speech-001/words/daily-004-keyword-040.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "shàn liáng shì bu shì huì chī kuī？"
             },
             {
               "id": "monologue-speech-topic-social-view-speech-001-daily-005",
@@ -51520,7 +51678,8 @@
                   "vi": "bình thường; bình dị",
                   "audio": "audio/catalog/monologue/speech/topic-social-view-speech-001/words/daily-005-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "pǔ tōng rén de shēng huó yě zhí dé bèi kàn jiàn"
             }
           ],
           "source_topic_id": "topic-social-view-speech-001",
@@ -51866,7 +52025,8 @@
                   "vi": "hòa giải, làm hòa, chấp nhận",
                   "audio": "audio/catalog/monologue/magazine/topic-newspaper-entertainment-001/words/daily-001-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "zhāng yì xīng 《dòu zhàn shèng fó》 shàng xiàn： zhēn zhèng de shèng lì， shì lǐ jiě zì jǐ"
             },
             {
               "id": "monologue-magazine-topic-newspaper-entertainment-001-daily-002",
@@ -52141,7 +52301,8 @@
                   "vi": "thành ý, sự chân thành",
                   "audio": "audio/catalog/monologue/magazine/topic-newspaper-entertainment-001/words/daily-002-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "huáng zǐ tāo “wèi lái jì yuán” xún yǎn guān xuān： wǔ tái， cái shì gē shǒu zuì zhí jiē de dá àn"
             },
             {
               "id": "monologue-magazine-topic-newspaper-entertainment-001-daily-003",
@@ -52426,7 +52587,8 @@
                   "vi": "tiết chế, kiềm chế",
                   "audio": "audio/catalog/monologue/magazine/topic-newspaper-entertainment-001/words/daily-003-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "rèn sù xī shǒu chǎng gè rén yǎn chàng huì chū quān： zhēn chéng， bǐ wán měi gèng dǎ dòng rén"
             },
             {
               "id": "monologue-magazine-topic-newspaper-entertainment-001-daily-004",
@@ -52731,7 +52893,8 @@
                   "vi": "lý trí, tỉnh táo",
                   "audio": "audio/catalog/monologue/magazine/topic-newspaper-entertainment-001/words/daily-004-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "shí dài shào nián tuán “jiā guān lǐ” luò yáng zhàn： ǒu xiàng chéng zhǎng， yě shì yì chǎng shuāng xiàng bēn fù"
             },
             {
               "id": "monologue-magazine-topic-newspaper-entertainment-001-daily-005",
@@ -53016,7 +53179,8 @@
                   "vi": "đào thải, loại bỏ",
                   "audio": "audio/catalog/monologue/magazine/topic-newspaper-entertainment-001/words/daily-005-keyword-020.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "cài yī lín guān xuān lán kòu yà tài qū hù fū dài yán rén： shí jiān， cái shì yǐng xiǎng lì zuì hǎo de zhèng míng"
             }
           ],
           "source_topic_id": "topic-newspaper-entertainment-001",
@@ -53423,7 +53587,8 @@
                   "vi": "có ý nghĩa",
                   "audio": "audio/catalog/monologue/psychology/topic-psychology-monologue-001/words/daily-001-keyword-025.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "rú guǒ yì shēng dōu bú càn làn， nà yòu zěn yàng？"
             },
             {
               "id": "monologue-psychology-topic-psychology-monologue-001-daily-002",
@@ -53909,7 +54074,8 @@
                   "vi": "tự nhận thức, tự quan sát bản thân",
                   "audio": "audio/catalog/monologue/psychology/topic-psychology-monologue-001/words/daily-002-keyword-025.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "rú hé wěn dìng zì jǐ de qíng xù？"
             },
             {
               "id": "monologue-psychology-topic-psychology-monologue-001-daily-003",
@@ -54425,7 +54591,8 @@
                   "vi": "giới hạn, ranh giới",
                   "audio": "audio/catalog/monologue/psychology/topic-psychology-monologue-001/words/daily-003-keyword-025.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "cóng xīn lǐ xué jiǎo dù jiě mǎ rén de xíng wéi"
             },
             {
               "id": "monologue-psychology-topic-psychology-monologue-001-daily-004",
@@ -54911,7 +55078,8 @@
                   "vi": "chữa lành",
                   "audio": "audio/catalog/monologue/psychology/topic-psychology-monologue-001/words/daily-004-keyword-025.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "rú hé zǒu chū quē fá ān quán gǎn？"
             },
             {
               "id": "monologue-psychology-topic-psychology-monologue-001-daily-005",
@@ -55377,7 +55545,8 @@
                   "vi": "có giá trị",
                   "audio": "audio/catalog/monologue/psychology/topic-psychology-monologue-001/words/daily-005-keyword-025.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "bú yào zhuī zhú， yào xué huì xī yǐn"
             }
           ],
           "source_topic_id": "topic-psychology-monologue-001",
@@ -55854,7 +56023,8 @@
                   "vi": "giao tiếp",
                   "audio": "audio/catalog/monologue/other/topic-emotional-essay-other-001/words/daily-001-keyword-010.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "wèi shén me wù huì？"
             },
             {
               "id": "monologue-other-topic-emotional-essay-other-001-daily-002",
@@ -56150,7 +56320,8 @@
                   "vi": "bảo vệ bản thân",
                   "audio": "audio/catalog/monologue/other/topic-emotional-essay-other-001/words/daily-002-keyword-010.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "shuí gèng zhǔ dòng？"
             },
             {
               "id": "monologue-other-topic-emotional-essay-other-001-daily-003",
@@ -56456,7 +56627,8 @@
                   "vi": "chiến tranh lạnh",
                   "audio": "audio/catalog/monologue/other/topic-emotional-essay-other-001/words/daily-003-keyword-010.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "xū yào ān quán gǎn"
             },
             {
               "id": "monologue-other-topic-emotional-essay-other-001-daily-004",
@@ -56742,7 +56914,8 @@
                   "vi": "khoảng trống, để khoảng trống",
                   "audio": "audio/catalog/monologue/other/topic-emotional-essay-other-001/words/daily-004-keyword-010.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "ài yào yǒu biān jiè"
             },
             {
               "id": "monologue-other-topic-emotional-essay-other-001-daily-005",
@@ -57058,7 +57231,8 @@
                   "vi": "trách nhiệm",
                   "audio": "audio/catalog/monologue/other/topic-emotional-essay-other-001/words/daily-005-keyword-010.mp3"
                 }
-              ]
+              ],
+              "title_pinyin": "ài hái bú gòu"
             }
           ],
           "source_topic_id": "topic-emotional-essay-other-001",
