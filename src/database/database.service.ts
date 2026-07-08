@@ -71,6 +71,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
+        ref TEXT,
+        src TEXT,
+        vip INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_login_at TIMESTAMPTZ
@@ -108,6 +111,15 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
     `);
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS payment_orders (
@@ -203,6 +215,36 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         cover_url TEXT NOT NULL DEFAULT '',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS learning_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        event_type TEXT NOT NULL,
+        module TEXT,
+        level TEXT,
+        lesson_id TEXT,
+        topic_id TEXT,
+        question_id TEXT,
+        is_correct BOOLEAN,
+        source TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_created_at ON learning_events(created_at);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_type_created ON learning_events(event_type, created_at);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_lesson ON learning_events(lesson_id);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_source ON learning_events(source);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);
     `);
   }
 }

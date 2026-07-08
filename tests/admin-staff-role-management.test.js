@@ -14,7 +14,7 @@ function createAdminServiceWithDb(db) {
   return new AdminService(db, {}, {}, {});
 }
 
-test("admin can set a normal user to staff", async () => {
+test("admin can set a normal user to content role in the database", async () => {
   const calls = [];
   const db = {
     async query(sql, params) {
@@ -31,7 +31,7 @@ test("admin can set a normal user to staff", async () => {
             id: "user-1",
             full_name: "Staff One",
             email: "staff@example.com",
-            role: "staff",
+            role: "content",
             is_active: true,
             current_level: "HSK2",
             is_premium: false,
@@ -46,14 +46,14 @@ test("admin can set a normal user to staff", async () => {
   };
   const service = createAdminServiceWithDb(db);
 
-  const result = await service.updateUserRole("user-1", { role: "staff" }, { "x-admin-user-id": "admin-1" });
+  const result = await service.updateUserRole("user-1", { role: "content" }, { "x-admin-user-id": "admin-1" });
 
   const updateCall = calls.find((call) => call.sql.includes("UPDATE users"));
-  assert.equal(updateCall.params[0], "staff");
-  assert.equal(result.user.role, "staff");
+  assert.equal(updateCall.params[0], "content");
+  assert.equal(result.user.role, "content");
 });
 
-test("staff cannot manage user roles", async () => {
+test("non-admin staff role cannot manage user roles", async () => {
   const db = {
     async query(sql) {
       if (sql.includes("SELECT role, is_active FROM users")) {
@@ -65,8 +65,25 @@ test("staff cannot manage user roles", async () => {
   const service = createAdminServiceWithDb(db);
 
   await assert.rejects(
-    () => service.updateUserRole("user-1", { role: "staff" }, { "x-admin-user-id": "staff-1" }),
+    () => service.updateUserRole("user-1", { role: "sales" }, { "x-admin-user-id": "staff-1" }),
     (error) => error instanceof HttpException && error.getStatus() === 403,
+  );
+});
+
+test("admin role update only accepts normal sales ctv and content roles", async () => {
+  const db = {
+    async query(sql) {
+      if (sql.includes("SELECT role, is_active FROM users")) {
+        return { rows: [{ role: "admin", is_active: true }] };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  await assert.rejects(
+    () => service.updateUserRole("user-1", { role: "admin" }, { "x-admin-user-id": "admin-1" }),
+    (error) => error instanceof HttpException && error.getStatus() === 400,
   );
 });
 
@@ -127,6 +144,8 @@ test("staff can update VIP status but cannot modify admin accounts", async () =>
 test("frontend exposes staff role controls only for admin console users", () => {
   assert.match(appSource, /function isStaffAdminUser\(\)/);
   assert.match(appSource, /function canAccessAdminConsole\(\)/);
+  assert.match(appSource, /ADMIN_EDITABLE_ROLES = \["user", "sales", "ctv", "content"\]/);
+  assert.match(appSource, /class="admin-role-select"/);
   assert.match(appSource, /class="admin-role-user"/);
   assert.match(appSource, /api\/admin\/users\/\$\{encodeURIComponent\(userId\)\}\/role/);
   assert.match(appSource, /admin-console--staff/);
