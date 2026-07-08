@@ -480,12 +480,12 @@ function readStoredJson(key) {
 
 function readStoredStudentUser() {
   const user = readStoredJson(STUDENT_USER_STORAGE_KEY);
-  return user && !["admin", "staff", "employee"].includes(String(user.role || "").toLowerCase()) ? user : null;
+  return user && !["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(user.role || "").toLowerCase()) ? user : null;
 }
 
 function readStoredAdminUser() {
   const user = readStoredJson(ADMIN_USER_STORAGE_KEY);
-  return ["admin", "staff", "employee"].includes(String(user?.role || "").toLowerCase()) ? user : null;
+  return ["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(user?.role || "").toLowerCase()) ? user : null;
 }
 
 function clearLegacyAuthStorage() {
@@ -565,6 +565,23 @@ const state = {
   adminContentDailyLocks: {},
   adminHskLevelCovers: {},
   adminContentStatus: "",
+  adminCtvSearch: "",
+  adminCtvSelectedId: "ctv-huong",
+  adminCtvLinkStatus: "",
+  adminCtvLinkSource: "",
+  adminCtvPickerSearch: "",
+  adminCtvPage: 1,
+  adminCtvPageSize: 10,
+  adminAnalytics: null,
+  adminAnalyticsDays: 30,
+  adminAnalyticsLoading: false,
+  adminAnalyticsError: "",
+  adminAnalyticsFrom: "",
+  adminAnalyticsTo: "",
+  adminAnalyticsPickerOpen: false,
+  adminAnalyticsDraftFrom: "",
+  adminAnalyticsDraftTo: "",
+  adminAnalyticsCalMonth: "",
   adminUserSearch: "",
   adminUserLevelFilter: "all",
   adminUserPlanFilter: "all",
@@ -2315,6 +2332,120 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+const REFERRAL_REF_KEY = "v2-referral-ref";
+
+function captureReferralRef() {
+  if (typeof window === "undefined") return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("r") || params.get("ref") || "";
+    const normalized = normalizeAdminCtvRef(raw);
+    if (normalized) localStorage.setItem(REFERRAL_REF_KEY, normalized);
+  } catch {
+    /* ignore storage/url errors */
+  }
+}
+
+function getReferralRefFromUrl() {
+  if (typeof window === "undefined") return "";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = normalizeAdminCtvRef(params.get("r") || params.get("ref") || "");
+    if (fromUrl) return fromUrl;
+    return localStorage.getItem(REFERRAL_REF_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+const TRAFFIC_SOURCE_KEY = "v2-traffic-source";
+const ALLOWED_LEARNING_EVENT_TYPES = new Set([
+  "lesson_opened",
+  "question_answered",
+  "paywall_shown",
+  "vip_modal_opened",
+]);
+let learningEventQueue = [];
+let learningEventFlushTimer = null;
+
+function captureTrafficSource() {
+  if (typeof window === "undefined") return;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("src") || params.get("source") || params.get("utm_source") || "";
+    const normalized = String(raw).trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40);
+    if (normalized) localStorage.setItem(TRAFFIC_SOURCE_KEY, normalized);
+  } catch {
+    /* ignore storage/url errors */
+  }
+}
+
+function getTrafficSource() {
+  try {
+    return localStorage.getItem(TRAFFIC_SOURCE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function trackEvent(eventType, payload = {}) {
+  if (BACKEND_DISABLED || !ALLOWED_LEARNING_EVENT_TYPES.has(eventType)) return;
+  learningEventQueue.push({
+    eventType,
+    userId: state.user?.id || null,
+    module: payload.module || null,
+    level: payload.level || null,
+    lessonId: payload.lessonId || null,
+    topicId: payload.topicId || null,
+    questionId: payload.questionId || null,
+    isCorrect: typeof payload.isCorrect === "boolean" ? payload.isCorrect : null,
+    source: getTrafficSource() || null,
+  });
+  if (learningEventQueue.length >= 10) {
+    flushLearningEvents();
+    return;
+  }
+  if (!learningEventFlushTimer) {
+    learningEventFlushTimer = setTimeout(flushLearningEvents, 4000);
+  }
+}
+
+function flushLearningEvents(useBeacon = false) {
+  if (learningEventFlushTimer) {
+    clearTimeout(learningEventFlushTimer);
+    learningEventFlushTimer = null;
+  }
+  if (BACKEND_DISABLED || learningEventQueue.length === 0) return;
+  const batch = learningEventQueue.splice(0, learningEventQueue.length);
+  const bodyString = JSON.stringify({ events: batch });
+
+  if (useBeacon && typeof navigator !== "undefined" && navigator.sendBeacon) {
+    try {
+      navigator.sendBeacon("/api/events", new Blob([bodyString], { type: "application/json" }));
+      return;
+    } catch {
+      /* fall back to fetch below */
+    }
+  }
+
+  const headers = state.user?.id ? { "X-User-Id": state.user.id } : {};
+  apiRequest("/api/events", { method: "POST", headers, body: bodyString }).catch(() => {
+    /* analytics must never break the UX */
+  });
+}
+
+function buildPracticeEventContext() {
+  const module = state.module || null;
+  const context = { module, level: null, lessonId: null, topicId: null };
+  if (module === "hsk") {
+    context.lessonId = state.lessonId || null;
+    context.level = state.level || null;
+  } else if (module === "daily") {
+    context.topicId = state.themeId || null;
+  }
+  return context;
+}
+
 function getPaymentOrderErrorMessage(error, isVi = state.lang === "vi") {
   const message = String(error?.message || "");
   if (/bank|sepay|ngan hang|ngân hàng|tai khoan|tài khoản/i.test(message)) {
@@ -2708,6 +2839,7 @@ function promptHskLessonLocked() {
 
 function promptUpgradeLocked() {
   const isVi = state.lang === "vi";
+  trackEvent("paywall_shown", buildPracticeEventContext());
   showToast(isVi ? "Nội dung này yêu cầu Gói VIP 7 ngày." : "此内容需要 7天 VIP。");
   showUpgradePlansModal();
 }
@@ -3160,6 +3292,862 @@ function renderAdminContentPanelHTML() {
     </section>
   `;
 }
+
+function isAdminCtvUser(user) {
+  return String(user?.role || "").trim().toLowerCase() === "ctv";
+}
+
+function normalizeAdminCtvRef(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 64);
+}
+
+function getAdminCtvRows() {
+  const allUsers = state.adminUsers || [];
+  return (state.adminUsers || [])
+    .filter(isAdminCtvUser)
+    .map((user, index) => {
+      const row = {
+        id: user.id || user.email || `ctv-${index + 1}`,
+        name: user.fullName || user.name || user.email || "CTV",
+        email: user.email || "",
+        phone: user.phone || user.phoneNumber || user.mobile || "",
+        ref: normalizeAdminCtvRef(user.ref || user.referralRef),
+        commission: Number(user.commission || user.totalCommission || user.commissionTotal || 0),
+        status: user.isActive === false ? "paused" : "active",
+        verified: user.emailVerified === true || user.isVerified === true,
+        avatar: user.avatarUrl || user.avatar || user.photoUrl || "",
+      };
+      const ref = getAdminCtvGeneratedRef(row);
+      const referredUsers = ref
+        ? allUsers.filter((candidate) => {
+            const candidateRef = normalizeAdminCtvRef(candidate.ref || candidate.referralRef);
+            const sameUser = String(candidate.id || candidate.email || "") === String(row.id || row.email || "");
+            return candidateRef === ref && !sameUser;
+          })
+        : [];
+      const referrals = referredUsers.length;
+      const vipCount = referredUsers.filter(isActivePremiumUser).length;
+      const sourceBreakdown = buildUserSourceCounts(referredUsers);
+      return { ...row, ref, referrals, vipCount, sourceBreakdown };
+    });
+}
+
+const ADMIN_SOURCE_KEYS = ["tiktok", "facebook", "koc"];
+
+function normalizeUserSource(user) {
+  const raw = String(user?.src || user?.source || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  return raw || "direct";
+}
+
+function buildUserSourceCounts(users) {
+  const counts = { tiktok: 0, facebook: 0, koc: 0, direct: 0, other: 0 };
+  for (const user of users || []) {
+    const key = normalizeUserSource(user);
+    if (key === "direct") counts.direct += 1;
+    else if (ADMIN_SOURCE_KEYS.includes(key)) counts[key] += 1;
+    else counts.other += 1;
+  }
+  return counts;
+}
+
+function isAdminEndUser(user) {
+  const role = String(user?.role || "").trim().toLowerCase();
+  return role === "" || role === "user";
+}
+
+function getAdminUserSourceSummary() {
+  const endUsers = (state.adminUsers || []).filter(isAdminEndUser);
+  const counts = buildUserSourceCounts(endUsers);
+  return { total: endUsers.length, counts };
+}
+
+function renderAdminCtvSourceBadges(breakdown) {
+  const badges = [];
+  for (const key of ADMIN_SOURCE_KEYS) {
+    if (breakdown[key] > 0) badges.push(`<span class="admin-ctv-src-pill src-${key}">${getAnalyticsSourceLabel(key)} ${breakdown[key]}</span>`);
+  }
+  if (breakdown.other > 0) badges.push(`<span class="admin-ctv-src-pill src-other">${state.lang === "vi" ? "Khác" : "其他"} ${breakdown.other}</span>`);
+  if (breakdown.direct > 0) badges.push(`<span class="admin-ctv-src-pill src-direct">${getAnalyticsSourceLabel("direct")} ${breakdown.direct}</span>`);
+  return badges.length ? `<div class="admin-ctv-src-cell">${badges.join("")}</div>` : '<span class="admin-ctv-src-empty">—</span>';
+}
+
+function formatAdminCtvMoney(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+}
+
+function getAdminCtvSlug(ctv) {
+  return String(ctv?.name || "ctv")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 28) || "ctv";
+}
+
+function getAdminCtvGeneratedRef(ctv) {
+  const savedRef = normalizeAdminCtvRef(ctv?.ref);
+  if (savedRef) return savedRef;
+  const phoneRef = String(ctv?.phone || "").replace(/\D/g, "").slice(-10);
+  if (phoneRef) return phoneRef;
+  return normalizeAdminCtvRef(getAdminCtvSlug(ctv));
+}
+
+const ADMIN_CTV_LINK_SOURCES = [
+  { id: "", label: "Không gắn nguồn" },
+  { id: "tiktok", label: "TikTok" },
+  { id: "facebook", label: "Facebook" },
+  { id: "koc", label: "KOC" },
+];
+
+function getAdminCtvLink(ctv) {
+  const origin = typeof window !== "undefined" && window.location?.origin
+    ? window.location.origin
+    : "https://example.com";
+  const code = getAdminCtvGeneratedRef(ctv);
+  const source = String(state.adminCtvLinkSource || "").trim().toLowerCase();
+  const params = new URLSearchParams();
+  if (source) params.set("src", source);
+  params.set("r", code);
+  return `${origin}?${params.toString()}`;
+}
+
+async function saveAdminCtvReferralLink() {
+  const isVi = state.lang === "vi";
+  const selected = getSelectedAdminCtv();
+  if (!selected?.id) {
+    state.adminCtvLinkStatus = isVi ? "Vui lòng chọn tài khoản CTV." : "请选择合作伙伴账号。";
+    renderAdmin();
+    return;
+  }
+  const ref = getAdminCtvGeneratedRef(selected);
+  state.adminCtvLinkStatus = isVi ? "Đang lưu link giới thiệu..." : "正在保存推广链接...";
+  renderAdmin();
+  try {
+    const data = await apiRequest(`/api/admin/users/${encodeURIComponent(selected.id)}/ref`, {
+      method: "PATCH",
+      headers: { "X-Admin-User-Id": getAdminUserId() },
+      body: JSON.stringify({ ref }),
+    });
+    state.adminUsers = state.adminUsers.map((user) => (
+      String(user.id) === String(selected.id)
+        ? { ...user, ...(data.user || {}), ref }
+        : user
+    ));
+    state.adminCtvSelectedId = selected.id;
+    state.adminCtvLinkStatus = isVi ? `Đã lưu mã ref "${ref}" cho tài khoản CTV.` : `已为该合作伙伴保存推广码 "${ref}"。`;
+    renderAdmin();
+  } catch (error) {
+    state.adminCtvLinkStatus = error.message || (isVi ? "Không thể lưu link giới thiệu." : "无法保存推广链接。");
+    renderAdmin();
+  }
+}
+
+function getFilteredAdminCtvRows() {
+  const adminCtvRows = getAdminCtvRows();
+  const query = String(state.adminCtvSearch || "").trim().toLowerCase();
+  if (!query) return adminCtvRows;
+  return adminCtvRows.filter((ctv) => [ctv.name, ctv.email, ctv.phone].join(" ").toLowerCase().includes(query));
+}
+
+function getSelectedAdminCtv(rows = getAdminCtvRows()) {
+  const adminCtvRows = getAdminCtvRows();
+  return rows.find((ctv) => ctv.id === state.adminCtvSelectedId) || adminCtvRows.find((ctv) => ctv.id === state.adminCtvSelectedId) || adminCtvRows[0];
+}
+
+const ADMIN_CTV_PAGE_SIZES = [10, 20, 50, 100];
+
+function getAdminCtvPagination(rows) {
+  const pageSize = Math.max(1, Number(state.adminCtvPageSize || 10));
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(Math.max(1, Number(state.adminCtvPage || 1)), totalPages);
+  state.adminCtvPage = currentPage;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, rows.length);
+  return {
+    pageSize,
+    totalPages,
+    currentPage,
+    startIndex,
+    endIndex,
+    pageRows: rows.slice(startIndex, endIndex),
+  };
+}
+
+function renderAdminCtvPaginationButtonsHTML(totalPages, currentPage) {
+  const pages = [];
+  if (totalPages <= 5) {
+    for (let page = 1; page <= totalPages; page += 1) pages.push(page);
+  } else {
+    pages.push(1);
+    const middleStart = Math.max(2, currentPage - 1);
+    const middleEnd = Math.min(totalPages - 1, currentPage + 1);
+    if (middleStart > 2) pages.push("ellipsis-start");
+    for (let page = middleStart; page <= middleEnd; page += 1) pages.push(page);
+    if (middleEnd < totalPages - 1) pages.push("ellipsis-end");
+    pages.push(totalPages);
+  }
+
+  return `
+    <button type="button" data-admin-ctv-page="${Math.max(1, currentPage - 1)}" ${currentPage <= 1 ? "disabled" : ""} aria-label="Trang trước">‹</button>
+    ${pages.map((page) => typeof page === "number"
+    ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-ctv-page="${page}">${page}</button>`
+    : `<span class="admin-ctv-ellipsis">…</span>`).join("")}
+    <button type="button" data-admin-ctv-page="${Math.min(totalPages, currentPage + 1)}" ${currentPage >= totalPages ? "disabled" : ""} aria-label="Trang sau">›</button>
+  `;
+}
+
+function renderAdminCtvAvatar(ctv) {
+  if (ctv.avatar) {
+    return `<img src="${escapeAttr(ctv.avatar)}" alt="${escapeAttr(ctv.name)}" />`;
+  }
+  return `<span>${escapeHtml(ctv.name.slice(0, 2).toUpperCase())}</span>`;
+}
+
+function getAdminCtvPickerRows(rows) {
+  const query = String(state.adminCtvPickerSearch || "").trim().toLowerCase();
+  if (!query) return rows;
+  return rows.filter((ctv) => [ctv.name, ctv.email, ctv.phone].join(" ").toLowerCase().includes(query));
+}
+
+function renderAdminCtvPickerRowsHTML(allRows, selectedId, isVi) {
+  const rows = getAdminCtvPickerRows(allRows);
+  if (!allRows.length) {
+    return `<div class="admin-ctv-empty">${isVi ? "Chưa có người dùng nào có vai trò CTV." : "暂无具有 CTV 角色的用户。"}</div>`;
+  }
+  if (!rows.length) {
+    return `<div class="admin-ctv-empty">${isVi ? "Không tìm thấy CTV phù hợp." : "未找到匹配的合作伙伴。"}</div>`;
+  }
+  return rows.map((ctv) => `
+    <label class="admin-ctv-picker-row ${selectedId === ctv.id ? "active" : ""}">
+      <input type="radio" name="adminCtvSelect" value="${escapeAttr(ctv.id)}" ${selectedId === ctv.id ? "checked" : ""} />
+      ${renderAdminCtvAvatar(ctv)}
+      <span><strong>${escapeHtml(ctv.name)}</strong><small>${escapeHtml(ctv.email)}</small></span>
+      <em>ctv</em>
+    </label>
+  `).join("");
+}
+
+function updateAdminCtvPickerList() {
+  const container = document.getElementById("adminCtvPickerList");
+  if (!container) return;
+  const isVi = state.lang === "vi";
+  const allRows = getAdminCtvRows();
+  const selected = getSelectedAdminCtv();
+  container.innerHTML = renderAdminCtvPickerRowsHTML(allRows, selected?.id, isVi);
+}
+
+function renderAdminCollaboratorsPanelHTML() {
+  const isVi = state.lang === "vi";
+  const allRows = getAdminCtvRows();
+  const rows = getFilteredAdminCtvRows();
+  const selected = getSelectedAdminCtv(rows);
+  const totalCommission = allRows.reduce((sum, ctv) => sum + ctv.commission, 0);
+  const activeCount = allRows.filter((ctv) => ctv.status === "active").length;
+  const pagination = getAdminCtvPagination(rows);
+  const tableRows = pagination.pageRows.map((ctv, index) => `
+    <tr>
+      <td>${pagination.startIndex + index + 1}</td>
+      <td>
+        <div class="admin-ctv-person">
+          ${renderAdminCtvAvatar(ctv)}
+          <strong>${escapeHtml(ctv.name)}${ctv.verified ? '<span class="admin-ctv-check">✓</span>' : ""}</strong>
+        </div>
+      </td>
+      <td>${escapeHtml(ctv.email)}<small>${escapeHtml(ctv.phone)}</small></td>
+      <td><b>${escapeHtml(formatAdminCtvMoney(ctv.commission))}</b></td>
+      <td>${ctv.referrals}</td>
+      <td>${ctv.vipCount}</td>
+      <td>${renderAdminCtvSourceBadges(ctv.sourceBreakdown)}</td>
+      <td><button class="admin-ctv-more" type="button" aria-label="${isVi ? "Thao tác CTV" : "操作"}">⋮</button></td>
+    </tr>
+  `).join("");
+  const sourceSummary = getAdminUserSourceSummary();
+  const summaryCards = [
+    { key: "total", label: isVi ? "Tổng người dùng" : "总用户", value: sourceSummary.total },
+    { key: "tiktok", label: getAnalyticsSourceLabel("tiktok"), value: sourceSummary.counts.tiktok },
+    { key: "facebook", label: getAnalyticsSourceLabel("facebook"), value: sourceSummary.counts.facebook },
+    { key: "koc", label: getAnalyticsSourceLabel("koc"), value: sourceSummary.counts.koc },
+    { key: "direct", label: getAnalyticsSourceLabel("direct"), value: sourceSummary.counts.direct + sourceSummary.counts.other },
+  ];
+  const sourceSummaryHTML = summaryCards
+    .map((card) => `
+      <article class="admin-ctv-source-card admin-ctv-source-card--${card.key}">
+        <span class="admin-ctv-source-dot"></span>
+        <div><strong>${formatAnalyticsNumber(card.value)}</strong><small>${escapeHtml(card.label)}</small></div>
+      </article>`)
+    .join("");
+  const pickerRows = renderAdminCtvPickerRowsHTML(allRows, selected?.id, isVi);
+
+  return `
+    <section class="admin-ctv-panel">
+      <header class="admin-ctv-hero">
+        <button class="admin-ctv-back" type="button" aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
+        <div>
+          <h1>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</h1>
+          <p>${isVi ? "Quản lý cộng tác viên, theo dõi hoa hồng và tạo link giới thiệu." : "管理合作伙伴、跟踪佣金并生成推广链接。"}</p>
+        </div>
+      </header>
+
+      <div class="admin-ctv-stats">
+        <article class="admin-ctv-stat admin-ctv-stat--money">
+          <span>₫</span>
+          <div><strong>${escapeHtml(formatAdminCtvMoney(totalCommission))}</strong><small>${isVi ? "Tổng hoa hồng" : "总佣金"}</small></div>
+        </article>
+        <article class="admin-ctv-stat admin-ctv-stat--people">
+          <span>●●●</span>
+          <div><strong>${activeCount}</strong><small>${isVi ? "Tổng cộng tác viên đang hoạt động" : "活跃合作伙伴总数"}</small></div>
+        </article>
+      </div>
+
+      <section class="admin-ctv-source-panel">
+        <div class="admin-ctv-source-head">
+          <h2>${isVi ? "Theo dõi nguồn người dùng" : "用户来源跟踪"}</h2>
+          <p>${isVi ? "Số người dùng đăng ký theo từng kênh nguồn (src)." : "按来源渠道 (src) 统计的注册用户数。"}</p>
+        </div>
+        <div class="admin-ctv-source-cards">${sourceSummaryHTML}</div>
+      </section>
+
+      <div class="admin-ctv-layout">
+        <section class="admin-ctv-list">
+          <div class="admin-ctv-list-head">
+            <h2>${isVi ? "Danh sách cộng tác viên" : "合作伙伴列表"}</h2>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-ctv-table">
+              <thead>
+                <tr><th>#</th><th>${isVi ? "Cộng tác viên" : "合作伙伴"}</th><th>${isVi ? "Liên hệ" : "联系方式"}</th><th>${isVi ? "Tổng hoa hồng" : "总佣金"}</th><th>${isVi ? "Người đăng ký" : "注册用户"}</th><th>VIP</th><th>${isVi ? "Nguồn" : "来源"}</th><th>${isVi ? "Thao tác" : "操作"}</th></tr>
+              </thead>
+              <tbody>${tableRows || `<tr><td colspan="8" class="admin-empty">${isVi ? "Không tìm thấy CTV phù hợp." : "未找到匹配的合作伙伴。"}</td></tr>`}</tbody>
+            </table>
+          </div>
+          <footer class="admin-ctv-pagination">
+            <span>${isVi ? "Hiển thị" : "显示"} ${rows.length ? pagination.startIndex + 1 : 0} - ${pagination.endIndex} ${isVi ? "của" : "共"} ${rows.length} CTV${state.adminCtvSearch ? (isVi ? ` (lọc từ ${allRows.length})` : `（从 ${allRows.length} 筛选）`) : ""}</span>
+            <div>${renderAdminCtvPaginationButtonsHTML(pagination.totalPages, pagination.currentPage)}</div>
+            <select id="adminCtvPageSizeSelect" aria-label="${isVi ? "Số CTV mỗi trang" : "每页数量"}">
+              ${ADMIN_CTV_PAGE_SIZES.map((size) => `<option value="${size}" ${size === pagination.pageSize ? "selected" : ""}>${size} / ${isVi ? "trang" : "页"}</option>`).join("")}
+            </select>
+          </footer>
+        </section>
+
+        <aside class="admin-ctv-link">
+          <h2><span>🔗</span>${isVi ? "Tạo link" : "生成链接"}</h2>
+          <div class="admin-ctv-step"><span>1</span><strong>${isVi ? "Chọn tài khoản CTV" : "选择合作伙伴账号"}</strong></div>
+          <div class="admin-ctv-link-search-box">
+            <input id="adminCtvLinkSearchInput" class="admin-ctv-link-search" type="search" value="${escapeAttr(state.adminCtvPickerSearch)}" placeholder="${isVi ? "Tìm kiếm tên, email hoặc số điện thoại..." : "搜索姓名、邮箱或电话..."}" />
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.3-4.3"/></svg>
+          </div>
+          <div class="admin-ctv-picker" id="adminCtvPickerList">${pickerRows}</div>
+          <div class="admin-ctv-step"><span>2</span><strong>${isVi ? "Chọn nguồn kênh (tùy chọn)" : "选择来源渠道（可选）"}</strong></div>
+          <select id="adminCtvLinkSourceSelect" class="admin-ctv-link-source" aria-label="${isVi ? "Nguồn kênh" : "来源渠道"}">
+            ${ADMIN_CTV_LINK_SOURCES.map((source) => `<option value="${source.id}" ${source.id === (state.adminCtvLinkSource || "") ? "selected" : ""}>${source.id === "" ? (isVi ? "Không gắn nguồn" : "不绑定来源") : source.label}</option>`).join("")}
+          </select>
+          <div class="admin-ctv-step"><span>3</span><strong>${isVi ? "Link giới thiệu của CTV" : "合作伙伴推广链接"}</strong></div>
+          <div class="admin-ctv-link-output">
+            <input id="adminCtvReferralLink" type="text" readonly value="${escapeAttr(selected ? getAdminCtvLink(selected) : "")}" />
+            <button id="adminCtvCopyLinkBtn" type="button" aria-label="${isVi ? "Sao chép link" : "复制链接"}">⧉</button>
+          </div>
+          <button id="adminCtvCreateLinkBtn" class="admin-ctv-create" type="button">🔗 ${isVi ? "Tạo link" : "生成链接"}</button>
+          <p>${escapeHtml(state.adminCtvLinkStatus || (isVi ? "Link sẽ được tạo dựa trên tài khoản CTV đã chọn." : "链接将根据所选合作伙伴账号生成。"))}</p>
+        </aside>
+      </div>
+    </section>
+  `;
+}
+
+function formatAnalyticsNumber(value) {
+  return Number(value || 0).toLocaleString("vi-VN");
+}
+
+function renderAnalyticsLineChart(series, color = "#059669") {
+  const points = Array.isArray(series) ? series : [];
+  const width = 300;
+  const height = 160;
+  const padX = 6;
+  const padY = 14;
+  if (points.length === 0) {
+    return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img"></svg>`;
+  }
+  const maxValue = Math.max(1, ...points.map((point) => Number(point.value) || 0));
+  const stepX = points.length > 1 ? (width - padX * 2) / (points.length - 1) : 0;
+  const coords = points.map((point, index) => {
+    const x = padX + stepX * index;
+    const y = height - padY - ((Number(point.value) || 0) / maxValue) * (height - padY * 2);
+    return [x, y];
+  });
+  const linePath = coords
+    .map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const lastX = coords[coords.length - 1][0].toFixed(1);
+  const firstX = coords[0][0].toFixed(1);
+  const areaPath = `${linePath} L${lastX},${height - padY} L${firstX},${height - padY} Z`;
+  return `
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">
+      <path class="chart-area" d="${areaPath}" fill="${color}"></path>
+      <path class="chart-line" d="${linePath}" stroke="${color}"></path>
+    </svg>
+  `;
+}
+
+function getAnalyticsSourceLabel(source) {
+  const key = String(source || "").toLowerCase();
+  const map = {
+    tiktok: "TikTok",
+    facebook: "Facebook",
+    koc: "KOC",
+    direct: state.lang === "vi" ? "Trực tiếp" : "直接",
+  };
+  return map[key] || (source ? String(source) : "—");
+}
+
+const ANALYTICS_PRESETS = [
+  { id: "today", label: "Hôm nay", labelZh: "今天" },
+  { id: "yesterday", label: "Hôm qua", labelZh: "昨天" },
+  { id: "last7", label: "7 ngày qua", labelZh: "过去 7 天" },
+  { id: "last14", label: "14 ngày qua", labelZh: "过去 14 天" },
+  { id: "last28", label: "28 ngày qua", labelZh: "过去 28 天" },
+  { id: "last30", label: "30 ngày qua", labelZh: "过去 30 天" },
+  { id: "thisWeek", label: "Tuần này", labelZh: "本周" },
+  { id: "lastWeek", label: "Tuần trước", labelZh: "上周" },
+  { id: "thisMonth", label: "Tháng này", labelZh: "本月" },
+  { id: "lastMonth", label: "Tháng trước", labelZh: "上月" },
+  { id: "max", label: "Tối đa", labelZh: "最大范围" },
+];
+
+function analyticsTodayLocal() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function analyticsToYmd(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function analyticsParseYmd(ymd) {
+  const [year, month, day] = String(ymd || "").split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function analyticsAddDays(date, amount) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function analyticsStartOfWeek(date) {
+  const start = new Date(date);
+  const mondayOffset = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - mondayOffset);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function analyticsPresetRange(preset) {
+  const today = analyticsTodayLocal();
+  switch (preset) {
+    case "today": return { from: today, to: today };
+    case "yesterday": { const day = analyticsAddDays(today, -1); return { from: day, to: day }; }
+    case "last7": return { from: analyticsAddDays(today, -6), to: today };
+    case "last14": return { from: analyticsAddDays(today, -13), to: today };
+    case "last28": return { from: analyticsAddDays(today, -27), to: today };
+    case "last30": return { from: analyticsAddDays(today, -29), to: today };
+    case "thisWeek": return { from: analyticsStartOfWeek(today), to: today };
+    case "lastWeek": { const start = analyticsAddDays(analyticsStartOfWeek(today), -7); return { from: start, to: analyticsAddDays(start, 6) }; }
+    case "thisMonth": return { from: new Date(today.getFullYear(), today.getMonth(), 1), to: today };
+    case "lastMonth": return { from: new Date(today.getFullYear(), today.getMonth() - 1, 1), to: new Date(today.getFullYear(), today.getMonth(), 0) };
+    case "max": return { from: new Date(2020, 0, 1), to: today };
+    default: return { from: analyticsAddDays(today, -29), to: today };
+  }
+}
+
+function analyticsFormatDisplay(ymd) {
+  const date = analyticsParseYmd(ymd);
+  if (!date) return "";
+  if (state.lang === "vi") return `${date.getDate()} Tháng ${date.getMonth() + 1}, ${date.getFullYear()}`;
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function analyticsRangeLabel(fromYmd, toYmd) {
+  if (!fromYmd || !toYmd) return state.lang === "vi" ? "Chọn khoảng thời gian" : "选择时间范围";
+  if (fromYmd === toYmd) return analyticsFormatDisplay(fromYmd);
+  return `${analyticsFormatDisplay(fromYmd)} – ${analyticsFormatDisplay(toYmd)}`;
+}
+
+function getActiveAnalyticsPreset() {
+  for (const preset of ANALYTICS_PRESETS) {
+    const range = analyticsPresetRange(preset.id);
+    if (analyticsToYmd(range.from) === state.adminAnalyticsFrom && analyticsToYmd(range.to) === state.adminAnalyticsTo) {
+      return preset.id;
+    }
+  }
+  return "";
+}
+
+function renderAnalyticsCalendarMonth(year, month) {
+  const draftFrom = state.adminAnalyticsDraftFrom;
+  const draftTo = state.adminAnalyticsDraftTo;
+  const isVi = state.lang === "vi";
+  const first = new Date(year, month, 1);
+  const startDow = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weekdays = isVi ? ["T2", "T3", "T4", "T5", "T6", "T7", "CN"] : ["一", "二", "三", "四", "五", "六", "日"];
+
+  let cells = "";
+  for (let i = 0; i < startDow; i += 1) cells += `<span class="cal-cell cal-empty"></span>`;
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const ymd = analyticsToYmd(new Date(year, month, day));
+    const hasRange = draftFrom && draftTo;
+    const inRange = hasRange && ymd >= draftFrom && ymd <= draftTo;
+    const isEndpoint = ymd === draftFrom || ymd === draftTo;
+    const cls = ["cal-cell", "cal-day", inRange ? "in-range" : "", isEndpoint ? "selected" : ""].filter(Boolean).join(" ");
+    cells += `<button type="button" class="${cls}" data-analytics-day="${ymd}">${day}</button>`;
+  }
+  return `
+    <div class="admin-analytics-cal-month">
+      <div class="cal-head">${isVi ? `Tháng ${month + 1} ${year}` : `${year}年${month + 1}月`}</div>
+      <div class="cal-weekdays">${weekdays.map((w) => `<span>${w}</span>`).join("")}</div>
+      <div class="cal-grid">${cells}</div>
+    </div>`;
+}
+
+function renderAdminAnalyticsRangeControl() {
+  const triggerLabel = analyticsRangeLabel(state.adminAnalyticsFrom, state.adminAnalyticsTo);
+  if (!state.adminAnalyticsPickerOpen) {
+    return `
+      <div class="admin-analytics-daterange">
+        <button id="adminAnalyticsRangeTrigger" class="admin-analytics-range-trigger" type="button">
+          <span class="range-icon">📅</span><span>${escapeHtml(triggerLabel)}</span><span class="range-caret">▾</span>
+        </button>
+      </div>`;
+  }
+
+  const activePreset = getActiveAnalyticsPreset();
+  const calMonthDate = analyticsParseYmd(`${state.adminAnalyticsCalMonth}-01`) || analyticsTodayLocal();
+  const leftYear = calMonthDate.getFullYear();
+  const leftMonth = calMonthDate.getMonth();
+  const rightDate = new Date(leftYear, leftMonth + 1, 1);
+
+  const isVi = state.lang === "vi";
+  const presetsHTML = ANALYTICS_PRESETS
+    .map((preset) => `<button type="button" data-analytics-preset="${preset.id}" class="${activePreset === preset.id ? "active" : ""}">${isVi ? preset.label : preset.labelZh}</button>`)
+    .join("");
+
+  return `
+    <div class="admin-analytics-daterange">
+      <button id="adminAnalyticsRangeTrigger" class="admin-analytics-range-trigger open" type="button">
+        <span class="range-icon">📅</span><span>${escapeHtml(triggerLabel)}</span><span class="range-caret">▴</span>
+      </button>
+      <div class="admin-analytics-range-backdrop" id="adminAnalyticsRangeBackdrop"></div>
+      <div class="admin-analytics-range-pop">
+        <div class="admin-analytics-presets">${presetsHTML}</div>
+        <div class="admin-analytics-cal">
+          <div class="cal-nav">
+            <button type="button" data-analytics-cal-nav="-1" aria-label="${isVi ? "Tháng trước" : "上个月"}">‹</button>
+            <button type="button" data-analytics-cal-nav="1" aria-label="${isVi ? "Tháng sau" : "下个月"}">›</button>
+          </div>
+          <div class="cal-months">
+            ${renderAnalyticsCalendarMonth(leftYear, leftMonth)}
+            ${renderAnalyticsCalendarMonth(rightDate.getFullYear(), rightDate.getMonth())}
+          </div>
+          <div class="admin-analytics-range-footer">
+            <div class="admin-analytics-range-summary">
+              <strong>${escapeHtml(analyticsRangeLabel(state.adminAnalyticsDraftFrom, state.adminAnalyticsDraftTo))}</strong>
+              <small>${state.lang === "vi" ? "Ngày hiển thị theo Giờ TP Hồ Chí Minh" : "日期按胡志明市时间显示"}</small>
+            </div>
+            <div class="admin-analytics-range-actions">
+              <button type="button" id="adminAnalyticsRangeCancel">${state.lang === "vi" ? "Hủy" : "取消"}</button>
+              <button type="button" id="adminAnalyticsRangeApply" class="primary" ${state.adminAnalyticsDraftFrom && state.adminAnalyticsDraftTo ? "" : "disabled"}>${state.lang === "vi" ? "Cập nhật" : "更新"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAdminAnalyticsPanelHTML() {
+  const isVi = state.lang === "vi";
+
+  let bodyHTML;
+  if (state.adminAnalyticsLoading) {
+    bodyHTML = `<div class="admin-analytics-status">${isVi ? "Đang tải dữ liệu phân tích..." : "正在加载分析数据..."}</div>`;
+  } else if (state.adminAnalyticsError) {
+    bodyHTML = `<div class="admin-analytics-status error">${escapeHtml(state.adminAnalyticsError)}</div>`;
+  } else if (!state.adminAnalytics) {
+    bodyHTML = `<div class="admin-analytics-status">${isVi ? "Chưa có dữ liệu phân tích." : "暂无分析数据。"}</div>`;
+  } else {
+    const data = state.adminAnalytics;
+    const dailyLearners = data.dailyLearners || [];
+    const dailyAttempts = data.dailyAttempts || [];
+    const attemptsTotal = dailyAttempts.reduce((sum, point) => sum + (Number(point.value) || 0), 0);
+    const learnersPeak = dailyLearners.reduce((max, point) => Math.max(max, Number(point.value) || 0), 0);
+    const sources = data.sources || [];
+    const maxSourceEvents = Math.max(1, ...sources.map((row) => Number(row.events) || 0));
+    const funnel = data.funnel || { registered: 0, learned: 0, popup: 0, vip: 0 };
+    const funnelMax = Math.max(1, funnel.registered, funnel.learned, funnel.popup, funnel.vip);
+    const topLessons = data.topLessons || [];
+
+    const funnelStages = [
+      { key: "registered", label: isVi ? "Đăng ký" : "注册", value: funnel.registered },
+      { key: "learned", label: isVi ? "Học tập" : "学习", value: funnel.learned },
+      { key: "popup", label: isVi ? "Xem popup" : "查看弹窗", value: funnel.popup },
+      { key: "vip", label: isVi ? "Kích hoạt VIP" : "开通 VIP", value: funnel.vip },
+    ];
+
+    const sourcesHTML = sources.length
+      ? sources.map((row) => {
+          const label = getAnalyticsSourceLabel(row.source);
+          const width = Math.round(((Number(row.events) || 0) / maxSourceEvents) * 100);
+          return `
+            <div class="admin-analytics-bar-row admin-analytics-source-${escapeAttr(String(row.source || "direct").toLowerCase())}">
+              <span>${escapeHtml(label)}</span>
+              <div class="admin-analytics-bar-track"><div class="admin-analytics-bar-fill" style="width:${width}%"></div></div>
+              <span>${formatAnalyticsNumber(row.users)} ${isVi ? "user" : "用户"}</span>
+            </div>`;
+        }).join("")
+      : `<div class="admin-analytics-status">${isVi ? "Chưa có dữ liệu kênh nguồn." : "暂无来源数据。"}</div>`;
+
+    const topLessonsHTML = topLessons.length
+      ? topLessons.map((lesson, index) => `
+          <tr>
+            <td><span class="rank">${index + 1}</span></td>
+            <td>${escapeHtml(lesson.lessonId || "—")}</td>
+            <td>${escapeHtml(lesson.level || "—")}</td>
+            <td>${formatAnalyticsNumber(lesson.opens)}</td>
+            <td>${formatAnalyticsNumber(lesson.learners)}</td>
+          </tr>`).join("")
+      : `<tr><td colspan="5" class="admin-empty">${isVi ? "Chưa có lượt mở khóa học." : "暂无课程打开记录。"}</td></tr>`;
+
+    const funnelHTML = funnelStages.map((stage) => {
+      const width = Math.max(6, Math.round(((Number(stage.value) || 0) / funnelMax) * 100));
+      const rate = funnel.registered > 0 ? Math.round(((Number(stage.value) || 0) / funnel.registered) * 100) : 0;
+      return `
+        <div class="admin-analytics-funnel-row">
+          <span class="admin-analytics-funnel-label">${escapeHtml(stage.label)}</span>
+          <div class="admin-analytics-funnel-track"><div class="admin-analytics-funnel-fill" style="width:${width}%">${formatAnalyticsNumber(stage.value)}</div></div>
+          <span class="admin-analytics-funnel-meta">${rate}%</span>
+        </div>`;
+    }).join("");
+
+    bodyHTML = `
+      <div class="admin-analytics-cards">
+        
+        
+        
+        <div class="admin-analytics-card"><small>${isVi ? "Lượt mở popup VIP" : "VIP 弹窗次数"}</small><strong>${formatAnalyticsNumber(data.vipModalOpens)}</strong></div>
+        <div class="admin-analytics-card"><small>${isVi ? "Kích hoạt VIP" : "VIP 开通"}</small><strong>${formatAnalyticsNumber(funnel.vip)}</strong></div>
+      </div>
+      <div class="admin-analytics-grid">
+        <div class="admin-analytics-chart">
+          <h3>${isVi ? "Xu hướng người học mỗi ngày" : "每日学习人数趋势"}</h3>
+          <div class="admin-analytics-metric">${formatAnalyticsNumber(learnersPeak)}</div>
+          ${renderAnalyticsLineChart(dailyLearners, "#0ea5e9")}
+        </div>
+        <div class="admin-analytics-chart">
+          <h3>${isVi ? "Xu hướng lượt làm bài mỗi ngày" : "每日答题次数趋势"}</h3>
+          <div class="admin-analytics-metric">${formatAnalyticsNumber(attemptsTotal)}</div>
+          ${renderAnalyticsLineChart(dailyAttempts, "#059669")}
+        </div>
+        <div class="admin-analytics-block">
+          <h3>${isVi ? "So sánh kênh nguồn" : "来源渠道对比"}</h3>
+          <div class="admin-analytics-bars">${sourcesHTML}</div>
+        </div>
+        <div class="admin-analytics-block">
+          <h3>${isVi ? "Phễu chuyển đổi" : "转化漏斗"}</h3>
+          <div class="admin-analytics-funnel">${funnelHTML}</div>
+          <p class="admin-analytics-funnel-note">${isVi ? "Đăng ký → Học tập → Popup → VIP. Phễu sẽ được nâng cấp sau." : "注册 → 学习 → 弹窗 → VIP。漏斗后续会升级。"}</p>
+        </div>
+        <div class="admin-analytics-block admin-analytics-block--wide">
+          <h3>${isVi ? "Top 10 khóa học phổ biến" : "热门课程 Top 10"}</h3>
+          <table class="admin-analytics-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${isVi ? "Khóa học" : "课程"}</th>
+                <th>${isVi ? "Cấp độ" : "级别"}</th>
+                <th>${isVi ? "Lượt mở" : "打开次数"}</th>
+                <th>${isVi ? "Người học" : "学习人数"}</th>
+              </tr>
+            </thead>
+            <tbody>${topLessonsHTML}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <section class="admin-analytics-panel">
+      <header class="admin-analytics-head">
+        <div>
+          <h2>${isVi ? "Phân tích học tập" : "学习分析"}</h2>
+          <p>${isVi ? "Theo dõi xu hướng học tập, kênh nguồn và chuyển đổi VIP." : "跟踪学习趋势、流量来源和 VIP 转化。"}</p>
+        </div>
+        ${renderAdminAnalyticsRangeControl()}
+      </header>
+      ${bodyHTML}
+    </section>
+  `;
+}
+
+async function loadAdminAnalytics() {
+  const isVi = state.lang === "vi";
+  if (!canAccessAdminConsole()) {
+    state.adminAnalyticsError = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
+    state.adminAnalytics = null;
+    renderAdmin();
+    return;
+  }
+
+  if (!state.adminAnalyticsFrom || !state.adminAnalyticsTo) {
+    const preset = analyticsPresetRange("last30");
+    state.adminAnalyticsFrom = analyticsToYmd(preset.from);
+    state.adminAnalyticsTo = analyticsToYmd(preset.to);
+  }
+
+  state.adminAnalyticsLoading = true;
+  state.adminAnalyticsError = "";
+  renderAdmin();
+  try {
+    const params = new URLSearchParams({
+      from: state.adminAnalyticsFrom,
+      to: state.adminAnalyticsTo,
+    });
+    const data = await apiRequest(`/api/admin/analytics/overview?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        "X-Admin-User-Id": getAdminUserId(),
+      },
+    });
+    state.adminAnalytics = data;
+  } catch (error) {
+    state.adminAnalytics = null;
+    state.adminAnalyticsError = error.message || (isVi ? "Không thể tải dữ liệu phân tích." : "无法加载分析数据。");
+  }
+  state.adminAnalyticsLoading = false;
+  renderAdmin();
+}
+
+function slotPinyinLength(word) {
+  return Math.max(1, normalizeLatin(word?.pinyin || "").length);
+}
+
+function slotProgressText(index, word) {
+  const done = Math.min(state.slotProgress[index] || 0, slotPinyinLength(word));
+  return `${done}/${slotPinyinLength(word)}`;
+}
+
+function slotProgressPercent(index, word) {
+  return `${Math.min(100, Math.round(((state.slotProgress[index] || 0) / slotPinyinLength(word)) * 100))}%`;
+}
+
+function getDisplayPosLabel(rawPos) {
+  const normalizedPos = normalizeSegmentPos(rawPos);
+  const posKey = normalizedPos === "function" ? "function" : getTeachingPosLabelKey(normalizedPos);
+  if (!posKey) return "";
+  const beginnerPosText = {
+    vi: {
+      noun: "danh từ",
+      verb: "động từ",
+      adj: "tính từ",
+      adv: "phó từ",
+      prep: "giới từ",
+      particle: "trợ từ",
+      pron: "đại từ",
+      "possessive-pron": "đại từ sở hữu",
+      phrase: "từ vựng",
+    },
+    zh: {
+      noun: "名词",
+      verb: "动词",
+      adj: "形容词",
+      adv: "副词",
+      prep: "介词",
+      particle: "助词",
+      pron: "代词",
+      "possessive-pron": "物主代词",
+      phrase: "生词",
+    },
+  };
+  return beginnerPosText[state.lang]?.[posKey] || "";
+}
+
+function getSegmentTypeLabel(type = "") {
+  const isVi = state.lang === "vi";
+  const labels = {
+    词: isVi ? "từ" : "词",
+    短语: isVi ? "cụm" : "短语",
+    功能词块: isVi ? "cụm chức năng" : "功能词块",
+  };
+  return labels[type] || type;
+}
+
+function isMatch(input, expectedPinyin, expectedHanzi) {
+  return (
+    normalizeLatin(input) === normalizeLatin(expectedPinyin) ||
+    normalizeHanzi(input) === normalizeHanzi(expectedHanzi)
+  );
+}
+
+function classifyActivePinyinInput(value, itemNow = currentItem()) {
+  const input = String(value || "").trim();
+  if (!input) return { kind: "empty" };
+  const activeWord = itemNow.words[state.activeWord] || {};
+  const normalizedInput = normalizeLatin(input);
+  const normalizedTarget = normalizeLatin(activeWord.pinyin || activeWord.tone || "");
+  const normalizedHanziInput = normalizeHanzi(input);
+  const normalizedHanziTarget = normalizeHanzi(activeWord.text || "");
+
+  if (normalizedHanziInput && normalizedHanziInput === normalizedHanziTarget) return { kind: "correct" };
+  if (!normalizedInput || !normalizedTarget) return { kind: "wrong" };
+  if (normalizedInput === normalizedTarget) return { kind: "correct" };
+  if (normalizedTarget.startsWith(normalizedInput)) {
+    return {
+      kind: "progress",
+      start: state.activeWord,
+      inputLength: normalizedInput.length,
+      totalLength: normalizedTarget.length,
+    };
+  }
+  if (normalizedInput.startsWith(normalizedTarget)) return { kind: "extra" };
+  return { kind: "wrong" };
+}
+
+function showToast(message) {
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement("div");
+  toast.className = "toast-message";
+  toast.innerHTML = `
+    <span class="toast-icon">★</span>
+    <span class="toast-text">${escapeAttr(message)}</span>
+  `;
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.add("show");
+  });
+  setTimeout(() => {
+    toast.classList.remove("show");
+    toast.classList.add("hide");
+    toast.addEventListener("transitionend", () => {
+      toast.remove();
+    });
+  }, 2200);
+}
+
 
 function slotPinyinLength(word) {
   return Math.max(1, normalizeLatin(word?.pinyin || "").length);
@@ -4099,15 +5087,28 @@ function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
 function normalizeAdminRole(role) {
   const normalized = String(role || "").toLowerCase();
   if (normalized === "admin") return "admin";
-  if (normalized === "staff" || normalized === "employee") return "staff";
+  if (normalized === "sales") return "sales";
+  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
 }
 
 function getAdminRoleLabel(role, isVi = state.lang === "vi") {
   const normalized = normalizeAdminRole(role);
   if (normalized === "admin") return isVi ? "Quản trị viên cao nhất" : "超级管理员";
-  if (normalized === "staff") return isVi ? "CSKH quản trị" : "客服管理员";
-  return isVi ? "Người dùng thường" : "普通用户";
+  if (normalized === "sales") return "Sales";
+  if (normalized === "ctv") return "CTV";
+  if (normalized === "content") return "Content";
+  return isVi ? "Thường" : "普通用户";
+}
+
+const ADMIN_EDITABLE_ROLES = ["user", "sales", "ctv", "content"];
+
+function renderAdminRoleOptionsHTML(currentRole, isVi = state.lang === "vi") {
+  return ADMIN_EDITABLE_ROLES.map((role) => {
+    const label = getAdminRoleLabel(role, isVi);
+    return `<option value="${role}" ${role === currentRole ? "selected" : ""}>${escapeAttr(label)}</option>`;
+  }).join("");
 }
 
 function findAdminUserById(userId) {
@@ -4156,9 +5157,8 @@ function confirmAdminRoleChange(userId, nextRole) {
   const user = findAdminUserById(userId);
   const isVi = state.lang === "vi";
   const target = user?.email || user?.fullName || userId;
-  const action = nextRole === "staff"
-    ? (isVi ? "đặt làm CSKH quản trị" : "设为客服管理员")
-    : (isVi ? "khôi phục thành người dùng thường" : "恢复为普通用户");
+  const roleLabel = getAdminRoleLabel(nextRole, isVi);
+  const action = isVi ? `cập nhật vai trò thành ${roleLabel}` : `更新角色为 ${roleLabel}`;
   return window.confirm(isVi
     ? `Xác nhận ${action} cho ${target}?`
     : `确认将 ${target} ${action} 吗？`);
@@ -4247,7 +5247,7 @@ function buildAdminUserRowsHTML(users, isVi) {
     const role = normalizeAdminRole(user.role);
     const canChangeStaffRole = isAdminUser() && role !== "admin";
     const staffRoleButton = canChangeStaffRole
-      ? `<button class="admin-role-user" type="button" data-next-role="${role === "staff" ? "user" : "staff"}">${role === "staff" ? (isVi ? "Hủy CSKH" : "取消客服管理员") : (isVi ? "Đặt CSKH" : "设为客服管理员")}</button>`
+      ? `<select class="admin-role-select" aria-label="${isVi ? "Vai trò" : "角色"}">${renderAdminRoleOptionsHTML(role, isVi)}</select><button class="admin-role-user" type="button">${isVi ? "Lưu vai trò" : "保存角色"}</button>`
       : "";
     return `
       <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}">
@@ -4357,6 +5357,8 @@ function renderAdmin() {
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
+    adminTab === "collaborators" ? "admin-main--ctv" : "",
+    adminTab === "analytics" ? "admin-main--analytics" : "",
   ].filter(Boolean).join(" ");
   const filteredUsers = getFilteredAdminUsers();
   const userPagination = getAdminUserPagination(filteredUsers);
@@ -4367,11 +5369,15 @@ function renderAdmin() {
     users: isVi ? "Quản lý người dùng" : "用户管理",
     subscriptions: isVi ? "Quản lý gói đăng ký" : "订阅套餐管理",
     content: isVi ? "Quản lý nội dung" : "内容管理",
+    collaborators: isVi ? "Quản lí CTV" : "合作伙伴管理",
+    analytics: isVi ? "Phân tích học tập" : "学习分析",
   };
   const adminSubtitleMap = {
     users: `<strong>${totalUsers || 0}</strong> ${isVi ? "người dùng đã đăng ký" : "注册用户"} <span>↗ +12% ${isVi ? "tháng này" : "本月"}</span>`,
     subscriptions: isVi ? "Theo dõi doanh thu, giao dịch và các gói Pro đang bán." : "跟踪收入、交易和正在销售的 Pro 套餐。",
     content: isVi ? "Cấu hình giới hạn miễn phí, ảnh bìa HSK và quyền truy cập nội dung." : "配置免费限制、HSK 封面和内容访问权限。",
+    collaborators: isVi ? "Quản lý cộng tác viên, theo dõi hoa hồng và tạo link giới thiệu." : "管理合作伙伴、跟踪佣金并生成推广链接。",
+    analytics: isVi ? "Theo dõi xu hướng học tập, kênh nguồn và chuyển đổi VIP." : "跟踪学习趋势、流量来源和 VIP 转化。",
   };
 
   screens.admin.innerHTML = `
@@ -4389,6 +5395,8 @@ function renderAdmin() {
           <button id="adminUsersTabBtn" class="${adminTab === "users" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Người dùng" : "用户"}</button>
           <button id="adminSubscriptionsTabBtn" class="${adminTab === "subscriptions" ? "active" : ""}" type="button"><span>▣</span>${isVi ? "Gói dịch vụ" : "套餐"}</button>
           <button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>▤</span>${isVi ? "Nội dung" : "内容"}</button>
+          <button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>
+          <button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>
         </nav>
         
         <div class="admin-sidebar-foot">
@@ -4411,7 +5419,7 @@ function renderAdmin() {
           </div>
           <div class="admin-top-user">
             <span>🔔</span><span>?</span><i></i>
-            <div><strong>Admin User</strong><small>Super Admin</small></div>
+            <div><strong>${isVi ? "Quản trị viên" : "管理员"}</strong><small>${isVi ? "Super Admin" : "超级管理员"}</small></div>
             <img src="assets/review_user_1.png" alt="Admin" />
           </div>
         </header>
@@ -4487,6 +5495,8 @@ function renderAdmin() {
         </section>
 
         ${adminTab === "content" ? renderAdminContentPanelHTML() : ""}
+        ${adminTab === "collaborators" ? renderAdminCollaboratorsPanelHTML() : ""}
+        ${adminTab === "analytics" ? renderAdminAnalyticsPanelHTML() : ""}
       </main>
     </div>
   `;
@@ -4599,7 +5609,7 @@ function showModal(type) {
         method: "POST",
         body: JSON.stringify(isLogin ? { email, password } : { fullName, email, password }),
       });
-      if (["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
+      if (["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(data.user?.role || "").toLowerCase())) {
         throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
       }
       state.user = data.user;
@@ -5545,6 +6555,7 @@ function showUpgradePlansModal() {
   const isVi = state.lang === "vi";
   const existing = document.getElementById("upgradePlansModal");
   if (existing) existing.remove();
+  trackEvent("vip_modal_opened", buildPracticeEventContext());
 
   const benefits = isVi
     ? [
@@ -11105,6 +12116,7 @@ function startPractice(options = {}) {
   state.practiceCompletedAt = 0;
   resetPractice();
   renderPractice();
+  trackEvent("lesson_opened", buildPracticeEventContext());
   setScreen("practice");
   setTimeout(() => {
     speak();
@@ -11308,6 +12320,11 @@ function submitAnswer(value) {
   }
   state.wrong.add(`${currentCollection().id}:${state.index}`);
   saveState();
+  trackEvent("question_answered", {
+    ...buildPracticeEventContext(),
+    questionId: `${currentCollection().id}:${state.index}`,
+    isCorrect: false,
+  });
   $("#feedback").textContent = t("bad");
   $("#feedback").className = "feedback bad";
   playTone("error");
@@ -11327,6 +12344,11 @@ function canSubmitCurrentAnswer(value) {
 function finishItem(options = {}) {
   const collection = currentCollection();
   state.complete = true;
+  trackEvent("question_answered", {
+    ...buildPracticeEventContext(),
+    questionId: `${collection.id}:${state.index}`,
+    isCorrect: true,
+  });
   if (state.index >= collection.items.length - 1 && !state.practiceCompletedAt) {
     state.practiceCompletedAt = Date.now();
   }
@@ -11600,7 +12622,7 @@ function bindEvents() {
       body: JSON.stringify({ email, password }),
     })
       .then((data) => {
-        if (!["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
+        if (!["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(data.user?.role || "").toLowerCase())) {
           throw new Error(state.lang === "vi" ? "Tài khoản này không có quyền admin." : "该账户没有管理员权限。");
         }
         state.adminUser = data.user;
@@ -12143,6 +13165,13 @@ function bindEvents() {
       return;
     }
 
+    const adminCtvPageBtn = event.target.closest("[data-admin-ctv-page]");
+    if (adminCtvPageBtn && state.screen === "admin") {
+      state.adminCtvPage = Math.max(1, Number(adminCtvPageBtn.dataset.adminCtvPage || 1));
+      renderAdmin();
+      return;
+    }
+
     const adminUsersTabBtn = event.target.closest("#adminUsersTabBtn");
     if (adminUsersTabBtn) {
       state.adminTab = "users";
@@ -12166,6 +13195,117 @@ function bindEvents() {
       loadAdminContentLocks();
       return;
     }
+
+    const adminCtvTabBtn = event.target.closest("#adminCtvTabBtn");
+    if (adminCtvTabBtn) {
+      if (!isAdminUser()) return;
+      state.adminTab = "collaborators";
+      renderAdmin();
+      if (!state.adminUsers.length) loadAdminUsers();
+      return;
+    }
+
+    const adminAnalyticsTabBtn = event.target.closest("#adminAnalyticsTabBtn");
+    if (adminAnalyticsTabBtn) {
+      if (!isAdminUser()) return;
+      state.adminTab = "analytics";
+      renderAdmin();
+      loadAdminAnalytics();
+      return;
+    }
+
+    const adminAnalyticsRangeTrigger = event.target.closest("#adminAnalyticsRangeTrigger");
+    if (adminAnalyticsRangeTrigger && state.screen === "admin") {
+      if (state.adminAnalyticsPickerOpen) {
+        state.adminAnalyticsPickerOpen = false;
+      } else {
+        state.adminAnalyticsPickerOpen = true;
+        state.adminAnalyticsDraftFrom = state.adminAnalyticsFrom || "";
+        state.adminAnalyticsDraftTo = state.adminAnalyticsTo || "";
+        const anchor = analyticsParseYmd(state.adminAnalyticsTo) || analyticsTodayLocal();
+        state.adminAnalyticsCalMonth = `${anchor.getFullYear()}-${String(anchor.getMonth()).padStart(2, "0")}`;
+      }
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminAnalyticsRangeBackdrop") && state.screen === "admin") {
+      state.adminAnalyticsPickerOpen = false;
+      renderAdmin();
+      return;
+    }
+
+    const adminAnalyticsPresetBtn = event.target.closest("[data-analytics-preset]");
+    if (adminAnalyticsPresetBtn && state.screen === "admin") {
+      const range = analyticsPresetRange(adminAnalyticsPresetBtn.dataset.analyticsPreset);
+      state.adminAnalyticsFrom = analyticsToYmd(range.from);
+      state.adminAnalyticsTo = analyticsToYmd(range.to);
+      state.adminAnalyticsPickerOpen = false;
+      loadAdminAnalytics();
+      return;
+    }
+
+    const adminAnalyticsCalNav = event.target.closest("[data-analytics-cal-nav]");
+    if (adminAnalyticsCalNav && state.screen === "admin") {
+      const base = analyticsParseYmd(`${state.adminAnalyticsCalMonth}-01`) || analyticsTodayLocal();
+      base.setMonth(base.getMonth() + Number(adminAnalyticsCalNav.dataset.analyticsCalNav || 0));
+      state.adminAnalyticsCalMonth = `${base.getFullYear()}-${String(base.getMonth()).padStart(2, "0")}`;
+      renderAdmin();
+      return;
+    }
+
+    const adminAnalyticsDayBtn = event.target.closest("[data-analytics-day]");
+    if (adminAnalyticsDayBtn && state.screen === "admin") {
+      const ymd = adminAnalyticsDayBtn.dataset.analyticsDay;
+      if (!state.adminAnalyticsDraftFrom || (state.adminAnalyticsDraftFrom && state.adminAnalyticsDraftTo)) {
+        state.adminAnalyticsDraftFrom = ymd;
+        state.adminAnalyticsDraftTo = "";
+      } else if (ymd < state.adminAnalyticsDraftFrom) {
+        state.adminAnalyticsDraftTo = state.adminAnalyticsDraftFrom;
+        state.adminAnalyticsDraftFrom = ymd;
+      } else {
+        state.adminAnalyticsDraftTo = ymd;
+      }
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminAnalyticsRangeCancel") && state.screen === "admin") {
+      state.adminAnalyticsPickerOpen = false;
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminAnalyticsRangeApply") && state.screen === "admin") {
+      if (state.adminAnalyticsDraftFrom && state.adminAnalyticsDraftTo) {
+        state.adminAnalyticsFrom = state.adminAnalyticsDraftFrom;
+        state.adminAnalyticsTo = state.adminAnalyticsDraftTo;
+        state.adminAnalyticsPickerOpen = false;
+        loadAdminAnalytics();
+      }
+      return;
+    }
+
+    const adminCtvCreateLinkBtn = event.target.closest("#adminCtvCreateLinkBtn");
+    if (adminCtvCreateLinkBtn) {
+      saveAdminCtvReferralLink();
+      return;
+    }
+
+    const adminCtvCopyLinkBtn = event.target.closest("#adminCtvCopyLinkBtn");
+    if (adminCtvCopyLinkBtn) {
+      const input = document.getElementById("adminCtvReferralLink");
+      const value = input?.value || "";
+      if (input) input.select();
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(value).catch(() => {});
+      }
+      state.adminCtvLinkStatus = state.lang === "vi" ? "Đã sao chép link giới thiệu." : "已复制推广链接。";
+      renderAdmin();
+      return;
+    }
+
+    
 
     const adminContentLevelBtn = event.target.closest("[data-admin-content-level]");
     if (adminContentLevelBtn) {
@@ -13091,6 +14231,18 @@ function bindEvents() {
         loadAdminUsers();
       }, 350);
     }
+    if (event.target.id === "adminCtvSearchInput") {
+      state.adminCtvSearch = event.target.value;
+      state.adminCtvLinkStatus = "";
+      state.adminCtvPage = 1;
+      renderAdmin();
+    }
+    if (event.target.id === "adminCtvLinkSearchInput") {
+      state.adminCtvPickerSearch = event.target.value;
+      updateAdminCtvPickerList();
+    }
+    
+
     if (event.target.matches?.("[data-admin-content-limit]")) {
       updateAdminHskLockConfig(event.target.dataset.adminContentLimit, {
         freeItemLimit: event.target.value,
@@ -13169,6 +14321,23 @@ function bindEvents() {
       };
       reader.readAsDataURL(file);
     }
+    if (event.target.matches?.("input[name='adminCtvSelect']")) {
+      state.adminCtvSelectedId = event.target.value;
+      state.adminCtvLinkStatus = "";
+      renderAdmin();
+    }
+    if (event.target.id === "adminCtvPageSizeSelect") {
+      state.adminCtvPageSize = Math.max(1, Number(event.target.value || 10));
+      state.adminCtvPage = 1;
+      renderAdmin();
+    }
+    if (event.target.id === "adminCtvLinkSourceSelect") {
+      state.adminCtvLinkSource = String(event.target.value || "").trim().toLowerCase();
+      state.adminCtvLinkStatus = "";
+      renderAdmin();
+    }
+
+
     if (event.target.id === "adminUserLevelFilter") {
       state.adminUserLevelFilter = event.target.value;
       state.adminUserPage = 1;
@@ -13219,11 +14388,17 @@ function applyRouteFromLocation() {
 
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
+  captureReferralRef();
+  captureTrafficSource();
   bindEvents();
   window.addEventListener("beforeunload", savePersistedRoute);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") savePersistedRoute();
+    if (document.visibilityState === "hidden") {
+      savePersistedRoute();
+      flushLearningEvents(true);
+    }
   });
+  window.addEventListener("pagehide", () => flushLearningEvents(true));
   Promise.allSettled([
     refreshCurrentUserStatus(),
     loadContentLocks(),
