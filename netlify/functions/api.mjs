@@ -125,8 +125,183 @@ function comparePronunciationFallback(referenceText, recognizedText) {
 }
 
 function speechAssessmentProvider() {
+  if (env("OPENAI_API_KEY")) return "openai";
   const hasIflytek = Boolean(env("IFLYTEK_APP_ID") && env("IFLYTEK_API_KEY") && env("IFLYTEK_API_SECRET"));
   return hasIflytek ? "iflytek" : "";
+}
+
+function clampScore(value, fallback = 0) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function audioFileName(mimeType = "") {
+  if (/wav/i.test(mimeType)) return "recording.wav";
+  if (/mpeg|mp3/i.test(mimeType)) return "recording.mp3";
+  if (/mp4|m4a/i.test(mimeType)) return "recording.m4a";
+  if (/ogg/i.test(mimeType)) return "recording.ogg";
+  if (/webm/i.test(mimeType)) return "recording.webm";
+  return "recording.wav";
+}
+
+function openAiHeaders(jsonBody = true) {
+  const headers = {
+    Authorization: `Bearer ${env("OPENAI_API_KEY")}`,
+  };
+  if (jsonBody) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+async function openAiJson(url, init) {
+  const response = await fetch(url, init);
+  const text = await response.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { raw: text };
+  }
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || `OpenAI request failed (${response.status})`;
+    throw apiError({
+      error: message,
+      code: "openai_request_failed",
+      provider: "openai",
+      providerCode: response.status,
+    }, 502);
+  }
+  return data;
+}
+
+async function transcribeWithOpenAi(audioBuffer, mimeType = "") {
+  const formData = new FormData();
+  const audioBytes = new Uint8Array(audioBuffer.length);
+  audioBytes.set(audioBuffer);
+  const audioBlob = new Blob([audioBytes], { type: mimeType || "audio/wav" });
+  formData.append("file", audioBlob, audioFileName(mimeType));
+  formData.append("model", env("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe");
+  formData.append("language", env("OPENAI_TRANSCRIBE_LANGUAGE") || "zh");
+  formData.append("response_format", "json");
+
+  const data = await openAiJson("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: openAiHeaders(false),
+    body: formData,
+  });
+  return String(data?.text || "").trim();
+}
+
+function responseOutputText(data) {
+  if (typeof data?.output_text === "string") return data.output_text;
+  const pieces = [];
+  for (const output of data?.output || []) {
+    for (const content of output?.content || []) {
+      if (typeof content?.text === "string") pieces.push(content.text);
+    }
+  }
+  return pieces.join("\n").trim();
+}
+
+function parseOpenAiScore(data) {
+  const text = responseOutputText(data);
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return {};
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return {};
+    }
+  }
+}
+
+async function scoreWithOpenAi(referenceText, recognizedText, pinyin) {
+  const schema = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      score: { type: "number", minimum: 0, maximum: 100 },
+      accuracyScore: { type: "number", minimum: 0, maximum: 100 },
+      fluencyScore: { type: "number", minimum: 0, maximum: 100 },
+      completenessScore: { type: "number", minimum: 0, maximum: 100 },
+      feedback: { type: "string" },
+      mistakes: {
+        type: "array",
+        items: { type: "string" },
+      },
+    },
+    required: ["score", "accuracyScore", "fluencyScore", "completenessScore", "feedback", "mistakes"],
+  };
+
+  const data = await openAiJson("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: openAiHeaders(),
+    body: JSON.stringify({
+      model: env("OPENAI_ASSESSMENT_MODEL") || "gpt-4.1-mini",
+      input: [
+        {
+          role: "system",
+          content: "You grade Mandarin sentence pronunciation from a speech transcript. Return strict JSON only. Be fair: minor punctuation or spacing differences should not hurt the score. Penalize missing, extra, or wrong Chinese characters. Use Vietnamese feedback.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            referenceText,
+            referencePinyin: pinyin,
+            recognizedText,
+            rubric: {
+              score: "overall pronunciation score from 0 to 100",
+              accuracyScore: "how closely recognized Chinese text matches the reference",
+              fluencyScore: "estimated fluency from transcript completeness and naturalness",
+              completenessScore: "how complete the spoken sentence is",
+            },
+          }),
+        },
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "pronunciation_assessment",
+          strict: true,
+          schema,
+        },
+      },
+    }),
+  });
+  return parseOpenAiScore(data);
+}
+
+async function assessWithOpenAi(referenceText, audioBuffer, mimeType = "", pinyin = "") {
+  const recognizedText = await transcribeWithOpenAi(audioBuffer, mimeType);
+  const fallback = comparePronunciationFallback(referenceText, recognizedText);
+  const openAiScore = await scoreWithOpenAi(referenceText, recognizedText, pinyin);
+  const score = clampScore(openAiScore.score, fallback.score);
+  const accuracyScore = clampScore(openAiScore.accuracyScore, fallback.score);
+  const fluencyScore = clampScore(openAiScore.fluencyScore, score);
+  const completenessScore = clampScore(openAiScore.completenessScore, fallback.score);
+  const charResults = fallback.charResults.map((item) => ({
+    ...item,
+    correct: item.correct && accuracyScore >= 55,
+    errorType: item.correct && accuracyScore >= 55 ? "None" : "Pronunciation",
+    accuracyScore,
+  }));
+
+  return {
+    provider: "openai",
+    recognizedText,
+    score,
+    accuracyScore,
+    fluencyScore,
+    completenessScore,
+    feedback: String(openAiScore.feedback || ""),
+    mistakes: Array.isArray(openAiScore.mistakes) ? openAiScore.mistakes : [],
+    words: [],
+    charResults,
+  };
 }
 
 function iflytekIseAuth() {
@@ -533,7 +708,9 @@ async function assessListeningPronunciation(body) {
   if (!audioBuffer.length) throw apiError("Audio ghi âm không hợp lệ.", 400);
   if (audioBuffer.length > 8 * 1024 * 1024) throw apiError("Audio ghi âm quá lớn.", 413);
 
-  const result = await assessWithIflytek(referenceText, audioBuffer);
+  const result = provider === "openai"
+    ? await assessWithOpenAi(referenceText, audioBuffer, String(body.mimeType || ""), String(body.pinyin || ""))
+    : await assessWithIflytek(referenceText, audioBuffer);
   return json({ ...result, ...assessToneAndIntonation(audioBuffer, body.pinyin || ""), referenceText });
 }
 
