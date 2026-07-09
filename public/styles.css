@@ -14847,8 +14847,7 @@ p {
 
 @media (max-width: 900px) {
   .screen-home .home-mobile-modules {
-    display: block;
-    padding: 10px;
+    display: none !important;
   }
 
   .screen-home .home-mobile-saved-section {
@@ -40895,22 +40894,28 @@ body:has(#practiceScreen:not(.hidden)) {
     z-index: 80 !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 18px 18px calc(18px + env(safe-area-inset-bottom)) !important;
+    padding: 9px 12px calc(9px + env(safe-area-inset-bottom)) !important;
     border: 1px solid rgba(216, 226, 255, 0.95) !important;
-    border-top: 5px solid #7a3cff !important;
-    border-radius: 22px 22px 0 0 !important;
+    border-top: 3px solid #7a3cff !important;
+    border-radius: 16px 16px 0 0 !important;
     background: rgba(255, 255, 255, 0.98) !important;
-    box-shadow: 0 -18px 34px rgba(56, 65, 120, 0.16) !important;
+    box-shadow: 0 -10px 22px rgba(56, 65, 120, 0.14) !important;
   }
 
   .screen-listening .listening-detail-mobile>.listening-quick-links-card.listening-mobile-card h2 {
-    margin-bottom: 14px !important;
-    font-size: 16px !important;
+    margin-bottom: 6px !important;
+    font-size: 13px !important;
+    line-height: 1.1 !important;
+  }
+
+  .screen-listening .listening-detail-mobile>.listening-quick-links-card .listening-script-quick-actions {
+    gap: 8px !important;
   }
 
   .screen-listening .listening-detail-mobile>.listening-quick-links-card .listening-script-quick-actions button {
-    min-height: 58px !important;
-    border-radius: 12px !important;
+    min-height: 34px !important;
+    border-radius: 10px !important;
+    padding: 6px 10px !important;
   }
 }
 
@@ -41793,7 +41798,7 @@ body:has(#practiceScreen:not(.hidden)) {
 
   .screen-home .home-mobile-topics-head {
     padding: 9px 12px !important;
-    margin: 0 0 12px !important;
+    margin: 10px 0 12px !important;
   }
 }
 

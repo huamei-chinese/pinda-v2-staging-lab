@@ -2075,6 +2075,8 @@ function themeIconLabel(theme) {
 
 let audioContext;
 let activeSpeechAudio = null;
+let speechPlaybackToken = 0;
+let scheduledPracticeSpeakTimer = null;
 let slowSpeech = false;
 let preferredChineseVoice = null;
 
@@ -7360,10 +7362,12 @@ async function showTransferInfoModal(planId) {
 }
 
 function showQuitModal() {
+  if (document.getElementById("quitModal")) return;
   const modalDiv = document.createElement("div");
   modalDiv.id = "quitModal";
   modalDiv.className = "quit-modal-overlay";
   const isVi = state.lang === "vi";
+  let modalClosed = false;
 
   modalDiv.innerHTML = `
     <div class="quit-modal-content">
@@ -7428,7 +7432,14 @@ function showQuitModal() {
 
   document.body.appendChild(modalDiv);
 
-  const closeModal = () => {
+  const closeModal = (options = {}) => {
+    if (modalClosed) return;
+    modalClosed = true;
+    const immediate = Boolean(options.immediate);
+    if (immediate) {
+      modalDiv.remove();
+      return;
+    }
     modalDiv.classList.add("fade-out");
     setTimeout(() => modalDiv.remove(), 200);
   };
@@ -7437,8 +7448,9 @@ function showQuitModal() {
   document.getElementById("btnKeepLearning").onclick = closeModal;
   modalDiv.onclick = (e) => { if (e.target === modalDiv) closeModal(); };
 
-  document.getElementById("btnQuitLearning").onclick = () => {
-    closeModal();
+  document.getElementById("btnQuitLearning").onclick = (event) => {
+    event.currentTarget.disabled = true;
+    closeModal({ immediate: true });
     backFromPracticeToCourse();
   };
 }
@@ -8662,16 +8674,27 @@ function renderListeningSentenceListHTML(episode = getListeningEpisode(), curren
   return titleSentenceHTML + sentencesHTML;
 }
 
-function applyListeningSubtitleMode(mode = state.listeningSubtitleMode) {
+function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceElement = null) {
   const subtitleMode = getListeningSubtitleMode(mode);
   state.listeningSubtitleMode = subtitleMode;
   localStorage.setItem("v2-listening-subtitle-mode", subtitleMode);
 
   const episode = getListeningEpisode();
-  const titleActive = isListeningTitleAudioPhase();
+  const sourceScriptCard = sourceElement?.closest?.(".listening-script-card");
+  const sourceSentenceList = sourceScriptCard?.querySelector?.(".listening-sentence-list");
+  const activeSentenceButton = sourceSentenceList?.querySelector("[data-listening-sentence].active")
+    || document.querySelector(".listening-sentence-list [data-listening-sentence].active");
+  const activeSentenceIndex = Number(activeSentenceButton?.dataset.listeningSentence);
+  const keepSentenceActive = Number.isFinite(activeSentenceIndex);
+  const titleActive = !keepSentenceActive && Boolean(
+    sourceSentenceList?.querySelector("[data-listening-title-sentence].active")
+      || document.querySelector(".listening-sentence-list [data-listening-title-sentence].active")
+  );
+  const currentIndex = keepSentenceActive ? activeSentenceIndex : state.listeningSentenceIndex;
+  if (keepSentenceActive) state.listeningSentenceIndex = currentIndex;
   document.querySelectorAll(".listening-sentence-list").forEach((list) => {
     const previousScrollTop = list.scrollTop;
-    list.innerHTML = renderListeningSentenceListHTML(episode, state.listeningSentenceIndex, subtitleMode, { titleActive });
+    list.innerHTML = renderListeningSentenceListHTML(episode, currentIndex, subtitleMode, { titleActive });
     list.scrollTop = previousScrollTop;
   });
 
@@ -8689,7 +8712,8 @@ function applyListeningSubtitleMode(mode = state.listeningSubtitleMode) {
     button.innerHTML = `${escapeHtml(translationToggleLabel)} <span aria-hidden="true">⌄</span>`;
   });
 
-  syncListeningAudioUi();
+  if (keepSentenceActive) setListeningActiveSentence(currentIndex, { force: true, scroll: false });
+  else if (titleActive) setListeningTitleSentenceActive({ scroll: false });
 }
 
 function renderListeningDetail(options = {}) {
@@ -9021,6 +9045,8 @@ function setListeningActiveSentence(index, options = {}) {
     button.classList.toggle("active", isActive);
   });
 
+  if (options.scroll === false) return;
+
   const activeButton = document.querySelector(
     `.listening-sentence-list [data-listening-sentence="${nextIndex}"]`
   );
@@ -9073,6 +9099,7 @@ let listeningPlaybackToken = 0;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
 let listeningRepeatAudioStopTimer = null;
+const LISTENING_REPEAT_END_PADDING_SECONDS = 0.65;
 const listeningSpecializedPronunciationEnabled = true;
 
 function getListeningRepeatDisplayScore(score = listeningRepeatLatestScore) {
@@ -9694,6 +9721,24 @@ function speakListeningSentence(index = state.listeningSentenceIndex) {
   return true;
 }
 
+function getListeningRepeatSentenceAudioBounds(sentence = {}, audio = null) {
+  const startTime = Math.max(0, Number(sentence.start || 0));
+  const fallbackDuration = Math.max(1, String(sentence.chinese || "").length * 0.35);
+  const configuredEnd = Number(sentence.end);
+  const rawEndTime = Number.isFinite(configuredEnd) && configuredEnd > startTime
+    ? configuredEnd
+    : startTime + fallbackDuration;
+  const duration = Number(audio?.duration);
+  const audioDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
+  const stopTime = Math.max(
+    startTime + 0.6,
+    audioDuration === null
+      ? rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS
+      : Math.min(audioDuration, rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS),
+  );
+  return { startTime, endTime: rawEndTime, stopTime };
+}
+
 function toggleListeningRepeatSentencePlayback() {
   const episode = getListeningEpisode();
   const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
@@ -9715,17 +9760,23 @@ function toggleListeningRepeatSentencePlayback() {
 
   if (listeningRepeatSpeechState === "paused") {
     if (audio && episode.audioSrc) {
-      const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : (audio.currentTime || 0) + Math.max(1, sentence.chinese.length * 0.35);
-      const remainingMs = Math.max(400, ((endTime - (audio.currentTime || 0)) / getListeningPlaybackRate()) * 1000 + 180);
+      const resumeToken = listeningRepeatSpeechToken;
+      const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
+      if ((audio.currentTime || 0) < startTime || (audio.currentTime || 0) >= stopTime) {
+        audio.currentTime = startTime;
+      }
+      const remainingMs = Math.max(400, ((stopTime - (audio.currentTime || startTime)) / getListeningPlaybackRate()) * 1000 + 180);
       if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
       listeningRepeatAudioStopTimer = window.setTimeout(() => {
+        if (listeningRepeatSpeechToken !== resumeToken) return;
         audio.pause();
-        audio.currentTime = Number(sentence.start || 0);
+        audio.currentTime = startTime;
         listeningRepeatSpeechState = "idle";
         listeningRepeatAudioStopTimer = null;
         setListeningRepeatListenUi("idle");
       }, remainingMs);
       audio.play().catch(() => {
+        if (listeningRepeatSpeechToken !== resumeToken) return;
         listeningRepeatSpeechState = "idle";
         setListeningRepeatListenUi("idle");
       });
@@ -9744,8 +9795,7 @@ function toggleListeningRepeatSentencePlayback() {
   setListeningRepeatListenUi("playing");
 
   if (audio && episode.audioSrc) {
-    const startTime = Number(sentence.start || 0);
-    const endTime = Number.isFinite(Number(sentence.end)) ? Number(sentence.end) : startTime + Math.max(1, sentence.chinese.length * 0.35);
+    const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
     const resetRepeatAudioUi = () => {
       if (listeningRepeatSpeechToken !== speechToken) return;
       listeningRepeatSpeechState = "idle";
@@ -9755,10 +9805,12 @@ function toggleListeningRepeatSentencePlayback() {
       }
       setListeningRepeatListenUi("idle");
     };
+    window.speechSynthesis?.cancel();
     applyListeningPlaybackRate(audio);
     audio.currentTime = startTime;
     audio.ontimeupdate = () => {
-      if (audio.currentTime >= endTime) {
+      if (listeningRepeatSpeechToken !== speechToken) return;
+      if (audio.currentTime >= stopTime) {
         audio.pause();
         audio.currentTime = startTime;
         resetRepeatAudioUi();
@@ -9766,6 +9818,7 @@ function toggleListeningRepeatSentencePlayback() {
     };
     audio.onended = resetRepeatAudioUi;
     audio.onerror = () => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
       resetRepeatAudioUi();
       if (!("speechSynthesis" in window)) {
         showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
@@ -9781,8 +9834,9 @@ function toggleListeningRepeatSentencePlayback() {
       audio.pause();
       audio.currentTime = startTime;
       resetRepeatAudioUi();
-    }, Math.max(600, ((endTime - startTime) / playbackRate) * 1000 + 180));
+    }, Math.max(600, ((stopTime - startTime) / playbackRate) * 1000 + 180));
     audio.play().catch(() => {
+      if (listeningRepeatSpeechToken !== speechToken) return;
       resetRepeatAudioUi();
       if (!("speechSynthesis" in window)) {
         showToast(state.lang === "vi" ? "KhÃ´ng thá»ƒ phÃ¡t audio cÃ¢u nÃ y." : "æ— æ³•æ’­æ”¾è¿™å¥éŸ³é¢‘ã€‚");
@@ -11319,6 +11373,8 @@ function backToDailyThemeList() {
 }
 
 function backFromPracticeToCourse() {
+  clearScheduledPracticeSpeak();
+  stopSpeechPlayback();
   if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
     backToWriteCommunicationCourse();
     return;
@@ -12129,12 +12185,16 @@ function renderDailyCourse() {
 }
 
 function stopSpeechPlayback() {
+  speechPlaybackToken += 1;
   window.speechSynthesis?.cancel();
   if (activeSpeechAudio) {
-    activeSpeechAudio.pause();
-    activeSpeechAudio.removeAttribute("src");
-    activeSpeechAudio.load();
+    const audio = activeSpeechAudio;
     activeSpeechAudio = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
   }
 }
 
@@ -12278,16 +12338,20 @@ function reportAudioFallback(meta = {}) {
 
 function playAudioSources(sources, fallback, meta = {}) {
   const candidates = uniqueAudioSources(Array.isArray(sources) ? sources : [sources]);
+  stopSpeechPlayback();
+  const playbackToken = speechPlaybackToken;
+  const isCurrentPlayback = () => playbackToken === speechPlaybackToken;
   if (candidates.length === 0) {
     reportAudioFallback({ ...meta, sources: candidates });
     fallback?.();
     return;
   }
-  stopSpeechPlayback();
   let cursor = 0;
   const tryNext = () => {
+    if (!isCurrentPlayback()) return;
     const source = candidates[cursor];
     if (!source) {
+      if (!isCurrentPlayback()) return;
       reportAudioFallback({ ...meta, sources: candidates });
       fallback?.();
       return;
@@ -12296,6 +12360,7 @@ function playAudioSources(sources, fallback, meta = {}) {
     const audio = new Audio(source);
     let handledFailure = false;
     const handleFailure = () => {
+      if (!isCurrentPlayback()) return;
       if (handledFailure) return;
       handledFailure = true;
       if (activeSpeechAudio === audio) activeSpeechAudio = null;
@@ -12303,6 +12368,7 @@ function playAudioSources(sources, fallback, meta = {}) {
     };
     activeSpeechAudio = audio;
     audio.onended = () => {
+      if (!isCurrentPlayback()) return;
       if (activeSpeechAudio === audio) activeSpeechAudio = null;
     };
     audio.onerror = handleFailure;
@@ -12613,10 +12679,7 @@ function startPractice(options = {}) {
   renderPractice();
   trackEvent("lesson_opened", buildPracticeEventContext());
   setScreen("practice");
-  setTimeout(() => {
-    speak();
-    focusInput();
-  }, 100);
+  schedulePracticeSpeak(100, focusInput);
 }
 
 function renderPractice() {
@@ -12852,7 +12915,7 @@ function finishItem(options = {}) {
   burst();
   playTone("success");
   if (options.autoAdvance) {
-    setTimeout(() => speak(), 360);
+    schedulePracticeSpeak(360);
   }
 }
 
@@ -12862,7 +12925,7 @@ function prevItem() {
   state.index -= 1;
   resetPractice();
   renderPractice();
-  setTimeout(speak, 120);
+  schedulePracticeSpeak(120);
 }
 
 function nextItem() {
@@ -12898,7 +12961,7 @@ function nextItem() {
   state.index += 1;
   resetPractice();
   renderPractice();
-  setTimeout(speak, 120);
+  schedulePracticeSpeak(120);
 }
 
 function showAnswer() {
@@ -12939,7 +13002,23 @@ function chooseChineseVoice() {
   return preferredChineseVoice;
 }
 
-function speak() {
+function clearScheduledPracticeSpeak() {
+  if (!scheduledPracticeSpeakTimer) return;
+  clearTimeout(scheduledPracticeSpeakTimer);
+  scheduledPracticeSpeakTimer = null;
+}
+
+function schedulePracticeSpeak(delay = 0, afterSpeak) {
+  clearScheduledPracticeSpeak();
+  scheduledPracticeSpeakTimer = setTimeout(() => {
+    scheduledPracticeSpeakTimer = null;
+    speak({ fromSchedule: true });
+    if (typeof afterSpeak === "function") afterSpeak();
+  }, delay);
+}
+
+function speak(options = {}) {
+  if (!options.fromSchedule) clearScheduledPracticeSpeak();
   const itemNow = currentItem();
   const playSlow = slowSpeech;
   const sources = getPracticeAudioSources({ slow: playSlow });
@@ -13316,6 +13395,18 @@ function bindEvents() {
         return;
       }
 
+      const subtitleToggle = event.target.closest("[data-listening-subtitle-mode]");
+      if (subtitleToggle) {
+        applyListeningSubtitleMode(subtitleToggle.dataset.listeningSubtitleMode || "pinyin-zh", subtitleToggle);
+        return;
+      }
+
+      const listeningTranslationBtn = event.target.closest("[data-listening-translation]");
+      if (listeningTranslationBtn) {
+        applyListeningSubtitleMode(state.listeningSubtitleMode === "both" || state.listeningSubtitleMode === "vi" ? "pinyin-zh" : "both", listeningTranslationBtn);
+        return;
+      }
+
       const listeningSentenceBtn = event.target.closest("[data-listening-sentence]");
       if (listeningSentenceBtn) {
         seekListeningSentence(Number(listeningSentenceBtn.dataset.listeningSentence || 0), true);
@@ -13441,7 +13532,13 @@ function bindEvents() {
       }
 
       if (event.target.closest("[data-listening-prev]")) {
-        seekListeningSentence(state.listeningSentenceIndex - 1, true);
+        const episode = getListeningEpisode();
+        const titleIsActive = Boolean(document.querySelector(".listening-sentence-list [data-listening-title-sentence].active")) || isListeningTitleAudioPhase();
+        if (!titleIsActive && state.listeningSentenceIndex <= 0 && episode.titleAudioSrc) {
+          seekListeningTitleSentence(true);
+        } else {
+          seekListeningSentence(state.listeningSentenceIndex - 1, true);
+        }
         return;
       }
 
@@ -13452,17 +13549,6 @@ function bindEvents() {
 
       if (event.target.closest("[data-listening-replay]")) {
         seekListeningSentence(state.listeningSentenceIndex, true);
-        return;
-      }
-
-      const subtitleToggle = event.target.closest("[data-listening-subtitle-mode]");
-      if (subtitleToggle) {
-        applyListeningSubtitleMode(subtitleToggle.dataset.listeningSubtitleMode || "pinyin-zh");
-        return;
-      }
-
-      if (event.target.closest("[data-listening-translation]")) {
-        applyListeningSubtitleMode(state.listeningSubtitleMode === "both" || state.listeningSubtitleMode === "vi" ? "pinyin-zh" : "both");
         return;
       }
 
