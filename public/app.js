@@ -451,6 +451,8 @@ const STUDENT_TOKEN_STORAGE_KEY = "huamei_student_token";
 const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
 const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
 const HOME_TODAY_STUDY_STORAGE_KEY = "v2-home-today-study";
+const HOME_QUICK_HSK_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-last-lesson";
+const HOME_QUICK_HSK_SENTENCE_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-sentence-last-lesson";
 const HOME_TODAY_TIME_TARGET_SECONDS = 30 * 60;
 const HOME_TODAY_VOCAB_TARGET = 20;
 
@@ -507,6 +509,7 @@ const state = {
   hskPendingLessonId: "",
   dailyContentType: "",
   dailyPendingThemeId: "",
+  dailyBackTarget: "",
   lessonId: "hsk2-l1",
   themeId: "greeting",
   mode: "translate",
@@ -1314,6 +1317,38 @@ function openRandomSuggestedListeningLesson() {
   state.listeningLessonsBackTarget = "dashboard";
   state.listeningSeedEpisodeId = "";
   state.listeningTopicId = topic?.id || "";
+  renderListening();
+  setScreen("listening");
+  return true;
+}
+
+function getListeningRepeatPracticeCandidates() {
+  return listeningEpisodes
+    .filter((episode) => episode?.id && Array.isArray(episode.sentences) && episode.sentences.length > 0)
+    .flatMap((episode) => episode.sentences.map((sentence, sentenceIndex) => ({
+      episode,
+      sentence,
+      sentenceIndex,
+    })))
+    .filter((candidate) => candidate.sentence?.chinese);
+}
+
+function openRandomListeningRepeatPractice() {
+  const candidates = getListeningRepeatPracticeCandidates();
+  const selected = randomArrayItem(candidates);
+  if (!selected) return false;
+
+  const topic = getListeningTopicByEpisodeId(selected.episode.id);
+  state.listeningLevelId = topic?.levelId || selected.episode.levelId || state.listeningLevelId || "dialogue-so-cap";
+  state.listeningEpisodeId = selected.episode.id;
+  state.listeningView = "repeat";
+  state.listeningSentenceIndex = selected.sentenceIndex;
+  state.listeningVocabPracticeIndex = 0;
+  state.listeningBackTarget = "dashboard";
+  state.listeningLessonsBackTarget = "dashboard";
+  state.listeningSeedEpisodeId = "";
+  state.listeningTopicId = topic?.id || "";
+  resetListeningRepeatAttempt();
   renderListening();
   setScreen("listening");
   return true;
@@ -2994,6 +3029,109 @@ function canAccessDailyThemeItem(themeId, itemIndex, contentType = state.dailyCo
   return Number.isFinite(itemNo) && itemNo <= Number(rule.freeLimit || 0);
 }
 
+function getStoredQuickHskLastLessonId(storageKey = HOME_QUICK_HSK_LAST_LESSON_STORAGE_KEY) {
+  try {
+    return localStorage.getItem(storageKey) || "";
+  } catch {
+    return "";
+  }
+}
+
+function setStoredQuickHskLastLessonId(lessonId = "", storageKey = HOME_QUICK_HSK_LAST_LESSON_STORAGE_KEY) {
+  try {
+    localStorage.setItem(storageKey, lessonId);
+  } catch {
+    // Best-effort only; random practice still works without storage.
+  }
+}
+
+function randomArrayItem(items = []) {
+  if (!items.length) return null;
+  return items[Math.floor(Math.random() * items.length)] || items[0] || null;
+}
+
+function getQuickHskVocabularyPracticeCandidates() {
+  const premium = hasPremiumAccess();
+  return Object.entries(hskLevels)
+    .flatMap(([level, lessons]) => (lessons || []).flatMap((lessonItem) => {
+      const wordItems = hskLessonItemsByType(lessonItem, "word");
+      return wordItems
+        .map((item, index) => ({
+          level,
+          lessonId: lessonItem.id,
+          index,
+          item,
+        }))
+        .filter((candidate) => premium || canAccessHskLessonItem(candidate.lessonId, candidate.index, "word"));
+    }))
+    .filter((candidate) => candidate.lessonId && candidate.item);
+}
+
+function getQuickHskSentencePracticeCandidates() {
+  const premium = hasPremiumAccess();
+  return Object.entries(hskLevels)
+    .flatMap(([level, lessons]) => (lessons || []).flatMap((lessonItem) => {
+      const sentenceItems = hskLessonItemsByType(lessonItem, "sentence");
+      return sentenceItems
+        .map((item, index) => ({
+          level,
+          lessonId: lessonItem.id,
+          index,
+          item,
+        }))
+        .filter((candidate) => premium || canAccessHskLessonItem(candidate.lessonId, candidate.index, "sentence"));
+    }))
+    .filter((candidate) => candidate.lessonId && candidate.item);
+}
+
+function openRandomHskVocabularyTypingPractice() {
+  const candidates = getQuickHskVocabularyPracticeCandidates();
+  if (!candidates.length) return false;
+
+  const lastLessonId = getStoredQuickHskLastLessonId();
+  const lessonIds = Array.from(new Set(candidates.map((candidate) => candidate.lessonId)));
+  const nextLessonIds = lessonIds.length > 1
+    ? lessonIds.filter((lessonId) => lessonId !== lastLessonId)
+    : lessonIds;
+  const lessonId = randomArrayItem(nextLessonIds) || randomArrayItem(lessonIds);
+  const lessonCandidates = candidates.filter((candidate) => candidate.lessonId === lessonId);
+  const selected = randomArrayItem(lessonCandidates) || randomArrayItem(candidates);
+  if (!selected) return false;
+
+  setStoredQuickHskLastLessonId(selected.lessonId);
+  startPractice({
+    lessonId: selected.lessonId,
+    mode: "translate",
+    hskContentType: "word",
+    index: selected.index,
+  });
+  return true;
+}
+
+function openRandomHskSentenceTypingPractice() {
+  const candidates = getQuickHskSentencePracticeCandidates();
+  if (!candidates.length) return false;
+
+  const lastLessonId = getStoredQuickHskLastLessonId(HOME_QUICK_HSK_SENTENCE_LAST_LESSON_STORAGE_KEY);
+  const lessonIds = Array.from(new Set(candidates.map((candidate) => candidate.lessonId)));
+  const nextLessonIds = lessonIds.length > 1
+    ? lessonIds.filter((lessonId) => lessonId !== lastLessonId)
+    : lessonIds;
+  const lessonId = randomArrayItem(nextLessonIds) || randomArrayItem(lessonIds);
+  const lessonCandidates = candidates.filter((candidate) => candidate.lessonId === lessonId);
+  const selected = randomArrayItem(lessonCandidates) || randomArrayItem(candidates);
+  if (!selected) return false;
+
+  setStoredQuickHskLastLessonId(selected.lessonId, HOME_QUICK_HSK_SENTENCE_LAST_LESSON_STORAGE_KEY);
+  startPractice({
+    lessonId: selected.lessonId,
+    mode: "translate",
+    hskContentType: "sentence",
+    index: selected.index,
+  });
+  return true;
+}
+
 function promptHskLessonLocked() {
   promptUpgradeLocked();
 }
@@ -4640,6 +4778,7 @@ function navigatePrimaryTab(target) {
   state.fromRoadmap = false;
   state.dailyPendingThemeId = "";
   state.dailyContentType = "";
+  state.dailyBackTarget = "";
 
   if (target === "write") target = "hsk";
   if (target === "listen") target = "listening";
@@ -4652,6 +4791,24 @@ function navigatePrimaryTab(target) {
   if (target === "home") {
     renderHome();
     setScreen("home");
+  } else if (target === "quick-hsk-vocab") {
+    if (!openRandomHskVocabularyTypingPractice()) {
+      if (hasPremiumAccess()) navigatePrimaryTab("hsk");
+      else promptUpgradeLocked();
+      return;
+    }
+  } else if (target === "quick-hsk-sentence") {
+    if (!openRandomHskSentenceTypingPractice()) {
+      if (hasPremiumAccess()) navigatePrimaryTab("hsk");
+      else promptUpgradeLocked();
+      return;
+    }
+  } else if (target === "quick-speaking") {
+    if (!openRandomListeningRepeatPractice()) {
+      state.listeningView = "levels";
+      renderListening();
+      setScreen("listening");
+    }
   } else if (target === "quick-listening") {
     if (!openRandomSuggestedListeningLesson()) {
       state.listeningView = "levels";
@@ -4697,7 +4854,7 @@ function navigatePrimaryTab(target) {
   $("#mobileMenu")?.classList.remove("active");
 }
 
-function openDailyTopicFromHome(themeId) {
+function openDailyTopicFromHome(themeId, options = {}) {
   const theme = dailyThemes.find((item) => item.id === themeId);
   if (!theme) return;
   if (isDailyThemeLockedForUser(theme.id)) {
@@ -4710,6 +4867,7 @@ function openDailyTopicFromHome(themeId) {
   state.hskContentType = "";
   state.dailyPendingThemeId = theme.id;
   state.dailyContentType = "";
+  state.dailyBackTarget = options.backTarget || "";
   renderCourse();
   setScreen("course");
   scrollAppToTop();
@@ -4730,6 +4888,7 @@ function savePersistedRoute() {
       lessonId: state.lessonId,
       dailyPendingThemeId: state.dailyPendingThemeId,
       dailyContentType: state.dailyContentType,
+      dailyBackTarget: state.dailyBackTarget,
       themeId: state.themeId,
       mode: state.mode,
       index: state.index,
@@ -4774,6 +4933,7 @@ function restorePersistedRoute() {
     if (route.lessonId) state.lessonId = route.lessonId;
     if (route.dailyPendingThemeId !== undefined) state.dailyPendingThemeId = route.dailyPendingThemeId;
     if (route.dailyContentType !== undefined) state.dailyContentType = route.dailyContentType;
+    if (route.dailyBackTarget !== undefined) state.dailyBackTarget = route.dailyBackTarget;
     if (route.themeId) state.themeId = route.themeId;
     if (route.mode) state.mode = route.mode;
     if (Number.isInteger(route.index)) state.index = route.index;
@@ -7275,8 +7435,7 @@ function showQuitModal() {
 
   document.getElementById("btnQuitLearning").onclick = () => {
     closeModal();
-    renderCourse();
-    setScreen("course");
+    backFromPracticeToCourse();
   };
 }
 
@@ -7565,7 +7724,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
         <span class="home-desktop-brand-icon" aria-hidden="true">✎</span>
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
-          <small>${isVi ? "Học đúng - Nhớ lâu" : "写好字 · 记得牢"}</small>
+          <small>${isVi ? "Học đúng - Nhớ lâu" : "学得准 – 记得稳"}</small>
         </div>
       </div>
       <nav class="home-desktop-nav">
@@ -10727,7 +10886,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
         <header class="home-desktop-topbar">
           <div>
             <h1>${isVi ? "Học Trung - HuaMei" : "学习中文 - 华美"}</h1>
-            <p>${isVi ? "Học đúng – Nhớ lâu" : "正确书写 · 终身受益"}</p>
+            <p>${isVi ? "Học đúng – Nhớ lâu" : "学得准 – 记得稳"}</p>
           </div>
           <button type="button" class="home-desktop-lang-btn" id="homeDesktopTopbarLanguageBtn" aria-label="${isVi ? "Đổi ngôn ngữ" : "切换语言"}">
             <span class="${isVi ? "active" : ""}">VI</span>
@@ -10751,19 +10910,19 @@ function renderHomeDesktopLayoutHTML(isVi) {
         </section>
 
         <section class="home-desktop-feature-strip">
-        <article class="home-desktop-feature-card home-desktop-feature-card--green" data-home-nav="write-communication" role="button" tabindex="0">
+        <article class="home-desktop-feature-card home-desktop-feature-card--green" data-home-nav="quick-hsk-vocab" role="button" tabindex="0">
           <span class="home-feature-icon">A</span>
           <div>
-            <strong>${isVi ? "Bộ từ thông minh" : "智能词库"}</strong>
-            <small>${isVi ? "Học từ theo tần suất và dễ nhớ hơn" : "按频率学习，更容易记住"}</small>
+            <strong>${isVi ? "Luyện gõ từ vựng" : "词汇打字练习"}</strong>
+            <small>${isVi ? "Tăng phản xạ và ghi nhớ lâu" : "提升反应，记得更久"}</small>
           </div>
         </article>
 
-        <article class="home-desktop-feature-card home-desktop-feature-card--orange" data-home-nav="account" role="button" tabindex="0">
+        <article class="home-desktop-feature-card home-desktop-feature-card--orange" data-home-nav="quick-hsk-sentence" role="button" tabindex="0">
           <span class="home-feature-icon">◎</span>
           <div>
-            <strong>${isVi ? "Theo dõi tiến độ" : "学习进度追踪"}</strong>
-            <small>${isVi ? "Xem hồ sơ, mục tiêu và tiến độ của bạn" : "查看资料、目标和进度"}</small>
+            <strong>${isVi ? "Luyện gõ câu" : "句子打字练习"}</strong>
+            <small>${isVi ? "Ghi nhớ cấu trúc câu lâu hơn" : "更久记住句子结构"}</small>
           </div>
         </article>
 
@@ -10775,11 +10934,11 @@ function renderHomeDesktopLayoutHTML(isVi) {
           </div>
         </article>
 
-        <article class="home-desktop-feature-card home-desktop-feature-card--blue" data-home-module="listen" role="button" tabindex="0">
+        <article class="home-desktop-feature-card home-desktop-feature-card--blue" data-home-nav="quick-speaking" role="button" tabindex="0">
           <span class="home-feature-icon">▣</span>
           <div>
-            <strong>${isVi ? "Kho tài liệu phong phú" : "丰富资料库"}</strong>
-            <small>${isVi ? "Bài đọc, video, flashcard và nhiều hơn nữa" : "阅读、视频、词卡等"}</small>
+            <strong>${isVi ? "Luyện nói nhanh" : "快速跟读"}</strong>
+            <small>${isVi ? "Ngẫu nhiên vào phần nói theo" : "随机进入跟读练习"}</small>
           </div>
         </article>
       </section>
@@ -11099,11 +11258,37 @@ function backToHskLevelPicker() {
   renderHskCourse();
 }
 
+function backToWriteCommunicationCourse() {
+  state.module = "hsk";
+  state.writeCourseView = "communication";
+  state.hskLevelPicker = false;
+  state.hskPendingLessonId = "";
+  state.hskContentType = "";
+  state.dailyPendingThemeId = "";
+  state.dailyContentType = "";
+  state.dailyBackTarget = "";
+  renderHskCourse();
+}
+
 function backToDailyThemeList() {
+  if (state.dailyBackTarget === "write-communication") {
+    backToWriteCommunicationCourse();
+    return;
+  }
   state.module = "daily";
   state.dailyPendingThemeId = "";
   state.dailyContentType = "";
+  state.dailyBackTarget = "";
   renderDailyCourse();
+}
+
+function backFromPracticeToCourse() {
+  if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
+    backToWriteCommunicationCourse();
+    return;
+  }
+  renderCourse();
+  setScreen("course");
 }
 
 function handleMobilePageBack() {
@@ -11359,6 +11544,52 @@ function renderWritePathPickerHTML() {
   const isVi = state.lang === "vi";
   const totalHskLessons = Object.values(hskLevels).reduce((sum, lessons) => sum + lessons.length, 0);
   const communicationCount = dailyThemes.length;
+  const hskSelectorDetails = {
+    HSK1: { vi: "Nhập môn Hán tự", zh: "初入汉字" },
+    HSK2: { vi: "Giao tiếp cơ bản", zh: "中心与语" },
+    HSK3: { vi: "Trung cấp nền tảng", zh: "中心英语" },
+    HSK4: { vi: "Cốt lõi chữ và câu", zh: "核心与字语" },
+    HSK5: { vi: "Đọc hiểu nâng cao", zh: "进阶阅读" },
+    HSK6: { vi: "Diễn đạt chuyên sâu", zh: "中心英语" },
+  };
+  const hskSelectorRows = hskLevelCards.map((card, index) => {
+    const lessons = hskLevels[card.level] || [];
+    const completedLessons = lessons.filter((lessonItem) => state.completed.has(lessonItem.id)).length;
+    const progress = lessons.length ? Math.round((completedLessons / lessons.length) * 100) : 0;
+    const detail = hskSelectorDetails[card.level] || { vi: card.vi, zh: card.zh };
+    const levelNumber = String(card.level).replace("HSK", "");
+    const isActive = card.level === state.level;
+    return `
+          <button class="write-hsk-level-row write-hsk-level-row--${card.level.toLowerCase()} ${isActive ? "active" : ""}" type="button" data-write-hsk-level="${card.level}" style="--hsk-row-progress: ${progress}%; --hsk-row-index: ${index};" aria-label="${escapeAttr(isVi ? `Mở danh sách bài học ${card.level}` : `打开 ${card.level} 课程列表`)}">
+            <span class="write-hsk-row-level">HSK ${levelNumber}</span>
+            <span class="write-hsk-row-copy">
+              <strong>${isVi ? detail.vi : detail.zh}</strong>
+              <i aria-hidden="true"></i>
+            </span>
+            <span class="write-hsk-row-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
+          </button>
+    `;
+  }).join("");
+  const communicationTopicCards = dailyThemes.map((theme, index) => {
+    const config = getDailyFeaturedThemeConfig(theme);
+    const title = isVi ? config.titleVi : config.titleZh;
+    const desc = isVi ? config.descVi : config.descZh;
+    const count = Array.isArray(theme.items) ? theme.items.length : 0;
+    const isLocked = isDailyThemeLockedForUser(theme.id);
+    return `
+          <button class="write-communication-topic-card write-communication-topic-card--${config.tone} ${isLocked ? "locked" : ""}" type="button" data-write-daily-theme="${theme.id}" style="--topic-index: ${index};" aria-label="${escapeAttr(isVi ? `Mở chủ đề ${title}` : `打开主题 ${title}`)}">
+            <span class="write-communication-topic-cover">
+              <img src="${config.cover}" alt="" aria-hidden="true" draggable="false" />
+              ${isLocked ? `<i>${isVi ? "VIP" : "VIP"}</i>` : ""}
+            </span>
+            <span class="write-communication-topic-copy">
+              <strong>${title}</strong>
+              <small>${desc}</small>
+            </span>
+            <span class="write-communication-topic-count">${count} ${isVi ? "mục" : "项"}</span>
+          </button>
+    `;
+  }).join("");
   return `
     <section class="write-path-picker">
       <div class="hsk-level-hero write-path-hero">
@@ -11371,20 +11602,20 @@ function renderWritePathPickerHTML() {
       </div>
 
       <div class="write-path-grid" aria-label="${isVi ? "Chọn lộ trình luyện viết" : "选择练写路径"}">
-        <button class="write-path-card write-path-card--hsk" type="button" data-write-path="hsk">
-          <span class="write-path-card-art" aria-hidden="true">
-            <img src="assets/home-module-hsk-pc.png" alt="" />
-          </span>
-          <span class="write-path-card-copy">
+        <article class="write-path-card write-path-card--hsk write-path-card--hsk-selector" aria-label="${escapeAttr(isVi ? "Chọn cấp độ HSK" : "选择 HSK 等级")}">
+          <span class="write-hsk-selector-head">
             <span class="write-path-card-kicker">HSK</span>
-            <strong>${isVi ? "Khóa HSK" : "HSK课程"}</strong>
-            <small>${isVi ? "Sơ cấp, trung cấp, cao cấp như lộ trình cũ." : "初级、中级、高级，沿用原来的 HSK 路径。"}</small>
+            <strong>${isVi ? "Khóa HSK" : "HSK 课程"}</strong>
+            <small>${isVi ? "Chọn nhanh cấp độ để vào thẳng danh sách bài học." : "快速选择等级，直接进入课程列表。"}</small>
             <em>${totalHskLessons || 122} ${isVi ? "bài học" : "课"}</em>
           </span>
-          <span class="write-path-card-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <button class="write-path-card-arrow write-hsk-mode-btn" type="button" data-write-path="hsk" aria-label="${escapeAttr(isVi ? "Chọn chế độ HSK" : "选择 HSK 模式")}">${iconSvg("arrow-right")}</button>
+          <span class="write-hsk-level-stack">
+            ${hskSelectorRows}
+          </span>
+        </article>
 
-        <button class="write-path-card write-path-card--communication" type="button" data-write-path="communication">
+        <article class="write-path-card write-path-card--communication write-path-card--communication-selector" aria-label="${escapeAttr(isVi ? "Chọn chủ đề tiếng Trung thông dụng" : "选择高频汉语主题")}">
           <span class="write-path-card-art" aria-hidden="true">
             <img src="assets/daily-theme-greeting-yellow.png" alt="" />
           </span>
@@ -11394,8 +11625,14 @@ function renderWritePathPickerHTML() {
             <small>${isVi ? "Chủ đề giao tiếp thường dùng, trình bày dạng desktop." : "常用交际主题，桌面版卡片展示。"}</small>
             <em>${communicationCount} ${isVi ? "chủ đề" : "个主题"}</em>
           </span>
-          <span class="write-path-card-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <button class="write-path-card-arrow write-communication-mode-btn" type="button" data-write-path="communication" aria-label="${escapeAttr(isVi ? "Xem toàn bộ chủ đề giao tiếp" : "查看全部交际主题")}">${iconSvg("arrow-right")}</button>
+          <span class="write-communication-topic-carousel" aria-label="${escapeAttr(isVi ? "Danh sách chủ đề giao tiếp" : "交际主题列表")}">
+            ${communicationTopicCards}
+          </span>
+          <span class="write-communication-selector-footer">
+            <button class="write-communication-explore-btn" type="button" data-write-path="communication">${isVi ? "Khám phá chủ đề" : "探索主题"}</button>
+          </span>
+        </article>
       </div>
 
       <div class="write-feature-grid" aria-label="${isVi ? "Công cụ luyện viết" : "练写工具"}">
@@ -12764,7 +13001,55 @@ function bindEvents() {
       event.preventDefault();
       openDailyTopicFromHome(homeTopicCard.dataset.homeTopic);
     }
+    const writeDailyThemeCard = event.target?.closest?.("[data-write-daily-theme]");
+    if (writeDailyThemeCard && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      writeDailyThemeCard.click();
+    }
   });
+  let writeTopicCarouselDrag = null;
+  document.addEventListener("pointerdown", (event) => {
+    const carousel = event.target?.closest?.(".write-communication-topic-carousel");
+    if (!carousel || event.button > 0) return;
+    writeTopicCarouselDrag = {
+      carousel,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: carousel.scrollLeft,
+      moved: false,
+    };
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!writeTopicCarouselDrag) return;
+    const drag = writeTopicCarouselDrag;
+    const deltaX = event.clientX - drag.startX;
+    if (Math.abs(deltaX) > 4) {
+      if (!drag.moved) {
+        drag.moved = true;
+        drag.carousel.classList.add("is-dragging");
+        drag.carousel.setPointerCapture?.(drag.pointerId);
+      }
+      drag.carousel.dataset.dragSuppress = "true";
+      drag.carousel.scrollLeft = drag.scrollLeft - deltaX;
+      event.preventDefault();
+    }
+  }, { passive: false });
+  const endWriteTopicCarouselDrag = (event) => {
+    if (!writeTopicCarouselDrag) return;
+    const drag = writeTopicCarouselDrag;
+    if (drag.carousel.hasPointerCapture?.(drag.pointerId)) {
+      drag.carousel.releasePointerCapture?.(drag.pointerId);
+    }
+    drag.carousel.classList.remove("is-dragging");
+    if (drag.moved) {
+      window.setTimeout(() => {
+        delete drag.carousel.dataset.dragSuppress;
+      }, 80);
+    }
+    writeTopicCarouselDrag = null;
+  };
+  document.addEventListener("pointerup", endWriteTopicCarouselDrag);
+  document.addEventListener("pointercancel", endWriteTopicCarouselDrag);
   document.addEventListener("click", (event) => {
     if (event.target.closest?.("[data-hsk-level-back]")) {
       event.preventDefault();
@@ -12794,8 +13079,7 @@ function bindEvents() {
   });
   $("#backBtn")?.addEventListener("click", () => {
     if (state.screen === "practice" || state.screen === "complete") {
-      renderCourse();
-      setScreen("course");
+      backFromPracticeToCourse();
     } else if (state.screen === "course") {
       if (state.module === "hsk" && !state.hskLevelPicker) {
         state.hskLevelPicker = true;
@@ -14012,6 +14296,34 @@ function bindEvents() {
       renderHskCourse();
       return;
     }
+    const writeHskLevelBtn = event.target.closest("[data-write-hsk-level]");
+    if (writeHskLevelBtn) {
+      state.module = "hsk";
+      state.level = writeHskLevelBtn.dataset.writeHskLevel;
+      state.writeCourseView = "hsk";
+      state.hskLevelPicker = false;
+      state.hskPendingLessonId = "";
+      state.hskContentType = "";
+      state.dailyPendingThemeId = "";
+      state.dailyContentType = "";
+      state.dailySearchQuery = "";
+      state.dailyFilterTab = "all";
+      await ensureHskLevelContent(state.level);
+      renderHskCourse();
+      return;
+    }
+    const writeDailyThemeBtn = event.target.closest("[data-write-daily-theme]");
+    if (writeDailyThemeBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const carousel = writeDailyThemeBtn.closest(".write-communication-topic-carousel");
+      if (carousel?.dataset.dragSuppress === "true") {
+        return;
+      }
+      const themeId = writeDailyThemeBtn.dataset.writeDailyTheme;
+      openDailyTopicFromHome(themeId, { backTarget: "write-communication" });
+      return;
+    }
     const writePathBtn = event.target.closest("[data-write-path]");
     if (writePathBtn) {
       const nextPath = writePathBtn.dataset.writePath;
@@ -14038,6 +14350,7 @@ function bindEvents() {
       state.writeCourseView = "paths";
       state.dailyPendingThemeId = themeId;
       state.dailyContentType = "";
+      state.dailyBackTarget = "write-communication";
       renderDailyCourse();
       setScreen("course");
       return;
