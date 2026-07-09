@@ -5003,6 +5003,10 @@ function restorePersistedRoute() {
       }
 
       case "complete":
+        if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
+          backToWriteCommunicationCourse();
+          return true;
+        }
         renderCourse();
         setScreen("course");
         return true;
@@ -7766,7 +7770,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
 function renderMobilePageReturnBar(activeNav = "", title = "") {
   if (!activeNav || activeNav === "home") return "";
   if (activeNav === "account") return "";
-  if (activeNav === "hsk" && !state.hskLevelPicker) return "";
+  if (activeNav === "hsk" && !state.hskLevelPicker && state.writeCourseView !== "communication") return "";
   const labels = {
     hsk: state.lang === "vi" ? "Khóa HSK" : "HSK 课程",
     daily: t("dailyTabNav"),
@@ -11792,7 +11796,9 @@ function renderHskCourse() {
   }
 
   if (state.writeCourseView === "communication") {
-    setScreenWithDesktopShell("course", renderWriteCommunicationCourseHTML(), "app-desktop-shell--course app-desktop-shell--write-communication", "hsk");
+    setScreenWithDesktopShell("course", renderWriteCommunicationCourseHTML(), "app-desktop-shell--course app-desktop-shell--write-communication", "hsk", {
+      mobileTitle: state.lang === "vi" ? "Ti\u1ebfng Trung th\u00f4ng d\u1ee5ng" : "\u9ad8\u9891\u6c49\u8bed",
+    });
     return;
   }
 
@@ -14520,6 +14526,8 @@ function bindEvents() {
         } else if (state.fromRoadmap) {
           renderRoadmap();
           setScreen("roadmap");
+        } else if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
+          backToWriteCommunicationCourse();
         } else {
           renderHome();
           setScreen("home");
@@ -14528,6 +14536,8 @@ function bindEvents() {
         if (state.fromRoadmap) {
           renderRoadmap();
           setScreen("roadmap");
+        } else if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
+          backToWriteCommunicationCourse();
         } else {
           renderCourse();
           setScreen("course");
