@@ -10261,7 +10261,8 @@ function renderListeningRepeatLesson(options = {}) {
   setScreenWithDesktopShell("listening", `
     <div class="listening-repeat-lesson-screen listening-repeat-lesson-screen--compact">
       <button class="listening-repeat-corner-back" type="button" data-listening-repeat-back aria-label="${isVi ? "Quay trở lại" : "Back"}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m13.5 8.5-3.5 3.5 3.5 3.5"/></svg>
+        <span>${isVi ? "Trở lại" : "Back"}</span>
       </button>
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
         <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
