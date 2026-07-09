@@ -45273,3 +45273,37 @@ body:has(#practiceScreen:not(.hidden)) {
     display: none !important;
   }
 }
+
+@media (min-width: 701px) {
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-corner-back {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: #27aee4 !important;
+    color: #ffffff !important;
+    box-shadow: 0 14px 30px rgba(14, 116, 144, 0.28) !important;
+    backdrop-filter: none !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-corner-back span,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-corner-back svg circle {
+    display: none !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-corner-back svg {
+    width: 24px !important;
+    height: 24px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2.6 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+}
