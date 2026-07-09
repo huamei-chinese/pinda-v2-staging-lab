@@ -4211,7 +4211,7 @@ p {
 
   .hsk-level-grid {
     grid-template-columns: 1fr;
-    margin-top: 50px;
+    /* margin-top: 50px; */
   }
 
   .hsk-level-card {
@@ -37750,7 +37750,10 @@ body:has(#practiceScreen:not(.hidden)) {
 
   .screen-listening .listening-gateway-back-btn,
   .screen-listening .listening-dashboard-back-btn,
-  .screen-listening .listening-back-btn {
+  .screen-listening .listening-back-btn,
+  #listeningScreen:not(.hidden) .listening-gateway-back-btn,
+  #listeningScreen:not(.hidden) .listening-dashboard-back-btn,
+  #listeningScreen:not(.hidden) .listening-lessons-back {
     display: none !important;
   }
 
@@ -44197,4 +44200,18 @@ body:has(#practiceScreen:not(.hidden)) {
     z-index: 21 !important;
   }
 }
+
+/* ===== MOBILE RETURN HEADER FULL BLEED ===== */
+@media (max-width: 900px) {
+  .screen:not(.hidden) .app-desktop-content > .mobile-page-return-bar {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
 

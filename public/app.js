@@ -7607,7 +7607,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
 function renderMobilePageReturnBar(activeNav = "", title = "") {
   if (!activeNav || activeNav === "home") return "";
   if (activeNav === "account") return "";
-  if (activeNav === "hsk" && !state.hskLevelPicker && !title) return "";
+  if (activeNav === "hsk" && !state.hskLevelPicker) return "";
   const labels = {
     hsk: state.lang === "vi" ? "Khóa HSK" : "HSK 课程",
     daily: t("dailyTabNav"),
