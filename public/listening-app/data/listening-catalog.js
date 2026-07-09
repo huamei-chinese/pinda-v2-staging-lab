@@ -17,8 +17,8 @@ globalThis.pindaListeningCatalog = {
           "topics": [
             {
               "id": "topic-chat-with-chinese-001",
-              "label_zh": "和中国人聊天不再紧张",
-              "label_vi": "Nói chuyện với người Trung Quốc không còn căng thẳng",
+              "label_zh": "自信交谈",
+              "label_vi": "Tự tin giao tiếp",
               "source_topic_id": "topic-chat-with-chinese-001",
               "lessons": [
                 {
@@ -2455,8 +2455,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-work-with-chinese-boss-colleagues-001",
-              "label_zh": "和中国老板、同事一起上班",
-              "label_vi": "Làm việc cùng sếp và đồng nghiệp người Trung Quốc",
+              "label_zh": "职场通关",
+              "label_vi": "Tiếng Trung nơi công sở",
               "source_topic_id": "topic-work-with-chinese-boss-colleagues-001",
               "lessons": [
                 {
@@ -5695,8 +5695,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-chat-with-chinese-customers-001",
-              "label_zh": "用中文和中国客户聊天",
-              "label_vi": "Trò chuyện với khách hàng Trung Quốc bằng tiếng Trung",
+              "label_zh": "商务洽谈",
+              "label_vi": "Đàm phán thương mại",
               "source_topic_id": "topic-chat-with-chinese-customers-001",
               "lessons": [
                 {
@@ -8343,8 +8343,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-handle-emergencies-in-chinese-001",
-              "label_zh": "用中文处理紧急情况",
-              "label_vi": "Xử lý tình huống khẩn cấp bằng tiếng Trung",
+              "label_zh": "紧急求助",
+              "label_vi": "Xử lý tình huống khẩn cấp",
               "source_topic_id": "topic-handle-emergencies-in-chinese-001",
               "lessons": [
                 {
@@ -10991,8 +10991,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-order-milk-tea-and-meals-001",
-              "label_zh": "用中文点奶茶和吃饭主题",
-              "label_vi": "Chủ đề gọi trà sữa và ăn uống bằng tiếng Trung",
+              "label_zh": "生活点餐",
+              "label_vi": "Gọi món trong đời sống",
               "source_topic_id": "topic-order-milk-tea-and-meals-001",
               "lessons": [
                 {
@@ -13911,8 +13911,8 @@ globalThis.pindaListeningCatalog = {
           "topics": [
             {
               "id": "topic-living-alone-intermediate-001",
-              "label_zh": "一个人生活",
-              "label_vi": "Cuộc sống một mình",
+              "label_zh": "独居生活",
+              "label_vi": "Cuộc sống tự lập",
               "source_topic_id": "topic-living-alone-intermediate-001",
               "lessons": [
                 {
@@ -17059,7 +17059,7 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-love-and-money-intermediate-001",
-              "label_zh": "爱情和金钱",
+              "label_zh": "恋爱金钱观",
               "label_vi": "Tình yêu và tiền bạc",
               "source_topic_id": "topic-love-and-money-intermediate-001",
               "lessons": [
@@ -20227,8 +20227,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-true-friends-intermediate-001",
-              "label_zh": "真正的朋友",
-              "label_vi": "Bạn bè thật sự",
+              "label_zh": "知心好友",
+              "label_vi": "Tình bạn thật sự",
               "source_topic_id": "topic-true-friends-intermediate-001",
               "lessons": [
                 {
@@ -23355,8 +23355,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-money-and-happiness-intermediate-001",
-              "label_zh": "金钱和幸福",
-              "label_vi": "Tiền và hạnh phúc",
+              "label_zh": "金钱与幸福",
+              "label_vi": "Tiền bạc và hạnh phúc",
               "source_topic_id": "topic-money-and-happiness-intermediate-001",
               "lessons": [
                 {
@@ -26493,8 +26493,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-leave-hometown-big-city-intermediate-001",
-              "label_zh": "离开家乡去大城市",
-              "label_vi": "Rời quê hương đến thành phố lớn",
+              "label_zh": "异地打拼",
+              "label_vi": "Lập nghiệp nơi đất khách",
               "source_topic_id": "topic-leave-hometown-big-city-intermediate-001",
               "lessons": [
                 {
@@ -29317,8 +29317,8 @@ globalThis.pindaListeningCatalog = {
           "topics": [
             {
               "id": "topic-stability-or-freedom-advanced-001",
-              "label_zh": "稳定还是自由？",
-              "label_vi": "Ổn định hay tự do?",
+              "label_zh": "职业抉择",
+              "label_vi": "Lựa chọn nghề nghiệp",
               "source_topic_id": "topic-stability-or-freedom-advanced-001",
               "lessons": [
                 {
@@ -32935,7 +32935,7 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-cost-of-success-advanced-001",
-              "label_zh": "成功的代价",
+              "label_zh": "成功代价",
               "label_vi": "Cái giá của thành công",
               "source_topic_id": "topic-cost-of-success-advanced-001",
               "lessons": [
@@ -36793,8 +36793,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-ordinary-happiness-advanced-001",
-              "label_zh": "普通的幸福",
-              "label_vi": "Hạnh phúc bình thường",
+              "label_zh": "平凡幸福",
+              "label_vi": "Hạnh phúc bình dị",
               "source_topic_id": "topic-ordinary-happiness-advanced-001",
               "lessons": [
                 {
@@ -40591,8 +40591,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-loneliness-after-growing-up-advanced-001",
-              "label_zh": "长大后的孤独",
-              "label_vi": "Sự cô đơn sau khi trưởng thành",
+              "label_zh": "成长孤独",
+              "label_vi": "Trưởng thành trong cô đơn",
               "source_topic_id": "topic-loneliness-after-growing-up-advanced-001",
               "lessons": [
                 {
@@ -44239,8 +44239,8 @@ globalThis.pindaListeningCatalog = {
             },
             {
               "id": "topic-live-for-whom-advanced-001",
-              "label_zh": "为谁而活？",
-              "label_vi": "Sống vì ai?",
+              "label_zh": "人生意义",
+              "label_vi": "Ý nghĩa cuộc sống",
               "source_topic_id": "topic-live-for-whom-advanced-001",
               "lessons": [
                 {

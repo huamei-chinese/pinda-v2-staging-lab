@@ -1862,6 +1862,69 @@ p {
   height: 18px;
 }
 
+.write-feature-card--decorative {
+  cursor: default;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 253, 255, 0.78) 48%, rgba(255, 255, 255, 0.26) 100%),
+    radial-gradient(circle at 91% 20%, color-mix(in srgb, var(--write-feature-accent) 24%, transparent), transparent 28%),
+    var(--write-feature-bg) center / cover no-repeat,
+    rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 16px 34px rgba(15, 82, 74, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.write-feature-card--decorative:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--write-feature-accent) 42%, #ffffff);
+  box-shadow:
+    0 18px 38px rgba(15, 82, 74, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.56);
+}
+
+.write-feature-card--decorative:focus-visible {
+  outline: none;
+}
+
+.write-feature-card--decorative .write-feature-art {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3)),
+    color-mix(in srgb, var(--write-feature-accent) 8%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+}
+
+.write-feature-card--decorative .write-feature-progress i {
+  background: rgba(226, 232, 240, 0.72);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.write-feature-status {
+  border-width: 2px;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.95), transparent 32%),
+    linear-gradient(145deg, color-mix(in srgb, var(--write-feature-accent) 54%, #ffffff), var(--write-feature-accent));
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--write-feature-accent) 12%, transparent),
+    0 10px 18px color-mix(in srgb, var(--write-feature-accent) 18%, transparent);
+}
+
+.write-feature-status svg {
+  display: none;
+}
+
+.write-feature-status > span {
+  width: 42%;
+  height: 42%;
+  display: block;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--write-feature-accent) 16%, transparent),
+    inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
 .write-communication-screen {
   position: relative;
   background:
@@ -1872,7 +1935,7 @@ p {
 .screen-course .app-desktop-shell--write-communication .write-communication-screen > .write-path-hero {
   position: absolute !important;
   inset: 0 0 auto 0 !important;
-  z-index: 4 !important;
+  z-index: 80 !important;
   width: 100% !important;
   height: 0 !important;
   min-height: 0 !important;
@@ -1896,13 +1959,49 @@ p {
   border-color: rgba(23, 35, 60, 0.12) !important;
   background: rgba(255, 255, 255, 0.82) !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+  z-index: 81 !important;
   pointer-events: auto !important;
 }
 
 .write-communication-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: calc(100% - clamp(28px, 4.2vw, 64px));
   max-width: 1320px;
-  margin: 0 auto;
-  padding: clamp(22px, 2.5vw, 34px) clamp(18px, 2.4vw, 30px) 8px;
+  min-height: clamp(148px, 14vw, 216px);
+  margin: clamp(12px, 1.4vw, 22px) auto 0;
+  padding: clamp(28px, 3.2vw, 46px) clamp(22px, 4vw, 60px);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: clamp(22px, 2.4vw, 34px);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.92) 0%, rgba(243, 255, 252, 0.78) 45%, rgba(225, 251, 247, 0.22) 78%),
+    url("assets/backgroundthongdung.png") center / cover no-repeat,
+    rgba(242, 253, 250, 0.9);
+  box-shadow:
+    0 24px 56px rgba(15, 82, 74, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(14px) saturate(1.12);
+  -webkit-backdrop-filter: blur(14px) saturate(1.12);
+}
+
+.write-communication-header::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  z-index: 0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: calc(clamp(22px, 2.4vw, 34px) - 8px);
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.58), transparent 32%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.02));
+  pointer-events: none;
+}
+
+.write-communication-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 .write-communication-header span {
@@ -43799,4 +43898,196 @@ body:has(#practiceScreen:not(.hidden)) {
     width: 28px !important;
     height: 28px !important;
   }
+}
+
+/* Home rail: today study checklist replaces the static monthly calendar. */
+.screen-home .home-today-study-card {
+  position: relative !important;
+  isolation: isolate !important;
+  display: grid !important;
+  gap: 14px !important;
+  padding: 18px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.74) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.86), rgba(241, 253, 247, 0.72)),
+    radial-gradient(circle at 8% 0%, rgba(16, 185, 129, 0.16), transparent 34%),
+    radial-gradient(circle at 96% 92%, rgba(20, 184, 166, 0.12), transparent 36%) !important;
+  box-shadow:
+    0 18px 46px rgba(15, 82, 74, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+  backdrop-filter: blur(16px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.12) !important;
+}
+
+.screen-home .home-today-study-card::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: -1;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.screen-home .home-today-study-head {
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+.screen-home .home-today-study-icon {
+  width: 26px !important;
+  height: 26px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 0 10px 18px rgba(5, 150, 105, 0.2) !important;
+}
+
+.screen-home .home-today-study-head h3 {
+  margin: 0 !important;
+  color: #17233c !important;
+  font-family: var(--font-display) !important;
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+}
+
+.screen-home .home-today-study-head time {
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.screen-home .home-today-study-summary {
+  display: grid !important;
+  grid-template-columns: 74px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.screen-home .home-today-study-ring {
+  width: 66px !important;
+  height: 66px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.96) 58%, transparent 59%),
+    conic-gradient(#10b981 calc(var(--home-today-progress) * 1%), rgba(226, 232, 240, 0.82) 0) !important;
+  box-shadow:
+    0 12px 24px rgba(15, 82, 74, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+}
+
+.screen-home .home-today-study-ring span {
+  color: #17233c !important;
+  font-size: 17px !important;
+  font-weight: 950 !important;
+}
+
+.screen-home .home-today-study-copy {
+  display: grid !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+.screen-home .home-today-study-copy strong {
+  color: #334155 !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 900 !important;
+}
+
+.screen-home .home-today-study-bar {
+  height: 9px !important;
+  border-radius: 999px !important;
+  background: rgba(226, 232, 240, 0.76) !important;
+  overflow: hidden !important;
+}
+
+.screen-home .home-today-study-bar i {
+  display: block !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #10b981, #22c55e) !important;
+}
+
+.screen-home .home-today-study-list {
+  display: grid !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.66) !important;
+  border: 1px solid rgba(226, 232, 240, 0.66) !important;
+}
+
+.screen-home .home-today-study-list li {
+  min-height: 42px !important;
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 9px !important;
+  padding: 0 12px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  list-style: none !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.82) !important;
+}
+
+.screen-home .home-today-study-list li:last-child {
+  border-bottom: 0 !important;
+}
+
+.screen-home .home-today-study-list li > span:nth-child(2) {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.screen-home .home-today-study-list strong {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.screen-home .home-today-study-check {
+  width: 16px !important;
+  height: 16px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.screen-home .home-today-study-list li.is-done {
+  color: #334155 !important;
+}
+
+.screen-home .home-today-study-list li.is-done strong {
+  color: #059669 !important;
+}
+
+.screen-home .home-today-study-list li.is-done .home-today-study-check {
+  border-color: #10b981 !important;
+  background: linear-gradient(135deg, #34d399, #10b981) !important;
+  box-shadow: 0 8px 14px rgba(16, 185, 129, 0.18) !important;
 }

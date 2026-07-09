@@ -450,6 +450,9 @@ const ADMIN_USER_STORAGE_KEY = "huamei_admin_user";
 const STUDENT_TOKEN_STORAGE_KEY = "huamei_student_token";
 const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
 const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
+const HOME_TODAY_STUDY_STORAGE_KEY = "v2-home-today-study";
+const HOME_TODAY_TIME_TARGET_SECONDS = 30 * 60;
+const HOME_TODAY_VOCAB_TARGET = 20;
 
 function renderContentLockIconHTML(size = "md") {
   return `<img class="content-lock-icon content-lock-icon--${size}" src="${CONTENT_LOCK_ICON_SRC}" alt="" aria-hidden="true" />`;
@@ -607,6 +610,121 @@ const screens = {
 };
 let adminUserSearchTimer = null;
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
+let homeTodayStudySession = { area: "", startedAt: Date.now() };
+
+function getVietnamDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    weekday: "long",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date);
+  return parts.reduce((acc, part) => {
+    if (part.type !== "literal") acc[part.type] = part.value;
+    return acc;
+  }, {});
+}
+
+function getVietnamTodayKey(date = new Date()) {
+  const parts = getVietnamDateParts(date);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+function getVietnamTodayLabel(isVi) {
+  const parts = getVietnamDateParts();
+  if (!isVi) return `${parts.month}月${parts.day}日`;
+  const weekday = String(parts.weekday || "").replace(/^./, (char) => char.toUpperCase());
+  return `${weekday}, ${Number(parts.day)} tháng ${Number(parts.month)}`;
+}
+
+function getDefaultHomeTodayStudyState() {
+  return {
+    dateKey: getVietnamTodayKey(),
+    writeSeconds: 0,
+    listenSeconds: 0,
+  };
+}
+
+function readHomeTodayStudyState() {
+  const todayKey = getVietnamTodayKey();
+  try {
+    const stored = JSON.parse(localStorage.getItem(HOME_TODAY_STUDY_STORAGE_KEY) || "null");
+    if (!stored || stored.dateKey !== todayKey) return { ...getDefaultHomeTodayStudyState(), dateKey: todayKey };
+    return {
+      dateKey: todayKey,
+      writeSeconds: Math.max(0, Number(stored.writeSeconds || 0)),
+      listenSeconds: Math.max(0, Number(stored.listenSeconds || 0)),
+    };
+  } catch {
+    return { ...getDefaultHomeTodayStudyState(), dateKey: todayKey };
+  }
+}
+
+function saveHomeTodayStudyState(progress) {
+  try {
+    localStorage.setItem(HOME_TODAY_STUDY_STORAGE_KEY, JSON.stringify(progress));
+  } catch {
+    // Ignore storage failures; progress remains best-effort for the current session.
+  }
+}
+
+function getHomeStudyAreaForScreen(screenName) {
+  if (screenName === "listening") return "listening";
+  if (screenName === "course" || screenName === "practice" || screenName === "complete") return "write";
+  return "";
+}
+
+function addHomeTodayStudySeconds(area, seconds) {
+  if (!area || seconds <= 0) return;
+  const progress = readHomeTodayStudyState();
+  if (area === "listening") progress.listenSeconds += seconds;
+  if (area === "write") progress.writeSeconds += seconds;
+  saveHomeTodayStudyState(progress);
+}
+
+function flushHomeTodayStudySession(now = Date.now()) {
+  if (!homeTodayStudySession.area || !homeTodayStudySession.startedAt) return;
+  const elapsedSeconds = Math.max(0, Math.floor((now - homeTodayStudySession.startedAt) / 1000));
+  if (elapsedSeconds > 0) addHomeTodayStudySeconds(homeTodayStudySession.area, elapsedSeconds);
+  homeTodayStudySession.startedAt = now;
+}
+
+function syncHomeTodayStudySession(nextScreen = state.screen) {
+  const now = Date.now();
+  flushHomeTodayStudySession(now);
+  homeTodayStudySession = {
+    area: getHomeStudyAreaForScreen(nextScreen),
+    startedAt: now,
+  };
+}
+
+function getHomeTodayStudyProgress() {
+  const stored = readHomeTodayStudyState();
+  const liveSeconds = homeTodayStudySession.area && homeTodayStudySession.startedAt
+    ? Math.max(0, Math.floor((Date.now() - homeTodayStudySession.startedAt) / 1000))
+    : 0;
+  const listenSeconds = stored.listenSeconds + (homeTodayStudySession.area === "listening" ? liveSeconds : 0);
+  const writeSeconds = stored.writeSeconds + (homeTodayStudySession.area === "write" ? liveSeconds : 0);
+  const savedVocabCount = state.saved instanceof Set ? state.saved.size : 0;
+  const vocabRatio = Math.min(1, savedVocabCount / HOME_TODAY_VOCAB_TARGET);
+  const listenRatio = Math.min(1, listenSeconds / HOME_TODAY_TIME_TARGET_SECONDS);
+  const writeRatio = Math.min(1, writeSeconds / HOME_TODAY_TIME_TARGET_SECONDS);
+  const completedCount = [vocabRatio, listenRatio, writeRatio].filter((ratio) => ratio >= 1).length;
+  return {
+    dateLabel: getVietnamTodayLabel(state.lang === "vi"),
+    savedVocabCount,
+    listenSeconds,
+    writeSeconds,
+    completedCount,
+    totalCount: 3,
+    percent: Math.round(((vocabRatio + listenRatio + writeRatio) / 3) * 100),
+  };
+}
+
+function formatHomeTodayMinuteValue(seconds) {
+  return Math.min(30, Math.floor(Math.max(0, seconds) / 60));
+}
 
 function makeSentences(episodeId, rows = []) {
   return rows.map(([chinese, pinyin, vietnamese, start = 0, end = null], index) => ({
@@ -1156,6 +1274,49 @@ listeningEpisodes.forEach(repairListeningTextFields);
 
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
   return listeningEpisodes.find((episode) => episode.id === episodeId) || listeningEpisodes[0];
+}
+
+function getSuggestedListeningEpisodes() {
+  const seen = new Set();
+  const suggestedIds = listeningCatalogTopics
+    .filter((topic) => topic.levelId === "dialogue-trung-cap")
+    .filter((topic) => Array.isArray(topic.lessons) && topic.lessons.length > 0)
+    .flatMap((topic) => topic.lessons.map((lesson) => lesson.id).filter(Boolean));
+  const sourceIds = suggestedIds.length ? suggestedIds : listeningEpisodes.map((episode) => episode.id);
+
+  return sourceIds
+    .map((episodeId) => listeningEpisodes.find((episode) => episode.id === episodeId))
+    .filter((episode) => {
+      if (!episode?.id || seen.has(episode.id)) return false;
+      seen.add(episode.id);
+      return true;
+    });
+}
+
+function getListeningTopicByEpisodeId(episodeId = "") {
+  return listeningCatalogTopics.find((topic) =>
+    (topic.lessons || []).some((lesson) => lesson.id === episodeId)
+  ) || null;
+}
+
+function openRandomSuggestedListeningLesson() {
+  const suggestedEpisodes = getSuggestedListeningEpisodes();
+  const episode = suggestedEpisodes[Math.floor(Math.random() * suggestedEpisodes.length)] || suggestedEpisodes[0];
+  if (!episode) return false;
+
+  const topic = getListeningTopicByEpisodeId(episode.id);
+  state.listeningLevelId = topic?.levelId || episode.levelId || state.listeningLevelId || "dialogue-so-cap";
+  state.listeningEpisodeId = episode.id;
+  state.listeningView = "detail";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+  state.listeningBackTarget = "dashboard";
+  state.listeningLessonsBackTarget = "dashboard";
+  state.listeningSeedEpisodeId = "";
+  state.listeningTopicId = topic?.id || "";
+  renderListening();
+  setScreen("listening");
+  return true;
 }
 
 const hskContentTypes = [
@@ -4491,6 +4652,20 @@ function navigatePrimaryTab(target) {
   if (target === "home") {
     renderHome();
     setScreen("home");
+  } else if (target === "quick-listening") {
+    if (!openRandomSuggestedListeningLesson()) {
+      state.listeningView = "levels";
+      renderListening();
+      setScreen("listening");
+    }
+  } else if (target === "write-communication") {
+    state.module = "hsk";
+    state.writeCourseView = "communication";
+    state.hskLevelPicker = false;
+    state.hskPendingLessonId = "";
+    state.hskContentType = "";
+    renderCourse();
+    setScreen("course");
   } else if (target === "hsk") {
     state.module = "hsk";
     state.writeCourseView = "paths";
@@ -4681,6 +4856,7 @@ function restorePersistedRoute() {
 }
 
 function setScreen(name) {
+  syncHomeTodayStudySession(name);
   state.screen = name;
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
   $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "listening" || name === "subscriptions" || name === "account");
@@ -7222,6 +7398,67 @@ function getHomeDashboardStats() {
   };
 }
 
+function renderHomeTodayStudyCardHTML(isVi) {
+  const progress = getHomeTodayStudyProgress();
+  const vocabCount = Math.min(progress.savedVocabCount, HOME_TODAY_VOCAB_TARGET);
+  const listenMinutes = formatHomeTodayMinuteValue(progress.listenSeconds);
+  const writeMinutes = formatHomeTodayMinuteValue(progress.writeSeconds);
+  const rows = [
+    {
+      label: isVi ? "Từ vựng" : "词汇",
+      value: `${vocabCount} / ${HOME_TODAY_VOCAB_TARGET}`,
+      done: vocabCount >= HOME_TODAY_VOCAB_TARGET,
+    },
+    {
+      label: isVi ? "Luyện nghe" : "听力练习",
+      value: `${listenMinutes} / 30 ${isVi ? "phút" : "分钟"}`,
+      done: progress.listenSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
+    },
+    {
+      label: isVi ? "Luyện viết" : "写作练习",
+      value: `${writeMinutes} / 30 ${isVi ? "phút" : "分钟"}`,
+      done: progress.writeSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
+    },
+  ];
+
+  return `
+    <section class="home-desktop-calendar-card home-today-study-card" aria-label="${isVi ? "Hôm nay học gì" : "今天学什么"}">
+      <header class="home-today-study-head">
+        <span class="home-today-study-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="5" width="16" height="15" rx="3"></rect>
+            <path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-5"></path>
+          </svg>
+        </span>
+        <div>
+          <h3>${isVi ? "Hôm nay học gì?" : "今天学什么？"}</h3>
+        </div>
+        <time datetime="${escapeAttr(getVietnamTodayKey())}">${escapeHtml(progress.dateLabel)}</time>
+      </header>
+
+      <div class="home-today-study-summary">
+        <div class="home-today-study-ring" style="--home-today-progress: ${progress.percent};">
+          <span>${progress.percent}%</span>
+        </div>
+        <div class="home-today-study-copy">
+          <strong>${isVi ? `Đã hoàn thành ${progress.completedCount} / ${progress.totalCount} mục` : `已完成 ${progress.completedCount} / ${progress.totalCount} 项`}</strong>
+          <span class="home-today-study-bar" aria-hidden="true"><i style="width: ${progress.percent}%"></i></span>
+        </div>
+      </div>
+
+      <ul class="home-today-study-list">
+        ${rows.map((row) => `
+          <li class="${row.done ? "is-done" : ""}">
+            <span class="home-today-study-check" aria-hidden="true">${row.done ? "✓" : ""}</span>
+            <span>${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(row.value)}</strong>
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+  `;
+}
+
 function renderHomeDesktopSavedVocabHTML(isVi) {
   const savedItems = Array.from(state.saved)
     .map((hanzi) => ({ hanzi, ...findItemByHanzi(hanzi) }))
@@ -7718,7 +7955,7 @@ function renderIntermediateListeningSuggestionsHTML(isVi) {
               class="listening-suggested-item-v3"
               type="button"
               data-listening-topic-list="${escapeAttr(openId)}"
-              data-listening-level-id="dialogue-trung-cap"
+              data-listening-topic-level="dialogue-trung-cap"
               data-listening-topic-id="${escapeAttr(topic.id || "")}"
             >
               <img src="${escapeAttr(suggestedImages[index % suggestedImages.length])}" alt="" loading="lazy" />
@@ -8004,7 +8241,7 @@ function renderListeningDashboard() {
   const allTopicCards = catalogTopicCards.length > 0 ? catalogTopicCards : topicCards;
 
   const cardsHTML = allTopicCards.map((topic) => `
-  <button class="listening-topic-card-v2 listening-topic-card-v2--${escapeAttr(topic.tone)}" type="button" data-listening-topic-list="${escapeAttr(topic.openId)}" data-listening-level-id="${escapeAttr(topic.levelId || "dialogue-so-cap")}" data-listening-topic-id="${escapeAttr(topic.topicId || "")}">
+  <button class="listening-topic-card-v2 listening-topic-card-v2--${escapeAttr(topic.tone)}" type="button" data-listening-topic-list="${escapeAttr(topic.openId)}" data-listening-topic-level="${escapeAttr(topic.levelId || "dialogue-so-cap")}" data-listening-topic-id="${escapeAttr(topic.topicId || "")}">
     <span class="listening-topic-card-v2-copy">
       <strong>${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</strong>
       <small>${escapeHtml(isVi ? topic.descVi : topic.descZh)}</small>
@@ -10514,7 +10751,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
         </section>
 
         <section class="home-desktop-feature-strip">
-        <article class="home-desktop-feature-card home-desktop-feature-card--green" data-home-nav="vocab" role="button" tabindex="0">
+        <article class="home-desktop-feature-card home-desktop-feature-card--green" data-home-nav="write-communication" role="button" tabindex="0">
           <span class="home-feature-icon">A</span>
           <div>
             <strong>${isVi ? "Bộ từ thông minh" : "智能词库"}</strong>
@@ -10522,19 +10759,19 @@ function renderHomeDesktopLayoutHTML(isVi) {
           </div>
         </article>
 
-        <article class="home-desktop-feature-card home-desktop-feature-card--orange" data-home-nav="hsk" role="button" tabindex="0">
+        <article class="home-desktop-feature-card home-desktop-feature-card--orange" data-home-nav="account" role="button" tabindex="0">
           <span class="home-feature-icon">◎</span>
           <div>
-            <strong>${isVi ? "Lộ trình cá nhân hóa" : "个性化路径"}</strong>
-            <small>${isVi ? "Học theo mục tiêu và trình độ của bạn" : "按照你的目标学习"}</small>
+            <strong>${isVi ? "Theo dõi tiến độ" : "学习进度追踪"}</strong>
+            <small>${isVi ? "Xem hồ sơ, mục tiêu và tiến độ của bạn" : "查看资料、目标和进度"}</small>
           </div>
         </article>
 
-        <article class="home-desktop-feature-card home-desktop-feature-card--violet" data-home-nav="account" role="button" tabindex="0">
-          <span class="home-feature-icon">↗</span>
+        <article class="home-desktop-feature-card home-desktop-feature-card--violet" data-home-nav="quick-listening" role="button" tabindex="0">
+          <span class="home-feature-icon">▶</span>
           <div>
-            <strong>${isVi ? "Thống kê chi tiết" : "详细统计"}</strong>
-            <small>${isVi ? "Theo dõi tiến độ học tập mỗi ngày" : "每天追踪学习进度"}</small>
+            <strong>${isVi ? "Luyện nghe nhanh" : "快速听力"}</strong>
+            <small>${isVi ? "Ngẫu nhiên vào một bài nghe đề xuất" : "随机进入推荐听力课"}</small>
           </div>
         </article>
 
@@ -10576,23 +10813,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
             <li><span>${isVi ? "Ngày liên tiếp" : "连续天数"}</span><strong>${stats.streakDays}</strong></li>
           </ul>
         </section>
-              <section class="home-desktop-calendar-card">
-  <h3>${isVi ? "Lịch học" : "学习日历"}</h3>
-  <p>${isVi ? "Học đều mỗi ngày để tiến bộ hơn!" : "每天学习，持续进步！"}</p>
-
-  <div class="home-calendar-head">
-    <button type="button">‹</button>
-    <strong>${isVi ? "Tháng 5, 2025" : "2025年5月"}</strong>
-    <button type="button">›</button>
-  </div>
-
-  <div class="home-calendar-grid">
-    ${["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => `<span class="home-calendar-week">${d}</span>`).join("")}
-    ${[28, 29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1].map((day) => `
-      <span class="${day === 23 ? "home-calendar-day home-calendar-day--active" : "home-calendar-day"}">${day}</span>
-    `).join("")}
-  </div>
-</section>
+        ${renderHomeTodayStudyCardHTML(isVi)}
       </aside>
     </div>
   `;
@@ -11178,7 +11399,7 @@ function renderWritePathPickerHTML() {
       </div>
 
       <div class="write-feature-grid" aria-label="${isVi ? "Công cụ luyện viết" : "练写工具"}">
-        <button class="write-feature-card write-feature-card--vocab" type="button" data-write-feature="vocab">
+        <article class="write-feature-card write-feature-card--vocab write-feature-card--decorative">
           <span class="write-feature-art" aria-hidden="true">
             <img src="assets/icontuvungluỵenviet.png" alt="" />
           </span>
@@ -11187,10 +11408,10 @@ function renderWritePathPickerHTML() {
             <small>${isVi ? "Học từ vựng theo chủ đề và ghi nhớ hiệu quả." : "按主题学习词汇，记得更牢。"}</small>
             <span class="write-feature-progress" aria-hidden="true"><i></i><em>320 / 800 ${isVi ? "từ" : "词"}</em></span>
           </span>
-          <span class="write-feature-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <span class="write-feature-arrow write-feature-status" aria-hidden="true"><span></span></span>
+        </article>
 
-        <button class="write-feature-card write-feature-card--speaking" type="button" data-write-feature="speaking">
+        <article class="write-feature-card write-feature-card--speaking write-feature-card--decorative">
           <span class="write-feature-art" aria-hidden="true">
             <img src="assets/iconnghenoi.png" alt="" />
           </span>
@@ -11199,10 +11420,10 @@ function renderWritePathPickerHTML() {
             <small>${isVi ? "Luyện nghe và nói mỗi ngày, giao tiếp tự nhiên hơn." : "每天练听说，交流更自然。"}</small>
             <span class="write-feature-progress" aria-hidden="true"><i></i><em>15 / 50 ${isVi ? "bài" : "课"}</em></span>
           </span>
-          <span class="write-feature-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <span class="write-feature-arrow write-feature-status" aria-hidden="true"><span></span></span>
+        </article>
 
-        <button class="write-feature-card write-feature-card--grammar" type="button" data-write-feature="grammar">
+        <article class="write-feature-card write-feature-card--grammar write-feature-card--decorative">
           <span class="write-feature-art" aria-hidden="true">
             <img src="assets/iconnguphap.png" alt="" />
           </span>
@@ -11211,10 +11432,10 @@ function renderWritePathPickerHTML() {
             <small>${isVi ? "Nắm vững cấu trúc ngữ pháp qua ví dụ thực tế." : "通过真实例句掌握语法结构。"}</small>
             <span class="write-feature-progress" aria-hidden="true"><i></i><em>24 / 60 ${isVi ? "bài" : "课"}</em></span>
           </span>
-          <span class="write-feature-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <span class="write-feature-arrow write-feature-status" aria-hidden="true"><span></span></span>
+        </article>
 
-        <button class="write-feature-card write-feature-card--review" type="button" data-write-feature="review">
+        <article class="write-feature-card write-feature-card--review write-feature-card--decorative">
           <span class="write-feature-art" aria-hidden="true">
             <img src="assets/iconontap.png" alt="" />
           </span>
@@ -11223,8 +11444,8 @@ function renderWritePathPickerHTML() {
             <small>${isVi ? "Ôn lại kiến thức và củng cố để ghi nhớ lâu hơn." : "复习旧知识，巩固长期记忆。"}</small>
             <span class="write-feature-progress" aria-hidden="true"><i></i><em>120 / 200 ${isVi ? "bài" : "课"}</em></span>
           </span>
-          <span class="write-feature-arrow" aria-hidden="true">${iconSvg("arrow-right")}</span>
-        </button>
+          <span class="write-feature-arrow write-feature-status" aria-hidden="true"><span></span></span>
+        </article>
       </div>
     </section>
   `;
@@ -12531,6 +12752,13 @@ function bindEvents() {
       event.preventDefault();
       navigatePrimaryTab(homeModuleCard.dataset.homeModule);
     }
+    const homeNavCard = event.target?.closest?.(".home-desktop-feature-card[data-home-nav]");
+    if (homeNavCard && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      const target = homeNavCard.dataset.homeNav;
+      if (target === "account") openAccountScreen();
+      else if (target) navigatePrimaryTab(target);
+    }
     const homeTopicCard = event.target?.closest?.(".home-mobile-topic-card[data-home-topic]");
     if (homeTopicCard && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
@@ -12670,7 +12898,7 @@ function bindEvents() {
         state.listeningSentenceIndex = 0;
         state.listeningVocabPracticeIndex = 0;
 
-        state.listeningLevelId = listeningTopicListBtn.dataset.listeningLevelId || "dialogue-so-cap";
+        state.listeningLevelId = listeningTopicListBtn.dataset.listeningTopicLevel || state.listeningLevelId;
 
         renderListening();
         return;
@@ -13799,61 +14027,6 @@ function bindEvents() {
       renderHskCourse();
       return;
     }
-    const writeFeatureBtn = event.target.closest("[data-write-feature]");
-    if (writeFeatureBtn) {
-      const featureTarget = writeFeatureBtn.dataset.writeFeature;
-      if (featureTarget === "vocab") {
-        state.module = "hsk";
-        state.writeCourseView = "hsk";
-        state.hskLevelPicker = true;
-        state.hskPendingLessonId = "";
-        state.hskContentType = "";
-        state.dailyPendingThemeId = "";
-        state.dailyContentType = "";
-        state.hskSearchQuery = "";
-        state.hskFilterTab = "newest";
-        renderHskCourse();
-        scrollAppToTop();
-        return;
-      }
-
-      if (featureTarget === "speaking") {
-        state.listeningView = "levels";
-        state.listeningLevelId = "";
-        state.listeningEpisodeId = "";
-        state.listeningSentenceIndex = 0;
-        state.listeningLessonsBackTarget = "levels";
-        state.listeningBackTarget = "";
-        renderListening();
-        setScreen("listening");
-        scrollAppToTop();
-        return;
-      }
-
-      if (featureTarget === "grammar") {
-        state.module = "hsk";
-        state.writeCourseView = "communication";
-        state.hskLevelPicker = true;
-        state.hskPendingLessonId = "";
-        state.hskContentType = "";
-        state.dailyPendingThemeId = "";
-        state.dailyContentType = "";
-        state.dailySearchQuery = "";
-        state.dailyFilterTab = "all";
-        renderHskCourse();
-        scrollAppToTop();
-        return;
-      }
-
-      if (featureTarget === "review") {
-        state.vocabFilterTab = "all";
-        state.vocabSearchQuery = "";
-        renderVocab();
-        setScreen("vocab");
-        scrollAppToTop();
-        return;
-      }
-    }
     const writeCommunicationThemeBtn = event.target.closest(".write-communication-screen [data-theme]");
     if (writeCommunicationThemeBtn) {
       const themeId = writeCommunicationThemeBtn.dataset.theme;
@@ -14390,14 +14563,23 @@ function init() {
   captureReferralRef();
   captureTrafficSource();
   bindEvents();
-  window.addEventListener("beforeunload", savePersistedRoute);
+  window.addEventListener("beforeunload", () => {
+    flushHomeTodayStudySession();
+    savePersistedRoute();
+  });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
+      flushHomeTodayStudySession();
       savePersistedRoute();
       flushLearningEvents(true);
+    } else {
+      syncHomeTodayStudySession(state.screen);
     }
   });
-  window.addEventListener("pagehide", () => flushLearningEvents(true));
+  window.addEventListener("pagehide", () => {
+    flushHomeTodayStudySession();
+    flushLearningEvents(true);
+  });
   Promise.allSettled([
     refreshCurrentUserStatus(),
     loadContentLocks(),

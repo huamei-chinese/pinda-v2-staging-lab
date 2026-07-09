@@ -30,6 +30,41 @@ test("writing communication route uses desktop high-frequency cards", () => {
   assert.match(styles, /\.write-communication-theme-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
 });
 
+test("home smart vocabulary card opens high-frequency communication", () => {
+  assert.match(appSource, /home-desktop-feature-card--green" data-home-nav="write-communication"/);
+  assert.match(appSource, /target === "write-communication"[\s\S]*state\.writeCourseView = "communication"[\s\S]*renderCourse\(\)[\s\S]*setScreen\("course"\)/);
+  assert.match(appSource, /\.home-desktop-feature-card\[data-home-nav\][\s\S]*navigatePrimaryTab\(target\)/);
+});
+
+test("home progress tracking card opens account profile", () => {
+  assert.match(appSource, /home-desktop-feature-card--orange" data-home-nav="account"/);
+  assert.match(appSource, /"Theo dõi tiến độ"/);
+  assert.match(appSource, /"Xem hồ sơ, mục tiêu và tiến độ của bạn"/);
+  assert.match(appSource, /target === "account"\) openAccountScreen\(\)/);
+});
+
+test("home quick listening card opens a random suggested listening lesson", () => {
+  assert.match(appSource, /home-desktop-feature-card--violet" data-home-nav="quick-listening"/);
+  assert.match(appSource, /"Luyện nghe nhanh"/);
+  assert.match(appSource, /"Ngẫu nhiên vào một bài nghe đề xuất"/);
+  assert.match(appSource, /function getSuggestedListeningEpisodes\(\)[\s\S]*levelId === "dialogue-trung-cap"/);
+  assert.match(appSource, /target === "quick-listening"[\s\S]*openRandomSuggestedListeningLesson\(\)/);
+  assert.match(appSource, /function openRandomSuggestedListeningLesson\(\)[\s\S]*Math\.random\(\)[\s\S]*state\.listeningView = "detail"[\s\S]*state\.listeningBackTarget = "dashboard"/);
+});
+
+test("high-frequency communication back button stays above topic cards", () => {
+  assert.match(styles, /\.screen-course\s+\.app-desktop-shell--write-communication\s+\.write-communication-screen\s*>\s*\.write-path-hero\s*\{[^}]*z-index:\s*80\s*!important/s);
+  assert.match(styles, /\.screen-course\s+\.app-desktop-shell--write-communication\s+\.write-communication-screen\s*>\s*\.write-path-hero\s+\.hsk-level-hero-back-btn\s*\{[^}]*z-index:\s*81\s*!important[^}]*pointer-events:\s*auto\s*!important/s);
+});
+
+test("high-frequency communication header uses the common-topic background frame", () => {
+  assert.match(styles, /\.write-communication-header\s*\{[^}]*backgroundthongdung\.png/s);
+  assert.match(styles, /\.write-communication-header\s*\{[^}]*backdrop-filter:\s*blur\(14px\)/s);
+  assert.match(styles, /\.write-communication-header\s*\{[^}]*border-radius:\s*clamp\(22px,\s*2\.4vw,\s*34px\)/s);
+  assert.match(styles, /\.write-communication-header::before\s*\{[^}]*inset:\s*9px[^}]*border:\s*1px solid rgba\(255,\s*255,\s*255,\s*0\.72\)/s);
+  assert.match(styles, /\.write-communication-header\s*>\s*\*\s*\{[^}]*z-index:\s*1/s);
+});
+
 test("writing path cards use requested backgrounds and stable desktop sizing", () => {
   assert.match(styles, /\.write-path-card--hsk\s*\{[^}]*backgroundhsk\.png/s);
   assert.match(styles, /\.write-path-card--communication\s*\{[^}]*backgroundtansuatcao\.png/s);
@@ -51,10 +86,8 @@ test("writing path picker shows four image-backed support cards", () => {
   assert.match(appSource, /write-feature-card--speaking/);
   assert.match(appSource, /write-feature-card--grammar/);
   assert.match(appSource, /write-feature-card--review/);
-  assert.match(appSource, /data-write-feature="vocab"/);
-  assert.match(appSource, /data-write-feature="speaking"/);
-  assert.match(appSource, /data-write-feature="grammar"/);
-  assert.match(appSource, /data-write-feature="review"/);
+  assert.match(appSource, /write-feature-card--decorative/);
+  assert.doesNotMatch(appSource, /data-write-feature/);
   assert.match(appSource, /icontuvung/);
   assert.match(appSource, /iconnghenoi\.png/);
   assert.match(appSource, /iconnguphap\.png/);
@@ -68,12 +101,12 @@ test("writing path picker shows four image-backed support cards", () => {
   assert.match(styles, /@media \(max-width:\s*760px\)\s*\{[\s\S]*\.write-feature-grid\s*\{[^}]*grid-template-columns:\s*1fr/s);
 });
 
-test("writing support cards route to their requested destinations", () => {
-  assert.match(appSource, /const writeFeatureBtn = event\.target\.closest\("\[data-write-feature\]"\)/);
-  assert.match(appSource, /featureTarget === "vocab"[\s\S]*state\.writeCourseView = "hsk"[\s\S]*renderHskCourse\(\)/);
-  assert.match(appSource, /featureTarget === "speaking"[\s\S]*state\.listeningView = "levels"[\s\S]*renderListening\(\)[\s\S]*setScreen\("listening"\)/);
-  assert.match(appSource, /featureTarget === "grammar"[\s\S]*state\.writeCourseView = "communication"[\s\S]*renderHskCourse\(\)/);
-  assert.match(appSource, /featureTarget === "review"[\s\S]*state\.vocabFilterTab = "all"[\s\S]*renderVocab\(\)[\s\S]*setScreen\("vocab"\)/);
+test("writing support cards are decorative and do not route", () => {
+  assert.doesNotMatch(appSource, /writeFeatureBtn/);
+  assert.doesNotMatch(appSource, /dataset\.writeFeature/);
+  assert.match(styles, /\.write-feature-card--decorative\s*\{[^}]*cursor:\s*default/s);
+  assert.match(styles, /\.write-feature-status\s*\{[^}]*radial-gradient/s);
+  assert.match(styles, /\.write-feature-status\s*>\s*span\s*\{[^}]*border-radius:\s*999px/s);
 });
 
 test("writing path picker has scoped responsive guardrails", () => {

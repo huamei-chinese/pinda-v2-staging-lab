@@ -192,16 +192,20 @@ function handleAdminV2Api(req, res, requested) {
 function resolveStaticFile(requested) {
   const hasExtension = Boolean(path.extname(requested));
   if (hasExtension) {
+    const publicFile = path.resolve(root, "public", `.${requested}`);
+    if (fs.existsSync(publicFile)) return publicFile;
     const rootFile = path.resolve(root, `.${requested}`);
     if (fs.existsSync(rootFile)) return rootFile;
-    return path.resolve(root, "public", `.${requested}`);
+    return publicFile;
   }
 
-  if (requested === "/") return path.resolve(root, "./index.html");
+  if (requested === "/") return path.resolve(root, "public", "index.html");
 
   if (requested.startsWith("/listening-app")) {
     const normalized = requested.endsWith("/") ? requested.slice(0, -1) : requested;
     const candidates = [
+      path.resolve(root, "public", `.${normalized}.html`),
+      path.resolve(root, "public", `.${normalized}/index.html`),
       path.resolve(root, `.${normalized}.html`),
       path.resolve(root, `.${normalized}/index.html`),
     ];
@@ -209,7 +213,7 @@ function resolveStaticFile(requested) {
     if (match) return match;
   }
 
-  return path.resolve(root, "./index.html");
+  return path.resolve(root, "public", "index.html");
 }
 
 http
