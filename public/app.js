@@ -3485,10 +3485,10 @@ function getAdminCtvRows() {
       const ref = getAdminCtvGeneratedRef(row);
       const referredUsers = ref
         ? allUsers.filter((candidate) => {
-            const candidateRef = normalizeAdminCtvRef(candidate.ref || candidate.referralRef);
-            const sameUser = String(candidate.id || candidate.email || "") === String(row.id || row.email || "");
-            return candidateRef === ref && !sameUser;
-          })
+          const candidateRef = normalizeAdminCtvRef(candidate.ref || candidate.referralRef);
+          const sameUser = String(candidate.id || candidate.email || "") === String(row.id || row.email || "");
+          return candidateRef === ref && !sameUser;
+        })
         : [];
       const referrals = referredUsers.length;
       const vipCount = referredUsers.filter(isActivePremiumUser).length;
@@ -4067,15 +4067,15 @@ function renderAdminAnalyticsPanelHTML() {
 
     const sourcesHTML = sources.length
       ? sources.map((row) => {
-          const label = getAnalyticsSourceLabel(row.source);
-          const width = Math.round(((Number(row.events) || 0) / maxSourceEvents) * 100);
-          return `
+        const label = getAnalyticsSourceLabel(row.source);
+        const width = Math.round(((Number(row.events) || 0) / maxSourceEvents) * 100);
+        return `
             <div class="admin-analytics-bar-row admin-analytics-source-${escapeAttr(String(row.source || "direct").toLowerCase())}">
               <span>${escapeHtml(label)}</span>
               <div class="admin-analytics-bar-track"><div class="admin-analytics-bar-fill" style="width:${width}%"></div></div>
               <span>${formatAnalyticsNumber(row.users)} ${isVi ? "user" : "用户"}</span>
             </div>`;
-        }).join("")
+      }).join("")
       : `<div class="admin-analytics-status">${isVi ? "Chưa có dữ liệu kênh nguồn." : "暂无来源数据。"}</div>`;
 
     const topLessonsHTML = topLessons.length
@@ -7604,10 +7604,10 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   `;
 }
 
-function renderMobilePageReturnBar(activeNav = "") {
+function renderMobilePageReturnBar(activeNav = "", title = "") {
   if (!activeNav || activeNav === "home") return "";
   if (activeNav === "account") return "";
-  if (activeNav === "hsk" && !state.hskLevelPicker) return "";
+  if (activeNav === "hsk" && !state.hskLevelPicker && !title) return "";
   const labels = {
     hsk: state.lang === "vi" ? "Khóa HSK" : "HSK 课程",
     daily: t("dailyTabNav"),
@@ -7615,24 +7615,25 @@ function renderMobilePageReturnBar(activeNav = "") {
     vocab: state.lang === "vi" ? "Bộ từ" : "词库",
     account: state.lang === "vi" ? "Cá nhân" : "个人",
   };
+  const headerTitle = title || labels[activeNav] || "";
   return `
-    <div class="mobile-page-return-bar mobile-page-return-bar--${escapeAttr(activeNav)}" aria-label="${escapeAttr(labels[activeNav] || "")}">
+    <div class="mobile-page-return-bar mobile-page-return-bar--${escapeAttr(activeNav)}" aria-label="${escapeAttr(headerTitle)}">
       <button type="button" class="mobile-page-return-btn" data-mobile-page-back aria-label="${state.lang === "vi" ? "Quay lại trang chủ" : "返回首页"}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M15 18l-6-6 6-6" />
         </svg>
       </button>
-      <h1 class="mobile-page-return-title">${escapeHtml(labels[activeNav] || "")}</h1>
+      <h1 class="mobile-page-return-title">${escapeHtml(headerTitle)}</h1>
     </div>
   `;
 }
 
-function wrapWithAppDesktopShell(innerHTML, shellClass = "", activeNav = "") {
+function wrapWithAppDesktopShell(innerHTML, shellClass = "", activeNav = "", options = {}) {
   return `
     <div class="app-desktop-shell ${shellClass}">
       ${renderAppDesktopSidebarHTML(activeNav)}
       <div class="app-desktop-content">
-        ${renderMobilePageReturnBar(activeNav)}
+        ${options.hideMobileHeader ? "" : renderMobilePageReturnBar(activeNav, options.mobileTitle || "")}
         ${innerHTML}
       </div>
     </div>
@@ -7665,7 +7666,7 @@ function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", active
   const node = screens[screenKey];
   if (!node) return;
   const scrollSnapshot = options.preserveScroll ? getAppScrollSnapshot() : null;
-  node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav);
+  node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav, options);
   if (scrollSnapshot) restoreAppScrollSnapshot(scrollSnapshot);
   else scrollAppToTop();
 }
@@ -7746,7 +7747,7 @@ function renderListeningLevelGateway(options = {}) {
     <section class="listening-gateway-screen">
       <header class="listening-gateway-hero">
         <button class="listening-gateway-back-btn" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -7944,13 +7945,13 @@ function renderIntermediateListeningSuggestionsHTML(isVi) {
       <h2>${isVi ? "Bài học đề xuất" : "推荐课程"}</h2>
       <div class="listening-suggested-list-v3">
         ${suggestedTopics.map((topic, index) => {
-          const progress = getListeningTopicProgressPercent(topic.lessons);
-          const lessonCount = topic.lessons.length;
-          const openId = topic.lessons[0]?.id || topic.id;
-          const lessonNumber = Math.max(1, listeningEpisodes.findIndex((episode) => episode.id === openId) + 1);
-          const title = isVi ? (topic.label_vi || topic.label_zh || topic.id) : (topic.label_zh || topic.label_vi || topic.id);
-          const levelLabel = isVi ? (topic.levelLabelVi || "Đối thoại trung cấp") : (topic.levelLabelZh || "中级对话");
-          return `
+    const progress = getListeningTopicProgressPercent(topic.lessons);
+    const lessonCount = topic.lessons.length;
+    const openId = topic.lessons[0]?.id || topic.id;
+    const lessonNumber = Math.max(1, listeningEpisodes.findIndex((episode) => episode.id === openId) + 1);
+    const title = isVi ? (topic.label_vi || topic.label_zh || topic.id) : (topic.label_zh || topic.label_vi || topic.id);
+    const levelLabel = isVi ? (topic.levelLabelVi || "Đối thoại trung cấp") : (topic.levelLabelZh || "中级对话");
+    return `
             <button
               class="listening-suggested-item-v3"
               type="button"
@@ -7971,7 +7972,7 @@ function renderIntermediateListeningSuggestionsHTML(isVi) {
               <span class="listening-suggested-arrow-v3" aria-hidden="true">›</span>
             </button>
           `;
-        }).join("")}
+  }).join("")}
       </div>
     </section>
   `;
@@ -8282,7 +8283,7 @@ function renderListeningDashboard() {
         <div class="listening-dashboard-content">
 <section class="listening-spa-hero listening-topic-hero">
   <button class="listening-dashboard-back-btn listening-dashboard-back-btn--hero" type="button" data-listening-dashboard-back aria-label="${isVi ? "Quay lại" : "返回"}">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M15 18l-6-6 6-6" />
     </svg>
   </button>
@@ -8548,12 +8549,12 @@ function renderListeningDetail(options = {}) {
       <small>${rate}x</small>
     </button>
   `).join("");
-const subtitleMode = state.listeningSubtitleMode || "pinyin-zh";
-const showPinyinChinese = subtitleMode === "pinyin-zh" || subtitleMode === "both";
-const showVietnamese = subtitleMode === "vi" || subtitleMode === "both";
-const translationToggleLabel = showVietnamese
-  ? (isVi ? "Ẩn toàn bộ tiếng Việt" : "隐藏全部越南语")
-  : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译");
+  const subtitleMode = state.listeningSubtitleMode || "pinyin-zh";
+  const showPinyinChinese = subtitleMode === "pinyin-zh" || subtitleMode === "both";
+  const showVietnamese = subtitleMode === "vi" || subtitleMode === "both";
+  const translationToggleLabel = showVietnamese
+    ? (isVi ? "Ẩn toàn bộ tiếng Việt" : "隐藏全部越南语")
+    : (isVi ? "Xem toàn bộ bản dịch tiếng Việt" : "查看全部越南语翻译");
 
   const hasTitleAudio = Boolean(episode.titleAudioSrc);
   const titlePinyin = episode.titlePinyin || "";
@@ -8811,7 +8812,10 @@ const translationToggleLabel = showVietnamese
 
   `;
 
-  setScreenWithDesktopShell("listening", listeningDetailHTML, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  setScreenWithDesktopShell("listening", listeningDetailHTML, "app-desktop-shell--listening", "listening", {
+    preserveScroll: Boolean(options.preserveScroll),
+    mobileTitle: isVi ? (episode.title || "Bài nghe") : (episode.titleZh || episode.title || "听力"),
+  });
 
   requestAnimationFrame(() => {
     bindListeningAudioEvents();
@@ -8906,7 +8910,7 @@ let listeningPlaybackToken = 0;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
 let listeningRepeatAudioStopTimer = null;
-const listeningSpecializedPronunciationEnabled = false;
+const listeningSpecializedPronunciationEnabled = true;
 
 function getListeningRepeatDisplayScore(score = listeningRepeatLatestScore) {
   if (score === null || score === undefined || score === "") return null;
@@ -9231,11 +9235,13 @@ function updateRepeatAiWordRowsFromResult(targetText, correctIndexes = new Set()
 function renderSpecializedPronunciationScore(result) {
   listeningRepeatScoringDone = true;
   const panel = $("#listeningPronunciationResult");
-  if (!panel) return;
   const charResults = Array.isArray(result?.charResults) ? result.charResults : [];
   const correctWords = charResults.filter((item) => item.correct).length;
   const totalWords = charResults.length;
-  const score = totalWords
+  const providerScore = getListeningRepeatDisplayScore(result?.score);
+  const score = providerScore !== null
+    ? providerScore
+    : totalWords
     ? Math.round((correctWords / totalWords) * 100)
     : Math.round(Number(result?.score || 0));
   const scoreClass = score >= 85 ? "good" : score >= 60 ? "ok" : "low";
@@ -9246,27 +9252,44 @@ function renderSpecializedPronunciationScore(result) {
       .filter((index) => index >= 0)
   );
 
-  updateRepeatAiWordRowsFromResult(result?.referenceText || getListeningEpisode().sentences[state.listeningSentenceIndex]?.chinese || "", correctIndexes);
-  const markedTarget = charResults.map((item) => (
-    `<b class="${item.correct ? "correct" : "wrong"}" title="${escapeAttr(item.errorType || "")}">${escapeHtml(item.char || "")}</b>`
-  )).join("");
+  const referenceText = result?.referenceText || getListeningEpisode().sentences[state.listeningSentenceIndex]?.chinese || "";
+  updateRepeatAiWordRowsFromResult(referenceText, correctIndexes);
+  setListeningRepeatOriginalMarks(referenceText, correctIndexes);
+  const markedTarget = referenceText
+    ? buildListeningRepeatOriginalHTML(referenceText)
+    : charResults.map((item) => (
+      `<b class="${item.correct ? "correct" : "wrong"}" title="${escapeAttr(item.errorType || "")}">${escapeHtml(item.char || "")}</b>`
+    )).join("");
   const metric = (label, value) => Number.isFinite(Number(value))
     ? `<span>${label}: <strong>${Math.round(Number(value))}</strong></span>`
     : "";
+  const providerLabel = String(result?.provider || "").toLowerCase() === "openai" ? "OpenAI" : "Speech AI";
+  const feedbackHtml = result?.feedback
+    ? `<p class="listening-pronunciation-feedback"><span>${state.lang === "vi" ? "Góp ý" : "反馈"}</span><small>${escapeHtml(result.feedback)}</small></p>`
+    : "";
+  const mistakes = Array.isArray(result?.mistakes) ? result.mistakes.filter(Boolean) : [];
+  const mistakesHtml = mistakes.length
+    ? `<ul class="listening-pronunciation-mistakes">${mistakes.map((mistake) => `<li>${escapeHtml(mistake)}</li>`).join("")}</ul>`
+    : "";
 
-  panel.classList.add("has-score");
-  panel.innerHTML = `
-    <div class="listening-pronunciation-score ${scoreClass}">
-      <strong>${score}</strong><span></span>
-    </div>
-    <div class="listening-pronunciation-lines">
-      <p class="listening-pronunciation-provider"><span>Azure Speech</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
-      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
-      <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
-    </div>
-  `;
   setListeningRepeatScorePreview(score);
   setListeningRepeatInput(result.recognizedText || "");
+
+  if (panel) {
+    panel.classList.add("has-score");
+    panel.innerHTML = `
+      <div class="listening-pronunciation-score ${scoreClass}">
+        <strong>${score}</strong><span></span>
+      </div>
+      <div class="listening-pronunciation-lines">
+        <p class="listening-pronunciation-provider"><span>${providerLabel}</span>${metric("Accuracy", result.accuracyScore)}${metric("Fluency", result.fluencyScore)}${metric("Completeness", result.completenessScore)}</p>
+        <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget || escapeHtml(result.referenceText || "")}</em></p>
+        <p><span>${state.lang === "vi" ? "Nghe được" : "识别结果"}</span><small>${escapeHtml(result.recognizedText || "—")}</small></p>
+        ${feedbackHtml}
+        ${mistakesHtml}
+      </div>
+    `;
+  }
 }
 
 function blobToBase64(blob) {
@@ -9372,9 +9395,6 @@ async function assessListeningPronunciationWithProvider(blob) {
 }
 
 async function scoreListeningRepeatRecording() {
-  renderListeningPronunciationScore();
-  return;
-
   if (!listeningSpecializedPronunciationEnabled || !listeningRecordingBlob) {
     renderListeningPronunciationScore();
     return;
@@ -9890,7 +9910,10 @@ function renderListeningVocabLesson(options = {}) {
         ${buildListeningVocabPracticeHTML(state.listeningVocabPracticeIndex)}
       </section>
     </div>
-  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  `, "app-desktop-shell--listening", "listening", {
+    preserveScroll: Boolean(options.preserveScroll),
+    mobileTitle: isVi ? "Từ vựng" : "词汇",
+  });
 }
 
 function resetListeningRepeatAttempt() {
@@ -9971,7 +9994,10 @@ function renderListeningLevelLessons(options = {}) {
         ${rowsHTML}
       </div>
     </section>
-  `, "app-desktop-shell--listening", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  `, "app-desktop-shell--listening", "listening", {
+    preserveScroll: Boolean(options.preserveScroll),
+    mobileTitle: lessonTitle,
+  });
 }
 
 function renderListeningRepeatLesson(options = {}) {
@@ -10017,7 +10043,7 @@ function renderListeningRepeatLesson(options = {}) {
     <em>${escapeHtml(word.status)}</em>
   </div>
 `).join("");
-const sentenceFeedIndexes = [currentIndex];
+  const sentenceFeedIndexes = [currentIndex];
   const sentenceFeedHTML = sentenceFeedIndexes.map((index) => {
     const item = episode.sentences[index] || {};
     const isActive = index === currentIndex;
@@ -10039,6 +10065,7 @@ const sentenceFeedIndexes = [currentIndex];
 
     const displayScore = getListeningRepeatDisplayScore();
     return `
+    <div class="progressprogress">
       <article class="listening-repeat-feed-card listening-repeat-feed-card--active" data-listening-repeat-card="${index}" data-listening-repeat-active>
         <button class="listening-repeat-feed-nav listening-repeat-feed-nav--prev" type="button" data-listening-repeat-prev ${index <= 0 ? "disabled" : ""} aria-label="${escapeAttr(isVi ? "Câu trước" : "Previous sentence")}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
@@ -10047,9 +10074,8 @@ const sentenceFeedIndexes = [currentIndex];
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
         <div class="listening-repeat-feed-index">${escapeHtml(sentenceNumber)}</div>
-        <div class="listening-repeat-listen-content listening-repeat-feed-active-content ${
-          (item.chinese || "").length > 22 ? "is-very-long" : (item.chinese || "").length > 14 ? "is-long" : ""
-        }">
+        <div class="listening-repeat-listen-content listening-repeat-feed-active-content ${(item.chinese || "").length > 22 ? "is-very-long" : (item.chinese || "").length > 14 ? "is-long" : ""
+      }">
           <strong data-listening-repeat-original>${buildListeningRepeatOriginalHTML(item.chinese || "")}</strong>
           <small>${escapeHtml(item.pinyin || "")}</small>
           <em>${escapeHtml(item.vietnamese || "")}</em>
@@ -10069,6 +10095,7 @@ const sentenceFeedIndexes = [currentIndex];
         </div>
         <span class="listening-repeat-hidden-label" data-listening-repeat-listen-label>${escapeHtml(listenLabel)}</span>
       </article>
+      </div>
     `;
   }).join("");
 
@@ -10086,7 +10113,11 @@ const sentenceFeedIndexes = [currentIndex];
         </div>
       </section>
     </div>
-  `, "app-desktop-shell--listening app-desktop-shell--listening-repeat", "listening", { preserveScroll: Boolean(options.preserveScroll) });
+  `, "app-desktop-shell--listening app-desktop-shell--listening-repeat", "listening", {
+    preserveScroll: Boolean(options.preserveScroll),
+    mobileTitle: isVi ? "Nói theo" : "Shadowing",
+    hideMobileHeader: true,
+  });
   updateListeningRecordingPlaybackUi(Boolean(listeningRecordingUrl));
   setListeningRepeatListenUi(listeningRepeatSpeechState);
   return;
@@ -11539,7 +11570,7 @@ function renderHskCourse() {
           <div class="hsk-no-results">${state.lang === "vi" ? "Đang tải dữ liệu bài học..." : "正在加载课程数据..."}</div>
         </div>
       </section>
-    `, "app-desktop-shell--course", "hsk");
+    `, "app-desktop-shell--course", "hsk", { mobileTitle: state.level });
     ensureHskLevelContent(state.level).then(() => {
       if (state.module === "hsk" && !state.hskLevelPicker) renderHskCourse();
     });
@@ -11558,8 +11589,8 @@ function renderHskCourse() {
     ? (isVi ? "Chọn phần học" : "选择学习部分")
     : (isVi ? `Danh sách bài học ${state.level}` : `${state.level} 课程列表`);
   const mobileHeroTitle = pendingLesson
-    ? (isVi ? "Chọn phần học" : "选择学习部分")
-    : (isVi ? `Danh sách bài học ${state.level}` : `${state.level} 课程列表`);
+    ? (state.lang === "vi" ? (pendingLesson.titleVi || pendingLesson.title) : (pendingLesson.titleZh || pendingLesson.title))
+    : state.level;
   const heroBackAttr = pendingLesson ? "data-hsk-back-lessons" : "data-hsk-level-back";
   const heroBackLabel = pendingLesson
     ? (isVi ? "Quay lại danh sách bài" : "返回课程列表")
@@ -11604,7 +11635,7 @@ function renderHskCourse() {
         `}
       </div>
     </section>
-  `, "app-desktop-shell--course", "hsk");
+  `, "app-desktop-shell--course", "hsk", { mobileTitle: mobileHeroTitle });
   return;
 
   screens.course.innerHTML = `
@@ -11850,7 +11881,7 @@ function renderDailyCourse() {
       </div>
       `}
     </section>
-  `, "app-desktop-shell--course", "daily");
+  `, "app-desktop-shell--course", "daily", { mobileTitle: dailyHeroTitle || "" });
 }
 
 function stopSpeechPlayback() {
@@ -13525,14 +13556,14 @@ function bindEvents() {
       const value = input?.value || "";
       if (input) input.select();
       if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(value).catch(() => {});
+        navigator.clipboard.writeText(value).catch(() => { });
       }
       state.adminCtvLinkStatus = state.lang === "vi" ? "Đã sao chép link giới thiệu." : "已复制推广链接。";
       renderAdmin();
       return;
     }
 
-    
+
 
     const adminContentLevelBtn = event.target.closest("[data-admin-content-level]");
     if (adminContentLevelBtn) {
@@ -14413,7 +14444,7 @@ function bindEvents() {
       state.adminCtvPickerSearch = event.target.value;
       updateAdminCtvPickerList();
     }
-    
+
 
     if (event.target.matches?.("[data-admin-content-limit]")) {
       updateAdminHskLockConfig(event.target.dataset.adminContentLimit, {

@@ -17,6 +17,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ssl: { rejectUnauthorized: false },
     });
 
+    try {
+      await this.ensureUserCompatibilityColumns();
+    } catch (error) {
+      console.error('Cannot initialize user compatibility columns:', error);
+    }
+
     if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DB_SCHEMA_INIT !== 'true') {
       console.warn('Database schema initialization skipped in production.');
       return;
@@ -48,6 +54,76 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
     }
     return this.pool.query<T>(text, params);
+  }
+
+  private async ensureUserCompatibilityColumns() {
+    if (!this.pool) return;
+    await this.pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        current_level TEXT NOT NULL DEFAULT 'HSK2',
+        avatar_url TEXT,
+        is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+        premium_until TIMESTAMPTZ,
+        vip_plan_id TEXT,
+        daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        daily_reminder_last_sent_on DATE,
+        email_verified_at TIMESTAMPTZ,
+        email_verification_code_hash TEXT,
+        email_verification_expires_at TIMESTAMPTZ,
+        ref TEXT,
+        src TEXT,
+        vip INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_login_at TIMESTAMPTZ
+      );
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS current_level TEXT NOT NULL DEFAULT 'HSK2';
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS email_verification_code_hash TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS ref TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS src TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
+    `);
   }
 
   private async ensureSchema() {

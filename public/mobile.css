@@ -15,7 +15,7 @@
   } */
 
   .mobile-page-return-bar {
-    position: fixed !important;
+    /* position: fixed !important; */
     top: 0;
     left: 50%;
     z-index: 1000;
@@ -577,10 +577,33 @@
   }
 }
 
-/* Noi theo mobile: lift the active sentence card slightly. */
+/* Noi theo mobile: keep the active sentence card centered and clear of controls. */
 @media (max-width: 700px) {
+  #listeningScreen .app-desktop-shell--listening-repeat .progressprogress {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening-repeat .listening-repeat-feed-card--active {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
   #listeningScreen .listening-repeat-feed-active-content,
   #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content {
-    top: calc(47% - 56px) !important;
+    left: 50% !important;
+    top: 48% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening-repeat .listening-repeat-card-actions--triad {
+    left: 50% !important;
+    right: auto !important;
+    bottom: clamp(22px, 3.8svh, 34px) !important;
+    transform: translateX(-50%) !important;
   }
 }
