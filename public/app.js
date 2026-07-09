@@ -8392,7 +8392,7 @@ const translationToggleLabel = showVietnamese
       </section>
 
       <section class="listening-player-card listening-player-card--mobile">
-        <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="metadata" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
+        <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="none" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
         <div class="listening-mobile-cover" aria-hidden="true"></div>
         <div class="listening-player-status">
           <div>
@@ -8490,7 +8490,7 @@ const translationToggleLabel = showVietnamese
       <section class="listening-detail-hero listening-detail-hero--image" aria-hidden="true"></section>
 
       <section class="listening-player-card">
-        <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="metadata" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
+        <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="none" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
         <div class="listening-player-status">
           <div>
             <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
@@ -9841,7 +9841,7 @@ const sentenceFeedIndexes = [currentIndex];
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
-        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
         <div class="listening-repeat-practice-grid">
           <div class="listening-repeat-sentence-feed" aria-label="${escapeAttr(isVi ? "Danh sách câu nói" : "Sentence list")}">
             ${sentenceFeedHTML}
@@ -9895,7 +9895,7 @@ const sentenceFeedIndexes = [currentIndex];
         </aside>
 
         <section class="listening-repeat-workspace">
-          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
           <div class="listening-repeat-step">
             <div class="listening-repeat-step-index">1</div>
             <div class="listening-repeat-step-control">

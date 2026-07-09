@@ -23,6 +23,7 @@
     "validate:listening": "npm run validate:listening-catalog && npm run validate:listening-rendering",
     "validate:listening-package": "node ./scripts/validate-listening-package.mjs",
     "import:listening-package": "node ./scripts/import-listening-package.mjs",
+    "optimize:audio": "node ./scripts/optimize-audio.mjs",
     "test": "node --test ./tests/*.test.js"
   },
   "dependencies": {

@@ -6189,7 +6189,7 @@ function renderListeningDetail(options = {}) {
       </section>
 
       <section class="listening-player-card">
-        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="metadata"></audio>
+        <audio id="listeningAudio" src="${escapeAttr(episode.audioSrc)}" preload="none"></audio>
         <div class="listening-player-status">
           <div>
             <strong id="listeningStatusTitle">${isVi ? "Đã tạm dừng" : "已暂停"}</strong>
@@ -7138,7 +7138,7 @@ function renderListeningRepeatLesson(options = {}) {
       </header>
 
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
-        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
         <div class="listening-repeat-practice-grid">
           <article class="listening-repeat-listen-card">
             <span class="listening-repeat-card-chip">${desktopNavIcon("listening")} ${isVi ? "听句子 / Listen" : "Listen"}</span>
@@ -7241,7 +7241,7 @@ function renderListeningRepeatLesson(options = {}) {
         </aside>
 
         <section class="listening-repeat-workspace">
-          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="metadata"></audio>
+          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
           <div class="listening-repeat-step">
             <div class="listening-repeat-step-index">1</div>
             <div class="listening-repeat-step-control">

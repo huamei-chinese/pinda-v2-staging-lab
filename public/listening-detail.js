@@ -294,7 +294,7 @@ function getListeningAudioEl() {
   if (!listeningAudioEl) {
     listeningAudioEl = document.createElement("audio");
     listeningAudioEl.id = "listeningAudioPlayer";
-    listeningAudioEl.preload = "auto";
+    listeningAudioEl.preload = "none";
     document.body.appendChild(listeningAudioEl);
   }
   return listeningAudioEl;
