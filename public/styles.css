@@ -33573,9 +33573,33 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .listening-repeat-feed-active-content {
+  position: relative !important;
   min-height: 0 !important;
   padding: 0 !important;
   text-align: center !important;
+}
+
+.listening-repeat-card-count {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 auto 8px !important;
+  padding: 7px 13px !important;
+  border: 1px solid rgba(14, 165, 233, 0.24) !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 242, 254, 0.86)) !important;
+  color: #0369a1 !important;
+  box-shadow:
+    0 12px 26px rgba(14, 165, 233, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
 }
 
 .listening-repeat-feed-active-content strong {
@@ -39588,6 +39612,21 @@ body:has(#practiceScreen:not(.hidden)) {
   display: none !important;
 }
 
+#listeningScreen .app-desktop-shell--listening .listening-repeat-card-count {
+  position: absolute !important;
+  top: clamp(12px, 1.6vw, 18px) !important;
+  left: 50% !important;
+  z-index: 8 !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
+}
+
+@media (min-width: 701px) {
+  #listeningScreen .app-desktop-shell--listening .listening-repeat-card-count {
+    display: none !important;
+  }
+}
+
 #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content strong,
 #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content small,
 #listeningScreen .app-desktop-shell--listening .listening-repeat-feed-active-content em {
@@ -41703,6 +41742,17 @@ body:has(#practiceScreen:not(.hidden)) {
         overflow: visible !important;
       }
 
+      #listeningScreen .listening-repeat-card-count {
+        position: absolute !important;
+        top: 18px !important;
+        left: 50% !important;
+        z-index: 9 !important;
+        transform: translateX(-50%) !important;
+        margin: 0 !important;
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+      }
+
       #listeningScreen .listening-repeat-feed-active-content strong {
         display: block !important;
         width: 100% !important;
@@ -42524,17 +42574,17 @@ body:has(#practiceScreen:not(.hidden)) {
     min-height: 0 !important;
     height: auto !important;
     margin: 0 auto clamp(10px, 1.2vw, 16px) !important;
-    padding: clamp(16px, 2vw, 24px) clamp(20px, 3vw, 42px) clamp(16px, 2vw, 24px) clamp(78px, 8vw, 112px) !important;
+    padding: clamp(18px, 2.2vw, 26px) clamp(20px, 3vw, 42px) clamp(18px, 2vw, 24px) clamp(78px, 8vw, 112px) !important;
     border-radius: clamp(18px, 2vw, 28px) !important;
     overflow: hidden !important;
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back {
     left: clamp(22px, 2.4vw, 34px) !important;
-    top: clamp(16px, 2vw, 28px) !important;
-    width: clamp(44px, 4.3vw, 58px) !important;
-    height: clamp(44px, 4.3vw, 58px) !important;
-    border-radius: clamp(14px, 1.5vw, 18px) !important;
+    top: clamp(18px, 2vw, 26px) !important;
+    width: clamp(42px, 4vw, 52px) !important;
+    height: clamp(42px, 4vw, 52px) !important;
+    border-radius: 999px !important;
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero::after {
@@ -46110,6 +46160,21 @@ body:has(#practiceScreen:not(.hidden)) {
     min-width: 44px !important;
     min-height: 44px !important;
   }
+
+}
+
+@media (min-width: 701px) {
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content small {
+    width: min(100%, 880px) !important;
+    min-height: 42px !important;
+    max-height: none !important;
+    padding: 8px 22px !important;
+    font-size: clamp(14px, 1.08vw, 18px) !important;
+    line-height: 1.22 !important;
+    white-space: normal !important;
+    text-wrap: balance !important;
+    overflow: visible !important;
+  }
 }
 
 /* Home listening card: keep the supplied artwork clear without an extra color wash. */
@@ -46821,31 +46886,31 @@ body:has(#practiceScreen:not(.hidden)) {
     box-shadow: 0 16px 34px rgba(37, 99, 235, 0.2) !important;
   }
 }
-/* Listening lessons: lift the back action before the hero card on mobile. */
+/* Listening lessons: keep the back action inside the hero title card on mobile. */
 @media (max-width: 900px) {
   #listeningScreen .app-desktop-content:has(.listening-lessons-screen) > .mobile-page-return-bar--listening {
     display: none !important;
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-screen {
-    padding-top: clamp(18px, 5vw, 26px) !important;
+    padding-top: clamp(10px, 3.8vw, 18px) !important;
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero {
     position: relative !important;
-    margin-top: 30px !important;
-    padding-left: clamp(26px, 6vw, 42px) !important;
-    overflow: visible !important;
+    margin-top: 0 !important;
+    padding-left: clamp(76px, 18vw, 92px) !important;
+    overflow: hidden !important;
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back {
     position: absolute !important;
-    top: -28px !important;
-    left: 16px !important;
+    top: clamp(18px, 5vw, 24px) !important;
+    left: clamp(18px, 5vw, 24px) !important;
     z-index: 8 !important;
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
     display: inline-grid !important;
     place-items: center !important;
     border: 1px solid rgba(255, 255, 255, 0.78) !important;

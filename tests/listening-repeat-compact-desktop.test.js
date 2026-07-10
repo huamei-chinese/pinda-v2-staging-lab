@@ -19,3 +19,10 @@ test("short desktop repeat layout shrinks the sentence card and controls", () =>
     /@media \(min-width:\s*701px\) and \(max-height:\s*700px\) \{[\s\S]*\.listening-repeat-feed-active-content[\s\S]*height:\s*clamp\(190px,\s*37vh,\s*238px\) !important;[\s\S]*\.listening-repeat-mic-large[\s\S]*width:\s*clamp\(72px,\s*6\.2vw,\s*84px\) !important;/,
   );
 });
+
+test("desktop compact repeat pinyin can wrap without clipping", () => {
+  assert.match(
+    styles,
+    /@media \(min-width:\s*701px\) \{[\s\S]*\.listening-repeat-lesson-screen--compact\) \.listening-repeat-feed-active-content small[\s\S]*width:\s*min\(100%,\s*880px\) !important;[\s\S]*max-height:\s*none !important;[\s\S]*overflow:\s*visible !important;/,
+  );
+});

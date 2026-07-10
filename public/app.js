@@ -10961,6 +10961,7 @@ function renderListeningRepeatLesson(options = {}) {
         <div class="listening-repeat-feed-index">${escapeHtml(sentenceNumber)}</div>
         <div class="listening-repeat-listen-content listening-repeat-feed-active-content ${(item.chinese || "").length > 22 ? "is-very-long" : (item.chinese || "").length > 14 ? "is-long" : ""
       }">
+          <span class="listening-repeat-card-count">${escapeHtml(isVi ? `Câu ${sentenceNumber}` : `第 ${sentenceNumber} 句`)}</span>
           <strong data-listening-repeat-original>${buildListeningRepeatOriginalHTML(item.chinese || "")}</strong>
           <small>${escapeHtml(item.pinyin || "")}</small>
           <em>${escapeHtml(item.vietnamese || "")}</em>
@@ -14288,6 +14289,7 @@ function bindEvents() {
         if (listeningJumpBtn.dataset.listeningJump === "repeat") {
           resetListeningRepeatAttempt();
           state.listeningView = "repeat";
+          state.listeningSentenceIndex = 0;
           renderListening();
           return;
         }
