@@ -2016,6 +2016,50 @@ p {
   font-weight: 950;
 }
 
+.write-communication-header-back-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 999px;
+  color: #047857;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.9));
+  box-shadow:
+    0 12px 26px rgba(15, 118, 110, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.write-communication-header-back-btn svg {
+  flex: 0 0 16px;
+}
+
+.write-communication-header-back-btn:hover,
+.write-communication-header-back-btn:focus-visible {
+  transform: translateY(-1px);
+  color: #065f46;
+  border-color: rgba(15, 118, 110, 0.34);
+  box-shadow:
+    0 16px 34px rgba(15, 118, 110, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  outline: none;
+}
+
 .write-communication-header h1 {
   margin: 12px 0 8px;
   color: #17233c;
@@ -41887,7 +41931,7 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 
-/* ===== MOBILE HOME: dùng backgroundienthoai2.png ===== */
+/* ===== MOBILE HOME: use the portrait background artwork clearly ===== */
 @media (max-width: 700px) {
 
   .screen-home,
@@ -41902,8 +41946,8 @@ body:has(#practiceScreen:not(.hidden)) {
 
   .screen-home {
     background:
-      linear-gradient(rgba(239, 255, 248, 0.38), rgba(239, 255, 248, 0.38)),
-      url("/assets/backgroundienthoai4.png") center top / cover no-repeat fixed !important;
+      linear-gradient(rgba(239, 255, 248, 0.18), rgba(239, 255, 248, 0.18)),
+      url("assets/backgroundienthoai4.jpg") center top / cover no-repeat fixed !important;
   }
 
   .screen-home::before {
@@ -41912,7 +41956,7 @@ body:has(#practiceScreen:not(.hidden)) {
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
   }
 }
 
@@ -46071,7 +46115,9 @@ body:has(#practiceScreen:not(.hidden)) {
 /* Home listening card: keep the supplied artwork clear without an extra color wash. */
 .screen-home .home-duo-card--listen,
 .screen-home .home-desktop-module-card.home-duo-card--listen {
-  background: url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
+  background:
+    linear-gradient(105deg, rgba(7, 89, 133, 0.5), rgba(14, 165, 233, 0.5)),
+    url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
   border: 1px solid rgba(14, 165, 233, 0.55) !important;
   box-shadow:
     0 24px 58px rgba(14, 116, 144, 0.2),
@@ -46087,7 +46133,7 @@ body:has(#practiceScreen:not(.hidden)) {
 
 .screen-home .home-duo-card--listen .home-duo-card-bg {
   background:
-    linear-gradient(105deg, rgba(7, 89, 133, 0.52) 0%, rgba(14, 165, 233, 0.42) 46%, rgba(186, 230, 253, 0.28) 100%) !important;
+    linear-gradient(105deg, rgba(7, 89, 133, 0.18) 0%, rgba(14, 165, 233, 0.12) 46%, rgba(186, 230, 253, 0.08) 100%) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-badge {
@@ -46234,7 +46280,7 @@ body:has(#practiceScreen:not(.hidden)) {
     min-width: 0 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 
   .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-script-title {
@@ -46244,8 +46290,8 @@ body:has(#practiceScreen:not(.hidden)) {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    font-size: clamp(24px, 6.2vw, 34px) !important;
-    line-height: 1.05 !important;
+    font-size: clamp(20px, 5.1vw, 24px) !important;
+    line-height: 1.08 !important;
   }
 
   .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-script-head {

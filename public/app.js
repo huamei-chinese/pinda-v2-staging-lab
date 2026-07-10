@@ -9121,7 +9121,7 @@ function renderListeningDetail(options = {}) {
       <section class="listening-script-card listening-script-card--mobile">
         <div class="listening-mobile-section-title">
           <span aria-hidden="true"></span>
-          <h2 class="listening-script-title">${isVi ? "Nội dung nghe" : "听力内容"}</h2>
+          <h5 class="listening-script-title">${isVi ? "Nội dung nghe" : "听力内容"}</h5>
         </div>
         <div class="listening-script-head">
           <div class="listening-subtitle-actions">
@@ -12528,7 +12528,13 @@ function renderWriteCommunicationCourseHTML() {
       </div>
 
       <header class="write-communication-header">
-        <span>${isVi ? "Giao tiếp" : "交际"}</span>
+        <button class="write-communication-header-back-btn" type="button" data-write-path-back aria-label="${isVi ? "Quay lại chọn lộ trình" : "返回路径选择"}">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+            <path d="M20 12H9" />
+          </svg>
+          ${isVi ? "Quay lại" : "返回"}
+        </button>
         <h1>${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}</h1>
         <p>${isVi ? "Chọn một chủ đề giao tiếp để luyện từ vựng và câu thường dùng." : "选择一个交际主题，练习高频词汇和句子。"}</p>
       </header>
@@ -12589,6 +12595,7 @@ function renderHskCourse() {
   if (state.writeCourseView === "communication") {
     setScreenWithDesktopShell("course", renderWriteCommunicationCourseHTML(), "app-desktop-shell--course app-desktop-shell--write-communication", "hsk", {
       mobileTitle: state.lang === "vi" ? "Ti\u1ebfng Trung th\u00f4ng d\u1ee5ng" : "\u9ad8\u9891\u6c49\u8bed",
+      hideMobileHeader: true,
     });
     return;
   }

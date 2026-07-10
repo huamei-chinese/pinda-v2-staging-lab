@@ -20,6 +20,10 @@ test("mobile listening script header keeps title and subtitle actions inline", (
   );
   assert.match(
     styles,
+    /\.screen-listening \.listening-detail-spa\.listening-detail-mobile \.listening-script-card--mobile \.listening-script-title\s*\{[\s\S]*font-size:\s*clamp\(20px,\s*5\.1vw,\s*24px\) !important;/i,
+  );
+  assert.match(
+    styles,
     /\.screen-listening \.listening-detail-spa\.listening-detail-mobile \.listening-script-card--mobile \.listening-subtitle-actions\s*\{[\s\S]*flex-wrap:\s*nowrap !important;/i,
   );
 });

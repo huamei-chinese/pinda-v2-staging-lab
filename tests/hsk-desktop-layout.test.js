@@ -86,6 +86,9 @@ test("daily topics opened from writing communication return to the high-frequenc
 test("writing communication route uses desktop high-frequency cards", () => {
   assert.match(appSource, /function renderWriteCommunicationCourseHTML\(\)/);
   assert.match(appSource, /write-communication-screen/);
+  assert.match(appSource, /class="write-communication-header-back-btn" type="button" data-write-path-back/);
+  assert.match(appSource, /\$\{isVi \? "Quay lại" : "返回"\}/);
+  assert.match(appSource, /state\.writeCourseView === "communication"[\s\S]*mobileTitle:[\s\S]*hideMobileHeader:\s*true/);
   assert.match(appSource, /renderDailyThemesListHTML\(\)/);
   assert.match(styles, /\.write-path-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(styles, /\.write-communication-theme-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s);
@@ -142,6 +145,8 @@ test("high-frequency communication header uses the common-topic background frame
   assert.match(styles, /\.write-communication-header\s*\{[^}]*border-radius:\s*clamp\(22px,\s*2\.4vw,\s*34px\)/s);
   assert.match(styles, /\.write-communication-header::before\s*\{[^}]*inset:\s*9px[^}]*border:\s*1px solid rgba\(255,\s*255,\s*255,\s*0\.72\)/s);
   assert.match(styles, /\.write-communication-header\s*>\s*\*\s*\{[^}]*z-index:\s*1/s);
+  assert.match(styles, /\.write-communication-header-back-btn\s*\{[^}]*border-radius:\s*999px[^}]*cursor:\s*pointer/s);
+  assert.match(styles, /\.write-communication-header-back-btn:hover,\s*\.write-communication-header-back-btn:focus-visible\s*\{[^}]*transform:\s*translateY\(-1px\)/s);
 });
 
 test("writing path cards use requested backgrounds and stable desktop sizing", () => {
