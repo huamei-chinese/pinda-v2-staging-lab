@@ -44671,6 +44671,68 @@ body:has(#practiceScreen:not(.hidden)) {
   background: linear-gradient(90deg, #5eead4, #14b8a6);
 }
 
+.write-communication-topic-carousel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.write-communication-topic-carousel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.write-communication-topic-nav {
+  grid-area: carousel;
+  position: relative;
+  z-index: 8;
+  align-self: center;
+  width: clamp(34px, 3.1vw, 44px);
+  height: clamp(34px, 3.1vw, 44px);
+  min-width: clamp(34px, 3.1vw, 44px);
+  min-height: clamp(34px, 3.1vw, 44px);
+  padding: 0;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+  border-radius: 999px;
+  color: #0f766e;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 30px rgba(15, 82, 74, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px) saturate(1.12);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.write-communication-topic-nav:hover,
+.write-communication-topic-nav:focus-visible {
+  color: #ffffff;
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+  box-shadow: 0 18px 38px rgba(15, 118, 110, 0.24);
+  transform: translateY(-1px);
+}
+
+.write-communication-topic-nav:focus-visible {
+  outline: 3px solid rgba(45, 212, 191, 0.34);
+  outline-offset: 3px;
+}
+
+.write-communication-topic-nav svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 3;
+}
+
+.write-communication-topic-nav--prev {
+  justify-self: start;
+  margin-left: clamp(2px, 0.55vw, 8px);
+}
+
+.write-communication-topic-nav--next {
+  justify-self: end;
+  margin-right: clamp(2px, 0.55vw, 8px);
+}
+
 .write-communication-topic-card {
   --topic-index: 0;
   position: relative;
@@ -45310,5 +45372,284 @@ body:has(#practiceScreen:not(.hidden)) {
     stroke-width: 2.6 !important;
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
+  }
+}
+
+/* Slightly larger monologue icons on the listening gateway. */
+@media (max-width: 900px) {
+  #listeningScreen .listening-gateway-card--monologue .listening-gateway-level {
+    grid-template-columns: 38px minmax(0, 1fr) 18px !important;
+  }
+
+  #listeningScreen .listening-gateway-card--monologue .listening-level-row-icon {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    flex-basis: 34px !important;
+    font-size: 17px !important;
+  }
+}
+
+/* Hide the mobile home topic list below the learning cards. */
+@media (max-width: 900px) {
+  #homeScreen .home-mobile-only-block .home-mobile-topics-section,
+  #homeScreen .home-mobile-only-block .home-mobile-topics-head,
+  #homeScreen .home-mobile-only-block .home-mobile-topics-list,
+  .home-desktop-main > .home-mobile-only-block > .home-mobile-topics-section,
+  .home-desktop-main > .home-mobile-only-block > .home-mobile-topics-section > .home-mobile-topics-head,
+  .home-desktop-main > .home-mobile-only-block > .home-mobile-topics-section > .home-mobile-topics-list,
+  .home-mobile-only-block .home-mobile-topics-section,
+  .home-mobile-only-block .home-mobile-topics-head,
+  .home-mobile-only-block .home-mobile-topics-list {
+    display: none !important;
+  }
+}
+
+/* Final listening lesson number badge. */
+#listeningScreen .listening-lesson-play.listening-lesson-number {
+  display: grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  font-style: normal !important;
+  font-family: var(--font-display, inherit) !important;
+}
+
+#listeningScreen .listening-lesson-play.listening-lesson-number svg {
+  display: none !important;
+}
+
+/* Writing path compact desktop: keep the two selector cards clear of the sidebar. */
+@media (min-width: 1181px) and (max-width: 1320px) {
+  .screen-course .app-desktop-shell--write-path {
+    --desktop-sidebar-width: clamp(236px, 19.8vw, 260px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .home-desktop-sidebar,
+  .screen-course .app-desktop-shell--write-path .app-desktop-sidebar {
+    width: var(--desktop-sidebar-width) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .app-desktop-content {
+    width: calc(100vw - var(--desktop-sidebar-width)) !important;
+    max-width: calc(100vw - var(--desktop-sidebar-width)) !important;
+    margin-left: var(--desktop-sidebar-width) !important;
+    overflow-x: clip !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-path-picker {
+    --write-path-hero-safe-inset: clamp(12px, 1.25vw, 18px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-path-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: clamp(10px, 1vw, 14px) !important;
+    padding: clamp(10px, 1.1vw, 14px) clamp(12px, 1.35vw, 18px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-path-card--hsk-selector,
+  .screen-course .app-desktop-shell--write-path .write-path-card--communication-selector {
+    min-height: clamp(304px, 27.5vw, 360px) !important;
+    padding: clamp(11px, 1.05vw, 15px) !important;
+    border-radius: 22px !important;
+    gap: clamp(8px, 0.8vw, 12px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-selector-head strong,
+  .screen-course .app-desktop-shell--write-path .write-path-card--communication-selector .write-path-card-copy strong {
+    font-size: clamp(23px, 2vw, 28px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-selector-head small,
+  .screen-course .app-desktop-shell--write-path .write-path-card--communication-selector .write-path-card-copy small {
+    font-size: clamp(10.5px, 0.82vw, 12px) !important;
+    line-height: 1.25 !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-path-card-arrow {
+    width: clamp(42px, 3.7vw, 48px) !important;
+    height: clamp(42px, 3.7vw, 48px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-level-stack {
+    padding: 6px clamp(4px, 0.6vw, 8px) 14px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-level-row {
+    width: min(100%, 390px) !important;
+    min-height: clamp(45px, 4.1vw, 54px) !important;
+    grid-template-columns: clamp(54px, 4.9vw, 68px) minmax(0, 1fr) 22px !important;
+    gap: 7px !important;
+    margin-top: clamp(-9px, -0.72vw, -6px) !important;
+    padding: 8px clamp(8px, 0.8vw, 11px) !important;
+    border-radius: 15px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-row-level {
+    font-size: clamp(18px, 1.7vw, 23px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-row-copy strong {
+    font-size: clamp(11px, 0.95vw, 13px) !important;
+    line-height: 1.12 !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-hsk-row-copy i {
+    width: min(100%, 150px) !important;
+    height: 5px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-communication-topic-carousel {
+    grid-auto-columns: clamp(106px, 9.1vw, 124px) !important;
+    gap: clamp(8px, 0.82vw, 10px) !important;
+    margin-inline: -8px !important;
+    padding: 2px 8px 13px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-communication-topic-card {
+    min-height: clamp(168px, 14.4vw, 190px) !important;
+    grid-template-rows: clamp(82px, 7.25vw, 96px) minmax(0, 1fr) auto !important;
+    gap: 6px !important;
+    padding: 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-communication-topic-copy strong {
+    font-size: clamp(13px, 1.08vw, 15px) !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-communication-topic-copy small,
+  .screen-course .app-desktop-shell--write-path .write-communication-topic-count {
+    font-size: 10px !important;
+  }
+
+  .screen-course .app-desktop-shell--write-path .write-communication-explore-btn {
+    min-height: 38px !important;
+    padding: 8px 22px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Compact desktop repeat lesson: keep the speaking controls visible on short screens. */
+@media (min-width: 701px) and (max-height: 700px) {
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact),
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) #app,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) #listeningScreen,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .app-desktop-shell--listening-repeat,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .app-desktop-content {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-lesson-screen--compact {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    padding: clamp(8px, 1.7vh, 14px) clamp(18px, 2.8vw, 32px) !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-workspace--compact,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-practice-grid,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-sentence-feed {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-card--active {
+    inset: clamp(8px, 1.8vh, 14px) clamp(18px, 3vw, 30px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-card--active::before {
+    height: clamp(42px, 11vh, 76px) !important;
+    opacity: 0.28 !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content {
+    top: 43% !important;
+    width: min(900px, 70vw) !important;
+    height: clamp(190px, 37vh, 238px) !important;
+    min-height: clamp(190px, 37vh, 238px) !important;
+    max-height: clamp(190px, 37vh, 238px) !important;
+    padding: clamp(14px, 2.8vh, 18px) clamp(28px, 3.6vw, 38px) !important;
+    grid-template-rows: minmax(58px, auto) minmax(28px, auto) minmax(24px, auto) !important;
+    gap: clamp(4px, 1vh, 7px) !important;
+    align-content: center !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content strong {
+    font-size: clamp(30px, 3.15vw, 46px) !important;
+    line-height: 1.06 !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content.is-long strong {
+    font-size: clamp(25px, 2.6vw, 38px) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content.is-very-long strong {
+    font-size: clamp(20px, 2.05vw, 30px) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content small {
+    min-height: 30px !important;
+    max-height: 36px !important;
+    padding: 5px 16px !important;
+    font-size: clamp(13px, 1vw, 16px) !important;
+    line-height: 1.14 !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content em {
+    max-height: 34px !important;
+    font-size: clamp(12px, 0.9vw, 15px) !important;
+    line-height: 1.18 !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-card-actions--triad {
+    bottom: clamp(10px, 2.2vh, 18px) !important;
+    gap: clamp(14px, 2.8vw, 24px) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-play-large,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-score-playback {
+    width: clamp(48px, 4.2vw, 56px) !important;
+    height: clamp(48px, 4.2vw, 56px) !important;
+    min-width: clamp(48px, 4.2vw, 56px) !important;
+    min-height: clamp(48px, 4.2vw, 56px) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-mic-large {
+    width: clamp(72px, 6.2vw, 84px) !important;
+    height: clamp(72px, 6.2vw, 84px) !important;
+    min-width: clamp(72px, 6.2vw, 84px) !important;
+    min-height: clamp(72px, 6.2vw, 84px) !important;
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0.34),
+      0 18px 42px rgba(15, 118, 110, 0.24) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-nav {
+    width: clamp(44px, 4.2vw, 52px) !important;
+    height: clamp(44px, 4.2vw, 52px) !important;
+    min-width: clamp(44px, 4.2vw, 52px) !important;
+    min-height: clamp(44px, 4.2vw, 52px) !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-corner-back {
+    top: clamp(8px, 1.8vh, 14px) !important;
+    left: clamp(8px, 2vw, 18px) !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 }

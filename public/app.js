@@ -467,6 +467,7 @@ function iconSvg(name) {
     chart: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-4"/><path d="M12 16V8"/><path d="M16 16v-6"/><path d="M8 9l4-4 4 3 4-5"/></svg>`,
     badge: `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2l2.6 5.1 5.7.8-4.1 4 1 5.7L12 15l-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 2z"/></svg>`,
     "bar-chart": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 19V12"/><path d="M12 19V7"/><path d="M19 19V4"/></svg>`,
+    "arrow-left": `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>`,
     "arrow-right": `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>`,
     "book-open": `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A3.5 3.5 0 0 1 6.5 2H21v17H7a4 4 0 0 0-4 4V5.5z"/><path d="M3 19a4 4 0 0 1 4-4h14"/></svg>`,
     letters: `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-14 5 14"/><path d="M6 14h6"/><path d="M15 6h6"/><path d="M18 3v13"/><path d="M16 10c1.2 2.8 2.9 4.8 5 6"/></svg>`,
@@ -7855,8 +7856,8 @@ const listeningCategories = [
     countVi: "3 cấp độ",
     countZh: "3 个等级",
     levels: [
-      { id: "dialogue-so-cap", vi: "Đối thoại sơ cấp", zh: "初级对话", code: "A1", descVi: "Phù hợp cho người mới bắt đầu", descZh: "适合初学者", countVi: "12 bài", countZh: "12 课" },
-      { id: "dialogue-trung-cap", vi: "Đối thoại trung cấp", zh: "中级对话", code: "A2", descVi: "Nâng cao khả năng nghe hiểu", descZh: "提升听力理解能力", countVi: "24 bài", countZh: "24 课" },
+      { id: "dialogue-so-cap", vi: "Đối thoại sơ cấp", zh: "初级对话", code: "A", descVi: "Phù hợp cho người mới bắt đầu", descZh: "适合初学者", countVi: "12 bài", countZh: "12 课" },
+      { id: "dialogue-trung-cap", vi: "Đối thoại trung cấp", zh: "中级对话", code: "B2", descVi: "Nâng cao khả năng nghe hiểu", descZh: "提升听力理解能力", countVi: "24 bài", countZh: "24 课" },
       { id: "dialogue-cao-cap", vi: "Đối thoại cao cấp", zh: "高级对话", code: "B1", descVi: "Thử thách khả năng nghe hiểu", descZh: "挑战听力理解能力", countVi: "18 bài", countZh: "18 课" },
     ],
   },
@@ -7986,6 +7987,15 @@ function getListeningLevelInfo(levelId = state.listeningLevelId) {
     if (level) return { category, level };
   }
   return { category: listeningCategories[0], level: listeningCategories[0].levels[0] };
+}
+
+function getListeningDashboardHeroTitle(levelId = state.listeningLevelId, isVi = state.lang === "vi") {
+  const heroTitles = {
+    "dialogue-so-cap": isVi ? "Luyện nghe Sơ Cấp" : "初级听力训练",
+    "dialogue-trung-cap": isVi ? "Luyện nghe Trung Cấp" : "中级听力训练",
+    "dialogue-cao-cap": isVi ? "Luyện nghe Cao Cấp" : "高级听力训练",
+  };
+  return heroTitles[levelId] || (isVi ? "Luyện nghe tiếng Trung" : "中文听力训练");
 }
 
 const LISTENING_LESSON_PROGRESS_STORAGE_KEY = "v2-listening-lesson-progress";
@@ -8298,6 +8308,7 @@ function renderListening(options = {}) {
 function renderListeningDashboard() {
   const isVi = state.lang === "vi";
   const selectedListeningLevelId = state.listeningLevelId || "dialogue-so-cap";
+  const listeningHeroTitle = getListeningDashboardHeroTitle(selectedListeningLevelId, isVi);
   const catalogCardImages = [
     "assets/anhthanhphan1.png",
     "assets/anhthanhphan2.png",
@@ -8420,7 +8431,6 @@ function renderListeningDashboard() {
   <button class="listening-topic-card-v2 listening-topic-card-v2--${escapeAttr(topic.tone)}" type="button" data-listening-topic-list="${escapeAttr(topic.openId)}" data-listening-topic-level="${escapeAttr(topic.levelId || "dialogue-so-cap")}" data-listening-topic-id="${escapeAttr(topic.topicId || "")}">
     <span class="listening-topic-card-v2-copy">
       <strong>${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</strong>
-      <small>${escapeHtml(isVi ? topic.descVi : topic.descZh)}</small>
     </span>
 
     <span class="listening-topic-card-v2-image">
@@ -8467,7 +8477,7 @@ function renderListeningDashboard() {
       ${desktopNavIcon("listening")} ${isVi ? "Luyện nghe" : "听力"}
     </span>
 
-    <h2>${isVi ? "Luyện nghe tiếng Trung" : "中文听力训练"}</h2>
+    <h2>${escapeHtml(listeningHeroTitle)}</h2>
     <p>${isVi ? "Nghe hiểu · Phản xạ · Giao tiếp tự nhiên" : "听懂 · 反应 · 自然交流"}</p>
 
     <div class="listening-topic-hero-actions">
@@ -10181,8 +10191,8 @@ function renderListeningLevelLessons(options = {}) {
 
     return `
       <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}" type="button" ${rowActionAttr}>
-  <span class="listening-lesson-play">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+  <span class="listening-lesson-play listening-lesson-number" aria-label="${isVi ? `Bài ${lesson.no}` : `第${lesson.no}课`}">
+    ${lesson.no}
   </span>
 
   <span class="listening-lesson-copy">
@@ -10194,7 +10204,6 @@ function renderListeningLevelLessons(options = {}) {
   </span>
 
   <span class="listening-lesson-wave" aria-hidden="true">${bars}</span>
-  <em>${lesson.no}</em>
   <span class="listening-lesson-arrow" aria-hidden="true">›</span>
 </button>
     `;
@@ -10515,10 +10524,25 @@ function renderListeningKeywordDetail(index, button = null) {
 function positionListeningKeywordPopup(panel, button) {
   if (!panel || !button) return;
   const rect = button.getBoundingClientRect();
-  const width = Math.min(340, window.innerWidth - 24);
   const gap = 12;
   const margin = 12;
-  const left = Math.max(margin, rect.left - width - gap);
+  const width = Math.min(340, window.innerWidth - margin * 2);
+  const leftCandidate = rect.left - width - gap;
+  const rightCandidate = rect.right + gap;
+  const isCompactDesktop = window.matchMedia?.("(min-width: 901px) and (max-width: 1320px)")?.matches;
+  const canOpenLeft = leftCandidate >= margin;
+  const canOpenRight = rightCandidate + width <= window.innerWidth - margin;
+  let left;
+
+  if (isCompactDesktop && canOpenRight) {
+    left = rightCandidate;
+  } else if (canOpenLeft) {
+    left = leftCandidate;
+  } else if (canOpenRight) {
+    left = rightCandidate;
+  } else {
+    left = Math.max(margin, Math.min(leftCandidate, window.innerWidth - width - margin));
+  }
 
   panel.style.width = `${width}px`;
   panel.style.left = `${left}px`;
@@ -10727,6 +10751,8 @@ function playListeningTitleThenMain(audio, episode) {
   const token = nextListeningPlaybackToken();
   if (!prepareListeningTitleAudio(audio, episode)) {
     prepareListeningMainAudio(audio, episode);
+  } else {
+    setListeningTitleSentenceActive({ scroll: true });
   }
   return playListeningAudio(audio, token);
 }
@@ -10763,7 +10789,11 @@ function syncListeningAudioUi() {
     : audio ? Math.min((audio.currentTime + 0.25) || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
   const percent = !isTitlePhase && duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
   if (audio?.ended && !isTitlePhase) listeningPlaybackRequested = false;
-  if (isTitlePhase) setListeningTitleSentenceActive();
+  if (isTitlePhase) {
+    setListeningTitleSentenceActive({
+      scroll: Boolean(listeningPlaybackRequested || (audio && !audio.paused)),
+    });
+  }
   if (!isTitlePhase) updateListeningLessonProgress(episode.id, current, duration, { completed: Boolean(audio?.ended || percent >= 100) });
   if (audio && !audio.paused && !isTitlePhase) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
 
@@ -10895,7 +10925,9 @@ function toggleListeningPlayback() {
         audio.currentTime = resumeTime;
         setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, resumeTime), { force: true, scroll: true });
       }
-    } else if (phase !== "title") {
+    } else if (phase === "title") {
+      setListeningTitleSentenceActive({ scroll: true });
+    } else {
       prepareListeningMainAudio(audio, episode);
     }
     playListeningAudio(audio, token);
@@ -11719,8 +11751,10 @@ function renderWritePathPickerHTML() {
           </span>
           <button class="write-path-card-arrow write-communication-mode-btn" type="button" data-write-path="communication" aria-label="${escapeAttr(isVi ? "Xem toàn bộ chủ đề giao tiếp" : "查看全部交际主题")}">${iconSvg("arrow-right")}</button>
           <span class="write-communication-topic-carousel" aria-label="${escapeAttr(isVi ? "Danh sách chủ đề giao tiếp" : "交际主题列表")}">
-            ${communicationTopicCards}
+              ${communicationTopicCards}
           </span>
+          <button class="write-communication-topic-nav write-communication-topic-nav--prev" type="button" data-write-topic-scroll="prev" aria-label="${escapeAttr(isVi ? "Kéo chủ đề sang trái" : "Scroll topics left")}">${iconSvg("arrow-left")}</button>
+          <button class="write-communication-topic-nav write-communication-topic-nav--next" type="button" data-write-topic-scroll="next" aria-label="${escapeAttr(isVi ? "Kéo chủ đề sang phải" : "Scroll topics right")}">${iconSvg("arrow-right")}</button>
           <span class="write-communication-selector-footer">
             <button class="write-communication-explore-btn" type="button" data-write-path="communication">${isVi ? "Khám phá chủ đề" : "探索主题"}</button>
           </span>
@@ -14434,6 +14468,19 @@ function bindEvents() {
       state.dailyFilterTab = "all";
       await ensureHskLevelContent(state.level);
       renderHskCourse();
+      return;
+    }
+    const writeTopicScrollBtn = event.target.closest("[data-write-topic-scroll]");
+    if (writeTopicScrollBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const communicationCard = writeTopicScrollBtn.closest(".write-path-card--communication-selector");
+      const carousel = writeTopicScrollBtn.closest(".write-communication-topic-carousel")
+        || communicationCard?.querySelector(".write-communication-topic-carousel");
+      if (!carousel) return;
+      const direction = writeTopicScrollBtn.dataset.writeTopicScroll === "prev" ? -1 : 1;
+      const scrollStep = Math.max(160, Math.round(carousel.clientWidth * 0.74));
+      carousel.scrollBy({ left: direction * scrollStep, behavior: "smooth" });
       return;
     }
     const writeDailyThemeBtn = event.target.closest("[data-write-daily-theme]");
