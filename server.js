@@ -856,7 +856,7 @@ async function handleLogin(req, res) {
   const updated = await pool.query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
     [user.id],
   );
   sendJson(res, 200, { user: publicUser(updated.rows[0]) });
@@ -871,7 +871,7 @@ async function handleAdminUsers(req, res, url) {
 
   if (req.method === "GET") {
     const result = await pool.query(
-      `SELECT id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at
        FROM users
        ORDER BY created_at DESC`,
     );
@@ -907,7 +907,7 @@ async function handleAdminUsers(req, res, url) {
       `UPDATE users
        SET role = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
       [nextRole, roleMatch[1]],
     );
     sendJson(res, 200, { user: publicUser(result.rows[0]) });
@@ -941,7 +941,7 @@ async function handleAdminUsers(req, res, url) {
       `UPDATE users
        SET ref = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
       [ref, refMatch[1]],
     );
     sendJson(res, 200, { user: publicUser(result.rows[0]) });
@@ -970,7 +970,7 @@ async function handleAdminUsers(req, res, url) {
       `UPDATE users
        SET full_name = $1, email = $2, role = $3, is_active = $4, updated_at = NOW()
        WHERE id = $5
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
       [fullName, email, role, isActive, idMatch[1]],
     );
     if (!result.rows[0]) {

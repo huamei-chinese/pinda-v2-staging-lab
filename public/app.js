@@ -6060,7 +6060,13 @@ function showModal(type) {
     try {
       const data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
         method: "POST",
-        body: JSON.stringify(isLogin ? { email, password } : { fullName, email, password }),
+        body: JSON.stringify(isLogin ? { email, password } : {
+          fullName,
+          email,
+          password,
+          ref: getReferralRefFromUrl(),
+          src: getTrafficSource(),
+        }),
       });
       if (["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(data.user?.role || "").toLowerCase())) {
         throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
