@@ -14399,7 +14399,12 @@ function bindEvents() {
       }
       const row = adminRoleUser.closest("[data-user-id]");
       const userId = row.dataset.userId;
-      const nextRole = adminRoleUser.dataset.nextRole === "staff" ? "staff" : "user";
+      const roleSelect = row.querySelector(".admin-role-select");
+      const nextRole = normalizeAdminRole(roleSelect?.value || row.querySelector('[data-field="role"]')?.value || "user");
+      if (!ADMIN_EDITABLE_ROLES.includes(nextRole)) {
+        showToast(state.lang === "vi" ? "Vai trò không hợp lệ." : "角色无效。");
+        return;
+      }
       if (!confirmAdminRoleChange(userId, nextRole)) return;
       state.adminStatus = state.lang === "vi" ? "Đang cập nhật vai trò..." : "正在更新角色...";
       renderAdmin();
