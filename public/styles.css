@@ -1929,7 +1929,7 @@ p {
   position: relative;
   background:
     linear-gradient(180deg, rgba(246, 255, 247, 0.72), rgba(242, 251, 247, 0.95)),
-    url("assets/backgroundienthoai2.png") center / cover no-repeat;
+    url("assets/backgroundienthoai4.png") center / cover no-repeat;
 }
 
 .screen-course .app-desktop-shell--write-communication .write-communication-screen > .write-path-hero {
@@ -28954,6 +28954,47 @@ body:has(#practiceScreen:not(.hidden)) {
   margin-bottom: 10px;
 }
 
+.listening-gateway-badge--back {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(15, 118, 110, 0.2) !important;
+  gap: 8px !important;
+  padding: 8px 14px 8px 10px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.88)) !important;
+  color: #047857 !important;
+  box-shadow:
+    0 12px 26px rgba(15, 118, 110, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease !important;
+}
+
+.listening-gateway-badge--back svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
+}
+
+.listening-gateway-badge--back:hover,
+.listening-gateway-badge--back:focus-visible {
+  transform: translateY(-1px) !important;
+  border-color: rgba(15, 118, 110, 0.34) !important;
+  box-shadow:
+    0 16px 34px rgba(15, 118, 110, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  outline: none !important;
+}
+
+@media (min-width: 901px) {
+  .screen-listening .listening-gateway-badge--back {
+    display: none !important;
+  }
+}
+
 .listening-gateway-hero h1 {
   margin: 0 0 6px !important;
   color: #0f5c4c !important;
@@ -30089,16 +30130,23 @@ body:has(#practiceScreen:not(.hidden)) {
   color: #fff !important;
   font-size: 14px !important;
   font-weight: 950 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
 }
 
+.listening-level-code--a,
 .listening-level-code--a1 {
   background: linear-gradient(145deg, #34d399, #14b8a6) !important;
 }
 
+.listening-level-code--b,
 .listening-level-code--a2 {
   background: linear-gradient(145deg, #fbbf24, #f59e0b) !important;
 }
 
+.listening-level-code--c,
 .listening-level-code--b1 {
   background: linear-gradient(145deg, #fb7185, #ec4899) !important;
 }
@@ -36091,7 +36139,7 @@ body:has(#practiceScreen:not(.hidden)) {
   box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08) !important;
 }
 
-.screen-listening .listening-script-card::before {
+/* .screen-listening .listening-script-card::before {
   content: "" !important;
   position: absolute !important;
   top: 0 !important;
@@ -36100,7 +36148,7 @@ body:has(#practiceScreen:not(.hidden)) {
   height: 7px !important;
   border-radius: 0 0 999px 999px !important;
   background: linear-gradient(90deg, #ec4899, #7c3aed, #2563eb) !important;
-}
+} */
 
 .screen-listening .listening-script-title {
   display: flex !important;
@@ -36272,10 +36320,10 @@ body:has(#practiceScreen:not(.hidden)) {
     border-radius: 22px !important;
   }
 
-  .screen-listening .listening-script-card::before {
+  /* .screen-listening .listening-script-card::before {
     left: 18px !important;
     right: 18px !important;
-  }
+  } */
 
   .screen-listening .listening-script-title {
     font-size: 22px !important;
@@ -37784,6 +37832,25 @@ body:has(#practiceScreen:not(.hidden)) {
     margin-top: 10px;
   }
 
+  .screen-listening .listening-gateway-badge--back {
+    min-height: 42px !important;
+    padding: 8px 14px 8px 10px !important;
+    margin-bottom: 10px !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    color: #047857 !important;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(236, 253, 245, 0.92)) !important;
+    box-shadow:
+      0 14px 30px rgba(15, 118, 110, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  }
+
+  .screen-listening .listening-gateway-badge--back svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
   .screen-listening .listening-detail-topbar {
     grid-template-columns: 1fr auto !important;
   }
@@ -38787,14 +38854,14 @@ body:has(#practiceScreen:not(.hidden)) {
     background: rgba(255, 255, 255, 0.97) !important;
   }
 
-  .screen-listening .listening-script-card::before {
+  /* .screen-listening .listening-script-card::before {
     content: "" !important;
     position: absolute !important;
     inset: 0 24px auto !important;
     height: 7px !important;
     border-radius: 0 0 999px 999px !important;
     background: linear-gradient(90deg, #e044a9, #2466f1) !important;
-  }
+  } */
 
   .screen-listening .listening-script-title {
     margin: 18px 0 18px !important;
@@ -39678,7 +39745,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .08)),
-      url("assets/backgroundienthoai2.png") center bottom / cover no-repeat !important;
+      url("assets/backgroundienthoai4.png") center bottom / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before {
@@ -40004,7 +40071,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .04)),
-      url("assets/backgroundienthoai2.png") center top / cover no-repeat !important;
+      url("assets/backgroundienthoai4.png") center top / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before,
@@ -40262,7 +40329,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .08)),
-      url("assets/backgroundienthoai2.png") center -54px / cover no-repeat !important;
+      url("assets/backgroundienthoai4.png") center -54px / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before {
@@ -41490,7 +41557,7 @@ body:has(#practiceScreen:not(.hidden)) {
       }
 
       #listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact {
-        background: url("/assets/backgroundienthoai2.png") center / cover no-repeat !important;
+        background: url("/assets/backgroundienthoai4.png") center / cover no-repeat !important;
       }
 
       #listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact::before,
@@ -41778,7 +41845,7 @@ body:has(#practiceScreen:not(.hidden)) {
   .screen-home {
     background:
       linear-gradient(rgba(239, 255, 248, 0.38), rgba(239, 255, 248, 0.38)),
-      url("/assets/backgroundienthoai2.png") center top / cover no-repeat fixed !important;
+      url("/assets/backgroundienthoai4.png") center top / cover no-repeat fixed !important;
   }
 
   .screen-home::before {
@@ -44429,6 +44496,20 @@ body:has(#practiceScreen:not(.hidden)) {
   outline-offset: 3px;
 }
 
+.write-hsk-level-row.is-opening,
+.write-hsk-level-row.is-opening:hover,
+.write-hsk-level-row.is-opening:focus-visible {
+  cursor: progress;
+  z-index: 170;
+  transform: translateX(calc(var(--hsk-row-shift, 0px) + 8px)) translateY(-8px) scale(calc(var(--hsk-row-scale, 1) + 0.035)) !important;
+  opacity: 1 !important;
+  filter: saturate(1.08) brightness(1.04) !important;
+  box-shadow:
+    0 18px 34px color-mix(in srgb, var(--hsk-row-accent) 24%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition-duration: 0.14s !important;
+}
+
 .write-hsk-row-level {
   position: relative;
   z-index: 1;
@@ -45436,6 +45517,253 @@ body:has(#practiceScreen:not(.hidden)) {
   display: none !important;
 }
 
+/* Listening lesson picker: richer lesson labels and modern hover feedback. */
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.46), transparent 24%),
+    linear-gradient(120deg, rgba(224, 242, 254, 0.92) 0%, rgba(204, 251, 241, 0.88) 48%, rgba(221, 214, 254, 0.82) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 22px 48px rgba(15, 118, 110, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero h1 {
+  color: #123c69 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero p {
+  color: #3f6f86 !important;
+  font-weight: 850 !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  background:
+    radial-gradient(circle at 98% 50%, color-mix(in srgb, var(--lesson-accent) 18%, transparent), transparent 32%),
+    linear-gradient(110deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.86)) !important;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 12px auto 12px 0 !important;
+  width: 5px !important;
+  border-radius: 0 999px 999px 0 !important;
+  background: linear-gradient(180deg, var(--lesson-accent), color-mix(in srgb, var(--lesson-accent) 42%, #ffffff)) !important;
+  opacity: 0.9 !important;
+  z-index: -1 !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.36) 42%, transparent 72%) !important;
+  transform: translateX(-120%) !important;
+  transition: transform 0.45s ease !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:hover,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:focus-visible {
+  transform: translateY(-3px) !important;
+  border-color: color-mix(in srgb, var(--lesson-accent) 34%, rgba(255, 255, 255, 0.9)) !important;
+  box-shadow:
+    0 24px 54px rgba(15, 118, 110, 0.16),
+    0 10px 22px var(--lesson-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+  outline: none !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:hover::after,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:focus-visible::after {
+  transform: translateX(120%) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-play.listening-lesson-number {
+  position: relative !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.5), transparent 30%),
+    linear-gradient(145deg, color-mix(in srgb, var(--lesson-accent) 54%, #ffffff), var(--lesson-accent)) !important;
+  box-shadow:
+    0 15px 30px var(--lesson-glow),
+    0 0 0 8px color-mix(in srgb, var(--lesson-accent) 14%, #ffffff),
+    inset 0 1px 0 rgba(255, 255, 255, 0.64) !important;
+  letter-spacing: 0 !important;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-play.listening-lesson-number::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 8px 9px auto !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:hover .listening-lesson-play.listening-lesson-number,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:focus-visible .listening-lesson-play.listening-lesson-number {
+  transform: translateY(-1px) scale(1.05) !important;
+  box-shadow:
+    0 18px 36px var(--lesson-glow),
+    0 0 0 10px color-mix(in srgb, var(--lesson-accent) 16%, #ffffff),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row strong {
+  color: #102a56 !important;
+  text-wrap: balance !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-status,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-duration {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 26px !important;
+  padding: 0 11px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  white-space: nowrap !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-status::before,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-duration::before {
+  content: "" !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 999px !important;
+  background: currentColor !important;
+  opacity: 0.78 !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-duration {
+  color: #0f766e !important;
+  background: rgba(240, 253, 250, 0.86) !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-arrow {
+  color: color-mix(in srgb, var(--lesson-accent) 58%, #64748b) !important;
+  transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:hover .listening-lesson-arrow,
+#listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row:focus-visible .listening-lesson-arrow {
+  transform: translateX(4px) !important;
+  color: var(--lesson-accent) !important;
+}
+
+@media (max-width: 680px) {
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-screen {
+    padding: 14px 14px 92px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero {
+    margin-top: 0 !important;
+    padding: 20px 18px 20px 72px !important;
+    border-radius: 24px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back {
+    left: 18px !important;
+    top: 20px !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 999px !important;
+    color: #047857 !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 12px 26px rgba(15, 118, 110, 0.16) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-list {
+    gap: 12px !important;
+    margin-top: 14px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row {
+    grid-template-columns: 56px minmax(0, 1fr) 18px !important;
+    min-height: 88px !important;
+    gap: 12px !important;
+    padding: 14px 12px 14px 18px !important;
+    border-radius: 24px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row::before {
+    inset: 14px auto 14px 0 !important;
+    width: 4px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-play.listening-lesson-number {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 17px !important;
+    font-size: 18px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-copy {
+    gap: 8px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row strong {
+    font-size: 16px !important;
+    line-height: 1.18 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-meta {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-status,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-duration {
+    min-height: 23px !important;
+    padding-inline: 9px !important;
+    font-size: 11px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-wave {
+    display: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-arrow {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 22px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row::after,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-play.listening-lesson-number,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-arrow {
+    transition: none !important;
+  }
+}
+
 /* Writing path compact desktop: keep the two selector cards clear of the sidebar. */
 @media (min-width: 1181px) and (max-width: 1320px) {
   .screen-course .app-desktop-shell--write-path {
@@ -45666,5 +45994,778 @@ body:has(#practiceScreen:not(.hidden)) {
     height: 44px !important;
     min-width: 44px !important;
     min-height: 44px !important;
+  }
+}
+
+/* Home listening card: supplied orange artwork background with a light warm overlay. */
+.screen-home .home-duo-card--listen,
+.screen-home .home-desktop-module-card.home-duo-card--listen {
+  background:
+    linear-gradient(105deg, rgba(124, 45, 18, 0.46) 0%, rgba(249, 115, 22, 0.2) 42%, rgba(255, 237, 213, 0.03) 100%),
+    radial-gradient(circle at 78% 22%, rgba(255, 247, 237, 0.18), transparent 28%),
+    url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
+  border: 1px solid rgba(253, 186, 116, 0.58) !important;
+  box-shadow:
+    0 24px 58px rgba(194, 65, 12, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+.screen-home .home-duo-card--listen:hover,
+.screen-home .home-desktop-module-card.home-duo-card--listen:hover {
+  box-shadow:
+    0 34px 76px rgba(194, 65, 12, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+.screen-home .home-duo-card--listen .home-duo-card-bg {
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.14), transparent 42%),
+    radial-gradient(circle at 73% 64%, rgba(255, 237, 213, 0.18), transparent 35%),
+    radial-gradient(circle at 18% 20%, rgba(124, 45, 18, 0.16), transparent 36%) !important;
+}
+
+.screen-home .home-duo-card--listen .home-duo-badge {
+  color: #fff7ed !important;
+  background: rgba(255, 237, 213, 0.18) !important;
+  border-color: rgba(255, 237, 213, 0.42) !important;
+}
+
+.screen-home .home-duo-card--listen .home-duo-copy h3,
+.screen-home .home-duo-card--listen .home-duo-copy p {
+  color: #ffffff !important;
+  text-shadow: 0 8px 24px rgba(124, 45, 18, 0.36) !important;
+}
+
+.screen-home .home-duo-card--listen .home-duo-btn {
+  color: #c2410c !important;
+  background: rgba(255, 247, 237, 0.96) !important;
+  box-shadow: 0 16px 32px rgba(124, 45, 18, 0.2) !important;
+}
+
+.screen-home .home-duo-card--listen .home-duo-art {
+  background:
+    linear-gradient(145deg, rgba(255, 247, 237, 0.36), rgba(253, 186, 116, 0.18)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    0 18px 38px rgba(124, 45, 18, 0.22) !important;
+}
+
+/* Mobile home topbar: keep the main brand title on one line. */
+@media (max-width: 700px) {
+  .screen-home .home-desktop-topbar {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 8px !important;
+  }
+
+  .screen-home .home-desktop-topbar > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .screen-home .home-desktop-topbar h1 {
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: keep-all !important;
+    font-size: clamp(25px, 7.35vw, 34px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .screen-home .home-desktop-lang-btn {
+    justify-self: end !important;
+    align-self: start !important;
+    margin-top: -2px !important;
+  }
+}
+
+/* Mobile listening quick practice: make the action dock cooler and more noticeable. */
+@media (max-width: 640px) {
+  .screen-listening .listening-detail-mobile>.listening-quick-links-card.listening-mobile-card {
+    border: 1px solid rgba(125, 211, 252, 0.9) !important;
+    border-top: 4px solid #0ea5e9 !important;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(224, 242, 254, 0.86), transparent 34%),
+      linear-gradient(135deg, rgba(240, 249, 255, 0.98) 0%, rgba(186, 230, 253, 0.96) 42%, rgba(147, 197, 253, 0.94) 72%, rgba(165, 180, 252, 0.92) 100%) !important;
+    box-shadow:
+      0 -18px 38px rgba(14, 116, 144, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  }
+
+  .screen-listening .listening-detail-mobile>.listening-quick-links-card.listening-mobile-card h2 {
+    color: #075985 !important;
+    font-weight: 950 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .screen-listening .listening-detail-mobile>.listening-quick-links-card .listening-script-quick-actions button {
+    border: 1px solid rgba(14, 165, 233, 0.32) !important;
+    color: #0369a1 !important;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(224, 242, 254, 0.9)) !important;
+    box-shadow: 0 10px 22px rgba(14, 116, 144, 0.14) !important;
+  }
+
+  .screen-listening .listening-detail-mobile>.listening-quick-links-card .listening-script-quick-actions button svg {
+    color: #0ea5e9 !important;
+  }
+}
+
+/* Mobile listening sentence: clearer ocean-blue active gradient for readability. */
+@media (max-width: 640px) {
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover {
+    border: 1px solid rgba(14, 165, 233, 0.82) !important;
+    background:
+      radial-gradient(circle at 12% 16%, rgba(255, 255, 255, 0.54), transparent 32%),
+      linear-gradient(120deg, #bae6fd 0%, #7dd3fc 44%, #a5f3fc 100%) !important;
+    box-shadow:
+      0 16px 34px rgba(14, 116, 144, 0.2),
+      inset 4px 0 0 #0284c7 !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active>span,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover>span {
+    color: #075985 !important;
+    background: rgba(224, 242, 254, 0.88) !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active .listening-line-zh,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active strong,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover .listening-line-zh,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover strong {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active .listening-line-pinyin,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active small,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover .listening-line-pinyin,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover small {
+    color: #1d4ed8 !important;
+    text-shadow: none !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active .listening-line-vi,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence.active em,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover .listening-line-vi,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence:hover em {
+    color: #075985 !important;
+    text-shadow: none !important;
+  }
+}
+
+/* Mobile listening script header: keep title and subtitle switcher on one row. */
+@media (max-width: 640px) {
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: start !important;
+    column-gap: 10px !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-mobile-section-title {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-script-title {
+    margin: 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: clamp(24px, 6.2vw, 34px) !important;
+    line-height: 1.05 !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-script-head {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    align-self: center !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-subtitle-actions {
+    width: clamp(154px, 40vw, 198px) !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-subtitle-actions button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+    white-space: nowrap !important;
+    font-size: clamp(10px, 2.7vw, 12px) !important;
+  }
+}
+
+/* Mobile listening title sentence: keep the intro/title line unmistakable without adding a label. */
+@media (max-width: 640px) {
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title:hover {
+    position: relative !important;
+    min-height: 126px !important;
+    border: 1px solid rgba(14, 165, 233, 0.95) !important;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.72), transparent 32%),
+      linear-gradient(125deg, #dff7ff 0%, #8bdcff 45%, #4fc3f7 100%) !important;
+    box-shadow:
+      0 18px 38px rgba(2, 132, 199, 0.24),
+      inset 5px 0 0 #0284c7,
+      inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title::before,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 10px !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0)) !important;
+    pointer-events: none !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title>span,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active>span,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title:hover>span {
+    color: #0369a1 !important;
+    background: rgba(224, 242, 254, 0.96) !important;
+    box-shadow:
+      0 10px 22px rgba(2, 132, 199, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title .listening-sentence-copy,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active .listening-sentence-copy {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title .listening-line-zh,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active .listening-line-zh,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title strong,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active strong {
+    color: #082f49 !important;
+    font-weight: 950 !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title .listening-line-pinyin,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active .listening-line-pinyin,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title small,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active small {
+    color: #1d4ed8 !important;
+    font-weight: 900 !important;
+    text-shadow: none !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title .listening-line-vi,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active .listening-line-vi,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title em,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active em {
+    color: #075985 !important;
+    font-weight: 900 !important;
+    text-shadow: none !important;
+  }
+
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title>i,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title.active>i,
+  .screen-listening .listening-detail-spa.listening-detail-mobile .listening-script-card--mobile .listening-sentence--title:hover>i {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #0284c7, #0ea5e9) !important;
+    box-shadow:
+      0 12px 26px rgba(2, 132, 199, 0.32),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  }
+}
+
+/* Listening mobile header: full-bleed app bar across every phone/tablet viewport. */
+@media (max-width: 900px) {
+  #listeningScreen .app-desktop-shell--listening .app-desktop-content {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  #listeningScreen .mobile-page-return-bar--listening {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)) !important;
+    box-sizing: border-box !important;
+  }
+
+  #listeningScreen .mobile-page-return-bar--listening .mobile-page-return-title {
+    justify-self: center !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 116px) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: center !important;
+  }
+}
+
+/* Home writing card: use the supplied writing background with a readable learning overlay. */
+.screen-home .home-duo-card--write,
+.screen-home .home-desktop-module-card.home-duo-card--write {
+  background:
+    linear-gradient(105deg, rgba(4, 120, 87, 0.82) 0%, rgba(5, 150, 105, 0.66) 42%, rgba(240, 253, 250, 0.18) 100%),
+    url("assets/backgroundluyenviet.png") center / cover no-repeat !important;
+  border: 1px solid rgba(153, 246, 228, 0.42) !important;
+  box-shadow:
+    0 24px 58px rgba(15, 118, 110, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+.screen-home .home-duo-card--write:hover,
+.screen-home .home-desktop-module-card.home-duo-card--write:hover {
+  box-shadow:
+    0 34px 76px rgba(15, 118, 110, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+.screen-home .home-duo-card--write .home-duo-card-bg {
+  background:
+    radial-gradient(circle at 83% 18%, rgba(255, 255, 255, 0.24), transparent 29%),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.18), transparent 44%),
+    radial-gradient(circle at 18% 82%, rgba(20, 184, 166, 0.24), transparent 38%) !important;
+}
+
+.screen-home .home-duo-card--write .home-duo-badge {
+  color: #ecfdf5 !important;
+  background: rgba(236, 253, 245, 0.18) !important;
+  border-color: rgba(209, 250, 229, 0.42) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+.screen-home .home-duo-card--write .home-duo-copy h3,
+.screen-home .home-duo-card--write .home-duo-copy p {
+  color: #ffffff !important;
+  text-shadow: 0 8px 24px rgba(6, 78, 59, 0.34) !important;
+}
+
+.screen-home .home-duo-card--write .home-duo-btn {
+  color: #047857 !important;
+  background: rgba(240, 253, 250, 0.96) !important;
+  box-shadow: 0 16px 32px rgba(6, 78, 59, 0.18) !important;
+}
+
+.screen-home .home-duo-card--write .home-duo-art {
+  background:
+    linear-gradient(145deg, rgba(236, 253, 245, 0.38), rgba(153, 246, 228, 0.16)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    0 18px 38px rgba(6, 78, 59, 0.22) !important;
+}
+
+/* Mobile listening: remove the standalone translation panel. */
+@media (max-width: 640px) {
+  .screen-listening .listening-detail-spa.listening-detail-mobile > .listening-translation-panel.listening-mobile-card {
+    display: none !important;
+  }
+}
+
+/* Listening dashboard hero: use the top badge position as a modern back control. */
+.screen-listening .listening-topic-hero .listening-dashboard-back-btn--hero {
+  display: none !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-copy {
+  padding-top: 0 !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back {
+  appearance: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.76) !important;
+  min-height: 38px !important;
+  margin-bottom: clamp(12px, 1.4vw, 18px) !important;
+  padding: 0 16px 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: #0f766e !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow:
+    0 14px 30px rgba(15, 118, 110, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  cursor: pointer !important;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back > svg {
+  display: none !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back::before {
+  content: "‹" !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #10b981, #0ea5e9) !important;
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.22) !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  line-height: 0.78 !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back::after {
+  content: "Quay lại" !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back:hover {
+  transform: translateY(-2px) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 18px 38px rgba(15, 118, 110, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.screen-listening .listening-topic-hero .listening-topic-hero-kicker--back:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.34) !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 640px) {
+  .screen-listening .listening-topic-hero .listening-topic-hero-kicker--back {
+    min-height: 34px !important;
+    margin-bottom: 12px !important;
+    padding: 0 13px 0 8px !important;
+  }
+
+  .screen-listening .listening-topic-hero .listening-topic-hero-kicker--back::before {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 24px !important;
+  }
+
+  .screen-listening .listening-topic-hero .listening-topic-hero-kicker--back::after {
+    font-size: 13px !important;
+  }
+}
+
+/* Desktop listening vocabulary lesson: calm, cohesive study surface. */
+@media (min-width: 901px) {
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .app-desktop-content {
+    background:
+      linear-gradient(135deg, rgba(240, 253, 250, 0.76) 0%, rgba(239, 246, 255, 0.82) 52%, rgba(255, 247, 237, 0.52) 100%),
+      url("assets/backgroundienthoai4.jpg") center / cover no-repeat fixed !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-lesson-screen {
+    width: min(100%, 1280px) !important;
+    margin-inline: auto !important;
+    padding: clamp(18px, 2vw, 28px) clamp(24px, 3vw, 44px) clamp(28px, 4vw, 56px) !important;
+    gap: clamp(14px, 1.4vw, 20px) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-back-btn {
+    background: linear-gradient(135deg, #0f766e, #0ea5e9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    box-shadow:
+      0 16px 34px rgba(14, 116, 144, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.58) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-panel--screen {
+    width: min(100%, 1120px) !important;
+    filter: drop-shadow(0 26px 60px rgba(15, 23, 42, 0.08)) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-progress {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    box-shadow:
+      0 16px 40px rgba(15, 23, 42, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    color: #334155 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-progress i {
+    height: 8px !important;
+    background: rgba(203, 213, 225, 0.62) !important;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-progress b {
+    background: linear-gradient(90deg, #10b981, #0ea5e9) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-progress strong {
+    color: #2563eb !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-card {
+    position: relative !important;
+    background:
+      radial-gradient(circle at 86% 12%, rgba(14, 165, 233, 0.12), transparent 28%),
+      radial-gradient(circle at 10% 8%, rgba(16, 185, 129, 0.1), transparent 30%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.88) 100%) !important;
+    border: 1px solid rgba(125, 211, 252, 0.42) !important;
+    box-shadow:
+      0 28px 70px rgba(15, 23, 42, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-card::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 14px !important;
+    border-radius: inherit !important;
+    border: 1px solid rgba(255, 255, 255, 0.44) !important;
+    pointer-events: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-kind {
+    position: relative !important;
+    z-index: 1 !important;
+    color: #0f766e !important;
+    background: rgba(236, 253, 245, 0.88) !important;
+    border: 1px solid rgba(45, 212, 191, 0.32) !important;
+    box-shadow: 0 12px 28px rgba(20, 184, 166, 0.14) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-kind i {
+    background: #10b981 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-word {
+    position: relative !important;
+    z-index: 1 !important;
+    background: linear-gradient(110deg, #047857 0%, #0f766e 34%, #2563eb 68%, #7c3aed 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+    filter: drop-shadow(0 12px 24px rgba(37, 99, 235, 0.13)) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta {
+    position: relative !important;
+    z-index: 1 !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(226, 232, 240, 0.78) !important;
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    box-shadow:
+      0 16px 34px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta > div {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta > div + div {
+    border-left: 1px solid rgba(226, 232, 240, 0.82) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta span,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meaning span {
+    color: #0f766e !important;
+    font-weight: 900 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta b {
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+    padding: 6px 18px !important;
+    color: #6d28d9 !important;
+    background: rgba(237, 233, 254, 0.86) !important;
+    border-radius: 999px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta p,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meaning p {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meaning {
+    position: relative !important;
+    z-index: 1 !important;
+    text-align: center !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-audio {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-audio button {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+    border: 0 !important;
+    box-shadow: 0 16px 34px rgba(37, 99, 235, 0.2) !important;
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-audio button:last-child {
+    color: #7c3aed !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 243, 255, 0.94)) !important;
+    border: 1px solid rgba(167, 139, 250, 0.36) !important;
+    box-shadow: 0 16px 34px rgba(124, 58, 237, 0.1) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-audio button:hover {
+    transform: translateY(-2px) !important;
+    filter: saturate(1.04) !important;
+    box-shadow: 0 22px 44px rgba(37, 99, 235, 0.24) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example-list {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(203, 213, 225, 0.62) !important;
+    border-left: 4px solid #10b981 !important;
+    box-shadow:
+      0 14px 30px rgba(15, 23, 42, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example:hover {
+    transform: translateY(-3px) !important;
+    border-color: rgba(14, 165, 233, 0.72) !important;
+    border-left-color: #0ea5e9 !important;
+    box-shadow:
+      0 22px 44px rgba(14, 165, 233, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example > span {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #10b981, #0ea5e9) !important;
+    box-shadow: 0 10px 24px rgba(14, 165, 233, 0.18) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example p {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example mark {
+    color: #047857 !important;
+    background: rgba(209, 250, 229, 0.95) !important;
+    border-radius: 8px !important;
+    padding-inline: 4px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example small {
+    color: #64748b !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example em {
+    color: #4f46e5 !important;
+    font-weight: 800 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-example button {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #0f766e, #0ea5e9) !important;
+    box-shadow: 0 14px 28px rgba(14, 116, 144, 0.2) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-prev-btn {
+    color: #2563eb !important;
+    background: rgba(239, 246, 255, 0.92) !important;
+    border: 1px solid rgba(147, 197, 253, 0.44) !important;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.09) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-next-btn {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #2563eb, #06b6d4) !important;
+    box-shadow: 0 16px 34px rgba(37, 99, 235, 0.2) !important;
+  }
+}
+/* Listening lessons: lift the back action before the hero card on mobile. */
+@media (max-width: 900px) {
+  #listeningScreen .app-desktop-content:has(.listening-lessons-screen) > .mobile-page-return-bar--listening {
+    display: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-screen {
+    padding-top: clamp(18px, 5vw, 26px) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-hero {
+    position: relative !important;
+    margin-top: 30px !important;
+    padding-left: clamp(26px, 6vw, 42px) !important;
+    overflow: visible !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back {
+    position: absolute !important;
+    top: -28px !important;
+    left: 16px !important;
+    z-index: 8 !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    border: 1px solid rgba(255, 255, 255, 0.78) !important;
+    border-radius: 999px !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%) !important;
+    box-shadow:
+      0 18px 38px rgba(14, 165, 233, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+    font-size: 0 !important;
+    cursor: pointer !important;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      filter 180ms ease !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back::before {
+    content: "‹" !important;
+    font-size: 38px !important;
+    font-weight: 900 !important;
+    line-height: 0.78 !important;
+    transform: translateX(-1px) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back:hover,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lessons-back:focus-visible {
+    transform: translateY(-2px) scale(1.03) !important;
+    filter: saturate(1.08) !important;
+    box-shadow:
+      0 22px 46px rgba(14, 165, 233, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.62) !important;
   }
 }

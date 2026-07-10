@@ -27,7 +27,8 @@ test("writing HSK path card is a stacked direct level selector", () => {
   assert.match(appSource, /write-path-card--hsk-selector/);
   assert.match(appSource, /data-write-hsk-level="\$\{card\.level\}"/);
   assert.match(appSource, /write-path-card-arrow write-hsk-mode-btn" type="button" data-write-path="hsk"/);
-  assert.match(appSource, /const writeHskLevelBtn = event\.target\.closest\("\[data-write-hsk-level\]"\)[\s\S]*state\.level = writeHskLevelBtn\.dataset\.writeHskLevel[\s\S]*state\.hskLevelPicker = false[\s\S]*await ensureHskLevelContent\(state\.level\)[\s\S]*renderHskCourse\(\)/);
+  assert.match(appSource, /const writeHskLevelBtn = event\.target\.closest\("\[data-write-hsk-level\]"\)[\s\S]*writeHskLevelBtn\.classList\.add\("is-opening"\)[\s\S]*state\.level = writeHskLevelBtn\.dataset\.writeHskLevel[\s\S]*state\.hskLevelPicker = false[\s\S]*renderHskCourse\(\)/);
+  assert.doesNotMatch(appSource, /writeHskLevelBtn[\s\S]{0,900}await ensureHskLevelContent\(state\.level\)/);
   assert.match(styles, /\.write-path-card--hsk-selector\s*\{[^}]*grid-template-areas:[^}]*"head arrow"[^}]*"stack stack"/s);
   assert.match(styles, /\.write-path-card--hsk-selector\s*\{[^}]*overflow:\s*visible/s);
   assert.match(styles, /\.write-hsk-level-stack\s*\{[^}]*perspective:\s*1100px[^}]*isolation:\s*isolate/s);
@@ -44,6 +45,7 @@ test("writing HSK path card is a stacked direct level selector", () => {
   assert.match(styles, /\.write-hsk-level-row\s*\{[^}]*transform-origin:\s*center[^}]*will-change:\s*transform,\s*box-shadow,\s*filter/s);
   assert.match(styles, /\.write-hsk-level-stack:hover\s+\.write-hsk-level-row:not\(:hover\):not\(:focus-visible\)\s*\{[^}]*opacity:\s*0\.34[^}]*blur\(1px\)/s);
   assert.match(styles, /\.write-hsk-level-row:hover,[\s\S]*z-index:\s*160[\s\S]*transform:\s*translateX\(calc\(var\(--hsk-row-shift\) \+ 30px\)\) translateY\(-34px\) scale\(calc\(var\(--hsk-row-scale\) \+ 0\.16\)\)/s);
+  assert.match(styles, /\.write-hsk-level-row\.is-opening,[\s\S]*cursor:\s*progress[\s\S]*transition-duration:\s*0\.14s\s*!important/s);
   assert.match(styles, /\.write-hsk-level-row:hover::after,[\s\S]*content:\s*"中"/s);
   assert.match(styles, /\.write-hsk-row-arrow::before\s*\{[^}]*radial-gradient/s);
   assert.match(styles, /@keyframes writeHskRowSlide/);

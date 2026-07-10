@@ -7809,7 +7809,7 @@ function renderHomeDesktopModulesHTML(isVi) {
           </button>
         </div>
         <div class="home-duo-art home-duo-art--listen">
-          <img src="assets/home-module-listening.png" alt="" onerror="this.src='assets/home-module-vocab-pc.png'" />
+          <img src="assets/home-module-listening1.png" alt="" onerror="this.src='assets/home-module-vocab-pc.png'" />
         </div>
         <span class="home-duo-watermark">听</span>
       </article>
@@ -7967,8 +7967,8 @@ const listeningCategories = [
     countZh: "3 个等级",
     levels: [
       { id: "dialogue-so-cap", vi: "Đối thoại sơ cấp", zh: "初级对话", code: "A", descVi: "Phù hợp cho người mới bắt đầu", descZh: "适合初学者", countVi: "12 bài", countZh: "12 课" },
-      { id: "dialogue-trung-cap", vi: "Đối thoại trung cấp", zh: "中级对话", code: "B2", descVi: "Nâng cao khả năng nghe hiểu", descZh: "提升听力理解能力", countVi: "24 bài", countZh: "24 课" },
-      { id: "dialogue-cao-cap", vi: "Đối thoại cao cấp", zh: "高级对话", code: "B1", descVi: "Thử thách khả năng nghe hiểu", descZh: "挑战听力理解能力", countVi: "18 bài", countZh: "18 课" },
+      { id: "dialogue-trung-cap", vi: "Đối thoại trung cấp", zh: "中级对话", code: "B", descVi: "Nâng cao khả năng nghe hiểu", descZh: "提升听力理解能力", countVi: "24 bài", countZh: "24 课" },
+      { id: "dialogue-cao-cap", vi: "Đối thoại cao cấp", zh: "高级对话", code: "C", descVi: "Thử thách khả năng nghe hiểu", descZh: "挑战听力理解能力", countVi: "18 bài", countZh: "18 课" },
     ],
   },
   {
@@ -8032,12 +8032,6 @@ function renderListeningLevelGateway(options = {}) {
   setScreenWithDesktopShell("listening", `
     <section class="listening-gateway-screen">
       <header class="listening-gateway-hero">
-        <button class="listening-gateway-back-btn" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại trang chủ" : "返回首页"}">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-
         <div class="listening-gateway-hero-inner">
           <span class="listening-gateway-badge">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
@@ -8088,7 +8082,10 @@ function renderListeningLevelGateway(options = {}) {
         ${categoryHTML}
       </div>
     </section>
-  `, "app-desktop-shell--listening", "listening", options);
+  `, "app-desktop-shell--listening", "listening", {
+    ...options,
+    hideMobileHeader: true,
+  });
 }
 
 function getListeningLevelInfo(levelId = state.listeningLevelId) {
@@ -8101,9 +8098,9 @@ function getListeningLevelInfo(levelId = state.listeningLevelId) {
 
 function getListeningDashboardHeroTitle(levelId = state.listeningLevelId, isVi = state.lang === "vi") {
   const heroTitles = {
-    "dialogue-so-cap": isVi ? "Luyện nghe Sơ Cấp" : "初级听力训练",
-    "dialogue-trung-cap": isVi ? "Luyện nghe Trung Cấp" : "中级听力训练",
-    "dialogue-cao-cap": isVi ? "Luyện nghe Cao Cấp" : "高级听力训练",
+    "dialogue-so-cap": isVi ? "Nghe Sơ Cấp" : "初级听力",
+    "dialogue-trung-cap": isVi ? "Nghe Trung Cấp" : "中级听力",
+    "dialogue-cao-cap": isVi ? "Nghe Cao Cấp" : "高端聆听",
   };
   return heroTitles[levelId] || (isVi ? "Luyện nghe tiếng Trung" : "中文听力训练");
 }
@@ -8583,9 +8580,9 @@ function renderListeningDashboard() {
     </svg>
   </button>
   <div class="listening-topic-hero-copy">
-    <span class="listening-topic-hero-kicker">
+    <button class="listening-topic-hero-kicker listening-topic-hero-kicker--back" type="button" data-listening-dashboard-back aria-label="${isVi ? "Quay lại" : "返回"}">
       ${desktopNavIcon("listening")} ${isVi ? "Luyện nghe" : "听力"}
-    </span>
+    </button>
 
     <h2>${escapeHtml(listeningHeroTitle)}</h2>
     <p>${isVi ? "Nghe hiểu · Phản xạ · Giao tiếp tự nhiên" : "听懂 · 反应 · 自然交流"}</p>
@@ -8649,7 +8646,9 @@ function renderListeningDashboard() {
 </aside>
       </main>
     </div>
-  `, "app-desktop-shell--listening", "listening");
+  `, "app-desktop-shell--listening", "listening", {
+    hideMobileHeader: true,
+  });
 }
 
 function listeningFormatTime(value = 0) {
@@ -8672,7 +8671,7 @@ function getListeningRateLabel(rate = state.listeningPlaybackRate) {
   const isVi = state.lang === "vi";
   const labels = {
     0.75: isVi ? "Chậm" : "慢",
-    1: isVi ? "Bình thường" : "正常",
+    1: isVi ? "Tốc độ" : "速度",
     1.25: isVi ? "Nhanh" : "快",
     1.5: "1.5x",
   };
@@ -8800,16 +8799,21 @@ function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceEl
   localStorage.setItem("v2-listening-subtitle-mode", subtitleMode);
 
   const episode = getListeningEpisode();
+  const audio = $("#listeningAudio");
+  const isAudioTitlePhase = audio?.dataset?.listeningAudioPhase === "title";
+  const isMainAudioActive = Boolean(audio && !audio.paused && !audio.ended && !isAudioTitlePhase);
   const sourceScriptCard = sourceElement?.closest?.(".listening-script-card");
   const sourceSentenceList = sourceScriptCard?.querySelector?.(".listening-sentence-list");
   const activeSentenceButton = sourceSentenceList?.querySelector("[data-listening-sentence].active")
     || document.querySelector(".listening-sentence-list [data-listening-sentence].active");
-  const activeSentenceIndex = Number(activeSentenceButton?.dataset.listeningSentence);
-  const keepSentenceActive = Number.isFinite(activeSentenceIndex);
-  const titleActive = !keepSentenceActive && Boolean(
+  const activeSentenceIndex = isMainAudioActive
+    ? getListeningSentenceIndexAtTime(episode, Math.min((audio.currentTime + 0.25) || 0, getListeningAudioDuration(audio, episode)))
+    : Number(activeSentenceButton?.dataset.listeningSentence);
+  const titleActive = isAudioTitlePhase || Boolean(
     sourceSentenceList?.querySelector("[data-listening-title-sentence].active")
       || document.querySelector(".listening-sentence-list [data-listening-title-sentence].active")
   );
+  const keepSentenceActive = !titleActive && Number.isFinite(activeSentenceIndex);
   const currentIndex = keepSentenceActive ? activeSentenceIndex : state.listeningSentenceIndex;
   if (keepSentenceActive) state.listeningSentenceIndex = currentIndex;
   document.querySelectorAll(".listening-sentence-list").forEach((list) => {
@@ -8832,8 +8836,10 @@ function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceEl
     button.innerHTML = `${escapeHtml(translationToggleLabel)} <span aria-hidden="true">⌄</span>`;
   });
 
-  if (keepSentenceActive) setListeningActiveSentence(currentIndex, { force: true, scroll: false });
-  else if (titleActive) setListeningTitleSentenceActive({ scroll: false });
+  requestAnimationFrame(() => {
+    if (keepSentenceActive) setListeningActiveSentence(currentIndex, { force: true, scroll: true });
+    else if (titleActive) setListeningTitleSentenceActive({ scroll: true });
+  });
 }
 
 function renderListeningDetail(options = {}) {
@@ -8935,7 +8941,6 @@ function renderListeningDetail(options = {}) {
           <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
         </button>
       </section>
-
       <section class="listening-player-card listening-player-card--mobile">
         <audio id="listeningAudio" src="${escapeAttr(initialAudioSrc)}" preload="none" data-listening-audio-phase="${escapeAttr(initialAudioPhase)}"></audio>
         <div class="listening-mobile-cover" aria-hidden="true"></div>
@@ -8986,13 +8991,6 @@ function renderListeningDetail(options = {}) {
           </div>
         </div>
         <div class="listening-sentence-list">${sentencesHTML}</div>
-      </section>
-
-
-      <section class="listening-translation-panel listening-mobile-card">
-        <h2>${isVi ? "Xem bản dịch" : "查看翻译"}</h2>
-        <p>${isVi ? "Xem toàn bộ bản dịch tiếng Việt của bài nghe." : "查看本课完整越南语翻译。"}</p>
-        <button class="listening-translation-side-btn" type="button" data-listening-translation>${translationToggleLabel}</button>
       </section>
 
       <section class="listening-quick-links-card listening-mobile-card">
@@ -9122,6 +9120,7 @@ function renderListeningDetail(options = {}) {
   setScreenWithDesktopShell("listening", listeningDetailHTML, "app-desktop-shell--listening", "listening", {
     preserveScroll: Boolean(options.preserveScroll),
     mobileTitle: isVi ? (episode.title || "Bài nghe") : (episode.titleZh || episode.title || "听力"),
+    hideMobileHeader: true,
   });
 
   requestAnimationFrame(() => {
@@ -10249,7 +10248,7 @@ function renderListeningVocabLesson(options = {}) {
     </div>
   `, "app-desktop-shell--listening", "listening", {
     preserveScroll: Boolean(options.preserveScroll),
-    mobileTitle: isVi ? "Từ vựng" : "词汇",
+    hideMobileHeader: true,
   });
 }
 
@@ -10333,6 +10332,7 @@ function renderListeningLevelLessons(options = {}) {
   `, "app-desktop-shell--listening", "listening", {
     preserveScroll: Boolean(options.preserveScroll),
     mobileTitle: lessonTitle,
+    hideMobileHeader: true,
   });
 }
 
@@ -14581,6 +14581,8 @@ function bindEvents() {
     }
     const writeHskLevelBtn = event.target.closest("[data-write-hsk-level]");
     if (writeHskLevelBtn) {
+      writeHskLevelBtn.classList.add("is-opening");
+      writeHskLevelBtn.setAttribute("aria-busy", "true");
       state.module = "hsk";
       state.level = writeHskLevelBtn.dataset.writeHskLevel;
       state.writeCourseView = "hsk";
@@ -14591,7 +14593,6 @@ function bindEvents() {
       state.dailyContentType = "";
       state.dailySearchQuery = "";
       state.dailyFilterTab = "all";
-      await ensureHskLevelContent(state.level);
       renderHskCourse();
       return;
     }
