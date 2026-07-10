@@ -153,14 +153,28 @@ export class PronunciationAssessmentService {
     formData.append('file', audioBlob, this.audioFileName(mimeType));
     formData.append('model', process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe');
     formData.append('language', process.env.OPENAI_TRANSCRIBE_LANGUAGE || 'zh');
-    formData.append('response_format', 'json');
+    formData.append('response_format', 'text');
 
-    const data = await this.openAiJson('https://api.openai.com/v1/audio/transcriptions', {
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: this.openAiHeaders(false),
       body: formData,
     });
-    return String(data?.text || '').trim();
+    const text = await response.text();
+    if (!response.ok) {
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = { raw: text };
+      }
+      const message = data?.error?.message || data?.message || `OpenAI request failed (${response.status})`;
+      throw this.providerError(message, {
+        providerCode: response.status,
+        providerMessage: message,
+      });
+    }
+    return text.trim();
   }
 
   private responseOutputText(data: any) {
@@ -249,30 +263,44 @@ export class PronunciationAssessmentService {
   private async assessWithOpenAi(referenceText: string, audioBuffer: Buffer, mimeType: string, pinyin: string) {
     const recognizedText = await this.transcribeWithOpenAi(audioBuffer, mimeType);
     const fallback = this.comparePronunciationFallback(referenceText, recognizedText);
-    const openAiScore = await this.scoreWithOpenAi(referenceText, recognizedText, pinyin);
-    const score = this.clampScore(openAiScore.score, fallback.score);
-    const accuracyScore = this.clampScore(openAiScore.accuracyScore, fallback.score);
-    const fluencyScore = this.clampScore(openAiScore.fluencyScore, score);
-    const completenessScore = this.clampScore(openAiScore.completenessScore, fallback.score);
+    const score = this.clampScore(fallback.score);
+    const accuracyScore = score;
+    const fluencyScore = score;
+    const completenessScore = score;
     const charResults = fallback.charResults.map((item) => ({
       ...item,
-      correct: item.correct && accuracyScore >= 55,
-      errorType: item.correct && accuracyScore >= 55 ? 'None' : 'Pronunciation',
-      accuracyScore,
+      errorType: item.correct ? 'None' : 'Mismatch',
+      accuracyScore: item.correct ? 100 : 0,
     }));
 
     return {
       provider: 'openai',
+      assessmentMode: 'stt_compare',
       recognizedText,
       score,
       accuracyScore,
       fluencyScore,
       completenessScore,
-      feedback: String(openAiScore.feedback || ''),
-      mistakes: Array.isArray(openAiScore.mistakes) ? openAiScore.mistakes : [],
+      feedback: this.fastCompareFeedback(score, recognizedText),
+      mistakes: this.fastCompareMistakes(score),
       words: [],
       charResults,
     };
+  }
+
+  private fastCompareFeedback(score: number, recognizedText: string) {
+    if (!recognizedText) return 'Chưa nhận diện được giọng nói. Hãy thử nói rõ và gần micro hơn.';
+    if (score >= 90) return 'Bạn nói rất sát câu gốc.';
+    if (score >= 70) return 'Bạn nói khá đúng, còn một vài chữ chưa khớp với câu gốc.';
+    if (score >= 40) return 'Bạn nói đúng một phần câu, cần luyện lại các chữ bị thiếu hoặc sai.';
+    return 'Câu nói khác khá nhiều so với câu gốc. Hãy nghe lại và nói chậm hơn.';
+  }
+
+  private fastCompareMistakes(score: number) {
+    if (score >= 90) return [];
+    if (score >= 70) return ['Một vài chữ chưa khớp với câu gốc'];
+    if (score >= 40) return ['Thiếu hoặc sai nhiều chữ trong câu gốc'];
+    return ['Câu nhận diện khác nhiều so với câu gốc'];
   }
 
   private normalizeHanzi(value: string) {

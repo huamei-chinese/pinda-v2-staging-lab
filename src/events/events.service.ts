@@ -4,6 +4,7 @@ import { DatabaseService } from '../database/database.service';
 const ALLOWED_EVENT_TYPES = new Set([
   'lesson_opened',
   'question_answered',
+  'practice_completed',
   'paywall_shown',
   'vip_modal_opened',
 ]);
