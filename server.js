@@ -90,6 +90,7 @@ function publicUser(row) {
     email: row.email,
     role: normalizePublicRole(row.role),
     ref: row.ref || "",
+    src: row.src || "",
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -122,6 +123,15 @@ function normalizeReferralRef(ref) {
     .toLowerCase()
     .replace(/[^a-z0-9_-]/g, "")
     .slice(0, 64);
+  return normalized || null;
+}
+
+function normalizeSource(source) {
+  const normalized = String(source || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 40);
   return normalized || null;
 }
 
@@ -757,6 +767,7 @@ async function ensureSchema() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
       ref TEXT,
+      src TEXT,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -764,6 +775,7 @@ async function ensureSchema() {
     );
   `);
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
   await pool.query(`
@@ -792,6 +804,7 @@ async function handleRegister(req, res) {
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
   const ref = normalizeReferralRef(body.ref);
+  const src = normalizeSource(body.src);
 
   if (fullName.length < 2) {
     sendJson(res, 400, { error: "Vui lòng nhập họ và tên." });
@@ -808,10 +821,10 @@ async function handleRegister(req, res) {
 
   try {
     const result = await pool.query(
-      `INSERT INTO users (full_name, email, password_hash, ref)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, full_name, email, role, ref, is_active, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), ref],
+      `INSERT INTO users (full_name, email, password_hash, ref, src)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password), ref, src],
     );
     sendJson(res, 201, { user: publicUser(result.rows[0]) });
   } catch (error) {

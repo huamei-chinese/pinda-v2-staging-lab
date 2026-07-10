@@ -3965,33 +3965,102 @@ function formatAnalyticsNumber(value) {
   return Number(value || 0).toLocaleString("vi-VN");
 }
 
-function renderAnalyticsLineChart(series, color = "#059669") {
+function analyticsFormatChartDate(ymd, compact = true) {
+  const match = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return ymd || "";
+  const [, year, month, day] = match;
+  return compact ? `${day}/${month}` : `${day}/${month}/${year}`;
+}
+
+function getAnalyticsChartPointDay(point, index = 0) {
+  const directDay = point?.day || point?.date || point?.ymd || point?.label;
+  if (directDay) return String(directDay);
+
+  const metaFrom = state.adminAnalytics?.meta?.from || state.adminAnalyticsFrom;
+  const startDate = analyticsParseYmd(metaFrom);
+  if (!startDate) return "";
+  return analyticsToYmd(analyticsAddDays(startDate, index));
+}
+
+function getAnalyticsChartTickIndexes(points) {
+  const total = points.length;
+  if (total <= 0) return [];
+  if (total <= 7) return points.map((_, index) => index);
+
+  const tickCount = Math.min(6, total);
+  const indexes = new Set();
+  for (let i = 0; i < tickCount; i += 1) {
+    indexes.add(Math.round((i * (total - 1)) / (tickCount - 1)));
+  }
+  return [...indexes].sort((a, b) => a - b);
+}
+
+function renderAnalyticsLineChart(series, color = "#059669", options = {}) {
   const points = Array.isArray(series) ? series : [];
   const width = 300;
   const height = 160;
   const padX = 6;
   const padY = 14;
+  const unitLabel = options.unitLabel || "";
   if (points.length === 0) {
-    return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img"></svg>`;
+    return `
+      <div class="admin-analytics-line-chart">
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img"></svg>
+        <div class="chart-x-axis"></div>
+      </div>
+    `;
   }
   const maxValue = Math.max(1, ...points.map((point) => Number(point.value) || 0));
   const stepX = points.length > 1 ? (width - padX * 2) / (points.length - 1) : 0;
   const coords = points.map((point, index) => {
     const x = padX + stepX * index;
     const y = height - padY - ((Number(point.value) || 0) / maxValue) * (height - padY * 2);
-    return [x, y];
+    return { x, y, point };
   });
   const linePath = coords
-    .map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .map(({ x, y }, index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
     .join(" ");
-  const lastX = coords[coords.length - 1][0].toFixed(1);
-  const firstX = coords[0][0].toFixed(1);
+  const lastX = coords[coords.length - 1].x.toFixed(1);
+  const firstX = coords[0].x.toFixed(1);
   const areaPath = `${linePath} L${lastX},${height - padY} L${firstX},${height - padY} Z`;
+  const hoverTargets = coords.map(({ x, y, point }, index) => {
+    const value = Number(point.value) || 0;
+    const day = getAnalyticsChartPointDay(point, index);
+    const dayLabel = analyticsFormatChartDate(day, false);
+    const valueLabel = `${formatAnalyticsNumber(value)}${unitLabel ? ` ${unitLabel}` : ""}`;
+    const xPercent = (x / width) * 100;
+    const yPercent = (y / height) * 100;
+    const widthPercent = Math.max(100 / points.length, 6);
+    return `
+      <button
+        class="chart-hover-target"
+        type="button"
+        style="left:${xPercent.toFixed(3)}%; width:${widthPercent.toFixed(3)}%; --chart-y:${yPercent.toFixed(3)}%; --chart-color:${escapeAttr(color)};"
+        aria-label="${escapeAttr(`${dayLabel}: ${valueLabel}`)}"
+      >
+        <span class="chart-dot" aria-hidden="true"></span>
+        <span class="chart-tooltip" role="tooltip">
+          <b>${escapeHtml(dayLabel)}</b>
+          <strong>${escapeHtml(valueLabel)}</strong>
+        </span>
+      </button>
+    `;
+  }).join("");
+  const axisLabels = getAnalyticsChartTickIndexes(points).map((index) => {
+    const coord = coords[index];
+    if (!coord) return "";
+    const xPercent = (coord.x / width) * 100;
+    return `<span style="left:${xPercent.toFixed(3)}%">${escapeHtml(analyticsFormatChartDate(getAnalyticsChartPointDay(coord.point, index)))}</span>`;
+  }).join("");
   return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">
-      <path class="chart-area" d="${areaPath}" fill="${color}"></path>
-      <path class="chart-line" d="${linePath}" stroke="${color}"></path>
-    </svg>
+    <div class="admin-analytics-line-chart">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">
+        <path class="chart-area" d="${areaPath}" fill="${color}"></path>
+        <path class="chart-line" d="${linePath}" stroke="${color}"></path>
+      </svg>
+      <div class="chart-hover-layer">${hoverTargets}</div>
+      <div class="chart-x-axis">${axisLabels}</div>
+    </div>
   `;
 }
 
@@ -4225,8 +4294,7 @@ function renderAdminAnalyticsPanelHTML() {
             <td><span class="rank">${index + 1}</span></td>
             <td>${escapeHtml(lesson.lessonId || "—")}</td>
             <td>${escapeHtml(lesson.level || "—")}</td>
-            <td>${formatAnalyticsNumber(lesson.opens)}</td>
-            <td>${formatAnalyticsNumber(lesson.learners)}</td>
+            <td>${formatAnalyticsNumber(lesson.opens)}</td> 
           </tr>`).join("")
       : `<tr><td colspan="5" class="admin-empty">${isVi ? "Chưa có lượt mở khóa học." : "暂无课程打开记录。"}</td></tr>`;
 
@@ -4253,12 +4321,12 @@ function renderAdminAnalyticsPanelHTML() {
         <div class="admin-analytics-chart">
           <h3>${isVi ? "Xu hướng người học mỗi ngày" : "每日学习人数趋势"}</h3>
           <div class="admin-analytics-metric">${formatAnalyticsNumber(learnersPeak)}</div>
-          ${renderAnalyticsLineChart(dailyLearners, "#0ea5e9")}
+          ${renderAnalyticsLineChart(dailyLearners, "#0ea5e9", { unitLabel: isVi ? "người" : "用户" })}
         </div>
         <div class="admin-analytics-chart">
           <h3>${isVi ? "Xu hướng lượt làm bài mỗi ngày" : "每日答题次数趋势"}</h3>
           <div class="admin-analytics-metric">${formatAnalyticsNumber(attemptsTotal)}</div>
-          ${renderAnalyticsLineChart(dailyAttempts, "#059669")}
+          ${renderAnalyticsLineChart(dailyAttempts, "#059669", { unitLabel: isVi ? "lượt" : "次" })}
         </div>
         <div class="admin-analytics-block">
           <h3>${isVi ? "So sánh kênh nguồn" : "来源渠道对比"}</h3>
@@ -4278,7 +4346,6 @@ function renderAdminAnalyticsPanelHTML() {
                 <th>${isVi ? "Khóa học" : "课程"}</th>
                 <th>${isVi ? "Cấp độ" : "级别"}</th>
                 <th>${isVi ? "Lượt mở" : "打开次数"}</th>
-                <th>${isVi ? "Người học" : "学习人数"}</th>
               </tr>
             </thead>
             <tbody>${topLessonsHTML}</tbody>
@@ -4907,6 +4974,11 @@ function savePersistedRoute() {
       listeningSeedEpisodeId: state.listeningSeedEpisodeId,
       listeningTopicId: state.listeningTopicId,
       adminTab: state.adminTab,
+      adminContentLevel: state.adminContentLevel,
+      adminContentModule: state.adminContentModule,
+      adminContentHskPanel: state.adminContentHskPanel,
+      adminAnalyticsFrom: state.adminAnalyticsFrom,
+      adminAnalyticsTo: state.adminAnalyticsTo,
     };
     localStorage.setItem(APP_ROUTE_STORAGE_KEY, JSON.stringify(route));
   } catch {
@@ -4952,6 +5024,11 @@ function restorePersistedRoute() {
     if (route.listeningSeedEpisodeId !== undefined) state.listeningSeedEpisodeId = route.listeningSeedEpisodeId;
     if (route.listeningTopicId !== undefined) state.listeningTopicId = route.listeningTopicId;
     if (route.adminTab) state.adminTab = route.adminTab;
+    if (route.adminContentLevel) state.adminContentLevel = route.adminContentLevel;
+    if (route.adminContentModule) state.adminContentModule = route.adminContentModule;
+    if (route.adminContentHskPanel) state.adminContentHskPanel = route.adminContentHskPanel;
+    if (route.adminAnalyticsFrom) state.adminAnalyticsFrom = route.adminAnalyticsFrom;
+    if (route.adminAnalyticsTo) state.adminAnalyticsTo = route.adminAnalyticsTo;
 
     switch (route.screen) {
       case "home":
@@ -4983,7 +5060,7 @@ function restorePersistedRoute() {
       case "admin":
         renderAdmin();
         setScreen("admin");
-        if (isAdminUser()) loadAdminUsers();
+        loadActiveAdminTabData();
         return true;
 
       case "subscriptions":
@@ -5019,6 +5096,41 @@ function restorePersistedRoute() {
     }
   } catch {
     return false;
+  }
+}
+
+function restorePersistedAdminRouteState() {
+  const route = readPersistedRoute();
+  if (!route || route.screen !== "admin") return false;
+
+  if (route.adminTab) state.adminTab = route.adminTab;
+  if (route.adminContentLevel) state.adminContentLevel = route.adminContentLevel;
+  if (route.adminContentModule) state.adminContentModule = route.adminContentModule;
+  if (route.adminContentHskPanel) state.adminContentHskPanel = route.adminContentHskPanel;
+  if (route.adminAnalyticsFrom) state.adminAnalyticsFrom = route.adminAnalyticsFrom;
+  if (route.adminAnalyticsTo) state.adminAnalyticsTo = route.adminAnalyticsTo;
+  return true;
+}
+
+function loadActiveAdminTabData() {
+  if (!isAdminUser()) return;
+
+  switch (state.adminTab || "users") {
+    case "content":
+      loadAdminContentLocks();
+      break;
+    case "collaborators":
+      if (!state.adminUsers.length) loadAdminUsers();
+      break;
+    case "analytics":
+      loadAdminAnalytics();
+      break;
+    case "subscriptions":
+      break;
+    case "users":
+    default:
+      loadAdminUsers();
+      break;
   }
 }
 
@@ -5736,8 +5848,6 @@ function renderAdmin() {
         </button>
         <nav>
           <button id="adminUsersTabBtn" class="${adminTab === "users" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Người dùng" : "用户"}</button>
-          <button id="adminSubscriptionsTabBtn" class="${adminTab === "subscriptions" ? "active" : ""}" type="button"><span>▣</span>${isVi ? "Gói dịch vụ" : "套餐"}</button>
-          <button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>▤</span>${isVi ? "Nội dung" : "内容"}</button>
           <button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>
           <button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>
         </nav>
@@ -13292,7 +13402,7 @@ function bindEvents() {
         saveState();
         renderChrome();
         renderAdmin();
-        loadAdminUsers();
+        loadActiveAdminTabData();
       })
       .catch((error) => {
         state.adminStatus = error.message;
@@ -13845,6 +13955,7 @@ function bindEvents() {
     if (adminUsersTabBtn) {
       state.adminTab = "users";
       renderAdmin();
+      savePersistedRoute();
       return;
     }
 
@@ -13853,6 +13964,7 @@ function bindEvents() {
       if (!isAdminUser()) return;
       state.adminTab = "subscriptions";
       renderAdmin();
+      savePersistedRoute();
       return;
     }
 
@@ -13861,6 +13973,7 @@ function bindEvents() {
       if (!isAdminUser()) return;
       state.adminTab = "content";
       renderAdmin();
+      savePersistedRoute();
       loadAdminContentLocks();
       return;
     }
@@ -13870,6 +13983,7 @@ function bindEvents() {
       if (!isAdminUser()) return;
       state.adminTab = "collaborators";
       renderAdmin();
+      savePersistedRoute();
       if (!state.adminUsers.length) loadAdminUsers();
       return;
     }
@@ -13879,6 +13993,7 @@ function bindEvents() {
       if (!isAdminUser()) return;
       state.adminTab = "analytics";
       renderAdmin();
+      savePersistedRoute();
       loadAdminAnalytics();
       return;
     }
@@ -13910,6 +14025,7 @@ function bindEvents() {
       state.adminAnalyticsFrom = analyticsToYmd(range.from);
       state.adminAnalyticsTo = analyticsToYmd(range.to);
       state.adminAnalyticsPickerOpen = false;
+      savePersistedRoute();
       loadAdminAnalytics();
       return;
     }
@@ -13950,6 +14066,7 @@ function bindEvents() {
         state.adminAnalyticsFrom = state.adminAnalyticsDraftFrom;
         state.adminAnalyticsTo = state.adminAnalyticsDraftTo;
         state.adminAnalyticsPickerOpen = false;
+        savePersistedRoute();
         loadAdminAnalytics();
       }
       return;
@@ -13981,6 +14098,7 @@ function bindEvents() {
       syncAdminHskContentLocksFromDOM();
       state.adminContentLevel = adminContentLevelBtn.dataset.adminContentLevel;
       renderAdmin();
+      savePersistedRoute();
       return;
     }
 
@@ -13991,6 +14109,7 @@ function bindEvents() {
       syncAdminHskLevelCoversFromDOM();
       state.adminContentModule = adminContentModuleBtn.dataset.adminContentModule;
       renderAdmin();
+      savePersistedRoute();
       return;
     }
 
@@ -14000,6 +14119,7 @@ function bindEvents() {
       syncAdminHskLevelCoversFromDOM();
       state.adminContentHskPanel = adminContentHskPanelBtn.dataset.adminContentHskPanel;
       renderAdmin();
+      savePersistedRoute();
       return;
     }
 
@@ -15075,11 +15195,10 @@ function init() {
   ]).finally(() => {
     renderChrome();
     if (window.location.pathname === "/admin") {
+      restorePersistedAdminRouteState();
       renderAdmin();
       setScreen("admin");
-      if (isAdminUser()) {
-        loadAdminUsers();
-      }
+      loadActiveAdminTabData();
     } else {
       if (applyRouteFromLocation()) { return; }
       const restored = restorePersistedRoute();
