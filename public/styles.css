@@ -46068,57 +46068,51 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 }
 
-/* Home listening card: supplied orange artwork background with a light warm overlay. */
+/* Home listening card: keep the supplied artwork clear without an extra color wash. */
 .screen-home .home-duo-card--listen,
 .screen-home .home-desktop-module-card.home-duo-card--listen {
-  background:
-    linear-gradient(105deg, rgba(124, 45, 18, 0.46) 0%, rgba(249, 115, 22, 0.2) 42%, rgba(255, 237, 213, 0.03) 100%),
-    radial-gradient(circle at 78% 22%, rgba(255, 247, 237, 0.18), transparent 28%),
-    url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
-  border: 1px solid rgba(253, 186, 116, 0.58) !important;
+  background: url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
+  border: 1px solid rgba(14, 165, 233, 0.55) !important;
   box-shadow:
-    0 24px 58px rgba(194, 65, 12, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+    0 24px 58px rgba(14, 116, 144, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
 }
 
 .screen-home .home-duo-card--listen:hover,
 .screen-home .home-desktop-module-card.home-duo-card--listen:hover {
   box-shadow:
-    0 34px 76px rgba(194, 65, 12, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+    0 34px 76px rgba(14, 116, 144, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-card-bg {
   background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.14), transparent 42%),
-    radial-gradient(circle at 73% 64%, rgba(255, 237, 213, 0.18), transparent 35%),
-    radial-gradient(circle at 18% 20%, rgba(124, 45, 18, 0.16), transparent 36%) !important;
+    linear-gradient(105deg, rgba(7, 89, 133, 0.52) 0%, rgba(14, 165, 233, 0.42) 46%, rgba(186, 230, 253, 0.28) 100%) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-badge {
-  color: #fff7ed !important;
-  background: rgba(255, 237, 213, 0.18) !important;
-  border-color: rgba(255, 237, 213, 0.42) !important;
+  color: #eff6ff !important;
+  background: rgba(14, 165, 233, 0.18) !important;
+  border-color: rgba(186, 230, 253, 0.46) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-copy h3,
 .screen-home .home-duo-card--listen .home-duo-copy p {
   color: #ffffff !important;
-  text-shadow: 0 8px 24px rgba(124, 45, 18, 0.36) !important;
+  text-shadow: 0 8px 24px rgba(12, 74, 110, 0.4) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-btn {
-  color: #c2410c !important;
-  background: rgba(255, 247, 237, 0.96) !important;
-  box-shadow: 0 16px 32px rgba(124, 45, 18, 0.2) !important;
+  color: #0369a1 !important;
+  background: rgba(240, 249, 255, 0.96) !important;
+  box-shadow: 0 16px 32px rgba(12, 74, 110, 0.2) !important;
 }
 
 .screen-home .home-duo-card--listen .home-duo-art {
-  background:
-    linear-gradient(145deg, rgba(255, 247, 237, 0.36), rgba(253, 186, 116, 0.18)) !important;
+  background: rgba(240, 249, 255, 0.22) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.46),
-    0 18px 38px rgba(124, 45, 18, 0.22) !important;
+    0 18px 38px rgba(12, 74, 110, 0.22) !important;
 }
 
 /* Mobile home topbar: keep the main brand title on one line. */

@@ -10,6 +10,7 @@ const styles = fs.readFileSync(path.join(root, "public", "styles.css"), "utf8");
 test("listening gateway hero uses the top badge slot as a back button", () => {
   const gatewayRender = appSource.match(/function renderListeningLevelGateway\(options = \{\}\) \{[\s\S]*?function getListeningLevelInfo/)?.[0] || "";
   assert.match(gatewayRender, /class="listening-gateway-badge listening-gateway-badge--back" type="button" data-listening-gateway-back/);
+  assert.match(gatewayRender, /\$\{isVi \? "Quay lại" : "返回"\}/);
   assert.doesNotMatch(gatewayRender, /class="listening-gateway-back-btn"/);
   assert.doesNotMatch(gatewayRender, /<span class="listening-gateway-badge">/);
 });

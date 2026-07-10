@@ -8171,10 +8171,10 @@ function renderListeningLevelGateway(options = {}) {
     <section class="listening-gateway-screen">
       <header class="listening-gateway-hero">
         <div class="listening-gateway-hero-inner">
-          <span class="listening-gateway-badge">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-            ${isVi ? "Luyện nghe" : "听力练习"}
-          </span>
+          <button class="listening-gateway-badge listening-gateway-badge--back" type="button" data-listening-gateway-back aria-label="${isVi ? "Quay lại" : "返回"}">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/><path d="M20 12H9"/></svg>
+            ${isVi ? "Quay lại" : "返回"}
+          </button>
           <h1>${isVi ? "Luyện Nghe" : "听力练习"}</h1>
           <p>${isVi ? "Nghe hiểu tự nhiên - Tiến bộ mỗi ngày" : "自然听懂，每天进步"}</p>
 
