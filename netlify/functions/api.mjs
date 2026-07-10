@@ -182,14 +182,29 @@ async function transcribeWithOpenAi(audioBuffer, mimeType = "") {
   formData.append("file", audioBlob, audioFileName(mimeType));
   formData.append("model", env("OPENAI_TRANSCRIBE_MODEL") || "gpt-4o-mini-transcribe");
   formData.append("language", env("OPENAI_TRANSCRIBE_LANGUAGE") || "zh");
-  formData.append("response_format", "json");
+  formData.append("response_format", "text");
 
-  const data = await openAiJson("https://api.openai.com/v1/audio/transcriptions", {
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
     headers: openAiHeaders(false),
     body: formData,
   });
-  return String(data?.text || "").trim();
+  const text = await response.text();
+  if (!response.ok) {
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { raw: text };
+    }
+    throw apiError({
+      error: data?.error?.message || data?.message || `OpenAI request failed (${response.status})`,
+      code: "openai_request_failed",
+      provider: "openai",
+      providerCode: response.status,
+    }, 502);
+  }
+  return text.trim();
 }
 
 function responseOutputText(data) {
@@ -278,30 +293,44 @@ async function scoreWithOpenAi(referenceText, recognizedText, pinyin) {
 async function assessWithOpenAi(referenceText, audioBuffer, mimeType = "", pinyin = "") {
   const recognizedText = await transcribeWithOpenAi(audioBuffer, mimeType);
   const fallback = comparePronunciationFallback(referenceText, recognizedText);
-  const openAiScore = await scoreWithOpenAi(referenceText, recognizedText, pinyin);
-  const score = clampScore(openAiScore.score, fallback.score);
-  const accuracyScore = clampScore(openAiScore.accuracyScore, fallback.score);
-  const fluencyScore = clampScore(openAiScore.fluencyScore, score);
-  const completenessScore = clampScore(openAiScore.completenessScore, fallback.score);
+  const score = clampScore(fallback.score);
+  const accuracyScore = score;
+  const fluencyScore = score;
+  const completenessScore = score;
   const charResults = fallback.charResults.map((item) => ({
     ...item,
-    correct: item.correct && accuracyScore >= 55,
-    errorType: item.correct && accuracyScore >= 55 ? "None" : "Pronunciation",
-    accuracyScore,
+    errorType: item.correct ? "None" : "Mismatch",
+    accuracyScore: item.correct ? 100 : 0,
   }));
 
   return {
     provider: "openai",
+    assessmentMode: "stt_compare",
     recognizedText,
     score,
     accuracyScore,
     fluencyScore,
     completenessScore,
-    feedback: String(openAiScore.feedback || ""),
-    mistakes: Array.isArray(openAiScore.mistakes) ? openAiScore.mistakes : [],
+    feedback: fastCompareFeedback(score, recognizedText),
+    mistakes: fastCompareMistakes(score),
     words: [],
     charResults,
   };
+}
+
+function fastCompareFeedback(score, recognizedText) {
+  if (!recognizedText) return "Chưa nhận diện được giọng nói. Hãy thử nói rõ và gần micro hơn.";
+  if (score >= 90) return "Bạn nói rất sát câu gốc.";
+  if (score >= 70) return "Bạn nói khá đúng, còn một vài chữ chưa khớp với câu gốc.";
+  if (score >= 40) return "Bạn nói đúng một phần câu, cần luyện lại các chữ bị thiếu hoặc sai.";
+  return "Câu nói khác khá nhiều so với câu gốc. Hãy nghe lại và nói chậm hơn.";
+}
+
+function fastCompareMistakes(score) {
+  if (score >= 90) return [];
+  if (score >= 70) return ["Một vài chữ chưa khớp với câu gốc"];
+  if (score >= 40) return ["Thiếu hoặc sai nhiều chữ trong câu gốc"];
+  return ["Câu nhận diện khác nhiều so với câu gốc"];
 }
 
 function iflytekIseAuth() {
@@ -2182,6 +2211,7 @@ async function markWebhookProcessed(sepayId, orderId) {
 const ALLOWED_LEARNING_EVENTS = new Set([
   "lesson_opened",
   "question_answered",
+  "practice_completed",
   "paywall_shown",
   "vip_modal_opened",
 ]);
@@ -2352,14 +2382,14 @@ async function getLearningAnalytics(req, searchParams) {
     query(
       `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
        FROM learning_events
-       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
     query(
       `SELECT ${dayBucket} AS day, COUNT(*) AS value
        FROM learning_events
-       WHERE ${withinRange} AND event_type = 'question_answered'
+       WHERE ${withinRange} AND event_type = 'practice_completed'
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
@@ -2384,7 +2414,7 @@ async function getLearningAnalytics(req, searchParams) {
     query(`SELECT COUNT(*) AS value FROM users WHERE ${withinRange}`, params),
     query(
       `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL`,
       params,
     ),
     query(

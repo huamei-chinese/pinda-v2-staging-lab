@@ -1016,14 +1016,14 @@ async function handleAdminAnalyticsOverview(req, res, url) {
     pool.query(
       `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
        FROM learning_events
-       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
     pool.query(
       `SELECT ${dayBucket} AS day, COUNT(*) AS value
        FROM learning_events
-       WHERE ${withinRange} AND event_type = 'question_answered'
+       WHERE ${withinRange} AND event_type = 'practice_completed'
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
@@ -1051,7 +1051,7 @@ async function handleAdminAnalyticsOverview(req, res, url) {
     ),
     pool.query(
       `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
+       WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL`,
       params,
     ),
     pool.query(

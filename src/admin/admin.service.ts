@@ -670,14 +670,14 @@ export class AdminService {
         this.db.query(
           `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
            FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL
+           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
            GROUP BY 1 ORDER BY 1`,
           params,
         ),
         this.db.query(
           `SELECT ${dayBucket} AS day, COUNT(*) AS value
            FROM learning_events
-           WHERE ${withinRange} AND event_type = 'question_answered'
+           WHERE ${withinRange} AND event_type = 'practice_completed'
            GROUP BY 1 ORDER BY 1`,
           params,
         ),
@@ -705,7 +705,7 @@ export class AdminService {
         ),
         this.db.query(
           `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered') AND user_id IS NOT NULL`,
+           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL`,
           params,
         ),
         this.db.query(

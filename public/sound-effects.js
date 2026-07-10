@@ -38,6 +38,22 @@
       step: 0.048,
       attack: 0.006,
     },
+    "record-start": {
+      frequencies: [620, 880],
+      waveform: "sine",
+      volume: 0.045,
+      duration: 0.105,
+      step: 0.078,
+      attack: 0.006,
+    },
+    "record-stop": {
+      frequencies: [860, 520],
+      waveform: "sine",
+      volume: 0.045,
+      duration: 0.12,
+      step: 0.09,
+      attack: 0.006,
+    },
   };
 
   function getTonePattern(kind) {

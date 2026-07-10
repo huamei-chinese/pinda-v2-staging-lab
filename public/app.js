@@ -576,9 +576,12 @@ const state = {
   adminCtvSelectedId: "ctv-huong",
   adminCtvLinkStatus: "",
   adminCtvLinkSource: "",
+  adminCtvReferralLinkDraft: "",
   adminCtvPickerSearch: "",
   adminCtvPage: 1,
   adminCtvPageSize: 10,
+  adminCtvUserFilter: "all",
+  adminCtvDetailOpen: false,
   adminAnalytics: null,
   adminAnalyticsDays: 30,
   adminAnalyticsLoading: false,
@@ -975,6 +978,14 @@ function catalogLessonToListeningItem(lesson, context = {}) {
       partOfSpeech: keyword.partOfSpeech || keyword.part_of_speech || keyword.source_pos || keyword.posVi || keyword.posZh || keyword.pos || "",
       audioNormal: keyword.audio ? `/listening-app/${keyword.audio}` : "",
       audioSlow: keyword.audio ? `/listening-app/${keyword.audio}` : "",
+      examples: (keyword.examples || []).map((example) => ({
+        chinese: example.zh || example.chinese || "",
+        pinyin: example.pinyin || "",
+        vietnamese: example.vi || example.vietnamese || "",
+        audioSrc: example.audio ? `/listening-app/${example.audio}` : "",
+        start: Number.isFinite(Number(example.start)) ? Number(example.start) : null,
+        end: Number.isFinite(Number(example.end)) ? Number(example.end) : null,
+      })),
     })),
     is_free: true,
     is_member_only: false,
@@ -1181,7 +1192,14 @@ function listeningCatalogLessonToEpisode(lesson = {}, topic = {}) {
       vietnamese: keyword.vi || keyword.vietnamese || "",
       partOfSpeech: keyword.partOfSpeech || keyword.part_of_speech || keyword.source_pos || keyword.posVi || keyword.posZh || keyword.pos || "",
       audioNormal: listeningCatalogAssetPath(keyword.audio || ""),
-      examples: [],
+      examples: (keyword.examples || []).map((example) => ({
+        chinese: example.zh || example.chinese || "",
+        pinyin: example.pinyin || "",
+        vietnamese: example.vi || example.vietnamese || "",
+        audioSrc: listeningCatalogAssetPath(example.audio || example.audioSrc || ""),
+        start: Number.isFinite(Number(example.start)) ? Number(example.start) : null,
+        end: Number.isFinite(Number(example.end)) ? Number(example.end) : null,
+      })),
     })),
     is_free: true,
     is_member_only: false,
@@ -2347,6 +2365,9 @@ function showCopyButtonFeedback(button, isVi = state.lang === "vi") {
 }
 
 const BACKEND_DISABLED = false;
+const LISTENING_REALTIME_WS_PATH = "/api/listening/realtime-pronunciation";
+const LISTENING_REALTIME_WS_STORAGE_KEY = "huamei-realtime-ws-url";
+const HUAMEI_BACKEND_URL_STORAGE_KEY = "huamei-backend-url";
 
 function backendDisabledMessage() {
   return state.lang === "vi"
@@ -2561,6 +2582,7 @@ const TRAFFIC_SOURCE_KEY = "v2-traffic-source";
 const ALLOWED_LEARNING_EVENT_TYPES = new Set([
   "lesson_opened",
   "question_answered",
+  "practice_completed",
   "paywall_shown",
   "vip_modal_opened",
 ]);
@@ -3607,8 +3629,33 @@ function normalizeAdminCtvRef(value) {
     .slice(0, 64);
 }
 
+function getAdminCtvReferredUsers(ctv) {
+  const ref = getAdminCtvGeneratedRef(ctv);
+  if (!ref) return [];
+  const ctvIdentity = String(ctv?.id || ctv?.email || "");
+  return (state.adminUsers || []).filter((candidate) => {
+    const candidateRef = normalizeAdminCtvRef(candidate.ref || candidate.referralRef);
+    const candidateIdentity = String(candidate.id || candidate.email || "");
+    return isAdminEndUser(candidate) && candidateRef === ref && candidateIdentity !== ctvIdentity;
+  });
+}
+
+function getAdminCtvUserStats(ctv) {
+  const users = ctv ? getAdminCtvReferredUsers(ctv) : [];
+  const vipUsers = users.filter(isActivePremiumUser);
+  const regularUsers = users.filter((user) => !isActivePremiumUser(user));
+  return {
+    users,
+    vipUsers,
+    regularUsers,
+    total: users.length,
+    vip: vipUsers.length,
+    regular: regularUsers.length,
+    sourceBreakdown: buildUserSourceCounts(users),
+  };
+}
+
 function getAdminCtvRows() {
-  const allUsers = state.adminUsers || [];
   return (state.adminUsers || [])
     .filter(isAdminCtvUser)
     .map((user, index) => {
@@ -3624,16 +3671,10 @@ function getAdminCtvRows() {
         avatar: user.avatarUrl || user.avatar || user.photoUrl || "",
       };
       const ref = getAdminCtvGeneratedRef(row);
-      const referredUsers = ref
-        ? allUsers.filter((candidate) => {
-          const candidateRef = normalizeAdminCtvRef(candidate.ref || candidate.referralRef);
-          const sameUser = String(candidate.id || candidate.email || "") === String(row.id || row.email || "");
-          return candidateRef === ref && !sameUser;
-        })
-        : [];
-      const referrals = referredUsers.length;
-      const vipCount = referredUsers.filter(isActivePremiumUser).length;
-      const sourceBreakdown = buildUserSourceCounts(referredUsers);
+      const stats = getAdminCtvUserStats({ ...row, ref });
+      const referrals = stats.total;
+      const vipCount = stats.vip;
+      const sourceBreakdown = stats.sourceBreakdown;
       return { ...row, ref, referrals, vipCount, sourceBreakdown };
     });
 }
@@ -3658,7 +3699,7 @@ function buildUserSourceCounts(users) {
 
 function isAdminEndUser(user) {
   const role = String(user?.role || "").trim().toLowerCase();
-  return role === "" || role === "user";
+  return !["admin", "staff", "employee", "sales", "ctv", "content"].includes(role);
 }
 
 function getAdminUserSourceSummary() {
@@ -3716,6 +3757,10 @@ function getAdminCtvLink(ctv) {
   if (source) params.set("src", source);
   params.set("r", code);
   return `${origin}?${params.toString()}`;
+}
+
+function getAdminCtvReferralLinkInputValue(ctv) {
+  return state.adminCtvReferralLinkDraft || (ctv ? getAdminCtvLink(ctv) : "");
 }
 
 async function saveAdminCtvReferralLink() {
@@ -3843,16 +3888,98 @@ function updateAdminCtvPickerList() {
   container.innerHTML = renderAdminCtvPickerRowsHTML(allRows, selected?.id, isVi);
 }
 
+function getAdminCtvFilteredUsers(stats) {
+  if (state.adminCtvUserFilter === "vip") return stats.vipUsers;
+  if (state.adminCtvUserFilter === "regular") return stats.regularUsers;
+  return stats.users;
+}
+
+function getAdminCtvUserRegisteredAt(user) {
+  return user?.registeredAt || user?.createdAt || user?.created_at || user?.created || "";
+}
+
+function getAdminCtvUserLabel(user) {
+  return user?.fullName || user?.name || user?.email || user?.id || "User";
+}
+
+function renderAdminCtvReferredUsersHTML(users, isVi) {
+  if (!users.length) {
+    return `<tr><td colspan="4" class="admin-empty">${isVi ? "Không có user phù hợp với bộ lọc." : "没有符合筛选的用户。"}</td></tr>`;
+  }
+  return users.map((user) => {
+    const vipInfo = getVipPlanDisplay(user, isVi);
+    const source = normalizeUserSource(user);
+    return `
+      <tr>
+        <td><strong>${escapeHtml(getAdminCtvUserLabel(user))}</strong><small>${escapeHtml(user.email || user.id || "")}</small></td>
+        <td><span class="admin-ctv-user-badge ${isActivePremiumUser(user) ? "vip" : "regular"}">${escapeHtml(vipInfo.badge)}</span><small>${escapeHtml(vipInfo.expiry || vipInfo.status)}</small></td>
+        <td>${escapeHtml(getAnalyticsSourceLabel(source))}</td>
+        <td>${escapeHtml(getAdminCtvUserRegisteredAt(user) || "-")}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderAdminCtvDetailViewHTML(selected, stats, isVi) {
+  const filteredUsers = getAdminCtvFilteredUsers(stats);
+  const filters = [
+    { id: "all", label: isVi ? "Tất cả" : "全部", count: stats.total },
+    { id: "regular", label: isVi ? "User thường" : "普通用户", count: stats.regular },
+    { id: "vip", label: "VIP", count: stats.vip },
+  ];
+  if (!selected) {
+    return `
+      <section class="admin-ctv-detail-view">
+        <button class="admin-ctv-detail-back" type="button" data-admin-ctv-back-list aria-label="${isVi ? "Trở lại danh sách CTV" : "返回合作伙伴列表"}">‹</button>
+        <p>${isVi ? "Chọn một CTV để xem số user đăng ký từ link giới thiệu." : "选择一个合作伙伴查看推广链接注册用户数。"}</p>
+      </section>
+    `;
+  }
+  return `
+    <section class="admin-ctv-detail-view">
+      <button class="admin-ctv-detail-back" type="button" data-admin-ctv-back-list aria-label="${isVi ? "Trở lại danh sách CTV" : "返回合作伙伴列表"}">‹</button>
+      <div class="admin-ctv-detail-head">
+        <div class="admin-ctv-person">
+          ${renderAdminCtvAvatar(selected)}
+          <strong>${escapeHtml(selected.name)}${selected.verified ? '<span class="admin-ctv-check">✓</span>' : ""}<small>${escapeHtml(selected.email)}</small></strong>
+        </div>
+        <input id="adminCtvReferralLink" type="text" value="${escapeAttr(getAdminCtvReferralLinkInputValue(selected))}" aria-label="${isVi ? "Link giới thiệu có thể chỉnh sửa" : "可编辑推广链接"}" />
+      </div>
+      <div class="admin-ctv-detail-stats">
+        <article><span>${isVi ? "Tổng user từ link" : "链接注册用户"}</span><strong>${formatAnalyticsNumber(stats.total)}</strong></article>
+        <article><span>${isVi ? "User thường" : "普通用户"}</span><strong>${formatAnalyticsNumber(stats.regular)}</strong></article>
+        <article><span>VIP</span><strong>${formatAnalyticsNumber(stats.vip)}</strong></article>
+      </div>
+      <div class="admin-ctv-user-filter" role="group" aria-label="${isVi ? "Lọc user của CTV" : "筛选合作伙伴用户"}">
+        ${filters.map((filter) => `
+          <button class="${state.adminCtvUserFilter === filter.id ? "active" : ""}" type="button" data-admin-ctv-user-filter="${filter.id}">
+            ${escapeHtml(filter.label)} <b>${formatAnalyticsNumber(filter.count)}</b>
+          </button>
+        `).join("")}
+      </div>
+      <div class="admin-ctv-referred-table-wrap">
+        <table class="admin-ctv-referred-table">
+          <thead>
+            <tr><th>${isVi ? "User" : "用户"}</th><th>${isVi ? "Loại" : "类型"}</th><th>${isVi ? "Nguồn" : "来源"}</th><th>${isVi ? "Ngày đăng ký" : "注册日期"}</th></tr>
+          </thead>
+          <tbody>${renderAdminCtvReferredUsersHTML(filteredUsers, isVi)}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
 function renderAdminCollaboratorsPanelHTML() {
   const isVi = state.lang === "vi";
   const allRows = getAdminCtvRows();
   const rows = getFilteredAdminCtvRows();
   const selected = getSelectedAdminCtv(rows);
+  const selectedStats = getAdminCtvUserStats(selected);
   const totalCommission = allRows.reduce((sum, ctv) => sum + ctv.commission, 0);
   const activeCount = allRows.filter((ctv) => ctv.status === "active").length;
   const pagination = getAdminCtvPagination(rows);
   const tableRows = pagination.pageRows.map((ctv, index) => `
-    <tr>
+    <tr class="${selected?.id === ctv.id ? "active" : ""}" data-admin-ctv-select="${escapeAttr(ctv.id)}">
       <td>${pagination.startIndex + index + 1}</td>
       <td>
         <div class="admin-ctv-person">
@@ -3865,7 +3992,7 @@ function renderAdminCollaboratorsPanelHTML() {
       <td>${ctv.referrals}</td>
       <td>${ctv.vipCount}</td>
       <td>${renderAdminCtvSourceBadges(ctv.sourceBreakdown)}</td>
-      <td><button class="admin-ctv-more" type="button" aria-label="${isVi ? "Thao tác CTV" : "操作"}">⋮</button></td>
+      <td><button class="admin-ctv-more" type="button" data-admin-ctv-select="${escapeAttr(ctv.id)}" aria-label="${isVi ? "Xem CTV" : "查看合作伙伴"}">›</button></td>
     </tr>
   `).join("");
   const sourceSummary = getAdminUserSourceSummary();
@@ -3884,36 +4011,9 @@ function renderAdminCollaboratorsPanelHTML() {
       </article>`)
     .join("");
   const pickerRows = renderAdminCtvPickerRowsHTML(allRows, selected?.id, isVi);
-
-  return `
-    <section class="admin-ctv-panel">
-      <header class="admin-ctv-hero">
-        <button class="admin-ctv-back" type="button" aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
-        <div>
-          <h1>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</h1>
-          <p>${isVi ? "Quản lý cộng tác viên, theo dõi hoa hồng và tạo link giới thiệu." : "管理合作伙伴、跟踪佣金并生成推广链接。"}</p>
-        </div>
-      </header>
-
-      <div class="admin-ctv-stats">
-        <article class="admin-ctv-stat admin-ctv-stat--money">
-          <span>₫</span>
-          <div><strong>${escapeHtml(formatAdminCtvMoney(totalCommission))}</strong><small>${isVi ? "Tổng hoa hồng" : "总佣金"}</small></div>
-        </article>
-        <article class="admin-ctv-stat admin-ctv-stat--people">
-          <span>●●●</span>
-          <div><strong>${activeCount}</strong><small>${isVi ? "Tổng cộng tác viên đang hoạt động" : "活跃合作伙伴总数"}</small></div>
-        </article>
-      </div>
-
-      <section class="admin-ctv-source-panel">
-        <div class="admin-ctv-source-head">
-          <h2>${isVi ? "Theo dõi nguồn người dùng" : "用户来源跟踪"}</h2>
-          <p>${isVi ? "Số người dùng đăng ký theo từng kênh nguồn (src)." : "按来源渠道 (src) 统计的注册用户数。"}</p>
-        </div>
-        <div class="admin-ctv-source-cards">${sourceSummaryHTML}</div>
-      </section>
-
+  const collaboratorBodyHTML = state.adminCtvDetailOpen
+    ? renderAdminCtvDetailViewHTML(selected, selectedStats, isVi)
+    : `
       <div class="admin-ctv-layout">
         <section class="admin-ctv-list">
           <div class="admin-ctv-list-head">
@@ -3950,13 +4050,45 @@ function renderAdminCollaboratorsPanelHTML() {
           </select>
           <div class="admin-ctv-step"><span>3</span><strong>${isVi ? "Link giới thiệu của CTV" : "合作伙伴推广链接"}</strong></div>
           <div class="admin-ctv-link-output">
-            <input id="adminCtvReferralLink" type="text" readonly value="${escapeAttr(selected ? getAdminCtvLink(selected) : "")}" />
+            <input id="adminCtvReferralLink" type="text" value="${escapeAttr(getAdminCtvReferralLinkInputValue(selected))}" aria-label="${isVi ? "Link giới thiệu có thể chỉnh sửa" : "可编辑推广链接"}" />
             <button id="adminCtvCopyLinkBtn" type="button" aria-label="${isVi ? "Sao chép link" : "复制链接"}">⧉</button>
           </div>
           <button id="adminCtvCreateLinkBtn" class="admin-ctv-create" type="button">🔗 ${isVi ? "Tạo link" : "生成链接"}</button>
           <p>${escapeHtml(state.adminCtvLinkStatus || (isVi ? "Link sẽ được tạo dựa trên tài khoản CTV đã chọn." : "链接将根据所选合作伙伴账号生成。"))}</p>
         </aside>
       </div>
+    `;
+
+  return `
+    <section class="admin-ctv-panel">
+      <header class="admin-ctv-hero">
+        <button class="admin-ctv-back" type="button" aria-label="${isVi ? "Quay lại" : "返回"}">‹</button>
+        <div>
+          <h1>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</h1>
+          <p>${isVi ? "Quản lý cộng tác viên, theo dõi hoa hồng và tạo link giới thiệu." : "管理合作伙伴、跟踪佣金并生成推广链接。"}</p>
+        </div>
+      </header>
+
+      <div class="admin-ctv-stats">
+        <article class="admin-ctv-stat admin-ctv-stat--money">
+          <span>₫</span>
+          <div><strong>${escapeHtml(formatAdminCtvMoney(totalCommission))}</strong><small>${isVi ? "Tổng hoa hồng" : "总佣金"}</small></div>
+        </article>
+        <article class="admin-ctv-stat admin-ctv-stat--people">
+          <span>●●●</span>
+          <div><strong>${activeCount}</strong><small>${isVi ? "Tổng cộng tác viên đang hoạt động" : "活跃合作伙伴总数"}</small></div>
+        </article>
+      </div>
+
+      <section class="admin-ctv-source-panel">
+        <div class="admin-ctv-source-head">
+          <h2>${isVi ? "Theo dõi nguồn người dùng" : "用户来源跟踪"}</h2>
+          <p>${isVi ? "Số người dùng đăng ký theo từng kênh nguồn (src)." : "按来源渠道 (src) 统计的注册用户数。"}</p>
+        </div>
+        <div class="admin-ctv-source-cards">${sourceSummaryHTML}</div>
+      </section>
+
+      ${collaboratorBodyHTML}
     </section>
   `;
 }
@@ -9218,13 +9350,29 @@ let listeningRepeatScoringDone = false;
 let listeningRepeatScoreTimer = null;
 let listeningRepeatRecognitionAvailable = false;
 let listeningRepeatLatestScore = null;
+let listeningRepeatAttemptToken = 0;
 let listeningRepeatOriginalMarks = null;
 let listeningPlaybackRequested = false;
 let listeningPlaybackToken = 0;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
 let listeningRepeatAudioStopTimer = null;
+let listeningRepeatStopTonePlayed = false;
+let listeningRealtimeWs = null;
+let listeningRealtimeAudioContext = null;
+let listeningRealtimeSource = null;
+let listeningRealtimeProcessor = null;
+let listeningRealtimeChunkQueue = [];
+let listeningRealtimeScoringActive = false;
+let listeningRealtimeCommitTimer = null;
+let listeningRepeatSilenceAudioContext = null;
+let listeningRepeatSilenceSource = null;
+let listeningRepeatSilenceFrame = 0;
 const LISTENING_REPEAT_END_PADDING_SECONDS = 0.65;
+const LISTENING_REALTIME_FINAL_WAIT_MS = 900;
+const LISTENING_REPEAT_SILENCE_AUTO_STOP_MS = 3000;
+const LISTENING_REPEAT_SILENCE_RMS_THRESHOLD = 0.012;
+const LISTENING_REPEAT_SILENCE_PEAK_THRESHOLD = 0.045;
 const listeningSpecializedPronunciationEnabled = true;
 
 function getListeningRepeatDisplayScore(score = listeningRepeatLatestScore) {
@@ -9246,7 +9394,7 @@ function setListeningRepeatScorePreview(score = null) {
 
   const scoreClass = finalScore !== null && finalScore >= 80 ? "score-tier-good" : "score-tier-bad";
   document.querySelectorAll("[data-listening-recording-score]").forEach((node) => {
-    node.textContent = finalScore === null ? "--" : String(finalScore);
+    node.textContent = finalScore === null ? "" : String(finalScore);
   });
   document.querySelectorAll("[data-listening-recording-play]").forEach((button) => {
     button.classList.remove("score-tier-good", "score-tier-bad", "score-empty");
@@ -9294,9 +9442,11 @@ function buildListeningRepeatOriginalHTML(text = "") {
 }
 
 function setListeningRepeatOriginalMarks(referenceText = "", correctIndexes = new Set()) {
-  listeningRepeatOriginalMarks = correctIndexes instanceof Set
-    ? correctIndexes
-    : new Set(Array.isArray(correctIndexes) ? correctIndexes : []);
+  listeningRepeatOriginalMarks = correctIndexes == null
+    ? null
+    : correctIndexes instanceof Set
+      ? correctIndexes
+      : new Set(Array.isArray(correctIndexes) ? correctIndexes : []);
 
   const fallbackText = getListeningEpisode().sentences[state.listeningSentenceIndex]?.chinese || "";
   const text = referenceText || fallbackText;
@@ -9367,9 +9517,23 @@ function updateListeningRecordingPlaybackUi(enabled = Boolean(listeningRecording
     }
     if (score) {
       const scoreValue = getListeningRepeatDisplayScore();
-      score.textContent = scoreValue === null ? "--" : String(scoreValue);
+      score.textContent = scoreValue === null ? "" : String(scoreValue);
     }
     if (scoreUnit) scoreUnit.textContent = state.lang === "vi" ? "điểm" : "分";
+  });
+}
+
+function resetListeningRecordingPlaybackScoreUi() {
+  setListeningRepeatScorePreview(null);
+  document.querySelectorAll("[data-listening-recording-play]").forEach((button) => {
+    button.classList.remove("score-tier-good", "score-tier-bad");
+    button.classList.add("score-empty");
+    if (listeningRecordingUrl) {
+      button.disabled = false;
+      button.classList.add("has-recording");
+    }
+    const score = button.querySelector("[data-listening-recording-score]");
+    if (score) score.textContent = "";
   });
 }
 
@@ -9417,8 +9581,277 @@ function getListeningRecordingOptions() {
   return mimeType ? { mimeType } : {};
 }
 
+function stopListeningRepeatSilenceMonitor() {
+  if (listeningRepeatSilenceFrame) {
+    window.cancelAnimationFrame(listeningRepeatSilenceFrame);
+    listeningRepeatSilenceFrame = 0;
+  }
+  if (listeningRepeatSilenceSource) {
+    try { listeningRepeatSilenceSource.disconnect(); } catch { }
+    listeningRepeatSilenceSource = null;
+  }
+  if (listeningRepeatSilenceAudioContext) {
+    listeningRepeatSilenceAudioContext.close?.().catch(() => { });
+    listeningRepeatSilenceAudioContext = null;
+  }
+}
+
+function stopListeningRepeatRecordingForSilence() {
+  if (listeningMediaRecorder?.state !== "recording") return;
+  if (!listeningRealtimeScoringActive) stopListeningRepeatRecognition();
+  listeningRepeatStopTonePlayed = true;
+  playTone("record-stop");
+  listeningMediaRecorder.stop();
+}
+
+function startListeningRepeatSilenceMonitor(stream) {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor || !stream) return false;
+
+  stopListeningRepeatSilenceMonitor();
+  try {
+    const context = new AudioContextCtor();
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 2048;
+    listeningRepeatSilenceSource = context.createMediaStreamSource(stream);
+    listeningRepeatSilenceSource.connect(analyser);
+    listeningRepeatSilenceAudioContext = context;
+
+    const samples = new Uint8Array(analyser.fftSize);
+    let silentSince = performance.now();
+
+    const sample = () => {
+      if (listeningMediaRecorder?.state !== "recording") {
+        stopListeningRepeatSilenceMonitor();
+        return;
+      }
+
+      analyser.getByteTimeDomainData(samples);
+      let sumSquares = 0;
+      let peak = 0;
+      for (let index = 0; index < samples.length; index += 1) {
+        const value = Math.abs((samples[index] - 128) / 128);
+        sumSquares += value * value;
+        if (value > peak) peak = value;
+      }
+
+      const rms = Math.sqrt(sumSquares / samples.length);
+      if (rms >= LISTENING_REPEAT_SILENCE_RMS_THRESHOLD || peak >= LISTENING_REPEAT_SILENCE_PEAK_THRESHOLD) {
+        silentSince = performance.now();
+      } else if (performance.now() - silentSince >= LISTENING_REPEAT_SILENCE_AUTO_STOP_MS) {
+        stopListeningRepeatRecordingForSilence();
+        stopListeningRepeatSilenceMonitor();
+        return;
+      }
+
+      listeningRepeatSilenceFrame = window.requestAnimationFrame(sample);
+    };
+
+    listeningRepeatSilenceFrame = window.requestAnimationFrame(sample);
+    return true;
+  } catch (error) {
+    console.warn("Could not monitor recording silence.", error);
+    stopListeningRepeatSilenceMonitor();
+    return false;
+  }
+}
+
 function getListeningRepeatText() {
   return `${listeningRepeatTranscript} ${listeningRepeatInterim}`.trim();
+}
+
+function getConfiguredBackendUrl() {
+  return String(
+    window.HUAMEI_BACKEND_URL
+    || localStorage.getItem(HUAMEI_BACKEND_URL_STORAGE_KEY)
+    || ""
+  ).trim();
+}
+
+function normalizeListeningRealtimeWsUrl(value) {
+  let raw = String(value || "").trim();
+  if (!raw) return "";
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) && !raw.startsWith("/")) {
+    raw = raw.includes("localhost") || raw.includes("127.0.0.1")
+      ? `http://${raw}`
+      : `https://${raw}`;
+  }
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.protocol === "http:") url.protocol = "ws:";
+    if (url.protocol === "https:") url.protocol = "wss:";
+    if (!["ws:", "wss:"].includes(url.protocol)) return "";
+    if (url.pathname === "/" || !url.pathname) url.pathname = LISTENING_REALTIME_WS_PATH;
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
+function getListeningRealtimeWsUrl() {
+  const configuredWs = normalizeListeningRealtimeWsUrl(
+    window.HUAMEI_REALTIME_WS_URL
+    || localStorage.getItem(LISTENING_REALTIME_WS_STORAGE_KEY)
+  );
+  if (configuredWs) return configuredWs;
+
+  const configuredBackend = normalizeListeningRealtimeWsUrl(getConfiguredBackendUrl());
+  if (configuredBackend) return configuredBackend;
+
+  const isLocalStaticDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    && window.location.port === "3000";
+  if (isLocalStaticDev) return `ws://${window.location.hostname}:4173${LISTENING_REALTIME_WS_PATH}`;
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}${LISTENING_REALTIME_WS_PATH}`;
+}
+
+function int16PcmToBase64(samples) {
+  const bytes = new Uint8Array(samples.buffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function downsampleToPcm16(input, sourceRate, targetRate = 24000) {
+  if (!input?.length) return new Int16Array(0);
+  const ratio = sourceRate / targetRate;
+  const length = Math.max(1, Math.floor(input.length / ratio));
+  const output = new Int16Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(input.length, Math.floor((index + 1) * ratio));
+    let sum = 0;
+    let count = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      sum += input[cursor];
+      count += 1;
+    }
+    const sample = Math.max(-1, Math.min(1, count ? sum / count : input[start] || 0));
+    output[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+  }
+  return output;
+}
+
+function sendListeningRealtimeMessage(payload) {
+  if (!listeningRealtimeWs || listeningRealtimeWs.readyState !== WebSocket.OPEN) return false;
+  listeningRealtimeWs.send(JSON.stringify(payload));
+  return true;
+}
+
+function stopListeningRealtimeScoring(options = {}) {
+  if (listeningRealtimeCommitTimer) {
+    window.clearTimeout(listeningRealtimeCommitTimer);
+    listeningRealtimeCommitTimer = null;
+  }
+  if (listeningRealtimeProcessor) {
+    listeningRealtimeProcessor.onaudioprocess = null;
+    try { listeningRealtimeProcessor.disconnect(); } catch { }
+    listeningRealtimeProcessor = null;
+  }
+  if (listeningRealtimeSource) {
+    try { listeningRealtimeSource.disconnect(); } catch { }
+    listeningRealtimeSource = null;
+  }
+  if (listeningRealtimeAudioContext) {
+    listeningRealtimeAudioContext.close?.().catch(() => { });
+    listeningRealtimeAudioContext = null;
+  }
+  if (options.commit) sendListeningRealtimeMessage({ type: "commit" });
+  else sendListeningRealtimeMessage({ type: "stop" });
+  if (!options.commit && listeningRealtimeWs) {
+    try { listeningRealtimeWs.close(); } catch { }
+    listeningRealtimeWs = null;
+  }
+  listeningRealtimeChunkQueue = [];
+  listeningRealtimeScoringActive = false;
+}
+
+function startListeningRealtimeScoring(stream) {
+  if (!window.WebSocket || !window.AudioContext && !window.webkitAudioContext) return false;
+
+  stopListeningRealtimeScoring({ commit: false });
+  const realtimeAttemptToken = listeningRepeatAttemptToken;
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+
+  try {
+    listeningRealtimeWs = new WebSocket(getListeningRealtimeWsUrl());
+    listeningRealtimeAudioContext = new AudioContextCtor();
+    listeningRealtimeSource = listeningRealtimeAudioContext.createMediaStreamSource(stream);
+    listeningRealtimeProcessor = listeningRealtimeAudioContext.createScriptProcessor(4096, 1, 1);
+
+    listeningRealtimeProcessor.onaudioprocess = (event) => {
+      if (!listeningRealtimeScoringActive || realtimeAttemptToken !== listeningRepeatAttemptToken) return;
+      const input = event.inputBuffer.getChannelData(0);
+      const pcm = downsampleToPcm16(input, listeningRealtimeAudioContext.sampleRate, 24000);
+      if (!pcm.length) return;
+      const payload = { type: "audio", audio: int16PcmToBase64(pcm) };
+      if (!sendListeningRealtimeMessage(payload) && listeningRealtimeChunkQueue.length < 24) {
+        listeningRealtimeChunkQueue.push(payload);
+      }
+    };
+
+    listeningRealtimeSource.connect(listeningRealtimeProcessor);
+    listeningRealtimeProcessor.connect(listeningRealtimeAudioContext.destination);
+
+    listeningRealtimeWs.addEventListener("open", () => {
+      listeningRealtimeScoringActive = true;
+      sendListeningRealtimeMessage({
+        type: "start",
+        referenceText: sentence.chinese || "",
+        pinyin: sentence.pinyin || "",
+      });
+      while (listeningRealtimeChunkQueue.length) sendListeningRealtimeMessage(listeningRealtimeChunkQueue.shift());
+    });
+
+    listeningRealtimeWs.addEventListener("message", (event) => {
+      if (realtimeAttemptToken !== listeningRepeatAttemptToken) return;
+      let payload = null;
+      try { payload = JSON.parse(event.data); } catch { return; }
+      if (payload.type === "partial") {
+        listeningRepeatTranscript = payload.recognizedText || "";
+        listeningRepeatInterim = "";
+        setListeningRepeatInput(listeningRepeatTranscript);
+        renderListeningPronunciationPreview(listeningRepeatTranscript);
+      }
+      if (payload.type === "committed" && payload.recognizedText) {
+        listeningRepeatTranscript = payload.recognizedText || listeningRepeatTranscript;
+        listeningRepeatInterim = "";
+        renderSpecializedPronunciationScore(payload);
+      }
+      if (payload.type === "final") {
+        listeningRepeatTranscript = payload.recognizedText || listeningRepeatTranscript;
+        listeningRepeatInterim = "";
+        renderSpecializedPronunciationScore(payload);
+        if (listeningRealtimeWs) {
+          try { listeningRealtimeWs.close(); } catch { }
+          listeningRealtimeWs = null;
+        }
+      }
+      if (payload.type === "error") {
+        console.warn("Realtime pronunciation scoring failed:", payload.error);
+        listeningRealtimeScoringActive = false;
+      }
+    });
+
+    listeningRealtimeWs.addEventListener("close", () => {
+      listeningRealtimeScoringActive = false;
+    });
+    listeningRealtimeWs.addEventListener("error", () => {
+      listeningRealtimeScoringActive = false;
+    });
+
+    return true;
+  } catch (error) {
+    console.warn("Could not start realtime pronunciation scoring.", error);
+    stopListeningRealtimeScoring({ commit: false });
+    return false;
+  }
 }
 
 function clearListeningPronunciationResult(message = "", options = {}) {
@@ -9434,12 +9867,47 @@ function clearListeningPronunciationResult(message = "", options = {}) {
   if (!options.preserveScore) setListeningRepeatScorePreview(null);
 }
 
-function scheduleListeningRepeatScore(delay = 650) {
+function showListeningRepeatScoringLoader() {
+  if (typeof document === "undefined") return;
+  let overlay = document.getElementById("listeningRepeatScoringOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "listeningRepeatScoringOverlay";
+    overlay.className = "listening-repeat-scoring-overlay";
+    overlay.setAttribute("role", "status");
+    overlay.setAttribute("aria-live", "polite");
+    overlay.setAttribute("aria-label", state.lang === "vi" ? "Đang chấm điểm phát âm" : "Scoring pronunciation");
+    overlay.innerHTML = '<div class="listening-repeat-scoring-text">Chấm điểm...</div>';
+    document.body.appendChild(overlay);
+  }
+  window.requestAnimationFrame(() => overlay?.classList.add("is-visible"));
+}
+
+function hideListeningRepeatScoringLoader() {
+  const overlay = document.getElementById("listeningRepeatScoringOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("is-visible");
+  window.setTimeout(() => {
+    if (!overlay.classList.contains("is-visible")) overlay.remove();
+  }, 180);
+}
+
+function scheduleListeningRepeatScore(delay = 650, attemptToken = listeningRepeatAttemptToken) {
   if (listeningRepeatScoringDone) return;
   if (listeningRepeatScoreTimer) window.clearTimeout(listeningRepeatScoreTimer);
   listeningRepeatScoreTimer = window.setTimeout(() => {
     listeningRepeatScoreTimer = null;
-    scoreListeningRepeatRecording();
+    scoreListeningRepeatRecording(attemptToken);
+  }, delay);
+}
+
+function scheduleListeningRealtimeFallback(delay = LISTENING_REALTIME_FINAL_WAIT_MS, attemptToken = listeningRepeatAttemptToken) {
+  if (listeningRealtimeCommitTimer) window.clearTimeout(listeningRealtimeCommitTimer);
+  listeningRealtimeCommitTimer = window.setTimeout(() => {
+    listeningRealtimeCommitTimer = null;
+    if (!listeningRepeatScoringDone && attemptToken === listeningRepeatAttemptToken) {
+      renderListeningPronunciationScore(getListeningRepeatText());
+    }
   }, delay);
 }
 
@@ -9482,6 +9950,38 @@ function compareListeningPronunciation(targetText, spokenText) {
   return { matched, score, spokenText, targetChars };
 }
 
+function renderListeningPronunciationPreview(spokenText = getListeningRepeatText()) {
+  if (listeningRepeatScoringDone) return;
+
+  const episode = getListeningEpisode();
+  const sentence = episode.sentences[state.listeningSentenceIndex] || episode.sentences[0] || {};
+  const panel = $("#listeningPronunciationResult");
+  const hasSpokenText = Boolean(normalizeHanzi(spokenText));
+  const result = compareListeningPronunciation(sentence.chinese || "", spokenText);
+  const matched = hasSpokenText ? result.matched : new Set();
+
+  updateRepeatAiWordRowsFromResult(sentence.chinese || "", matched);
+  setListeningRepeatOriginalMarks(sentence.chinese || "", matched);
+  setListeningRepeatScorePreview(hasSpokenText ? result.score : null);
+
+  if (!panel) return;
+  const scoreClass = result.score >= 85 ? "good" : result.score >= 60 ? "ok" : "low";
+  const markedTarget = result.targetChars.map((char, index) => (
+    `<b class="${matched.has(index) ? "correct" : "wrong"}">${escapeHtml(char)}</b>`
+  )).join("");
+
+  panel.classList.add("has-score");
+  panel.innerHTML = `
+    <div class="listening-pronunciation-score ${scoreClass}">
+      <strong>${hasSpokenText ? result.score : 0}</strong><span></span>
+    </div>
+    <div class="listening-pronunciation-lines">
+      <p><span>${state.lang === "vi" ? "Câu gốc" : "原句"}</span><em>${markedTarget}</em></p>
+      <p><span>${state.lang === "vi" ? "Đang nghe" : "正在识别"}</span><small>${escapeHtml(spokenText || (state.lang === "vi" ? "Hãy đọc câu này..." : "请朗读这个句子..."))}</small></p>
+    </div>
+  `;
+}
+
 function renderListeningPronunciationScore(spokenText = getListeningRepeatText()) {
   if (listeningRepeatScoringDone) return;
   listeningRepeatScoringDone = true;
@@ -9515,6 +10015,13 @@ function renderListeningPronunciationScore(spokenText = getListeningRepeatText()
   setListeningRepeatInput(spokenText || (state.lang === "vi" ? "Chưa nhận dạng được giọng đọc. Hãy thử đọc rõ hơn hoặc kiểm tra quyền micro." : "没有识别到朗读，请再试一次。"));
   setListeningRepeatScorePreview(hasSpokenText ? result.score : 0);
 }
+
+function clearRepeatAiWordRows() {
+  document.querySelectorAll(".repeat-ai-word-row").forEach((row) => {
+    row.classList.remove("repeat-ai-word-row--good", "repeat-ai-word-row--bad");
+  });
+}
+
 function updateRepeatAiWordRowsFromResult(targetText, correctIndexes = new Set()) {
   const rows = document.querySelectorAll(".repeat-ai-word-row");
   const targetChars = Array.from(normalizeHanzi(targetText || ""));
@@ -9548,6 +10055,10 @@ function updateRepeatAiWordRowsFromResult(targetText, correctIndexes = new Set()
 }
 
 function renderSpecializedPronunciationScore(result) {
+  if (listeningRealtimeCommitTimer) {
+    window.clearTimeout(listeningRealtimeCommitTimer);
+    listeningRealtimeCommitTimer = null;
+  }
   listeningRepeatScoringDone = true;
   const panel = $("#listeningPronunciationResult");
   const charResults = Array.isArray(result?.charResults) ? result.charResults : [];
@@ -9671,6 +10182,12 @@ function downsampleAudioChannel(channelData, sourceRate, targetRate = 16000) {
 }
 
 async function blobToAssessmentAudio(blob) {
+  const originalMimeType = String(blob?.type || "").trim();
+  const compactMimeType = originalMimeType.split(";")[0].toLowerCase();
+  if (/^audio\/(webm|ogg|mp4|mpeg|wav|x-wav|m4a)$/.test(compactMimeType)) {
+    return { audioBase64: await blobToBase64(blob), mimeType: originalMimeType || compactMimeType };
+  }
+
   const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextCtor) {
     return { audioBase64: await blobToBase64(blob), mimeType: blob.type || "audio/webm" };
@@ -9709,9 +10226,12 @@ async function assessListeningPronunciationWithProvider(blob) {
   });
 }
 
-async function scoreListeningRepeatRecording() {
+async function scoreListeningRepeatRecording(attemptToken = listeningRepeatAttemptToken) {
+  if (attemptToken !== listeningRepeatAttemptToken) return;
   if (!listeningSpecializedPronunciationEnabled || !listeningRecordingBlob) {
-    renderListeningPronunciationScore();
+    clearListeningPronunciationResult(state.lang === "vi"
+      ? "Chưa có dữ liệu backend để chấm điểm."
+      : "暂无后端评分数据。");
     return;
   }
 
@@ -9721,9 +10241,11 @@ async function scoreListeningRepeatRecording() {
 
   try {
     const result = await assessListeningPronunciationWithProvider(listeningRecordingBlob);
+    if (attemptToken !== listeningRepeatAttemptToken) return;
     renderSpecializedPronunciationScore(result);
   } catch (error) {
-    console.warn("Specialized pronunciation assessment failed; falling back to browser scoring.", error);
+    if (attemptToken !== listeningRepeatAttemptToken) return;
+    console.warn("Backend pronunciation assessment failed.", error);
 
     if (!isListeningPronunciationApiUnavailableError(error)) {
       showToast(error.message || (state.lang === "vi"
@@ -9731,7 +10253,17 @@ async function scoreListeningRepeatRecording() {
         : "专业评分暂不可用。"));
     }
 
-    renderListeningPronunciationScore();
+    listeningRepeatScoringDone = true;
+    setListeningRepeatScorePreview(null);
+    const panel = $("#listeningPronunciationResult");
+    if (panel) {
+      panel.classList.remove("has-score");
+      panel.innerHTML = `<span>${escapeHtml(state.lang === "vi"
+        ? "Chưa nhận được điểm từ backend. Vui lòng thử lại."
+        : "尚未收到后端评分，请重试。")}</span>`;
+    }
+  } finally {
+    hideListeningRepeatScoringLoader();
   }
 }
 
@@ -9785,7 +10317,10 @@ function startListeningRepeatRecognition() {
       }
       listeningRepeatInterim = interim;
       const heard = getListeningRepeatText();
-      if (heard) setListeningRepeatInput(heard);
+      if (heard) {
+        setListeningRepeatInput(heard);
+        renderListeningPronunciationPreview(heard);
+      }
     });
 
     listeningRepeatRecognition.addEventListener("end", () => {
@@ -9793,6 +10328,7 @@ function startListeningRepeatRecognition() {
     });
 
     listeningRepeatRecognition.addEventListener("error", () => {
+      listeningRepeatRecognitionAvailable = false;
       if (listeningMediaRecorder?.state !== "recording") scheduleListeningRepeatScore(250);
     });
 
@@ -10152,10 +10688,14 @@ function getListeningKeywordExamples(keyword = {}) {
 
 function normalizeListeningKeywordExample(example, keyword = {}) {
   if (typeof example === "object" && example) {
+    const audioSrc = example.audioSrc || example.audioNormal || example.audio || "";
     return {
-      chinese: example.chinese || example.text || "",
+      chinese: example.chinese || example.zh || example.text || "",
       pinyin: example.pinyin || "",
       vietnamese: example.vietnamese || example.vi || "",
+      audioSrc: typeof listeningCatalogAssetPath === "function" ? listeningCatalogAssetPath(audioSrc) : audioSrc,
+      start: Number.isFinite(Number(example.start)) ? Number(example.start) : null,
+      end: Number.isFinite(Number(example.end)) ? Number(example.end) : null,
     };
   }
   const chinese = String(example || "");
@@ -10163,6 +10703,9 @@ function normalizeListeningKeywordExample(example, keyword = {}) {
     chinese,
     pinyin: "",
     vietnamese: keyword.vietnamese ? `${state.lang === "vi" ? "Ví dụ với" : "例句"} ${keyword.chinese}` : "",
+    audioSrc: "",
+    start: null,
+    end: null,
   };
 }
 
@@ -10188,7 +10731,7 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
       <p>${highlightListeningKeyword(example.chinese, keyword.chinese)}</p>
       ${example.pinyin ? `<small>${escapeHtml(example.pinyin)}</small>` : ""}
       ${example.vietnamese ? `<em>${escapeHtml(example.vietnamese)}</em>` : ""}
-      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
+      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" data-listening-vocab-example-audio="${escapeAttr(example.audioSrc || "")}" data-listening-vocab-example-start="${escapeAttr(example.start ?? "")}" data-listening-vocab-example-end="${escapeAttr(example.end ?? "")}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
         ${desktopNavIcon("listening")}
       </button>
     </article>
@@ -10390,7 +10933,7 @@ function renderListeningRepeatLesson(options = {}) {
     const item = episode.sentences[index] || {};
     const isActive = index === currentIndex;
     const sentenceButtonAttrs = `type="button" data-listening-repeat-sentence="${index}" aria-label="${escapeAttr(isVi ? `Chọn câu ${index + 1}` : `Choose sentence ${index + 1}`)}"`;
-    const sentenceNumber = `${index + 1}/${total}`;
+    const sentenceNumber = `${index + 1} / ${total}`;
 
     if (!isActive) {
       return `
@@ -10430,6 +10973,11 @@ function renderListeningRepeatLesson(options = {}) {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/><path d="M8 22h8"/></svg>
           </button>
           <button class="listening-recording-playback-btn listening-repeat-score-playback" type="button" data-listening-recording-play disabled aria-label="${isVi ? "Nghe lại ghi âm" : "Play recording"}">
+            <svg class="listening-recording-playback-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11 5 6 9H3v6h3l5 4V5z"></path>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+              <path d="M19 5a10 10 0 0 1 0 14"></path>
+            </svg>
             <strong data-listening-recording-score>${displayScore === null ? "--" : displayScore}</strong>
             <small data-listening-recording-score-unit>${isVi ? "điểm" : "分"}</small>
             <span data-listening-recording-label>${isVi ? "Chưa có ghi âm" : "No recording yet"}</span>
@@ -10445,7 +10993,7 @@ function renderListeningRepeatLesson(options = {}) {
     <div class="listening-repeat-lesson-screen listening-repeat-lesson-screen--compact">
       <button class="listening-repeat-corner-back" type="button" data-listening-repeat-back aria-label="${isVi ? "Quay trở lại" : "Back"}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m13.5 8.5-3.5 3.5 3.5 3.5"/></svg>
-        <span>${isVi ? "Trở lại" : "Back"}</span>
+        <span>${isVi ? "Luyện nói" : "Speaking"}</span>
       </button>
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
         <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
@@ -10713,7 +11261,10 @@ function selectListeningKeyword(index, button = null) {
 
 async function startListeningRepeatRecording() {
   if (listeningMediaRecorder?.state === "recording") {
-    stopListeningRepeatRecognition();
+    stopListeningRepeatSilenceMonitor();
+    if (!listeningRealtimeScoringActive) stopListeningRepeatRecognition();
+    listeningRepeatStopTonePlayed = true;
+    playTone("record-stop");
     listeningMediaRecorder.stop();
     return;
   }
@@ -10723,14 +11274,32 @@ async function startListeningRepeatRecording() {
     return;
   }
 
+  const recordingAttemptToken = listeningRepeatAttemptToken + 1;
+  listeningRepeatAttemptToken = recordingAttemptToken;
+  listeningRepeatTranscript = "";
+  listeningRepeatInterim = "";
+  listeningRepeatScoringDone = false;
+  listeningRepeatOriginalMarks = null;
+  if (listeningRealtimeCommitTimer) {
+    window.clearTimeout(listeningRealtimeCommitTimer);
+    listeningRealtimeCommitTimer = null;
+  }
+  clearListeningPronunciationResult();
+  resetListeningRecordingPlaybackScoreUi();
+  clearRepeatAiWordRows();
+  setListeningRepeatOriginalMarks(getListeningEpisode().sentences[state.listeningSentenceIndex]?.chinese || "", null);
+
   try {
     ensureAudio();
     listeningRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    listeningRepeatStopTonePlayed = false;
     listeningRecordingChunks = [];
     listeningMediaRecorder = new MediaRecorder(listeningRecordingStream, getListeningRecordingOptions());
+    startListeningRepeatSilenceMonitor(listeningRecordingStream);
     document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.add("is-recording"));
-    clearListeningPronunciationResult(state.lang === "vi" ? "Đang nghe bạn đọc..." : "正在听你朗读...", { preserveScore: true });
-    const canScorePronunciation = startListeningRepeatRecognition();
+    clearListeningPronunciationResult(state.lang === "vi" ? "Đang nghe bạn đọc..." : "正在听你朗读...");
+    const canRealtimeScore = startListeningRealtimeScoring(listeningRecordingStream);
+    const canScorePronunciation = canRealtimeScore || startListeningRepeatRecognition();
     showToast(state.lang === "vi" ? "Đang ghi âm, bấm lại để dừng." : "正在录音，再点一次停止。");
 
     listeningMediaRecorder.addEventListener("dataavailable", (event) => {
@@ -10738,7 +11307,9 @@ async function startListeningRepeatRecording() {
     });
 
     listeningMediaRecorder.addEventListener("stop", () => {
-      playTone("record-stop");
+      stopListeningRepeatSilenceMonitor();
+      if (!listeningRepeatStopTonePlayed) playTone("record-stop");
+      listeningRepeatStopTonePlayed = false;
       document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
       listeningRecordingStream?.getTracks().forEach((track) => track.stop());
       listeningRecordingStream = null;
@@ -10747,16 +11318,30 @@ async function startListeningRepeatRecording() {
       listeningRecordingBlob = blob;
       listeningRecordingUrl = URL.createObjectURL(blob);
       updateListeningRecordingPlaybackUi(true);
-      scheduleListeningRepeatScore(canScorePronunciation ? 850 : 0);
-      setListeningRepeatInput(state.lang === "vi"
-        ? "Đã ghi âm xong. Bạn có thể nghe lại bằng trình duyệt hoặc ghi lại lần nữa."
-        : "录音完成。你可以重新录一次。");
+      if (canRealtimeScore && listeningRealtimeScoringActive) {
+        stopListeningRealtimeScoring({ commit: true });
+        renderListeningPronunciationPreview(getListeningRepeatText());
+        setListeningRepeatInput(state.lang === "vi"
+          ? "Đã ghi âm xong. Đang hoàn tất điểm..."
+          : "录音完成，正在完成评分。");
+        scheduleListeningRealtimeFallback(LISTENING_REALTIME_FINAL_WAIT_MS, recordingAttemptToken);
+      } else if (canScorePronunciation && listeningRepeatRecognitionAvailable) {
+        renderListeningPronunciationScore(getListeningRepeatText());
+      } else {
+        if (canRealtimeScore) stopListeningRealtimeScoring({ commit: false });
+        scheduleListeningRepeatScore(0, recordingAttemptToken);
+        setListeningRepeatInput(state.lang === "vi"
+          ? "Đã ghi âm xong. Đang chờ backend chấm điểm."
+          : "录音完成，正在等待后端评分。");
+      }
       showToast(state.lang === "vi" ? "Đã ghi âm xong." : "录音完成。");
     }, { once: true });
 
     listeningMediaRecorder.start();
     playTone("record-start");
   } catch {
+    stopListeningRepeatSilenceMonitor();
+    stopListeningRealtimeScoring({ commit: false });
     stopListeningRepeatRecognition();
     document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
     listeningRecordingStream?.getTracks().forEach((track) => track.stop());
@@ -12534,6 +13119,51 @@ function playAudioSource(source, fallback, meta = {}) {
   playAudioSources([source], fallback, meta);
 }
 
+function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
+  const segmentStart = Number(start);
+  const segmentEnd = Number(end);
+  if (!source || !Number.isFinite(segmentStart) || !Number.isFinite(segmentEnd) || segmentEnd <= segmentStart) {
+    playAudioSources([source], fallback, meta);
+    return;
+  }
+
+  stopSpeechPlayback();
+  const audio = new Audio(source);
+  let handledFailure = false;
+  const resetActiveAudio = () => {
+    if (activeSpeechAudio === audio) activeSpeechAudio = null;
+  };
+  const handleFailure = () => {
+    if (handledFailure) return;
+    handledFailure = true;
+    resetActiveAudio();
+    reportAudioFallback({ ...meta, sources: [source] });
+    fallback?.();
+  };
+
+  activeSpeechAudio = audio;
+  audio.onloadedmetadata = () => {
+    try {
+      audio.currentTime = segmentStart;
+    } catch {
+      handleFailure();
+      return;
+    }
+    const playPromise = audio.play();
+    if (playPromise?.catch) playPromise.catch(handleFailure);
+  };
+  audio.ontimeupdate = () => {
+    if (audio.currentTime >= segmentEnd) {
+      audio.pause();
+      audio.currentTime = segmentStart;
+      resetActiveAudio();
+    }
+  };
+  audio.onended = resetActiveAudio;
+  audio.onerror = handleFailure;
+  audio.load();
+}
+
 function speakText(text) {
   const sources = getVocabAudioSources(text);
   playAudioSources(sources, () => browserSpeakText(text), { text, speed: "normal", sources });
@@ -13059,6 +13689,11 @@ function finishItem(options = {}) {
   });
   if (state.index >= collection.items.length - 1 && !state.practiceCompletedAt) {
     state.practiceCompletedAt = Date.now();
+    trackEvent("practice_completed", {
+      ...buildPracticeEventContext(),
+      questionId: collection.id,
+      isCorrect: true,
+    });
   }
   state.score += 100;
   renderPractice();
@@ -13596,7 +14231,22 @@ function bindEvents() {
         const keyword = getListeningKeyword(state.listeningVocabPracticeIndex);
         const examples = getListeningKeywordExamples(keyword).map((example) => normalizeListeningKeywordExample(example, keyword));
         const example = examples[Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleSpeak || 0)];
-        if (example?.chinese) browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+        const sources = uniqueAudioSources([vocabExampleSpeakBtn.dataset.listeningVocabExampleAudio, example?.audioSrc]);
+        const segmentStart = Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleStart || example?.start);
+        const segmentEnd = Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleEnd || example?.end);
+        if (example?.chinese) {
+          const fallback = () => browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+          const meta = {
+            text: example.chinese,
+            speed: "normal",
+            sources,
+          };
+          if (sources[0] && Number.isFinite(segmentStart) && Number.isFinite(segmentEnd) && segmentEnd > segmentStart) {
+            playAudioSegmentSource(sources[0], segmentStart, segmentEnd, fallback, meta);
+          } else {
+            playAudioSources(sources, fallback, meta);
+          }
+        }
         return;
       }
 
@@ -13953,6 +14603,30 @@ function bindEvents() {
     const adminCtvPageBtn = event.target.closest("[data-admin-ctv-page]");
     if (adminCtvPageBtn && state.screen === "admin") {
       state.adminCtvPage = Math.max(1, Number(adminCtvPageBtn.dataset.adminCtvPage || 1));
+      renderAdmin();
+      return;
+    }
+
+    const adminCtvBackListBtn = event.target.closest("[data-admin-ctv-back-list]");
+    if (adminCtvBackListBtn && state.screen === "admin") {
+      state.adminCtvDetailOpen = false;
+      renderAdmin();
+      return;
+    }
+
+    const adminCtvSelectTarget = event.target.closest("[data-admin-ctv-select]");
+    if (adminCtvSelectTarget && state.screen === "admin") {
+      state.adminCtvSelectedId = adminCtvSelectTarget.dataset.adminCtvSelect;
+      state.adminCtvLinkStatus = "";
+      state.adminCtvReferralLinkDraft = "";
+      state.adminCtvDetailOpen = true;
+      renderAdmin();
+      return;
+    }
+
+    const adminCtvUserFilterBtn = event.target.closest("[data-admin-ctv-user-filter]");
+    if (adminCtvUserFilterBtn && state.screen === "admin") {
+      state.adminCtvUserFilter = adminCtvUserFilterBtn.dataset.adminCtvUserFilter || "all";
       renderAdmin();
       return;
     }
@@ -15033,6 +15707,10 @@ function bindEvents() {
       state.adminCtvPickerSearch = event.target.value;
       updateAdminCtvPickerList();
     }
+    if (event.target.id === "adminCtvReferralLink") {
+      state.adminCtvReferralLinkDraft = event.target.value;
+      state.adminCtvLinkStatus = "";
+    }
 
 
     if (event.target.matches?.("[data-admin-content-limit]")) {
@@ -15116,6 +15794,7 @@ function bindEvents() {
     if (event.target.matches?.("input[name='adminCtvSelect']")) {
       state.adminCtvSelectedId = event.target.value;
       state.adminCtvLinkStatus = "";
+      state.adminCtvReferralLinkDraft = "";
       renderAdmin();
     }
     if (event.target.id === "adminCtvPageSizeSelect") {
@@ -15126,6 +15805,7 @@ function bindEvents() {
     if (event.target.id === "adminCtvLinkSourceSelect") {
       state.adminCtvLinkSource = String(event.target.value || "").trim().toLowerCase();
       state.adminCtvLinkStatus = "";
+      state.adminCtvReferralLinkDraft = "";
       renderAdmin();
     }
 

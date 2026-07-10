@@ -6370,6 +6370,13 @@ let listeningPlaybackRequested = false;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
 let listeningRepeatAudioStopTimer = null;
+let listeningRepeatStopTonePlayed = false;
+let listeningRepeatSilenceAudioContext = null;
+let listeningRepeatSilenceSource = null;
+let listeningRepeatSilenceFrame = 0;
+const LISTENING_REPEAT_SILENCE_AUTO_STOP_MS = 3000;
+const LISTENING_REPEAT_SILENCE_RMS_THRESHOLD = 0.012;
+const LISTENING_REPEAT_SILENCE_PEAK_THRESHOLD = 0.045;
 const listeningSpecializedPronunciationEnabled = true;
 
 function setListeningRepeatInput(value) {
@@ -6484,6 +6491,81 @@ function getListeningRecordingOptions() {
   ];
   const mimeType = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
   return mimeType ? { mimeType } : {};
+}
+
+function stopListeningRepeatSilenceMonitor() {
+  if (listeningRepeatSilenceFrame) {
+    window.cancelAnimationFrame(listeningRepeatSilenceFrame);
+    listeningRepeatSilenceFrame = 0;
+  }
+  if (listeningRepeatSilenceSource) {
+    try { listeningRepeatSilenceSource.disconnect(); } catch { }
+    listeningRepeatSilenceSource = null;
+  }
+  if (listeningRepeatSilenceAudioContext) {
+    listeningRepeatSilenceAudioContext.close?.().catch(() => { });
+    listeningRepeatSilenceAudioContext = null;
+  }
+}
+
+function stopListeningRepeatRecordingForSilence() {
+  if (listeningMediaRecorder?.state !== "recording") return;
+  stopListeningRepeatRecognition();
+  listeningRepeatStopTonePlayed = true;
+  playTone("record-stop");
+  listeningMediaRecorder.stop();
+}
+
+function startListeningRepeatSilenceMonitor(stream) {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor || !stream) return false;
+
+  stopListeningRepeatSilenceMonitor();
+  try {
+    const context = new AudioContextCtor();
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 2048;
+    listeningRepeatSilenceSource = context.createMediaStreamSource(stream);
+    listeningRepeatSilenceSource.connect(analyser);
+    listeningRepeatSilenceAudioContext = context;
+
+    const samples = new Uint8Array(analyser.fftSize);
+    let silentSince = performance.now();
+
+    const sample = () => {
+      if (listeningMediaRecorder?.state !== "recording") {
+        stopListeningRepeatSilenceMonitor();
+        return;
+      }
+
+      analyser.getByteTimeDomainData(samples);
+      let sumSquares = 0;
+      let peak = 0;
+      for (let index = 0; index < samples.length; index += 1) {
+        const value = Math.abs((samples[index] - 128) / 128);
+        sumSquares += value * value;
+        if (value > peak) peak = value;
+      }
+
+      const rms = Math.sqrt(sumSquares / samples.length);
+      if (rms >= LISTENING_REPEAT_SILENCE_RMS_THRESHOLD || peak >= LISTENING_REPEAT_SILENCE_PEAK_THRESHOLD) {
+        silentSince = performance.now();
+      } else if (performance.now() - silentSince >= LISTENING_REPEAT_SILENCE_AUTO_STOP_MS) {
+        stopListeningRepeatRecordingForSilence();
+        stopListeningRepeatSilenceMonitor();
+        return;
+      }
+
+      listeningRepeatSilenceFrame = window.requestAnimationFrame(sample);
+    };
+
+    listeningRepeatSilenceFrame = window.requestAnimationFrame(sample);
+    return true;
+  } catch (error) {
+    console.warn("Could not monitor recording silence.", error);
+    stopListeningRepeatSilenceMonitor();
+    return false;
+  }
 }
 
 function getListeningRepeatText() {
@@ -6993,10 +7075,14 @@ function getListeningKeywordExamples(keyword = {}) {
 
 function normalizeListeningKeywordExample(example, keyword = {}) {
   if (typeof example === "object" && example) {
+    const audioSrc = example.audioSrc || example.audioNormal || example.audio || "";
     return {
-      chinese: example.chinese || example.text || "",
+      chinese: example.chinese || example.zh || example.text || "",
       pinyin: example.pinyin || "",
       vietnamese: example.vietnamese || example.vi || "",
+      audioSrc: typeof listeningCatalogAssetPath === "function" ? listeningCatalogAssetPath(audioSrc) : audioSrc,
+      start: Number.isFinite(Number(example.start)) ? Number(example.start) : null,
+      end: Number.isFinite(Number(example.end)) ? Number(example.end) : null,
     };
   }
   const chinese = String(example || "");
@@ -7004,6 +7090,9 @@ function normalizeListeningKeywordExample(example, keyword = {}) {
     chinese,
     pinyin: "",
     vietnamese: keyword.vietnamese ? `${state.lang === "vi" ? "Ví dụ với" : "例句"} ${keyword.chinese}` : "",
+    audioSrc: "",
+    start: null,
+    end: null,
   };
 }
 
@@ -7029,7 +7118,7 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
       <p>${highlightListeningKeyword(example.chinese, keyword.chinese)}</p>
       ${example.pinyin ? `<small>${escapeHtml(example.pinyin)}</small>` : ""}
       ${example.vietnamese ? `<em>${escapeHtml(example.vietnamese)}</em>` : ""}
-      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
+      <button type="button" data-listening-vocab-example-speak="${exampleIndex}" data-listening-vocab-example-audio="${escapeAttr(example.audioSrc || "")}" data-listening-vocab-example-start="${escapeAttr(example.start ?? "")}" data-listening-vocab-example-end="${escapeAttr(example.end ?? "")}" aria-label="${state.lang === "vi" ? "Nghe câu ví dụ" : "听例句"}">
         ${desktopNavIcon("listening")}
       </button>
     </article>
@@ -7386,7 +7475,10 @@ function selectListeningKeyword(index, button = null) {
 
 async function startListeningRepeatRecording() {
   if (listeningMediaRecorder?.state === "recording") {
+    stopListeningRepeatSilenceMonitor();
     stopListeningRepeatRecognition();
+    listeningRepeatStopTonePlayed = true;
+    playTone("record-stop");
     listeningMediaRecorder.stop();
     return;
   }
@@ -7397,10 +7489,13 @@ async function startListeningRepeatRecording() {
   }
 
   try {
+    ensureAudio();
     listeningRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     clearListeningRecordingPlayback();
+    listeningRepeatStopTonePlayed = false;
     listeningRecordingChunks = [];
     listeningMediaRecorder = new MediaRecorder(listeningRecordingStream, getListeningRecordingOptions());
+    startListeningRepeatSilenceMonitor(listeningRecordingStream);
     document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.add("is-recording"));
     clearListeningPronunciationResult(state.lang === "vi" ? "Đang nghe bạn đọc..." : "正在听你朗读...");
     const canScorePronunciation = startListeningRepeatRecognition();
@@ -7411,6 +7506,9 @@ async function startListeningRepeatRecording() {
     });
 
     listeningMediaRecorder.addEventListener("stop", () => {
+      stopListeningRepeatSilenceMonitor();
+      if (!listeningRepeatStopTonePlayed) playTone("record-stop");
+      listeningRepeatStopTonePlayed = false;
       document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
       listeningRecordingStream?.getTracks().forEach((track) => track.stop());
       listeningRecordingStream = null;
@@ -7427,7 +7525,9 @@ async function startListeningRepeatRecording() {
     }, { once: true });
 
     listeningMediaRecorder.start();
+    playTone("record-start");
   } catch {
+    stopListeningRepeatSilenceMonitor();
     stopListeningRepeatRecognition();
     document.querySelectorAll("[data-listening-record]").forEach((button) => button.classList.remove("is-recording"));
     listeningRecordingStream?.getTracks().forEach((track) => track.stop());
@@ -8743,6 +8843,51 @@ function playAudioSource(source, fallback, meta = {}) {
   playAudioSources([source], fallback, meta);
 }
 
+function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
+  const segmentStart = Number(start);
+  const segmentEnd = Number(end);
+  if (!source || !Number.isFinite(segmentStart) || !Number.isFinite(segmentEnd) || segmentEnd <= segmentStart) {
+    playAudioSources([source], fallback, meta);
+    return;
+  }
+
+  stopSpeechPlayback();
+  const audio = new Audio(source);
+  let handledFailure = false;
+  const resetActiveAudio = () => {
+    if (activeSpeechAudio === audio) activeSpeechAudio = null;
+  };
+  const handleFailure = () => {
+    if (handledFailure) return;
+    handledFailure = true;
+    resetActiveAudio();
+    reportAudioFallback({ ...meta, sources: [source] });
+    fallback?.();
+  };
+
+  activeSpeechAudio = audio;
+  audio.onloadedmetadata = () => {
+    try {
+      audio.currentTime = segmentStart;
+    } catch {
+      handleFailure();
+      return;
+    }
+    const playPromise = audio.play();
+    if (playPromise?.catch) playPromise.catch(handleFailure);
+  };
+  audio.ontimeupdate = () => {
+    if (audio.currentTime >= segmentEnd) {
+      audio.pause();
+      audio.currentTime = segmentStart;
+      resetActiveAudio();
+    }
+  };
+  audio.onended = resetActiveAudio;
+  audio.onerror = handleFailure;
+  audio.load();
+}
+
 function speakText(text) {
   const sources = getVocabAudioSources(text);
   playAudioSources(sources, () => browserSpeakText(text), { text, speed: "normal", sources });
@@ -9368,9 +9513,14 @@ function ensureAudio() {
 function playTone(kind) {
   ensureAudio();
   if (!audioContext) return;
+  const fallbackPatterns = {
+    "record-start": { frequencies: [620, 880], waveform: "sine", volume: 0.045, duration: 0.105, step: 0.078, attack: 0.006 },
+    "record-stop": { frequencies: [860, 520], waveform: "sine", volume: 0.045, duration: 0.12, step: 0.09, attack: 0.006 },
+    key: { frequencies: [1250], waveform: "square", volume: 0.012, duration: 0.038, step: 0.034, attack: 0.004 },
+  };
   const pattern = globalThis.soundEffects?.getTonePattern
     ? globalThis.soundEffects.getTonePattern(kind)
-    : { frequencies: [1250], waveform: "square", volume: 0.012, duration: 0.038, step: 0.034, attack: 0.004 };
+    : (fallbackPatterns[kind] || fallbackPatterns.key);
   const now = audioContext.currentTime;
   pattern.frequencies.forEach((freq, index) => {
     const osc = audioContext.createOscillator();
@@ -9609,7 +9759,22 @@ function bindEvents() {
         const keyword = getListeningKeyword(state.listeningVocabPracticeIndex);
         const examples = getListeningKeywordExamples(keyword).map((example) => normalizeListeningKeywordExample(example, keyword));
         const example = examples[Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleSpeak || 0)];
-        if (example?.chinese) browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+        const sources = uniqueAudioSources([vocabExampleSpeakBtn.dataset.listeningVocabExampleAudio, example?.audioSrc]);
+        const segmentStart = Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleStart || example?.start);
+        const segmentEnd = Number(vocabExampleSpeakBtn.dataset.listeningVocabExampleEnd || example?.end);
+        if (example?.chinese) {
+          const fallback = () => browserSpeakText(example.chinese, { stage: "sentence", rate: 0.98 });
+          const meta = {
+            text: example.chinese,
+            speed: "normal",
+            sources,
+          };
+          if (sources[0] && Number.isFinite(segmentStart) && Number.isFinite(segmentEnd) && segmentEnd > segmentStart) {
+            playAudioSegmentSource(sources[0], segmentStart, segmentEnd, fallback, meta);
+          } else {
+            playAudioSources(sources, fallback, meta);
+          }
+        }
         return;
       }
 
