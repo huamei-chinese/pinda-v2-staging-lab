@@ -10,6 +10,10 @@ test("mobile home topbar keeps the HuaMei title on one line", () => {
     styles,
     /@media \(max-width:\s*700px\) \{[\s\S]*\.screen-home \.home-desktop-topbar\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\) !important;/,
   );
+  assert.match(
+    styles,
+    /\.screen-home \.home-desktop-topbar > div:first-child\s*\{[\s\S]*max-width:\s*calc\(100vw - 32px\) !important;[\s\S]*padding:\s*11px 18px 12px !important;/,
+  );
   assert.match(styles, /\.screen-home \.home-desktop-topbar h1\s*\{[\s\S]*white-space:\s*nowrap !important;[\s\S]*word-break:\s*keep-all !important;/);
-  assert.match(styles, /\.screen-home \.home-desktop-lang-btn\s*\{[\s\S]*justify-self:\s*end !important;[\s\S]*margin-top:\s*-2px !important;/);
+  assert.match(styles, /\.screen-home \.home-desktop-lang-btn\s*\{[\s\S]*justify-self:\s*end !important;[\s\S]*margin-top:\s*-12px !important;/);
 });

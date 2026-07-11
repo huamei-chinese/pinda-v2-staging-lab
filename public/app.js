@@ -615,9 +615,35 @@ const screens = {
   account: $("#accountScreen"),
   subscriptions: $("#subscriptionsScreen"),
 };
+const MOBILE_PAGE_TRANSITION_CLASS = "mobile-page-transition-enter";
+const mobilePageTransitionTimers = new WeakMap();
 let adminUserSearchTimer = null;
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
 let homeTodayStudySession = { area: "", startedAt: Date.now() };
+
+function shouldRunMobilePageTransition() {
+  const isMobile = window.matchMedia?.("(max-width: 700px)")?.matches ?? window.innerWidth <= 700;
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  return isMobile && !reduceMotion;
+}
+
+function triggerMobilePageTransition(screenName) {
+  const node = screens[screenName];
+  if (!node || node.classList.contains("hidden") || !shouldRunMobilePageTransition()) return;
+
+  const oldTimer = mobilePageTransitionTimers.get(node);
+  if (oldTimer) window.clearTimeout(oldTimer);
+
+  node.classList.remove(MOBILE_PAGE_TRANSITION_CLASS);
+  requestAnimationFrame(() => {
+    node.classList.add(MOBILE_PAGE_TRANSITION_CLASS);
+    const timer = window.setTimeout(() => {
+      node.classList.remove(MOBILE_PAGE_TRANSITION_CLASS);
+      mobilePageTransitionTimers.delete(node);
+    }, 420);
+    mobilePageTransitionTimers.set(node, timer);
+  });
+}
 
 function getVietnamDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("vi-VN", {
@@ -5270,6 +5296,7 @@ function setScreen(name) {
   syncHomeTodayStudySession(name);
   state.screen = name;
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
+  triggerMobilePageTransition(name);
   $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "listening" || name === "subscriptions" || name === "account");
 
   // Footer tạm ẩn

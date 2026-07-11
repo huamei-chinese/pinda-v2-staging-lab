@@ -39441,7 +39441,7 @@ body:has(#practiceScreen:not(.hidden)) {
   padding: clamp(20px, 2.4vw, 34px) clamp(18px, 3vw, 42px) clamp(24px, 3vw, 42px) !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .30), rgba(245, 250, 255, .42)),
-    url("assets/backgroundnoitheo2.png") center / cover no-repeat !important;
+    url("assets/backgroundienthoai4.jpg") center / cover no-repeat !important;
 }
 
 #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before {
@@ -39886,7 +39886,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .08)),
-      url("assets/backgroundienthoai4.png") center bottom / cover no-repeat !important;
+      url("assets/backgroundienthoai4.jpg") center / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before {
@@ -40212,7 +40212,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .04)),
-      url("assets/backgroundienthoai4.png") center top / cover no-repeat !important;
+      url("assets/backgroundienthoai4.jpg") center / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before,
@@ -40470,7 +40470,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow: hidden !important;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .08)),
-      url("assets/backgroundienthoai4.png") center -54px / cover no-repeat !important;
+      url("assets/backgroundienthoai4.jpg") center / cover no-repeat !important;
   }
 
   #listeningScreen .app-desktop-shell--listening .listening-repeat-lesson-screen--compact::before {
@@ -41698,7 +41698,7 @@ body:has(#practiceScreen:not(.hidden)) {
       }
 
       #listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact {
-        background: url("/assets/backgroundienthoai4.png") center / cover no-repeat !important;
+        background: url("/assets/backgroundienthoai4.jpg") center / cover no-repeat !important;
       }
 
       #listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact::before,
@@ -42026,8 +42026,10 @@ body:has(#practiceScreen:not(.hidden)) {
     display: inline-flex !important;
     flex-direction: column !important;
     justify-self: start !important;
-    max-width: min(100%, 390px) !important;
-    padding: 9px 12px 10px !important;
+    width: fit-content !important;
+    max-width: calc(100vw - 32px) !important;
+    padding: 11px 18px 12px !important;
+    box-sizing: border-box !important;
   }
 
   .screen-home .home-mobile-topics-head {
@@ -46235,8 +46237,8 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   .screen-home .home-desktop-topbar > div:first-child {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: fit-content !important;
+    max-width: calc(100vw - 32px) !important;
     box-sizing: border-box !important;
   }
 
@@ -46244,14 +46246,14 @@ body:has(#practiceScreen:not(.hidden)) {
     white-space: nowrap !important;
     overflow-wrap: normal !important;
     word-break: keep-all !important;
-    font-size: clamp(25px, 7.35vw, 34px) !important;
+    font-size: clamp(25px, 7.05vw, 33px) !important;
     line-height: 1.04 !important;
   }
 
   .screen-home .home-desktop-lang-btn {
     justify-self: end !important;
     align-self: start !important;
-    margin-top: -2px !important;
+    margin-top: -12px !important;
   }
 }
 
@@ -46943,5 +46945,99 @@ body:has(#practiceScreen:not(.hidden)) {
     box-shadow:
       0 22px 46px rgba(14, 165, 233, 0.34),
       inset 0 1px 0 rgba(255, 255, 255, 0.62) !important;
+  }
+}
+
+/* Listening repeat: use the new responsive phone background on every viewport. */
+#listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat,
+#listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .app-desktop-content,
+#listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen,
+#listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen--compact {
+  background:
+    linear-gradient(180deg, rgba(239, 250, 252, 0.24), rgba(239, 250, 252, 0.42)),
+    url("assets/backgroundienthoai4.jpg") center center / cover no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+@media (min-width: 901px) {
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .app-desktop-content,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen--compact {
+    background-position: center center !important;
+    background-size: cover !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .app-desktop-content,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen--compact {
+    background-position: center center !important;
+    background-size: cover !important;
+  }
+}
+
+/* Mobile page transitions: keep navigation feeling light without delaying taps. */
+@keyframes mobilePageEnterSoft {
+  0% {
+    opacity: 0.001;
+    transform: translate3d(0, 12px, 0) scale(0.992);
+    filter: blur(4px);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) scale(1);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes mobilePageContentRise {
+  0% {
+    opacity: 0.001;
+    transform: translate3d(0, 10px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (max-width: 700px) {
+  #app .screen.mobile-page-transition-enter {
+    animation: mobilePageEnterSoft 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: center top;
+    will-change: opacity, transform, filter;
+    backface-visibility: hidden;
+  }
+
+  #app .screen.mobile-page-transition-enter > .app-desktop-shell,
+  #app .screen.mobile-page-transition-enter > .app-card,
+  #app .screen.mobile-page-transition-enter > .practice-card,
+  #app .screen.mobile-page-transition-enter > .complete-card {
+    animation: mobilePageContentRise 360ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+    will-change: opacity, transform;
+    backface-visibility: hidden;
+  }
+}
+
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  #app .screen.mobile-page-transition-enter,
+  #app .screen.mobile-page-transition-enter > .app-desktop-shell,
+  #app .screen.mobile-page-transition-enter > .app-card,
+  #app .screen.mobile-page-transition-enter > .practice-card,
+  #app .screen.mobile-page-transition-enter > .complete-card {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
   }
 }

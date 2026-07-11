@@ -26,3 +26,14 @@ test("desktop compact repeat pinyin can wrap without clipping", () => {
     /@media \(min-width:\s*701px\) \{[\s\S]*\.listening-repeat-lesson-screen--compact\) \.listening-repeat-feed-active-content small[\s\S]*width:\s*min\(100%,\s*880px\) !important;[\s\S]*max-height:\s*none !important;[\s\S]*overflow:\s*visible !important;/,
   );
 });
+
+test("repeat speaking screen uses the responsive backgroundienthoai4 jpg", () => {
+  assert.match(
+    styles,
+    /#listeningScreen:not\(\.hidden\) \.app-desktop-shell--listening-repeat,[\s\S]*url\("assets\/backgroundienthoai4\.jpg"\) center center \/ cover no-repeat !important;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /listening-repeat-lesson-screen--compact[\s\S]{0,260}backgroundienthoai4\.png/,
+  );
+});
