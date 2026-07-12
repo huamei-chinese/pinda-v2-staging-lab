@@ -1,10 +1,14 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 
 require("ts-node/register/transpile-only");
 
 const { PaymentService } = require("../src/payment/payment.service");
 const { AuthService } = require("../src/auth/auth.service");
+
+const netlifyApiSource = fs.readFileSync(path.join(__dirname, "..", "netlify", "functions", "api.mjs"), "utf8");
 
 test("SePay webhook authorization fails closed when the webhook key is missing", () => {
   const previousKey = process.env.SEPAY_WEBHOOK_API_KEY;
@@ -84,6 +88,23 @@ test("SePay order activation does not extend VIP when the order is already proce
   assert.equal(
     queries.some((query) => query.sql.includes("UPDATE users")),
     false,
+  );
+});
+
+test("Netlify SePay activation persists the selected VIP plan id", () => {
+  assert.match(netlifyApiSource, /ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT/);
+  assert.match(netlifyApiSource, /\{ id: "7d", months: 7, durationUnit: "days", amount: 29000/);
+  assert.match(netlifyApiSource, /\{ id: "30d", months: 30, durationUnit: "days", amount: 129000/);
+  assert.match(netlifyApiSource, /INSERT INTO payment_plans \(id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order\)/);
+  assert.match(netlifyApiSource, /const vipPlanId = isPremium \? normalizeVipPlanId\(row\.vip_plan_id\) : null/);
+  assert.match(netlifyApiSource, /vipPlanId,/);
+  assert.match(
+    netlifyApiSource,
+    /UPDATE users SET is_premium = TRUE, premium_until = \$2, vip_plan_id = \$3, updated_at = NOW\(\) WHERE id = \$1/,
+  );
+  assert.match(
+    netlifyApiSource,
+    /\[order\.user_id, premiumUntil\.toISOString\(\), order\.plan_id\]/,
   );
 });
 

@@ -969,6 +969,7 @@ function catalogLessonToListeningItem(lesson, context = {}) {
       vietnamese: sentence.vi || "",
       start: Number(sentence.start || 0),
       end: Number(sentence.end || 0),
+      audioSrc: listeningCatalogAssetPath(sentence.audio || sentence.audioSrc || ""),
     })),
     keywords: (lesson.keywords || []).map((keyword) => ({
       chinese: keyword.zh || "",
@@ -1169,6 +1170,7 @@ function listeningCatalogLessonToEpisode(lesson = {}, topic = {}) {
     vietnamese: sentence.vi || sentence.vietnamese || "",
     start: Number(sentence.start || 0),
     end: Number(sentence.end || 0),
+    audioSrc: listeningCatalogAssetPath(sentence.audio || sentence.audioSrc || ""),
   })).filter((sentence) => sentence.chinese || sentence.pinyin || sentence.vietnamese);
 
   return buildItem({
@@ -9353,7 +9355,7 @@ let listeningRealtimeCommitTimer = null;
 let listeningRepeatSilenceAudioContext = null;
 let listeningRepeatSilenceSource = null;
 let listeningRepeatSilenceFrame = 0;
-const LISTENING_REPEAT_END_PADDING_SECONDS = 0.65;
+const LISTENING_REPEAT_END_PADDING_SECONDS = 0;
 const LISTENING_REALTIME_FINAL_WAIT_MS = 900;
 const LISTENING_REPEAT_SILENCE_AUTO_STOP_MS = 3000;
 const LISTENING_REPEAT_SILENCE_RMS_THRESHOLD = 0.012;
@@ -10370,19 +10372,26 @@ function speakListeningSentence(index = state.listeningSentenceIndex) {
 function getListeningRepeatSentenceAudioBounds(sentence = {}, audio = null) {
   const startTime = Math.max(0, Number(sentence.start || 0));
   const fallbackDuration = Math.max(1, String(sentence.chinese || "").length * 0.35);
+  if (sentence.audioSrc) {
+    const duration = Number(audio?.duration);
+    const audioDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
+    const endTime = audioDuration === null ? fallbackDuration : audioDuration;
+    return { startTime: 0, endTime, stopTime: endTime };
+  }
   const configuredEnd = Number(sentence.end);
   const rawEndTime = Number.isFinite(configuredEnd) && configuredEnd > startTime
     ? configuredEnd
     : startTime + fallbackDuration;
   const duration = Number(audio?.duration);
   const audioDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
-  const stopTime = Math.max(
-    startTime + 0.6,
-    audioDuration === null
-      ? rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS
-      : Math.min(audioDuration, rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS),
-  );
+  const stopTime = audioDuration === null
+    ? rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS
+    : Math.min(audioDuration, rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS);
   return { startTime, endTime: rawEndTime, stopTime };
+}
+
+function getListeningRepeatSentenceAudioSource(sentence = {}) {
+  return String(sentence.audioSrc || "").trim();
 }
 
 function toggleListeningRepeatSentencePlayback() {
@@ -10391,6 +10400,8 @@ function toggleListeningRepeatSentencePlayback() {
   if (!sentence?.chinese) return false;
 
   const audio = $("#listeningRepeatAudio");
+  const sentenceAudioSrc = getListeningRepeatSentenceAudioSource(sentence);
+  const usesStandaloneSentenceAudio = Boolean(sentence.audioSrc);
 
   if (listeningRepeatSpeechState === "playing") {
     if (audio && !audio.paused) audio.pause();
@@ -10405,22 +10416,24 @@ function toggleListeningRepeatSentencePlayback() {
   }
 
   if (listeningRepeatSpeechState === "paused") {
-    if (audio && episode.audioSrc) {
+    if (audio && (episode.audioSrc || usesStandaloneSentenceAudio)) {
       const resumeToken = listeningRepeatSpeechToken;
-      const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
-      if ((audio.currentTime || 0) < startTime || (audio.currentTime || 0) >= stopTime) {
-        audio.currentTime = startTime;
+      if (!usesStandaloneSentenceAudio) {
+        const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
+        if ((audio.currentTime || 0) < startTime || (audio.currentTime || 0) >= stopTime) {
+          audio.currentTime = startTime;
+        }
+        const remainingMs = Math.max(400, ((stopTime - (audio.currentTime || startTime)) / getListeningPlaybackRate()) * 1000);
+        if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
+        listeningRepeatAudioStopTimer = window.setTimeout(() => {
+          if (listeningRepeatSpeechToken !== resumeToken) return;
+          audio.pause();
+          audio.currentTime = startTime;
+          listeningRepeatSpeechState = "idle";
+          listeningRepeatAudioStopTimer = null;
+          setListeningRepeatListenUi("idle");
+        }, remainingMs);
       }
-      const remainingMs = Math.max(400, ((stopTime - (audio.currentTime || startTime)) / getListeningPlaybackRate()) * 1000 + 180);
-      if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
-      listeningRepeatAudioStopTimer = window.setTimeout(() => {
-        if (listeningRepeatSpeechToken !== resumeToken) return;
-        audio.pause();
-        audio.currentTime = startTime;
-        listeningRepeatSpeechState = "idle";
-        listeningRepeatAudioStopTimer = null;
-        setListeningRepeatListenUi("idle");
-      }, remainingMs);
       audio.play().catch(() => {
         if (listeningRepeatSpeechToken !== resumeToken) return;
         listeningRepeatSpeechState = "idle";
@@ -10440,8 +10453,7 @@ function toggleListeningRepeatSentencePlayback() {
   listeningRepeatSpeechState = "playing";
   setListeningRepeatListenUi("playing");
 
-  if (audio && episode.audioSrc) {
-    const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
+  if (audio && (episode.audioSrc || usesStandaloneSentenceAudio)) {
     const resetRepeatAudioUi = () => {
       if (listeningRepeatSpeechToken !== speechToken) return;
       listeningRepeatSpeechState = "idle";
@@ -10453,8 +10465,13 @@ function toggleListeningRepeatSentencePlayback() {
     };
     window.speechSynthesis?.cancel();
     applyListeningPlaybackRate(audio);
-    audio.currentTime = startTime;
-    audio.ontimeupdate = () => {
+    if (usesStandaloneSentenceAudio) {
+      audio.src = sentenceAudioSrc;
+      audio.currentTime = 0;
+    }
+    const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds(sentence, audio);
+    if (!usesStandaloneSentenceAudio) audio.currentTime = startTime;
+    audio.ontimeupdate = usesStandaloneSentenceAudio ? null : () => {
       if (listeningRepeatSpeechToken !== speechToken) return;
       if (audio.currentTime >= stopTime) {
         audio.pause();
@@ -10474,13 +10491,18 @@ function toggleListeningRepeatSentencePlayback() {
       setListeningRepeatListenUi("playing");
       browserSpeakText(sentence.chinese, { stage: "sentence", rate: playbackRate, onend: resetRepeatAudioUi, onerror: resetRepeatAudioUi });
     };
-    if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
-    listeningRepeatAudioStopTimer = window.setTimeout(() => {
-      if (listeningRepeatSpeechToken !== speechToken) return;
-      audio.pause();
-      audio.currentTime = startTime;
-      resetRepeatAudioUi();
-    }, Math.max(600, ((stopTime - startTime) / playbackRate) * 1000 + 180));
+    if (listeningRepeatAudioStopTimer) {
+      window.clearTimeout(listeningRepeatAudioStopTimer);
+      listeningRepeatAudioStopTimer = null;
+    }
+    if (!usesStandaloneSentenceAudio) {
+      listeningRepeatAudioStopTimer = window.setTimeout(() => {
+        if (listeningRepeatSpeechToken !== speechToken) return;
+        audio.pause();
+        audio.currentTime = startTime;
+        resetRepeatAudioUi();
+      }, Math.max(600, ((stopTime - startTime) / playbackRate) * 1000));
+    }
     audio.play().catch(() => {
       if (listeningRepeatSpeechToken !== speechToken) return;
       resetRepeatAudioUi();
@@ -10981,7 +11003,7 @@ function renderListeningRepeatLesson(options = {}) {
         <span>${isVi ? "Luyện nói" : "Speaking"}</span>
       </button>
       <section class="listening-repeat-workspace listening-repeat-workspace--compact">
-        <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
+        <audio id="listeningRepeatAudio" src="${escapeAttr(sentence.audioSrc || episode.audioSrc || "")}" preload="none"></audio>
         <div class="listening-repeat-practice-grid">
           <div class="listening-repeat-sentence-feed" aria-label="${escapeAttr(isVi ? "Danh sách câu nói" : "Sentence list")}">
             ${sentenceFeedHTML}
@@ -11039,7 +11061,7 @@ function renderListeningRepeatLesson(options = {}) {
         </aside>
 
         <section class="listening-repeat-workspace">
-          <audio id="listeningRepeatAudio" src="${escapeAttr(episode.audioSrc || "")}" preload="none"></audio>
+          <audio id="listeningRepeatAudio" src="${escapeAttr(sentence.audioSrc || episode.audioSrc || "")}" preload="none"></audio>
           <div class="listening-repeat-step">
             <div class="listening-repeat-step-index">1</div>
             <div class="listening-repeat-step-control">
@@ -11317,8 +11339,8 @@ async function startListeningRepeatRecording() {
     listeningRecordingStream?.getTracks().forEach((track) => track.stop());
     listeningRecordingStream = null;
     showToast(state.lang === "vi" ? "Không thể mở micro. Hãy kiểm tra quyền trình duyệt." : "无法打开麦克风，请检查浏览器权限。");
-  }
-}
+        }
+      }
 
 function setListeningPlayIcon(isPlaying) {
   document.querySelectorAll("[data-listening-play]").forEach((button) => {
