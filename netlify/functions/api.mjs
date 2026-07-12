@@ -24,9 +24,8 @@ function applyPlanDuration(base, plan) {
 }
 
 const DEFAULT_PAYMENT_PLANS = [
-  { id: "1m", months: 1, amount: 149000, nameVi: "1 Tháng", nameZh: "1 个月" },
-  { id: "3m", months: 3, amount: 399000, nameVi: "3 Tháng", nameZh: "3 个月" },
-  { id: "6m", months: 6, amount: 699000, nameVi: "6 Tháng", nameZh: "6 个月" },
+  { id: "7d", months: 7, durationUnit: "days", amount: 29000, nameVi: "Gói VIP 7 ngày", nameZh: "7天 VIP" },
+  { id: "30d", months: 30, durationUnit: "days", amount: 129000, nameVi: "Gói VIP 1 tháng", nameZh: "1个月 VIP" },
 ];
 
 function env(name) {
@@ -766,14 +765,19 @@ async function query(text, params) {
   return getPool().query(text, params);
 }
 
+async function ensureSafeSchemaMigrations(db) {
+  await db.query("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
+}
+
 async function ensureSchema() {
   if (schemaReady) return schemaReady;
   schemaReady = (async () => {
+    const db = getPool();
+    await ensureSafeSchemaMigrations(db);
     if (isProduction() && !isEnabled("ENABLE_DB_SCHEMA_INIT")) {
       console.warn("Database schema initialization skipped in production.");
       return;
     }
-    const db = getPool();
     await db.query("CREATE EXTENSION IF NOT EXISTS pgcrypto;");
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -787,6 +791,7 @@ async function ensureSchema() {
         avatar_url TEXT,
         is_premium BOOLEAN NOT NULL DEFAULT FALSE,
         premium_until TIMESTAMPTZ,
+        vip_plan_id TEXT,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
@@ -804,6 +809,7 @@ async function ensureSchema() {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;");
@@ -857,10 +863,10 @@ async function ensureSchema() {
     `);
     for (const [index, plan] of DEFAULT_PAYMENT_PLANS.entries()) {
       await db.query(
-        `INSERT INTO payment_plans (id, months, amount, name_vi, name_zh, is_active, sort_order)
-         VALUES ($1, $2, $3, $4, $5, TRUE, $6)
+        `INSERT INTO payment_plans (id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7)
          ON CONFLICT (id) DO NOTHING`,
-        [plan.id, plan.months, plan.amount, plan.nameVi, plan.nameZh, index + 1],
+        [plan.id, plan.months, plan.durationUnit, plan.amount, plan.nameVi, plan.nameZh, index + 1],
       );
     }
     await db.query(`
@@ -939,6 +945,7 @@ function verifyPassword(password, storedHash) {
 function publicUser(row) {
   const premiumUntil = row.premium_until ? new Date(row.premium_until) : null;
   const isPremium = Boolean(row.is_premium && (!premiumUntil || premiumUntil.getTime() > Date.now()));
+  const vipPlanId = isPremium ? normalizeVipPlanId(row.vip_plan_id) : null;
   return {
     id: row.id,
     fullName: row.full_name,
@@ -950,7 +957,13 @@ function publicUser(row) {
     currentLevel: row.current_level || "HSK2",
     avatarUrl: row.avatar_url || "",
     isPremium,
-    plan: isPremium ? "PREMIUM" : "FREE",
+    plan: isPremium ? (vipPlanId || "PREMIUM") : "FREE",
+    vipPlan: isPremium ? (vipPlanId || "PREMIUM") : "FREE",
+    vipPlanId,
+    vipPlanName: vipPlanName(vipPlanId, "vi"),
+    vipPlanNameZh: vipPlanName(vipPlanId, "zh"),
+    vipStatus: isPremium ? "active" : "inactive",
+    vipExpiresAt: row.premium_until || null,
     vip: Number(row.vip || 0),
     premiumUntil: row.premium_until || null,
     dailyReminderEnabled: row.daily_reminder_enabled !== false,
@@ -960,6 +973,19 @@ function publicUser(row) {
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
   };
+}
+
+function normalizeVipPlanId(planId) {
+  const normalized = String(planId || "").trim().toLowerCase();
+  if (normalized === "7d") return "7d";
+  if (normalized === "30d") return "30d";
+  return normalized || null;
+}
+
+function vipPlanName(planId, lang) {
+  if (planId === "7d") return lang === "zh" ? "7天VIP" : "VIP 7 ngày";
+  if (planId === "30d") return lang === "zh" ? "30天VIP" : "VIP 30 ngày";
+  return null;
 }
 
 function normalizePublicRole(role) {
@@ -1147,7 +1173,7 @@ async function register(body) {
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, ref, src)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, hashPassword(password), ref, src],
     );
     return json({ user: publicUser(result.rows[0]) });
@@ -1169,7 +1195,7 @@ async function login(body) {
   const updated = await query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [user.id],
   );
   return json({ user: publicUser(updated.rows[0]) });
@@ -1207,7 +1233,7 @@ async function updateOwnProfile(req, id, body) {
            email_verification_expires_at = CASE WHEN email = $2 THEN email_verification_expires_at ELSE NULL END,
            updated_at = NOW()
        WHERE id = $6
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, currentLevel, avatarUrl || null, dailyReminderEnabled, id],
     );
     if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1228,7 +1254,7 @@ async function updateOwnAvatar(req, id, body) {
     `UPDATE users
      SET avatar_url = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [avatarUrl, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1275,7 +1301,7 @@ async function updateOwnReminderSettings(req, id, body) {
     `UPDATE users
      SET daily_reminder_enabled = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [enabled, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1384,7 +1410,7 @@ async function confirmEmailVerificationCode(req, id, body) {
          email_verification_expires_at = NULL,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [id],
   );
   return json({ ok: true, user: publicUser(updated.rows[0]) });
@@ -1412,7 +1438,7 @@ async function listUsers(req) {
   await assertAdmin(req);
   await recalculateCtvVipCounts();
   const result = await query(
-    `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+    `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
      FROM users
      ORDER BY created_at DESC`,
   );
@@ -1450,7 +1476,7 @@ async function createUser(req, body) {
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil],
     );
     return json({ user: publicUser(result.rows[0]) });
@@ -1472,7 +1498,7 @@ async function updateUser(req, id, body) {
     `UPDATE users
      SET full_name = $1, email = $2, role = $3, is_active = $4, current_level = $5, updated_at = NOW()
      WHERE id = $6
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [fullName, email, role, isActive, currentLevel, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy user.", 404);
@@ -1501,7 +1527,7 @@ async function updateUserRole(req, id, body) {
     `UPDATE users
      SET role = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [nextRole, id],
   );
   return json({ user: publicUser(result.rows[0]) });
@@ -1529,7 +1555,7 @@ async function updateUserRef(req, id, body) {
      SET ref = $1,
          updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [ref, id],
   );
   return json({ user: publicUser(result.rows[0]) });
@@ -2188,7 +2214,7 @@ async function activateOrder(order, sepayId) {
     const currentEnd = userResult.rows[0]?.premium_until ? new Date(userResult.rows[0].premium_until) : null;
     const premiumUntil = applyPlanDuration(currentEnd && currentEnd > now ? currentEnd : now, plan);
     await client.query("UPDATE payment_orders SET status = 'paid', paid_at = NOW() WHERE id = $1 AND status = 'pending'", [order.id]);
-    await client.query("UPDATE users SET is_premium = TRUE, premium_until = $2, updated_at = NOW() WHERE id = $1", [order.user_id, premiumUntil.toISOString()]);
+    await client.query("UPDATE users SET is_premium = TRUE, premium_until = $2, vip_plan_id = $3, updated_at = NOW() WHERE id = $1", [order.user_id, premiumUntil.toISOString(), order.plan_id]);
     await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, order.id]);
     await client.query("COMMIT");
   } catch (error) {
