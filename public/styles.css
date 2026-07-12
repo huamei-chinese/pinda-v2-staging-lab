@@ -1976,7 +1976,7 @@ p {
   border-radius: clamp(22px, 2.4vw, 34px);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.92) 0%, rgba(243, 255, 252, 0.78) 45%, rgba(225, 251, 247, 0.22) 78%),
-    url("assets/backgroundthongdung.png") center / cover no-repeat,
+    url("assets/backgroundthongdung-optimized.jpg") center / cover no-repeat,
     rgba(242, 253, 250, 0.9);
   box-shadow:
     0 24px 56px rgba(15, 82, 74, 0.15),
@@ -27313,7 +27313,7 @@ body:has(#practiceScreen:not(.hidden)) {
     linear-gradient(180deg,
       rgba(255, 255, 255, 0.72),
       rgba(248, 250, 255, 0.84)),
-    url("assets/anhnentuvung.png"),
+    url("assets/anhnentuvung-optimized.jpg"),
     linear-gradient(135deg, #f7f2ff, #eef9ff) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -27345,7 +27345,7 @@ body:has(#practiceScreen:not(.hidden)) {
     linear-gradient(180deg,
       rgba(255, 255, 255, 0.48),
       rgba(248, 250, 255, 0.62)),
-    url("assets/anhnentuvung.png"),
+    url("assets/anhnentuvung-optimized.jpg"),
     linear-gradient(135deg, #f7f2ff, #eef9ff) !important;
   background-size: cover !important;
   background-position: center !important;
@@ -28618,13 +28618,13 @@ body:has(#practiceScreen:not(.hidden)) {
   text-shadow: 0 5px 18px rgba(0, 0, 0, 0.18);
 }
 
-/* Dùng ảnh assets/docthoai1.png cho banner Luyện nghe */
+/* Dùng ảnh assets/docthoai1-optimized.jpg cho banner Luyện nghe */
 .listening-gateway-hero {
   background:
     linear-gradient(90deg,
       rgba(4, 87, 82, 0.10),
       rgba(4, 87, 82, 0.02)),
-    url("assets/docthoai1.png") center / cover no-repeat !important;
+    url("assets/docthoai1-optimized.jpg") center / cover no-repeat !important;
   min-height: 330px !important;
   border-radius: 34px !important;
   padding: 54px 72px !important;
@@ -29007,7 +29007,7 @@ body:has(#practiceScreen:not(.hidden)) {
       rgba(240, 253, 250, 1.4) 47%,
       rgba(240, 253, 250, 0.3) 60%,
       rgba(240, 253, 250, 0.1) 76%),
-    url("assets/luyennghe.png") center / cover no-repeat !important;
+    url("assets/luyennghe-optimized.jpg") center / cover no-repeat !important;
   box-shadow: 0 22px 50px rgba(13, 148, 136, 0.16) !important;
 }
 
@@ -29436,7 +29436,7 @@ body:has(#practiceScreen:not(.hidden)) {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .78), rgba(247, 251, 255, .52), rgba(238, 247, 255, .72)),
-    url("assets/anhnentuvung.png") center / cover no-repeat,
+    url("assets/anhnentuvung-optimized.jpg") center / cover no-repeat,
     #f7fbff;
 }
 
@@ -29699,7 +29699,7 @@ body:has(#practiceScreen:not(.hidden)) {
     overflow-x: hidden !important;
     background:
       linear-gradient(90deg, rgba(255, 255, 255, .62), rgba(241, 249, 255, .76)),
-      url("assets/anhnentuvung.png") center / cover no-repeat !important;
+      url("assets/anhnentuvung-optimized.jpg") center / cover no-repeat !important;
   }
 
 
@@ -29863,7 +29863,7 @@ body:has(#practiceScreen:not(.hidden)) {
   padding: clamp(18px, 3vw, 40px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(238, 249, 255, .82)),
-    url("assets/anhnentuvung.png") center / cover no-repeat,
+    url("assets/anhnentuvung-optimized.jpg") center / cover no-repeat,
     #f4fbff;
 }
 
@@ -29878,7 +29878,7 @@ body:has(#practiceScreen:not(.hidden)) {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(237, 255, 250, .96) 0%, rgba(233, 251, 247, .78) 42%, rgba(72, 211, 204, .28) 100%),
-    url("assets/anhnentuvung.png") right center / auto 115% no-repeat;
+    url("assets/anhnentuvung-optimized.jpg") right center / auto 115% no-repeat;
   box-shadow: 0 28px 70px rgba(29, 91, 105, .14);
 }
 
@@ -29971,11 +29971,11 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .listening-gateway-card--dialogue::after {
-  background-image: url("assets/doithoai1.png") !important;
+  background-image: url("assets/doithoai1-optimized.jpg") !important;
 }
 
 .listening-gateway-card-illustration--dialogue {
-  background-image: url("assets/doithoai1.png") !important;
+  background-image: url("assets/doithoai1-optimized.jpg") !important;
 }
 
 .listening-gateway-card--monologue {
@@ -29991,11 +29991,11 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .listening-gateway-card--monologue::after {
-  background-image: url("assets/docthoai1.png") !important;
+  background-image: url("assets/docthoai1-optimized.jpg") !important;
 }
 
 .listening-gateway-card-illustration--monologue {
-  background-image: url("assets/docthoai1.png") !important;
+  background-image: url("assets/docthoai1-optimized.jpg") !important;
 }
 
 .listening-gateway-card-head {
@@ -30089,7 +30089,7 @@ body:has(#practiceScreen:not(.hidden)) {
   .app-desktop-shell--listening .app-desktop-content {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, .76), rgba(240, 249, 255, .8)),
-      url("assets/anhnentuvung.png") center / cover no-repeat !important;
+      url("assets/anhnentuvung-optimized.jpg") center / cover no-repeat !important;
   }
 
   .listening-gateway-screen {
@@ -30373,7 +30373,7 @@ body:has(#practiceScreen:not(.hidden)) {
   position: fixed !important;
   inset: 0 !important;
   z-index: -2 !important;
-  background-image: url("assets/anhnentuvung.png") !important;
+  background-image: url("assets/anhnentuvung-optimized.jpg") !important;
   background-size: cover !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
@@ -30431,7 +30431,7 @@ body:has(#practiceScreen:not(.hidden)) {
   /* margin-top: 50px !important; */
   background:
     linear-gradient(90deg, rgba(255, 255, 255, .36), rgba(255, 255, 255, .18)),
-    url("assets/anhnentuvung.png") center top / cover no-repeat !important;
+    url("assets/anhnentuvung-optimized.jpg") center top / cover no-repeat !important;
 }
 
 /* Mobile */
@@ -34250,7 +34250,7 @@ body:has(#practiceScreen:not(.hidden)) {
       rgba(94, 92, 255, 0.16) 0%,
       rgba(16, 185, 129, 0.10) 42%,
       rgba(236, 72, 153, 0.12) 100%),
-    url("assets/anhnentuvung.png") center bottom / cover no-repeat !important;
+    url("assets/anhnentuvung-optimized.jpg") center bottom / cover no-repeat !important;
 }
 
 .listening-repeat-listen-card,
@@ -35900,7 +35900,7 @@ body:has(#practiceScreen:not(.hidden)) {
   padding: 0 !important;
   border-radius: 18px !important;
   overflow: hidden !important;
-  background: url("assets/anhnentrinhphatnhac.png") center / cover no-repeat !important;
+  background: url("assets/anhnentrinhphatnhac-optimized.jpg") center / cover no-repeat !important;
   box-shadow: 0 14px 34px rgba(37, 99, 235, 0.1) !important;
 }
 
@@ -38734,7 +38734,7 @@ body:has(#practiceScreen:not(.hidden)) {
     width: calc(100% + 16px) !important;
     margin: 0 -8px !important;
     border-radius: 0 0 30px 30px !important;
-    background-image: url("assets/anhnentrinhphatnhac.png") !important;
+    background-image: url("assets/anhnentrinhphatnhac-optimized.jpg") !important;
     background-size: cover !important;
     background-position: center top !important;
     box-shadow: 0 16px 30px rgba(78, 61, 130, 0.2) !important;
@@ -41008,7 +41008,7 @@ body:has(#practiceScreen:not(.hidden)) {
     width: calc(100% + 16px) !important;
     margin: 0 -8px !important;
     border-radius: 0 0 26px 26px !important;
-    background: url("assets/anhnentrinhphatnhac.png") center top / cover no-repeat !important;
+    background: url("assets/anhnentrinhphatnhac-optimized.jpg") center top / cover no-repeat !important;
     box-shadow: 0 16px 30px rgba(78, 61, 130, 0.2) !important;
   }
 
@@ -46184,7 +46184,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .screen-home .home-desktop-module-card.home-duo-card--listen {
   background:
     linear-gradient(105deg, rgba(7, 89, 133, 0.5), rgba(14, 165, 233, 0.5)),
-    url("assets/backgroundluyennghe.png") center / cover no-repeat !important;
+    url("assets/backgroundluyennghe-optimized.jpg") center / cover no-repeat !important;
   border: 1px solid rgba(14, 165, 233, 0.55) !important;
   box-shadow:
     0 24px 58px rgba(14, 116, 144, 0.2),
@@ -46504,7 +46504,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .screen-home .home-desktop-module-card.home-duo-card--write {
   background:
     linear-gradient(105deg, rgba(4, 120, 87, 0.82) 0%, rgba(5, 150, 105, 0.66) 42%, rgba(240, 253, 250, 0.18) 100%),
-    url("assets/backgroundluyenviet.png") center / cover no-repeat !important;
+    url("assets/backgroundluyenviet-optimized.jpg") center / cover no-repeat !important;
   border: 1px solid rgba(153, 246, 228, 0.42) !important;
   box-shadow:
     0 24px 58px rgba(15, 118, 110, 0.24),

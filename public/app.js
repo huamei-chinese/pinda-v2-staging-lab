@@ -742,6 +742,38 @@ function scheduleScreenMediaOptimization(root = document) {
   }
 }
 
+const IDLE_IMAGE_PRELOAD_SOURCES = [
+  "assets/luyennghe-optimized.jpg",
+  "assets/anhnentuvung-optimized.jpg",
+  "assets/anhnentrinhphatnhac-optimized.jpg",
+  "assets/backgroundluyennghe-optimized.jpg",
+  "assets/backgroundluyenviet-optimized.jpg",
+  "assets/backgroundthongdung-optimized.jpg",
+  "assets/docthoai1-optimized.jpg",
+  "assets/doithoai1-optimized.jpg",
+  "assets/hsk-level-hero-optimized.jpg",
+];
+let idleImagePreloadStarted = false;
+
+function scheduleIdleImagePreload() {
+  if (idleImagePreloadStarted) return;
+  if (navigator.connection?.saveData) return;
+  idleImagePreloadStarted = true;
+  const preload = () => {
+    IDLE_IMAGE_PRELOAD_SOURCES.forEach((src) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.fetchPriority = "low";
+      image.src = src;
+    });
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(preload, { timeout: 2500 });
+    return;
+  }
+  setTimeout(preload, 1200);
+}
+
 function getVietnamDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh",
@@ -8147,7 +8179,7 @@ function renderHomeDesktopModulesHTML(isVi) {
           </button>
         </div>
         <div class="home-duo-art home-duo-art--write">
-          <img src="assets/home-module-writing.png" alt="" onerror="this.src='assets/home-module-hsk-pc.png'" />
+          <img src="assets/home-module-writing-optimized.jpg" alt="" onerror="this.src='assets/home-module-hsk-pc.png'" />
         </div>
         <span class="home-duo-watermark">写</span>
       </article>
@@ -8163,7 +8195,7 @@ function renderHomeDesktopModulesHTML(isVi) {
           </button>
         </div>
         <div class="home-duo-art home-duo-art--listen">
-          <img src="assets/home-module-listening1.png" alt="" onerror="this.src='assets/home-module-vocab-pc.png'" />
+          <img src="assets/home-module-listening1-optimized.jpg" alt="" onerror="this.src='assets/home-module-vocab-pc.png'" />
         </div>
         <span class="home-duo-watermark">听</span>
       </article>
@@ -12121,7 +12153,7 @@ function renderHomeMobileModulesHTML(isVi) {
     <section class="home-mobile-modules" aria-label="${isVi ? "Khóa học nhanh" : "快捷课程"}">
       <div class="home-mobile-modules-grid">
         <article class="home-mobile-module-card home-mobile-module-card--hsk" data-home-module="hsk" role="button" tabindex="0">
-          <img class="home-mobile-module-cover" src="assets/home-module-hsk.png" alt="" />
+          <img class="home-mobile-module-cover" src="assets/home-module-hsk-optimized.jpg" alt="" />
           <div class="home-mobile-module-content">
             <div class="home-mobile-module-copy">
               <h3>HSK</h3>
@@ -12135,7 +12167,7 @@ function renderHomeMobileModulesHTML(isVi) {
         </article>
 
         <article class="home-mobile-module-card home-mobile-module-card--daily" data-home-module="daily" role="button" tabindex="0">
-          <img class="home-mobile-module-cover" src="assets/home-module-daily.png" alt="" />
+          <img class="home-mobile-module-cover" src="assets/home-module-daily-optimized.jpg" alt="" />
           <div class="home-mobile-module-content">
             <div class="home-mobile-module-copy">
               <h3>${isVi ? "Giao tiếp" : "交际"}</h3>
@@ -12149,7 +12181,7 @@ function renderHomeMobileModulesHTML(isVi) {
         </article>
 
         <article class="home-mobile-module-card home-mobile-module-card--vocab" data-home-module="vocab" role="button" tabindex="0">
-          <img class="home-mobile-module-cover" src="assets/home-module-vocab.png" alt="" />
+          <img class="home-mobile-module-cover" src="assets/home-module-vocab-optimized.jpg" alt="" />
           <div class="home-mobile-module-content">
             <div class="home-mobile-module-copy">
               <h3>${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h3>
@@ -12313,6 +12345,7 @@ function renderHome() {
     </div>
   `;
   scheduleScreenMediaOptimization(screens.home);
+  scheduleIdleImagePreload();
 }
 
 function renderCourse(options = {}) {
@@ -12589,7 +12622,7 @@ function renderHskLevelPickerHTML() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <img src="assets/hsk-level-hero.png" alt="" aria-hidden="true" />
+        <img src="assets/hsk-level-hero-optimized.jpg" alt="" aria-hidden="true" />
       </div>
 
       <div class="hsk-level-grid">
@@ -12679,7 +12712,7 @@ function renderWritePathPickerHTML() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <img src="assets/hsk-level-hero.png" alt="" aria-hidden="true" />
+        <img src="assets/hsk-level-hero-optimized.jpg" alt="" aria-hidden="true" />
       </div>
 
       <div class="write-path-grid" aria-label="${isVi ? "Chọn lộ trình luyện viết" : "选择练写路径"}">
