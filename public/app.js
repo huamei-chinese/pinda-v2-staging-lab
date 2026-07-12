@@ -279,6 +279,10 @@ const hskLevelContentScripts = {
 
 const hskLevelContentLoaded = new Set();
 const dynamicScriptPromises = {};
+const LISTENING_CATALOG_SCRIPT_SRC = "listening-app/data/listening-catalog.js?v=20260704";
+let listeningCatalogTopics = [];
+let listeningCatalogLoaded = false;
+let listeningCatalogLoadPromise = null;
 
 function mergeHskLevelContent(levelKey) {
   const lessonMap = globalThis.lessonContent?.[levelKey];
@@ -321,7 +325,10 @@ function loadDynamicScript(src) {
       script.dataset.loaded = "true";
       resolve();
     };
-    script.onerror = () => reject(new Error(`Could not load ${src}`));
+    script.onerror = () => {
+      delete dynamicScriptPromises[src];
+      reject(new Error(`Could not load ${src}`));
+    };
     if (!existing) document.body.appendChild(script);
   });
 
@@ -344,7 +351,8 @@ async function ensureHskLevelContent(levelKey) {
   }
 }
 
-const dailyThemes = globalThis.highFrequencyTopics || [
+const HIGH_FREQUENCY_TOPICS_SCRIPT_SRC = "lesson-high-frequency-v1-27-topics.js";
+const fallbackDailyThemes = [
   ["greeting", "Hi", "Chào hỏi và giới thiệu", "问候与介绍", "#58cc02"],
   ["interview", "CV", "Phỏng vấn xin việc", "工作面试", "#1cb0f6"],
   ["classroom", "BK", "Học trên lớp", "课堂学习", "#ce82ff"],
@@ -370,6 +378,62 @@ const dailyThemes = globalThis.highFrequencyTopics || [
     item("mixed", "Tôi muốn học tiếng Trung.", "我想学中文。", [w("我", "wo", "wǒ", "pron", "tôi"), w("想", "xiang", "xiǎng", "verb", "muốn"), w("学中文", "xue zhongwen", "xué Zhōngwén", "phrase", "học tiếng Trung")]),
   ],
 }));
+let dailyThemes = Array.isArray(globalThis.highFrequencyTopics) && globalThis.highFrequencyTopics.length
+  ? globalThis.highFrequencyTopics
+  : fallbackDailyThemes;
+let highFrequencyTopicsLoaded = Array.isArray(globalThis.highFrequencyTopics) && globalThis.highFrequencyTopics.length >= 20;
+let highFrequencyTopicsLoadPromise = null;
+
+function hydrateHighFrequencyTopics() {
+  if (!Array.isArray(globalThis.highFrequencyTopics) || !globalThis.highFrequencyTopics.length) return false;
+  dailyThemes = globalThis.highFrequencyTopics;
+  highFrequencyTopicsLoaded = true;
+  return true;
+}
+
+function ensureHighFrequencyTopicsLoaded(options = {}) {
+  if (highFrequencyTopicsLoaded || hydrateHighFrequencyTopics()) return Promise.resolve(true);
+  if (highFrequencyTopicsLoadPromise) return highFrequencyTopicsLoadPromise;
+
+  highFrequencyTopicsLoadPromise = loadDynamicScript(HIGH_FREQUENCY_TOPICS_SCRIPT_SRC)
+    .then(() => {
+      if (!hydrateHighFrequencyTopics()) throw new Error("High frequency topics did not register data.");
+      return true;
+    })
+    .catch((error) => {
+      console.warn("Could not lazy-load high-frequency topics.", error);
+      if (!options.silent && typeof showToast === "function") {
+        showToast(state.lang === "vi"
+          ? "ChÆ°a táº£i Ä‘Æ°á»£c chá»§ Ä‘á» giao tiáº¿p. Vui lÃ²ng thá»­ láº¡i."
+          : "äº¤é™…ä¸»é¢˜åŠ è½½å¤±è´¥ï¼Œè¯·é‡è¯•ã€‚");
+      }
+      highFrequencyTopicsLoadPromise = null;
+      return false;
+    });
+  return highFrequencyTopicsLoadPromise;
+}
+
+hydrateHighFrequencyTopics();
+
+function shouldLoadHighFrequencyTopicsForCourse() {
+  if (highFrequencyTopicsLoaded) return false;
+  if (state.module === "daily") return true;
+  return state.module === "hsk" && (state.writeCourseView === "paths" || state.writeCourseView === "communication");
+}
+
+function renderHighFrequencyTopicsLoading(options = {}) {
+  const isVi = state.lang === "vi";
+  const activeNav = state.module === "daily" ? "daily" : "hsk";
+  setScreenWithDesktopShell("course", `
+    <section class="hsk-lesson-screen hsk-lesson-screen--loading">
+      <div class="hsk-lesson-panel">
+        <div class="hsk-no-results">
+          ${isVi ? "Dang tai du lieu chu de..." : "Loading topic data..."}
+        </div>
+      </div>
+    </section>
+  `, "app-desktop-shell--course", activeNav, options);
+}
 
 const hskTags = {
   "hsk2-l1": { text: "Du lịch", class: "tag-travel", icon: "🌲" },
@@ -643,6 +707,39 @@ function triggerMobilePageTransition(screenName) {
     }, 420);
     mobilePageTransitionTimers.set(node, timer);
   });
+}
+
+function optimizeScreenMedia(root = document) {
+  if (!root?.querySelectorAll) return;
+  root.querySelectorAll("img").forEach((img) => {
+    if (!img.hasAttribute("decoding")) img.setAttribute("decoding", "async");
+    const shouldEagerLoad = img.closest([
+      ".home-desktop-module-card:first-child",
+      ".home-mobile-module-card:first-child",
+      ".listening-gateway-hero",
+      ".listening-topic-hero",
+      ".listening-detail-banner",
+      ".hsk-level-hero",
+      ".write-path-hero",
+      ".write-communication-header",
+    ].join(", "));
+    if (!img.hasAttribute("loading")) {
+      img.setAttribute("loading", shouldEagerLoad ? "eager" : "lazy");
+    }
+    if (!img.hasAttribute("fetchpriority")) {
+      img.setAttribute("fetchpriority", shouldEagerLoad ? "high" : "low");
+    }
+  });
+  root.querySelectorAll("audio").forEach((audio) => {
+    if (!audio.hasAttribute("preload")) audio.setAttribute("preload", "none");
+  });
+}
+
+function scheduleScreenMediaOptimization(root = document) {
+  optimizeScreenMedia(root);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => optimizeScreenMedia(root));
+  }
 }
 
 function getVietnamDateParts(date = new Date()) {
@@ -1309,17 +1406,58 @@ function repairListeningTextFields(value, key = "") {
   return value;
 }
 
-const listeningCatalogTopics = getListeningCatalogTopics();
-listeningCatalogTopics.forEach((topic) => {
-  (topic.lessons || []).forEach((lesson) => {
-    if (!listeningEpisodes.some((episode) => episode.id === lesson.id)) {
-      listeningEpisodes.push(listeningCatalogLessonToEpisode(lesson, topic));
-    }
+function hydrateListeningCatalog() {
+  const topics = getListeningCatalogTopics();
+  if (!topics.length) return false;
+  listeningCatalogTopics = topics;
+  listeningCatalogTopics.forEach((topic) => {
+    (topic.lessons || []).forEach((lesson) => {
+      if (!listeningEpisodes.some((episode) => episode.id === lesson.id)) {
+        listeningEpisodes.push(listeningCatalogLessonToEpisode(lesson, topic));
+      }
+    });
   });
-});
+  appendCatalogListeningEpisodes();
+  listeningEpisodes.forEach(repairListeningTextFields);
+  listeningCatalogLoaded = true;
+  return true;
+}
 
-appendCatalogListeningEpisodes();
+function renderListeningCatalogLoading(options = {}) {
+  const isVi = state.lang === "vi";
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-gateway-screen listening-gateway-screen--loading">
+      <div class="hsk-no-results">
+        ${isVi ? "Äang táº£i dá»¯ liá»‡u luyá»‡n nghe..." : "æ­£åœ¨åŠ è½½å¬åŠ›æ•°æ®..."}
+      </div>
+    </section>
+  `, "app-desktop-shell--listening", "listening", options);
+}
 
+function ensureListeningCatalogLoaded(options = {}) {
+  if (listeningCatalogLoaded || hydrateListeningCatalog()) return Promise.resolve(true);
+  if (listeningCatalogLoadPromise) return listeningCatalogLoadPromise;
+
+  if (options.renderLoading) renderListeningCatalogLoading(options);
+  listeningCatalogLoadPromise = loadDynamicScript(LISTENING_CATALOG_SCRIPT_SRC)
+    .then(() => {
+      if (!hydrateListeningCatalog()) throw new Error("Listening catalog did not register data.");
+      return true;
+    })
+    .catch((error) => {
+      console.warn("Could not lazy-load listening catalog.", error);
+      if (!options.silent && typeof showToast === "function") {
+        showToast(state.lang === "vi"
+          ? "ChÆ°a táº£i Ä‘Æ°á»£c dá»¯ liá»‡u luyá»‡n nghe. Vui lÃ²ng thá»­ láº¡i."
+          : "å¬åŠ›æ•°æ®åŠ è½½å¤±è´¥ï¼Œè¯·é‡è¯•ã€‚");
+      }
+      listeningCatalogLoadPromise = null;
+      return false;
+    });
+  return listeningCatalogLoadPromise;
+}
+
+hydrateListeningCatalog();
 listeningEpisodes.forEach(repairListeningTextFields);
 
 function getListeningEpisode(episodeId = state.listeningEpisodeId) {
@@ -5034,17 +5172,29 @@ function navigatePrimaryTab(target) {
       return;
     }
   } else if (target === "quick-speaking") {
-    if (!openRandomListeningRepeatPractice()) {
-      state.listeningView = "levels";
-      renderListening();
-      setScreen("listening");
-    }
+    renderListeningCatalogLoading();
+    setScreen("listening");
+    ensureListeningCatalogLoaded().then(() => {
+      if (!openRandomListeningRepeatPractice()) {
+        state.listeningView = "levels";
+        renderListening({ skipCatalogLoad: true });
+        setScreen("listening");
+      }
+    });
+    $("#mobileMenu")?.classList.remove("active");
+    return;
   } else if (target === "quick-listening") {
-    if (!openRandomSuggestedListeningLesson()) {
-      state.listeningView = "levels";
-      renderListening();
-      setScreen("listening");
-    }
+    renderListeningCatalogLoading();
+    setScreen("listening");
+    ensureListeningCatalogLoaded().then(() => {
+      if (!openRandomSuggestedListeningLesson()) {
+        state.listeningView = "levels";
+        renderListening({ skipCatalogLoad: true });
+        setScreen("listening");
+      }
+    });
+    $("#mobileMenu")?.classList.remove("active");
+    return;
   } else if (target === "write-communication") {
     state.module = "hsk";
     state.writeCourseView = "communication";
@@ -5085,6 +5235,25 @@ function navigatePrimaryTab(target) {
 }
 
 function openDailyTopicFromHome(themeId, options = {}) {
+  if (!options.skipHighFrequencyLoad && !highFrequencyTopicsLoaded) {
+    const fallbackThemeIndex = fallbackDailyThemes.findIndex((item) => item.id === themeId);
+    state.fromRoadmap = false;
+    state.module = "daily";
+    state.hskPendingLessonId = "";
+    state.hskContentType = "";
+    state.dailyContentType = "";
+    state.dailyBackTarget = options.backTarget || "";
+    renderHighFrequencyTopicsLoading(options);
+    setScreen("course");
+    scrollAppToTop();
+    ensureHighFrequencyTopicsLoaded({ silent: options.silentHighFrequencyLoad }).then(() => {
+      const resolvedThemeId = dailyThemes.some((item) => item.id === themeId)
+        ? themeId
+        : (fallbackThemeIndex >= 0 ? dailyThemes[fallbackThemeIndex]?.id : themeId);
+      if (resolvedThemeId) openDailyTopicFromHome(resolvedThemeId, { ...options, skipHighFrequencyLoad: true });
+    });
+    return;
+  }
   const theme = dailyThemes.find((item) => item.id === themeId);
   if (!theme) return;
   if (isDailyThemeLockedForUser(theme.id)) {
@@ -5232,9 +5401,26 @@ function restorePersistedRoute() {
           startPractice({ lessonId: route.lessonId, mode: route.mode || "translate", hskContentType: route.hskContentType || "", index: route.index || 0 });
           return true;
         }
-        if (state.module === "daily" && route.themeId && dailyThemes.some((th) => th.id === route.themeId)) {
-          startPractice({ themeId: route.themeId, mode: route.mode || "translate", dailyContentType: route.dailyContentType || "", index: route.index || 0 });
-          return true;
+        if (state.module === "daily" && route.themeId) {
+          const restoreDailyPractice = () => startPractice({
+            themeId: route.themeId,
+            mode: route.mode || "translate",
+            dailyContentType: route.dailyContentType || "",
+            index: route.index || 0,
+          });
+          if (dailyThemes.some((th) => th.id === route.themeId)) {
+            restoreDailyPractice();
+            return true;
+          }
+          if (!highFrequencyTopicsLoaded) {
+            renderHighFrequencyTopicsLoading();
+            setScreen("course");
+            ensureHighFrequencyTopicsLoaded({ silent: true }).then(() => {
+              if (dailyThemes.some((th) => th.id === route.themeId)) restoreDailyPractice();
+              else renderCourse({ skipHighFrequencyLoad: true });
+            });
+            return true;
+          }
         }
         if (state.module === "vocab") {
           return startSavedVocabPractice(route.index || 0);
@@ -5362,6 +5548,7 @@ function setScreen(name) {
     bottomAccount.classList.toggle("active", name === "account");
     bottomAccount.classList.toggle("hidden", BACKEND_DISABLED);
   }
+  scheduleScreenMediaOptimization(screens[name] || document);
   savePersistedRoute();
   scrollAppToTop();
 }
@@ -8120,6 +8307,7 @@ function setScreenWithDesktopShell(screenKey, innerHTML, shellClass = "", active
   if (!node) return;
   const scrollSnapshot = options.preserveScroll ? getAppScrollSnapshot() : null;
   node.innerHTML = wrapWithAppDesktopShell(innerHTML, shellClass, activeNav, options);
+  scheduleScreenMediaOptimization(node);
   if (scrollSnapshot) restoreAppScrollSnapshot(scrollSnapshot);
   else scrollAppToTop();
 }
@@ -8556,6 +8744,15 @@ function openListeningLevel(levelId) {
   renderListening();
 }
 function renderListening(options = {}) {
+  if (!options.skipCatalogLoad && !listeningCatalogLoaded) {
+    renderListeningCatalogLoading(options);
+    ensureListeningCatalogLoaded({ silent: options.silentCatalogLoad }).then(() => {
+      if (state.screen === "listening") {
+        renderListening({ ...options, skipCatalogLoad: true });
+      }
+    });
+    return;
+  }
   if (state.listeningView === "levels") {
     renderListeningLevelGateway(options);
     return;
@@ -12115,9 +12312,18 @@ function renderHome() {
     ${renderHomeMobileTopicsHTML(isVi)}
     </div>
   `;
+  scheduleScreenMediaOptimization(screens.home);
 }
 
-function renderCourse() {
+function renderCourse(options = {}) {
+  if (!options.skipHighFrequencyLoad && shouldLoadHighFrequencyTopicsForCourse()) {
+    renderHighFrequencyTopicsLoading(options);
+    ensureHighFrequencyTopicsLoaded({ silent: options.silentHighFrequencyLoad }).then(() => {
+      const courseVisible = state.screen === "course" || !screens.course?.classList.contains("hidden");
+      if (courseVisible) renderCourse({ ...options, skipHighFrequencyLoad: true });
+    });
+    return;
+  }
   if (state.module === "hsk") renderHskCourse();
   else renderDailyCourse();
 }
@@ -13149,7 +13355,9 @@ function playAudioSources(sources, fallback, meta = {}) {
       return;
     }
     cursor += 1;
-    const audio = new Audio(source);
+    const audio = new Audio();
+    audio.preload = "none";
+    audio.src = source;
     let handledFailure = false;
     const handleFailure = () => {
       if (!isCurrentPlayback()) return;
@@ -13185,7 +13393,9 @@ function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
   }
 
   stopSpeechPlayback();
-  const audio = new Audio(source);
+  const audio = new Audio();
+  audio.preload = "none";
+  audio.src = source;
   let handledFailure = false;
   const resetActiveAudio = () => {
     if (activeSpeechAudio === audio) activeSpeechAudio = null;

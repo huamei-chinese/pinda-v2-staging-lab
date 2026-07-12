@@ -12,7 +12,10 @@ const REGRESSION_VIETNAMESE = String.fromCodePoint(
 
 function extractListeningRepairRuntime(appSource) {
   const start = appSource.indexOf("function repairUtf8MojibakeText");
-  const end = appSource.indexOf("appendCatalogListeningEpisodes();", start);
+  let end = appSource.indexOf("function hydrateListeningCatalog()", start);
+  if (end < 0) {
+    end = appSource.indexOf("appendCatalogListeningEpisodes();", start);
+  }
   if (start < 0 || end < 0 || end <= start) {
     throw new Error("could not find listening repair runtime in public/app.js");
   }
