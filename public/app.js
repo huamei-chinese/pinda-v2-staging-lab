@@ -421,15 +421,51 @@ function shouldLoadHighFrequencyTopicsForCourse() {
   return state.module === "hsk" && (state.writeCourseView === "paths" || state.writeCourseView === "communication");
 }
 
+function renderLessonLoadingHTML({
+  variant = "write",
+  title = "",
+  detail = "",
+} = {}) {
+  const isListening = variant === "listen";
+  const isVi = state.lang === "vi";
+  const fallbackTitle = isListening
+    ? (isVi ? "\u0110ang t\u1ea3i d\u1eef li\u1ec7u luy\u1ec7n nghe..." : "\u6b63\u5728\u52a0\u8f7d\u542c\u529b\u6570\u636e...")
+    : (isVi ? "\u0110ang t\u1ea3i d\u1eef li\u1ec7u b\u00e0i h\u1ecdc..." : "\u6b63\u5728\u52a0\u8f7d\u8bfe\u7a0b\u6570\u636e...");
+  const fallbackDetail = isListening
+    ? (isVi ? "Chu\u1ea9n b\u1ecb \u00e2m thanh, ph\u1ee5 \u0111\u1ec1 v\u00e0 t\u1eeb kh\u00f3a." : "\u6b63\u5728\u51c6\u5907\u97f3\u9891\u3001\u5b57\u5e55\u548c\u5173\u952e\u8bcd\u3002")
+    : (isVi ? "Chu\u1ea9n b\u1ecb t\u1eeb v\u1ef1ng, c\u00e2u m\u1eabu v\u00e0 ti\u1ebfn \u0111\u1ed9 c\u1ee7a b\u1ea1n." : "\u6b63\u5728\u51c6\u5907\u8bcd\u6c47\u3001\u4f8b\u53e5\u548c\u5b66\u4e60\u8fdb\u5ea6\u3002");
+
+  return `
+    <div class="lesson-loading-card lesson-loading-card--${isListening ? "listen" : "write"}" role="status" aria-live="polite">
+      <div class="lesson-loading-visual" aria-hidden="true">
+        <span class="lesson-loading-ring"></span>
+        <span class="lesson-loading-mark">${isListening ? desktopNavIcon("listening") : iconSvg("pen")}</span>
+        <span class="lesson-loading-dot lesson-loading-dot--one"></span>
+        <span class="lesson-loading-dot lesson-loading-dot--two"></span>
+        <span class="lesson-loading-dot lesson-loading-dot--three"></span>
+      </div>
+      <div class="lesson-loading-copy">
+        <strong>${title || fallbackTitle}</strong>
+        <span>${detail || fallbackDetail}</span>
+      </div>
+      <div class="lesson-loading-bars" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </div>
+    </div>
+  `;
+}
+
 function renderHighFrequencyTopicsLoading(options = {}) {
   const isVi = state.lang === "vi";
   const activeNav = state.module === "daily" ? "daily" : "hsk";
   setScreenWithDesktopShell("course", `
     <section class="hsk-lesson-screen hsk-lesson-screen--loading">
       <div class="hsk-lesson-panel">
-        <div class="hsk-no-results">
-          ${isVi ? "Dang tai du lieu chu de..." : "Loading topic data..."}
-        </div>
+        ${renderLessonLoadingHTML({
+          variant: "write",
+          title: isVi ? "\u0110ang t\u1ea3i d\u1eef li\u1ec7u ch\u1ee7 \u0111\u1ec1..." : "\u6b63\u5728\u52a0\u8f7d\u4e3b\u9898\u6570\u636e...",
+          detail: isVi ? "S\u1eafp x\u1ebfp c\u00e1c t\u00ecnh hu\u1ed1ng giao ti\u1ebfp v\u00e0 th\u1ebb luy\u1ec7n t\u1eadp." : "\u6b63\u5728\u6574\u7406\u4ea4\u9645\u573a\u666f\u548c\u7ec3\u4e60\u5361\u7247\u3002",
+        })}
       </div>
     </section>
   `, "app-desktop-shell--course", activeNav, options);
@@ -1456,6 +1492,13 @@ function hydrateListeningCatalog() {
 }
 
 function renderListeningCatalogLoading(options = {}) {
+  setScreenWithDesktopShell("listening", `
+    <section class="listening-gateway-screen listening-gateway-screen--loading">
+      ${renderLessonLoadingHTML({ variant: "listen" })}
+    </section>
+  `, "app-desktop-shell--listening", "listening", options);
+  return;
+
   const isVi = state.lang === "vi";
   setScreenWithDesktopShell("listening", `
     <section class="listening-gateway-screen listening-gateway-screen--loading">
@@ -12895,6 +12938,18 @@ function renderHskCourse() {
   }
 
   if (hskLevelContentScripts[state.level] && !hskLevelContentLoaded.has(state.level)) {
+    setScreenWithDesktopShell("course", `
+      <section class="hsk-lesson-screen hsk-lesson-screen--loading">
+        <div class="hsk-lesson-panel">
+          ${renderLessonLoadingHTML({ variant: "write" })}
+        </div>
+      </section>
+    `, "app-desktop-shell--course", "hsk", { mobileTitle: state.level });
+    ensureHskLevelContent(state.level).then(() => {
+      if (state.module === "hsk" && !state.hskLevelPicker) renderHskCourse();
+    });
+    return;
+
     setScreenWithDesktopShell("course", `
       <section class="hsk-lesson-screen hsk-lesson-screen--loading">
         <div class="hsk-lesson-panel">

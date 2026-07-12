@@ -3907,6 +3907,296 @@ p {
   font-weight: 500;
 }
 
+.hsk-lesson-screen--loading,
+.listening-gateway-screen--loading {
+  min-height: min(640px, calc(100dvh - 40px));
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: clamp(22px, 5vw, 64px);
+}
+
+.hsk-lesson-screen--loading .hsk-lesson-panel {
+  width: min(760px, 100%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.lesson-loading-card {
+  --lesson-loading-primary: #14b8a6;
+  --lesson-loading-secondary: #2563eb;
+  --lesson-loading-accent: #f59e0b;
+  position: relative;
+  width: min(640px, 100%);
+  min-height: 360px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 24px;
+  padding: clamp(30px, 5vw, 54px);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--lesson-loading-primary) 24%, transparent), transparent 30%),
+    radial-gradient(circle at 86% 22%, color-mix(in srgb, var(--lesson-loading-secondary) 20%, transparent), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.82));
+  box-shadow:
+    0 28px 70px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  text-align: center;
+  isolation: isolate;
+  backdrop-filter: blur(18px);
+}
+
+.lesson-loading-card--write {
+  --lesson-loading-primary: #16a34a;
+  --lesson-loading-secondary: #0ea5e9;
+  --lesson-loading-accent: #f59e0b;
+}
+
+.lesson-loading-card--listen {
+  --lesson-loading-primary: #0ea5e9;
+  --lesson-loading-secondary: #8b5cf6;
+  --lesson-loading-accent: #14b8a6;
+}
+
+.lesson-loading-card::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  z-index: -1;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background:
+    linear-gradient(120deg, transparent 0 34%, rgba(255, 255, 255, 0.46) 45%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent);
+  animation: lessonLoadingSheen 2.8s ease-in-out infinite;
+}
+
+.lesson-loading-card::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 28px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--lesson-loading-primary), var(--lesson-loading-secondary), transparent);
+  opacity: 0.42;
+}
+
+.lesson-loading-visual {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+}
+
+.lesson-loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background:
+    conic-gradient(from 0deg, var(--lesson-loading-primary), var(--lesson-loading-secondary), var(--lesson-loading-accent), var(--lesson-loading-primary));
+  animation: lessonLoadingSpin 1.35s linear infinite;
+  box-shadow: 0 18px 38px color-mix(in srgb, var(--lesson-loading-primary) 26%, transparent);
+}
+
+.lesson-loading-ring::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.16);
+}
+
+.lesson-loading-mark {
+  position: relative;
+  z-index: 1;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--lesson-loading-primary), var(--lesson-loading-secondary));
+  color: #ffffff;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--lesson-loading-secondary) 28%, transparent);
+}
+
+.lesson-loading-mark svg {
+  width: 34px;
+  height: 34px;
+  stroke-width: 2.4;
+}
+
+.lesson-loading-dot {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--lesson-loading-accent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--lesson-loading-accent) 38%, transparent);
+  animation: lessonLoadingFloat 1.7s ease-in-out infinite;
+}
+
+.lesson-loading-dot--one {
+  top: 4px;
+  right: 18px;
+}
+
+.lesson-loading-dot--two {
+  left: 4px;
+  bottom: 28px;
+  animation-delay: 0.18s;
+  background: var(--lesson-loading-primary);
+}
+
+.lesson-loading-dot--three {
+  right: 10px;
+  bottom: 10px;
+  animation-delay: 0.34s;
+  background: var(--lesson-loading-secondary);
+}
+
+.lesson-loading-copy {
+  display: grid;
+  gap: 9px;
+  max-width: 480px;
+}
+
+.lesson-loading-copy strong {
+  color: #0f172a;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1.14;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.lesson-loading-copy span {
+  color: #475569;
+  font-size: clamp(14px, 1.8vw, 17px);
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.lesson-loading-bars {
+  width: min(340px, 82%);
+  display: grid;
+  gap: 10px;
+}
+
+.lesson-loading-bars i {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg,
+      rgba(226, 232, 240, 0.9),
+      color-mix(in srgb, var(--lesson-loading-primary) 28%, rgba(255, 255, 255, 0.92)),
+      rgba(226, 232, 240, 0.9));
+  background-size: 220% 100%;
+  animation: lessonLoadingBars 1.35s ease-in-out infinite;
+}
+
+.lesson-loading-bars i:nth-child(2) {
+  width: 78%;
+  margin-inline: auto;
+  animation-delay: 0.12s;
+}
+
+.lesson-loading-bars i:nth-child(3) {
+  width: 58%;
+  margin-inline: auto;
+  animation-delay: 0.24s;
+}
+
+.hsk-lesson-screen--loading .hsk-no-results {
+  display: none;
+}
+
+@keyframes lessonLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lessonLoadingFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.78;
+  }
+
+  50% {
+    transform: translateY(-10px) scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes lessonLoadingBars {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes lessonLoadingSheen {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: translateX(-10%);
+  }
+
+  50% {
+    opacity: 0.88;
+    transform: translateX(10%);
+  }
+}
+
+@media (max-width: 640px) {
+  .hsk-lesson-screen--loading,
+  .listening-gateway-screen--loading {
+    min-height: calc(100dvh - 20px);
+    padding: 18px;
+  }
+
+  .lesson-loading-card {
+    min-height: 330px;
+    border-radius: 24px;
+    padding: 28px 20px;
+  }
+
+  .lesson-loading-visual {
+    width: 112px;
+    height: 112px;
+  }
+
+  .lesson-loading-mark {
+    width: 66px;
+    height: 66px;
+    border-radius: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-loading-card::before,
+  .lesson-loading-ring,
+  .lesson-loading-dot,
+  .lesson-loading-bars i {
+    animation: none !important;
+  }
+}
+
 .path-line {
   display: none;
 }

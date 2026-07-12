@@ -21,7 +21,7 @@ const concurrency = Math.max(1, Number(args.get("concurrency") || Math.min(4, os
 const dryRun = args.get("dry-run") === "true";
 
 function findFfmpeg() {
-  if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) return process.env.FFMPEG_PATH;
+  if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
 
   const localAppData = process.env.LOCALAPPDATA;
   if (localAppData) {
@@ -30,7 +30,13 @@ function findFfmpeg() {
       const stack = [wingetRoot];
       while (stack.length) {
         const current = stack.pop();
-        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        let entries;
+        try {
+          entries = fs.readdirSync(current, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        for (const entry of entries) {
           const entryPath = path.join(current, entry.name);
           if (entry.isDirectory()) stack.push(entryPath);
           if (entry.isFile() && entry.name.toLowerCase() === "ffmpeg.exe") return entryPath;
