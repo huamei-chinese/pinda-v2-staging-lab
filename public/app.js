@@ -279,6 +279,7 @@ const hskLevelContentScripts = {
 
 const hskLevelContentLoaded = new Set();
 const dynamicScriptPromises = {};
+const LISTENING_CATALOG_JSON_SRC = "listening-app/data/listening-catalog.json?v=20260704";
 const LISTENING_CATALOG_SCRIPT_SRC = "listening-app/data/listening-catalog.js?v=20260704";
 let listeningCatalogTopics = [];
 let listeningCatalogLoaded = false;
@@ -349,6 +350,19 @@ async function ensureHskLevelContent(levelKey) {
     showToast?.(state.lang === "vi" ? "Chưa tải được dữ liệu bài học. Vui lòng thử lại." : "课程数据加载失败，请重试。");
     return false;
   }
+}
+
+function prefetchHskLevelContent(levelKey) {
+  if (!levelKey || hskLevelContentLoaded.has(levelKey)) return;
+  const scriptSrc = hskLevelContentScripts[levelKey];
+  if (!scriptSrc) return;
+  loadDynamicScript(scriptSrc)
+    .then(() => {
+      if (mergeHskLevelContent(levelKey)) hskLevelContentLoaded.add(levelKey);
+    })
+    .catch((error) => {
+      console.warn("Could not prefetch HSK level content.", error);
+    });
 }
 
 const HIGH_FREQUENCY_TOPICS_SCRIPT_SRC = "lesson-high-frequency-v1-27-topics.js";
@@ -779,6 +793,9 @@ function scheduleScreenMediaOptimization(root = document) {
 }
 
 const IDLE_IMAGE_PRELOAD_SOURCES = [
+  "assets/home-module-writing-optimized.jpg",
+  "assets/home-module-listening1-optimized.jpg",
+  "assets/home-module-hsk-optimized.jpg",
   "assets/luyennghe-optimized.jpg",
   "assets/anhnentuvung-optimized.jpg",
   "assets/anhnentrinhphatnhac-optimized.jpg",
@@ -1509,12 +1526,28 @@ function renderListeningCatalogLoading(options = {}) {
   `, "app-desktop-shell--listening", "listening", options);
 }
 
+async function loadListeningCatalogData() {
+  if (globalThis.pindaListeningCatalog) return true;
+  if (typeof fetch === "function") {
+    try {
+      const response = await fetch(LISTENING_CATALOG_JSON_SRC, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Listening catalog JSON returned ${response.status}`);
+      globalThis.pindaListeningCatalog = await response.json();
+      return true;
+    } catch (error) {
+      console.warn("Could not fetch listening catalog JSON, falling back to script.", error);
+    }
+  }
+  await loadDynamicScript(LISTENING_CATALOG_SCRIPT_SRC);
+  return true;
+}
+
 function ensureListeningCatalogLoaded(options = {}) {
   if (listeningCatalogLoaded || hydrateListeningCatalog()) return Promise.resolve(true);
   if (listeningCatalogLoadPromise) return listeningCatalogLoadPromise;
 
   if (options.renderLoading) renderListeningCatalogLoading(options);
-  listeningCatalogLoadPromise = loadDynamicScript(LISTENING_CATALOG_SCRIPT_SRC)
+  listeningCatalogLoadPromise = loadListeningCatalogData()
     .then(() => {
       if (!hydrateListeningCatalog()) throw new Error("Listening catalog did not register data.");
       return true;
@@ -14307,6 +14340,17 @@ function bindEvents() {
   };
   document.addEventListener("pointerup", endWriteTopicCarouselDrag);
   document.addEventListener("pointercancel", endWriteTopicCarouselDrag);
+  const prefetchHskLevelFromTarget = (target) => {
+    const levelButton = target?.closest?.("[data-level], [data-write-hsk-level]");
+    const levelKey = levelButton?.dataset?.level || levelButton?.dataset?.writeHskLevel;
+    prefetchHskLevelContent(levelKey);
+  };
+  document.addEventListener("pointerover", (event) => {
+    prefetchHskLevelFromTarget(event.target);
+  }, { passive: true });
+  document.addEventListener("touchstart", (event) => {
+    prefetchHskLevelFromTarget(event.target);
+  }, { passive: true });
   document.addEventListener("click", (event) => {
     if (event.target.closest?.("[data-hsk-level-back]")) {
       event.preventDefault();
@@ -15695,7 +15739,6 @@ function bindEvents() {
       state.hskLevelPicker = false;
       state.hskContentType = "";
       state.hskPendingLessonId = "";
-      await ensureHskLevelContent(state.level);
       renderHskCourse();
       return;
     }

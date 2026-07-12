@@ -9,18 +9,23 @@ const rootIndex = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
 const publicIndex = fs.readFileSync(path.join(repoRoot, "public", "index.html"), "utf8");
 const appSource = fs.readFileSync(path.join(repoRoot, "public", "app.js"), "utf8");
 
-function assertCatalogLoadedBeforeApp(html) {
+function assertCatalogIsLazyLoadedByApp(html) {
   const catalogIndex = html.indexOf("listening-app/data/listening-catalog.js");
   const appIndex = html.search(/app\.js\?v=[^"']+/);
 
-  assert.ok(catalogIndex > 0, "listening catalog data script should be loaded");
+  assert.equal(catalogIndex, -1, "listening catalog data should not block initial page load");
   assert.ok(appIndex > 0, "app.js should be loaded");
-  assert.ok(catalogIndex < appIndex, "listening catalog data should load before app.js");
 }
 
-test("SPA entries load the listening catalog data before the UI runtime", () => {
-  assertCatalogLoadedBeforeApp(rootIndex);
-  assertCatalogLoadedBeforeApp(publicIndex);
+test("SPA entries lazy-load the listening catalog through the UI runtime", () => {
+  assertCatalogIsLazyLoadedByApp(rootIndex);
+  assertCatalogIsLazyLoadedByApp(publicIndex);
+  assert.match(appSource, /const LISTENING_CATALOG_JSON_SRC\s*=\s*"listening-app\/data\/listening-catalog\.json\?v=20260704"/);
+  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260704"/);
+  assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
+  assert.match(appSource, /function loadListeningCatalogData\(\)/);
+  assert.match(appSource, /fetch\(LISTENING_CATALOG_JSON_SRC, \{ cache: "force-cache" \}\)/);
+  assert.match(appSource, /loadDynamicScript\(LISTENING_CATALOG_SCRIPT_SRC\)/);
 });
 
 test("listening UI reads catalog data without putting imported topic ids in app.js", () => {

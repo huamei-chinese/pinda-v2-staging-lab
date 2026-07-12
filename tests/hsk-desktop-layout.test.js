@@ -140,7 +140,7 @@ test("high-frequency communication back button stays above topic cards", () => {
 });
 
 test("high-frequency communication header uses the common-topic background frame", () => {
-  assert.match(styles, /\.write-communication-header\s*\{[^}]*backgroundthongdung\.png/s);
+  assert.match(styles, /\.write-communication-header\s*\{[^}]*backgroundthongdung-optimized\.jpg/s);
   assert.match(styles, /\.write-communication-header\s*\{[^}]*backdrop-filter:\s*blur\(14px\)/s);
   assert.match(styles, /\.write-communication-header\s*\{[^}]*border-radius:\s*clamp\(22px,\s*2\.4vw,\s*34px\)/s);
   assert.match(styles, /\.write-communication-header::before\s*\{[^}]*inset:\s*9px[^}]*border:\s*1px solid rgba\(255,\s*255,\s*255,\s*0\.72\)/s);

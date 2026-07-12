@@ -18,7 +18,8 @@ test("mobile screens animate through the shared screen switcher", () => {
 test("mobile page transition CSS is scoped and respects reduced motion", () => {
   assert.match(styles, /@keyframes mobilePageEnterSoft/);
   assert.match(styles, /@keyframes mobilePageContentRise/);
-  assert.match(styles, /@media \(max-width:\s*700px\) \{[\s\S]*#app \.screen\.mobile-page-transition-enter\s*\{[\s\S]*animation:\s*mobilePageEnterSoft 300ms/);
+  assert.match(styles, /@media \(max-width:\s*700px\) \{[\s\S]*#app \.screen\.mobile-page-transition-enter\s*\{[\s\S]*animation:\s*mobilePageEnterSoft 240ms/);
+  assert.doesNotMatch(styles, /#app \.screen\.mobile-page-transition-enter\s*\{[^}]*filter:/);
   assert.match(styles, /#app \.screen\.mobile-page-transition-enter > \.app-desktop-shell/);
   assert.match(styles, /@media \(max-width:\s*700px\) and \(prefers-reduced-motion:\s*reduce\) \{[\s\S]*animation:\s*none !important;/);
 });

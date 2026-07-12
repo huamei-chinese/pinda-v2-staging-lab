@@ -47274,19 +47274,16 @@ body:has(#practiceScreen:not(.hidden)) {
   0% {
     opacity: 0.001;
     transform: translate3d(0, 12px, 0) scale(0.992);
-    filter: blur(4px);
   }
 
   65% {
     opacity: 1;
     transform: translate3d(0, -1px, 0) scale(1);
-    filter: blur(0);
   }
 
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
   }
 }
 
@@ -47304,9 +47301,9 @@ body:has(#practiceScreen:not(.hidden)) {
 
 @media (max-width: 700px) {
   #app .screen.mobile-page-transition-enter {
-    animation: mobilePageEnterSoft 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: mobilePageEnterSoft 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
     transform-origin: center top;
-    will-change: opacity, transform, filter;
+    will-change: opacity, transform;
     backface-visibility: hidden;
   }
 
@@ -47329,5 +47326,84 @@ body:has(#practiceScreen:not(.hidden)) {
     animation: none !important;
     transform: none !important;
     filter: none !important;
+  }
+}
+
+/* Desktop listening keyword popup must float above the transcript when long words/examples overlap it. */
+@media (min-width: 901px) {
+  body:has(#listeningScreen .listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) {
+    overflow-x: clip !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .app-desktop-content,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-detail-spa,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-detail-practice-grid,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-repeat-card,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-keyword-block {
+    overflow: visible !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-repeat-card,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail:not(.hidden)) .listening-keyword-block {
+    position: relative !important;
+    z-index: 2147482000 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-keyword-detail {
+    z-index: 2147483000 !important;
+    max-width: min(380px, calc(100vw - 24px)) !important;
+    overflow-wrap: anywhere !important;
+    isolation: isolate !important;
+  }
+}
+
+/* Performance pass: keep long mobile lists cheap to scroll. */
+@supports (content-visibility: auto) {
+  .hsk-lesson-card,
+  .hsk-lesson-row,
+  .write-communication-topic-card,
+  .write-hsk-level-row,
+  .home-mobile-topic-card,
+  .home-desktop-feature-card,
+  .listening-topic-card,
+  .listening-lesson-card,
+  .listening-gateway-level,
+  .listening-sentence {
+    content-visibility: auto;
+    contain-intrinsic-size: 120px;
+  }
+}
+
+@media (max-width: 700px) {
+  .hsk-lesson-card,
+  .hsk-lesson-row,
+  .write-communication-topic-card,
+  .write-hsk-level-row,
+  .home-mobile-topic-card,
+  .home-desktop-feature-card,
+  .listening-topic-card,
+  .listening-lesson-card,
+  .listening-gateway-level,
+  .listening-sentence {
+    contain: layout paint style;
+  }
+
+  .hsk-lesson-card,
+  .hsk-lesson-row,
+  .write-communication-topic-card,
+  .listening-topic-card,
+  .listening-lesson-card,
+  .listening-gateway-level,
+  .listening-sentence {
+    transition-property: transform, opacity, box-shadow, border-color, background-color !important;
+  }
+
+  .hsk-lesson-card,
+  .write-communication-topic-card,
+  .listening-topic-card,
+  .listening-lesson-card,
+  .listening-gateway-level {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
