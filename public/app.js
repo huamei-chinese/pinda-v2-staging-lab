@@ -9265,6 +9265,32 @@ function renderListeningSentenceListHTML(episode = getListeningEpisode(), curren
   return titleSentenceHTML + sentencesHTML;
 }
 
+function scrollListeningSentenceListToActive(list, options = {}) {
+  if (!list) return;
+  const selector = options.titleActive
+    ? "[data-listening-title-sentence]"
+    : `[data-listening-sentence="${Math.max(0, Number(options.index) || 0)}"]`;
+  const activeButton = list.querySelector(selector);
+  if (!activeButton) return;
+
+  const listRect = list.getBoundingClientRect();
+  const activeRect = activeButton.getBoundingClientRect();
+  const activeTop = list.scrollTop + (activeRect.top - listRect.top);
+  const anchorOffset = Number.isFinite(Number(options.anchorOffset)) ? Number(options.anchorOffset) : null;
+  const targetTop = anchorOffset === null
+    ? activeTop - ((list.clientHeight - activeButton.offsetHeight) / 2)
+    : activeTop - anchorOffset;
+  const previousScrollBehavior = list.style.scrollBehavior;
+
+  list.style.scrollBehavior = "auto";
+  list.scrollTo({
+    top: Math.max(0, targetTop),
+    behavior: options.behavior || "auto",
+  });
+  list.scrollTop = Math.max(0, targetTop);
+  list.style.scrollBehavior = previousScrollBehavior;
+}
+
 function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceElement = null) {
   const subtitleMode = getListeningSubtitleMode(mode);
   state.listeningSubtitleMode = subtitleMode;
@@ -9288,10 +9314,20 @@ function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceEl
   const keepSentenceActive = !titleActive && Number.isFinite(activeSentenceIndex);
   const currentIndex = keepSentenceActive ? activeSentenceIndex : state.listeningSentenceIndex;
   if (keepSentenceActive) state.listeningSentenceIndex = currentIndex;
+  const sentenceListAnchors = [];
   document.querySelectorAll(".listening-sentence-list").forEach((list) => {
-    const previousScrollTop = list.scrollTop;
+    const anchorSelector = titleActive
+      ? "[data-listening-title-sentence].active"
+      : `[data-listening-sentence="${currentIndex}"].active`;
+    const anchorButton = list.querySelector(anchorSelector);
+    const listRect = list.getBoundingClientRect();
+    const anchorRect = anchorButton?.getBoundingClientRect?.();
+    const isAnchorVisible = Boolean(anchorRect && anchorRect.bottom > listRect.top && anchorRect.top < listRect.bottom);
+    sentenceListAnchors.push({
+      list,
+      anchorOffset: isAnchorVisible ? anchorRect.top - listRect.top : null,
+    });
     list.innerHTML = renderListeningSentenceListHTML(episode, currentIndex, subtitleMode, { titleActive });
-    list.scrollTop = previousScrollTop;
   });
 
   document.querySelectorAll("[data-listening-subtitle-mode]").forEach((button) => {
@@ -9308,9 +9344,23 @@ function applyListeningSubtitleMode(mode = state.listeningSubtitleMode, sourceEl
     button.innerHTML = `${escapeHtml(translationToggleLabel)} <span aria-hidden="true">⌄</span>`;
   });
 
+  const alignSubtitleListsToActive = () => {
+    sentenceListAnchors.forEach(({ list, anchorOffset }) => {
+      scrollListeningSentenceListToActive(list, {
+        index: currentIndex,
+        titleActive,
+        anchorOffset,
+        behavior: "auto",
+      });
+    });
+  };
+
   requestAnimationFrame(() => {
-    if (keepSentenceActive) setListeningActiveSentence(currentIndex, { force: true, scroll: true });
-    else if (titleActive) setListeningTitleSentenceActive({ scroll: true });
+    if (keepSentenceActive) setListeningActiveSentence(currentIndex, { force: true, scroll: false });
+    else if (titleActive) setListeningTitleSentenceActive({ scroll: false });
+    alignSubtitleListsToActive();
+    requestAnimationFrame(alignSubtitleListsToActive);
+    setTimeout(alignSubtitleListsToActive, 80);
   });
 }
 

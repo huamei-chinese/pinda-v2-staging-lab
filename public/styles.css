@@ -45795,7 +45795,7 @@ body:has(#practiceScreen:not(.hidden)) {
 
   body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .listening-repeat-feed-active-content {
     left: 50% !important;
-    top: 30% !important;
+    top: 32% !important;
     transform: translate(-50%, -50%) !important;
     width: min(calc(100vw - 66px), 326px) !important;
     max-width: min(calc(100vw - 66px), 326px) !important;

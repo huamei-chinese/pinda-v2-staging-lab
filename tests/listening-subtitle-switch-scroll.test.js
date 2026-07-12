@@ -5,7 +5,7 @@ const test = require("node:test");
 
 const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
 
-test("subtitle switching keeps the currently playing sentence in view", () => {
+test("subtitle switching keeps the same active sentence in view", () => {
   assert.match(
     appSource,
     /function applyListeningSubtitleMode\(mode = state\.listeningSubtitleMode, sourceElement = null\) \{[\s\S]*const audio = \$\("#listeningAudio"\);[\s\S]*const isMainAudioActive = Boolean\(audio && !audio\.paused && !audio\.ended && !isAudioTitlePhase\);/s,
@@ -16,6 +16,18 @@ test("subtitle switching keeps the currently playing sentence in view", () => {
   );
   assert.match(
     appSource,
-    /requestAnimationFrame\(\(\) => \{[\s\S]*setListeningActiveSentence\(currentIndex, \{ force: true, scroll: true \}\);[\s\S]*setListeningTitleSentenceActive\(\{ scroll: true \}\);[\s\S]*\}\);/s,
+    /function scrollListeningSentenceListToActive\(list, options = \{\}\) \{[\s\S]*const anchorOffset = Number\.isFinite\(Number\(options\.anchorOffset\)\)[\s\S]*list\.style\.scrollBehavior = "auto";[\s\S]*list\.scrollTop = Math\.max\(0, targetTop\);/s,
+  );
+  assert.match(
+    appSource,
+    /const sentenceListAnchors = \[\];[\s\S]*anchorOffset: isAnchorVisible \? anchorRect\.top - listRect\.top : null/s,
+  );
+  assert.match(
+    appSource,
+    /const alignSubtitleListsToActive = \(\) => \{[\s\S]*scrollListeningSentenceListToActive\(list, \{[\s\S]*index: currentIndex,[\s\S]*titleActive,[\s\S]*anchorOffset,[\s\S]*behavior: "auto"/s,
+  );
+  assert.match(
+    appSource,
+    /requestAnimationFrame\(\(\) => \{[\s\S]*setListeningActiveSentence\(currentIndex, \{ force: true, scroll: false \}\);[\s\S]*alignSubtitleListsToActive\(\);[\s\S]*requestAnimationFrame\(alignSubtitleListsToActive\);[\s\S]*setTimeout\(alignSubtitleListsToActive, 80\);/s,
   );
 });
