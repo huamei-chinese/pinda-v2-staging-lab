@@ -13,12 +13,23 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=perf-20260712" />
   <link rel="stylesheet" href="mobile.css?v=perf-20260712" media="(max-width: 640px)" />
-  <script type="text/javascript">
-    (function (c, l, a, r, i, t, y) {
-      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
-      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
-      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-    })(window, document, "clarity", "script", "x7zrlo8d4v");
+  <script>
+    (function () {
+      function loadClarity() {
+        if (window.__huameiClarityLoaded) return;
+        window.__huameiClarityLoaded = true;
+        (function (c, l, a, r, i, t, y) {
+          c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+          t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+          y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "x7zrlo8d4v");
+      }
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(loadClarity, { timeout: 4000 });
+      } else {
+        window.addEventListener("load", function () { setTimeout(loadClarity, 1200); }, { once: true });
+      }
+    })();
   </script>
 </head>
 
@@ -158,14 +169,14 @@
       <span class="mobile-bottom-nav-label">Cá nhân</span>
     </button>
   </nav>
-  <script src="practice-rules.js"></script>
-  <script src="practice-answer-rules.js"></script>
-  <script src="speech-config.js"></script>
-  <script src="sound-effects.js"></script>
-  <script src="academic-review-agent.js"></script>
-  <script src="lesson-runtime-rules.js"></script>
-  <script src="lesson-new-format-loader.js"></script>
-  <script src="app.js?v=perf-20260712"></script>
+  <script src="practice-rules.js" defer></script>
+  <script src="practice-answer-rules.js" defer></script>
+  <script src="speech-config.js" defer></script>
+  <script src="sound-effects.js" defer></script>
+  <script src="academic-review-agent.js" defer></script>
+  <script src="lesson-runtime-rules.js" defer></script>
+  <script src="lesson-new-format-loader.js" defer></script>
+  <script src="app.js?v=perf-20260712" defer></script>
 </body>
 
 </html>

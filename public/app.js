@@ -8326,6 +8326,13 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
       <button type="button" class="${navClass("listening")}" data-home-nav="listen">
         <span aria-hidden="true">${desktopNavIcon("listening")}</span>${t("listening")}
       </button>
+        <button type="button" class="home-desktop-nav-item home-desktop-vip-label" data-sidebar-vip-upgrade aria-label="${isVi ? "M\u1edf G\u00f3i VIP" : "\u6253\u5f00 VIP \u5957\u9910"}">
+          <span aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3.3 2.55 5.16 5.7.83-4.12 4.02.97 5.67L12 16.3l-5.1 2.68.97-5.67-4.12-4.02 5.7-.83L12 3.3z"/>
+            </svg>
+          </span>${isVi ? "G\u00f3i VIP" : "VIP \u5957\u9910"}
+        </button>
         <button type="button" class="${navClass("account")}" data-home-nav="account">
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
@@ -14833,6 +14840,12 @@ function bindEvents() {
       return;
     }
 
+    const sidebarVipUpgradeBtn = event.target.closest("[data-sidebar-vip-upgrade]");
+    if (sidebarVipUpgradeBtn) {
+      showUpgradePlansModal();
+      return;
+    }
+
     const accountUpgradeBtn = event.target.closest(".account-upgrade-btn");
     if (accountUpgradeBtn && state.screen === "account") {
       showUpgradePlansModal();
@@ -16291,6 +16304,38 @@ function renderAll() {
   if (state.screen === "account") renderAccount();
 }
 
+function renderCurrentScreenAfterStartupData() {
+  renderChrome();
+  if (state.screen === "home") renderHome();
+  if (state.screen === "course") renderCourse();
+  if (state.screen === "practice") renderPractice();
+  if (state.screen === "complete") renderComplete();
+  if (state.screen === "admin") renderAdmin();
+  if (state.screen === "vocab") renderVocab();
+  if (state.screen === "listening") renderListening({ silentCatalogLoad: true });
+  if (state.screen === "account") renderAccount();
+}
+
+function runAfterFirstPaint(callback) {
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => requestAnimationFrame(callback));
+    return;
+  }
+  setTimeout(callback, 0);
+}
+
+function warmStartupDataAfterFirstPaint() {
+  runAfterFirstPaint(() => {
+    Promise.allSettled([
+      refreshCurrentUserStatus(),
+      loadContentLocks(),
+      prefetchPaymentPlans(),
+    ]).then(() => {
+      renderCurrentScreenAfterStartupData();
+    });
+  });
+}
+
 function applyRouteFromLocation() {
   const pathname = window.location.pathname;
   const options = {};
@@ -16329,26 +16374,22 @@ function init() {
     flushHomeTodayStudySession();
     flushLearningEvents(true);
   });
-  Promise.allSettled([
-    refreshCurrentUserStatus(),
-    loadContentLocks(),
-    prefetchPaymentPlans(),
-  ]).finally(() => {
-    renderChrome();
-    if (window.location.pathname === "/admin") {
-      restorePersistedAdminRouteState();
-      renderAdmin();
-      setScreen("admin");
-      loadActiveAdminTabData();
-    } else {
-      if (applyRouteFromLocation()) { return; }
+  renderChrome();
+  if (window.location.pathname === "/admin") {
+    restorePersistedAdminRouteState();
+    renderAdmin();
+    setScreen("admin");
+    loadActiveAdminTabData();
+  } else {
+    if (!applyRouteFromLocation()) {
       const restored = restorePersistedRoute();
       if (!restored) {
         renderHome();
         setScreen("home");
       }
     }
-  });
+  }
+  warmStartupDataAfterFirstPaint();
 }
 
 init();

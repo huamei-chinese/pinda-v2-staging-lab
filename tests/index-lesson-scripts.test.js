@@ -38,7 +38,8 @@ const heavyLessonScripts = [
 ];
 
 function assertEntryUsesLazyLessonLoading(html, label) {
-  assert.match(html, /<script src="app\.js\?v=perf-\d+"><\/script>/, `${label} should load the cache-busted app runtime`);
+  assert.match(html, /<script src="app\.js\?v=perf-\d+"\s+defer><\/script>/, `${label} should load the deferred cache-busted app runtime`);
+  assert.match(html, /requestIdleCallback\(loadClarity, \{ timeout: 4000 \}\)/, `${label} should delay Clarity until idle`);
 
   for (const scriptName of heavyLessonScripts) {
     assert.doesNotMatch(html, new RegExp(`<script src=["'](?:\\./)?${scriptName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), `${label} should not eagerly load ${scriptName}`);
@@ -60,4 +61,7 @@ test("app runtime lazy-loads HSK level, high-frequency, and listening catalog da
   assert.match(appSource, /const HIGH_FREQUENCY_TOPICS_SCRIPT_SRC\s*=\s*"lesson-high-frequency-v1-27-topics\.js"/);
   assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260704"/);
   assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
+  assert.match(appSource, /function warmStartupDataAfterFirstPaint\(\)/);
+  assert.match(appSource, /renderHome\(\);\s*setScreen\("home"\);/);
+  assert.match(appSource, /warmStartupDataAfterFirstPaint\(\);\s*}\s*init\(\);/);
 });
