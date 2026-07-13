@@ -19,7 +19,7 @@ test("admin can set a normal user to content role in the database", async () => 
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
-      if (sql.includes("SELECT role, is_active FROM users")) {
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
       if (sql.includes("SELECT id, role")) {
@@ -56,7 +56,7 @@ test("admin can set a normal user to content role in the database", async () => 
 test("non-admin staff role cannot manage user roles", async () => {
   const db = {
     async query(sql) {
-      if (sql.includes("SELECT role, is_active FROM users")) {
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "staff", is_active: true }] };
       }
       return { rows: [] };
@@ -73,7 +73,7 @@ test("non-admin staff role cannot manage user roles", async () => {
 test("admin role update only accepts normal sales ctv and content roles", async () => {
   const db = {
     async query(sql) {
-      if (sql.includes("SELECT role, is_active FROM users")) {
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
       return { rows: [] };
@@ -93,7 +93,7 @@ test("staff can update VIP status but cannot modify admin accounts", async () =>
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
-      if (sql.includes("SELECT role, is_active FROM users")) {
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "staff", is_active: true }] };
       }
       if (sql.includes("SELECT id, full_name, email, role")) {

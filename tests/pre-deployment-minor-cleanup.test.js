@@ -11,6 +11,8 @@ const { PaymentPlansService } = require("../src/payment/payment-plans.service");
 const { ContentService } = require("../src/content/content.service");
 
 const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "utf8");
+const packageJson = require("../package.json");
+const railwayJson = require("../railway.json");
 
 test("public payment plans expose only the approved 7d and 30d plans", async () => {
   const db = {
@@ -58,6 +60,7 @@ test("legacy 1m payment plan id is resolved as the approved 30d plan", async () 
 
 test(".env.example uses the Node entry port and contains only placeholder SePay variables", () => {
   assert.match(envExample, /^PORT=3000$/m);
+  assert.match(envExample, /^ENABLE_DB_SCHEMA_INIT=true$/m);
   assert.match(envExample, /SEPAY_WEBHOOK_API_KEY=your_sepay_webhook_api_key/);
   assert.match(envExample, /SEPAY_BANK_NAME=your_bank_display_name/);
   assert.match(envExample, /SEPAY_BANK_CODE=your_sepay_bank_code/);
@@ -81,16 +84,30 @@ test("database routes fail as service unavailable when DATABASE_URL is missing",
   );
 });
 
-test("public HSK lock rules are cached between reads to avoid repeated cold queries", async () => {
-  let queryCount = 0;
+test("Railway deploy runs the compiled Nest production server", () => {
+  assert.equal(packageJson.scripts.build, "nest build");
+  assert.equal(packageJson.scripts.start, "nest start");
+  assert.equal(packageJson.scripts["start:prod"], "node dist/main");
+  assert.equal(packageJson.engines.node, ">=20 <25");
+  assert.equal(railwayJson.build.buildCommand, "npm run build");
+  assert.equal(railwayJson.deploy.startCommand, "npm run start:prod");
+  assert.equal(railwayJson.deploy.healthcheckPath, "/");
+});
+
+test("public HSK lock rules are read fresh so admin lock changes reach clients", async () => {
+  let publicSelectCount = 0;
   const db = {
-    async query() {
-      queryCount += 1;
+    async query(sql) {
+      if (/FROM hsk_lesson_locks\s+WHERE locked_for_free/.test(sql)) {
+        publicSelectCount += 1;
+        return {
+          rows: publicSelectCount === 1
+            ? [{ lesson_id: "HSK1-L01", free_item_limit: 6, locked_for_free: false }]
+            : [{ lesson_id: "HSK2-L03", free_item_limit: 0, free_word_limit: 2, free_sentence_limit: 1, locked_for_free: true }],
+        };
+      }
       return {
-        rows: [
-          { lesson_id: "HSK1-L01", free_item_limit: 6 },
-          { lesson_id: "HSK2-L03", free_item_limit: 4 },
-        ],
+        rows: [],
       };
     },
   };
@@ -99,6 +116,8 @@ test("public HSK lock rules are cached between reads to avoid repeated cold quer
   const first = await service.listPublicHskLocks();
   const second = await service.listPublicHskLocks();
 
-  assert.equal(queryCount, 1);
-  assert.deepEqual(second, first);
+  assert.equal(publicSelectCount, 2);
+  assert.equal(first[0].lessonId, "HSK1-L01");
+  assert.equal(second[0].lessonId, "HSK2-L03");
+  assert.equal(second[0].lockedForFree, true);
 });

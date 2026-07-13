@@ -76,7 +76,7 @@ test("legacy daily listening list routes open the current listening gateway", ()
   assert.match(appSource, /state\.listeningView = "levels"/);
   assert.match(appSource, /renderListeningLevelGateway\(options\)/);
   assert.doesNotMatch(appSource, /renderListeningDashboard\(\);\s*\n\}/);
-  assert.match(appSource, /if \(applyRouteFromLocation\(\)\) \{/);
+  assert.match(appSource, /if \(!applyRouteFromLocation\(\)\) \{/);
 });
 
 test("legacy daily listening detail route opens the current package detail page", () => {

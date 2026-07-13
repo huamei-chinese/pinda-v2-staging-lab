@@ -92,7 +92,7 @@ test("admin v2 assets are linked and syntactically present", () => {
   const js = read(jsPath);
 
   assert.match(html, /href="admin-v2\.css"/);
-  assert.match(html, /src="admin-v2\.js"/);
+  assert.match(html, /src="admin-v2\.js(?:\?v=[a-z0-9-]+)?"/i);
   assert.match(css, /\.admin-shell/);
   assert.match(css, /\.risk-gate/);
   assert.match(js, /adminV2State/);

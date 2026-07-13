@@ -98,6 +98,9 @@ test("Netlify SePay activation persists the selected VIP plan id", () => {
   assert.match(netlifyApiSource, /INSERT INTO payment_plans \(id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order\)/);
   assert.match(netlifyApiSource, /const vipPlanId = isPremium \? normalizeVipPlanId\(row\.vip_plan_id\) : null/);
   assert.match(netlifyApiSource, /vipPlanId,/);
+  assert.match(netlifyApiSource, /vipRemainingDays: isPremium \? vipRemainingDays\(premiumUntil\) : 0/);
+  assert.match(netlifyApiSource, /async function getCurrentUserStatus\(req, id\)/);
+  assert.match(netlifyApiSource, /ownStatusMatch && req\.method === "GET"[\s\S]*getCurrentUserStatus/);
   assert.match(
     netlifyApiSource,
     /UPDATE users SET is_premium = TRUE, premium_until = \$2, vip_plan_id = \$3, updated_at = NOW\(\) WHERE id = \$1/,

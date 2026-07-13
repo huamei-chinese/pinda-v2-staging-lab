@@ -25,12 +25,14 @@ test("Netlify HSK lock endpoint matches the app backend contract", () => {
 });
 
 test("public admin scripts use deploy cache busters", () => {
-  assert.match(indexHtmlSource, /app\.js\?v=admin-locks-20260713/);
+  assert.match(indexHtmlSource, /app\.js\?v=vip-refresh-20260713/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
 });
 
 test("client content-lock API calls bypass browser cache", () => {
   assert.match(appSource, /const shouldBypassCache = \/\^\\\/api\\\/\(\?:content\|admin\\\/content\)\\\//);
+  assert.match(appSource, /\^\\\/api\\\/users\\\/\[\^\/]\+\\\/status\(\?:\\\?\|\$\)/);
+  assert.match(appSource, /\^\\\/api\\\/payments\\\/orders\\\/\[\^\/]\+\\\/status\(\?:\\\?\|\$\)/);
   assert.match(appSource, /cache: shouldBypassCache \? "no-store" : options\.cache/);
   assert.match(appSource, /"Cache-Control": "no-cache"/);
 });

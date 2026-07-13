@@ -2823,7 +2823,9 @@ async function apiRequest(path, options = {}) {
     throw new Error(backendDisabledMessage());
   }
 
-  const shouldBypassCache = /^\/api\/(?:content|admin\/content)\//.test(path);
+  const shouldBypassCache = /^\/api\/(?:content|admin\/content)\//.test(path)
+    || /^\/api\/users\/[^/]+\/status(?:\?|$)/.test(path)
+    || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path);
   const response = await fetch(path, {
     cache: shouldBypassCache ? "no-store" : options.cache,
     ...options,
@@ -2983,19 +2985,9 @@ async function refreshCurrentUserStatus(showFailureToast = false) {
       return state.user;
     }
   } catch (error) {
-    state.user = {
-      ...state.user,
-      isPremium: false,
-      premiumUntil: null,
-      vipStatus: "unknown",
-      vipPlan: "FREE",
-      vipPlanId: null,
-      vipPlanName: null,
-      vipExpiresAt: null,
-      vipRemainingDays: 0,
-    };
+    state.user = { ...state.user, vipStatus: "unknown" };
     saveState();
-    console.warn("Could not refresh current user status; locking VIP access.", error);
+    console.warn("Could not refresh current user status; keeping the last known VIP access state.", error);
     if (showFailureToast) {
       showToast(state.lang === "vi"
         ? "Không thể cập nhật trạng thái VIP. Vui lòng tải lại trang."
@@ -3003,6 +2995,14 @@ async function refreshCurrentUserStatus(showFailureToast = false) {
     }
   }
   return null;
+}
+
+function refreshVisibleVipAccessState() {
+  renderChrome();
+  if (state.screen === "course") renderCourse();
+  else if (state.screen === "listening") renderListening({ silentCatalogLoad: true });
+  else if (state.screen === "home") renderHome();
+  else if (state.screen === "account") openAccountScreen();
 }
 
 function formatDateTime(value) {
@@ -8225,7 +8225,7 @@ async function showTransferInfoModal(planId) {
         state.user.vipRemainingDays = calculateVipRemainingDays(state.user.vipExpiresAt);
         saveState();
         await refreshCurrentUserStatus(true);
-        renderChrome();
+        refreshVisibleVipAccessState();
 
         const planName = isVi
           ? (statusData.order.planNameVi || order.planNameVi || "Pro")
@@ -11576,7 +11576,7 @@ function renderListeningLevelLessons(options = {}) {
 
     return `
       <button class="listening-lesson-row listening-lesson-row--${escapeAttr(lesson.tone || "mint")}${lessonLocked ? " listening-content-locked" : ""}" type="button" ${lessonLocked ? "aria-disabled=\"true\"" : ""} ${rowActionAttr}>
-  <span class="listening-lesson-play">${lessonLocked ? '<span class="listening-locked-flame" aria-hidden="true">🔥</span>' : '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'}</span>
+  <span class="listening-lesson-play listening-lesson-number">${lesson.no}</span>
 
   <span class="listening-lesson-copy">
     <strong>${escapeHtml(isVi ? lesson.title : lesson.zh)}</strong>
@@ -11587,7 +11587,6 @@ function renderListeningLevelLessons(options = {}) {
   </span>
 
   <span class="listening-lesson-wave" aria-hidden="true">${bars}</span>
-  <em>${lesson.no}</em>
   <span class="listening-lesson-arrow" aria-hidden="true">${lessonLocked ? "" : "›"}</span>
 </button>
     `;

@@ -38,7 +38,7 @@ const heavyLessonScripts = [
 ];
 
 function assertEntryUsesLazyLessonLoading(html, label) {
-  assert.match(html, /<script src="app\.js\?v=perf-\d+"\s+defer><\/script>/, `${label} should load the deferred cache-busted app runtime`);
+  assert.match(html, /<script src="app\.js\?v=[a-z0-9-]+"\s+defer><\/script>/i, `${label} should load the deferred cache-busted app runtime`);
   assert.match(html, /requestIdleCallback\(loadClarity, \{ timeout: 4000 \}\)/, `${label} should delay Clarity until idle`);
 
   for (const scriptName of heavyLessonScripts) {

@@ -997,6 +997,7 @@ function publicUser(row) {
     vipPlanNameZh: vipPlanName(vipPlanId, "zh"),
     vipStatus: isPremium ? "active" : "inactive",
     vipExpiresAt: row.premium_until || null,
+    vipRemainingDays: isPremium ? vipRemainingDays(premiumUntil) : 0,
     vip: Number(row.vip || 0),
     premiumUntil: row.premium_until || null,
     dailyReminderEnabled: row.daily_reminder_enabled !== false,
@@ -1006,6 +1007,12 @@ function publicUser(row) {
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,
   };
+}
+
+function vipRemainingDays(premiumUntil) {
+  if (!premiumUntil) return 0;
+  const remainingMs = premiumUntil.getTime() - Date.now();
+  return remainingMs > 0 ? Math.ceil(remainingMs / 86400000) : 0;
 }
 
 function normalizeVipPlanId(planId) {
@@ -1232,6 +1239,18 @@ async function login(body) {
     [user.id],
   );
   return json({ user: publicUser(updated.rows[0]) });
+}
+
+async function getCurrentUserStatus(req, id) {
+  const requesterId = req.headers.get("x-user-id");
+  if (!requesterId || requesterId !== id) {
+    throw apiError("Báº¡n khÃ´ng cÃ³ quyá»n xem tráº¡ng thÃ¡i tÃ i khoáº£n nÃ y.", 403);
+  }
+  const result = await query("SELECT * FROM users WHERE id = $1", [id]);
+  const user = result.rows[0];
+  if (!user) throw apiError("KhÃ´ng tÃ¬m tháº¥y tÃ i khoáº£n.", 404);
+  if (!user.is_active) throw apiError("TÃ i khoáº£n Ä‘Ã£ bá»‹ khÃ³a.", 403);
+  return json({ user: publicUser(user) });
 }
 
 async function updateOwnProfile(req, id, body) {
@@ -2626,6 +2645,8 @@ async function route(req) {
   if (req.method === "POST" && path === "/api/register") return register(body);
   if (req.method === "POST" && path === "/api/login") return login(body);
   if (req.method === "POST" && path === "/api/listening/pronunciation-assessment") return assessListeningPronunciation(body);
+  const ownStatusMatch = path.match(/^\/api\/users\/([^/]+)\/status$/);
+  if (ownStatusMatch && req.method === "GET") return getCurrentUserStatus(req, decodeURIComponent(ownStatusMatch[1]));
   const ownAvatarMatch = path.match(/^\/api\/users\/([^/]+)\/avatar$/);
   if (ownAvatarMatch && req.method === "PATCH") return updateOwnAvatar(req, decodeURIComponent(ownAvatarMatch[1]), body);
   const ownPasswordMatch = path.match(/^\/api\/users\/([^/]+)\/password$/);

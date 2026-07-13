@@ -28,11 +28,13 @@ test("admin manual VIP upgrade requires an explicit confirmation before PATCH", 
   assert.match(appSource, /existing VIP/i);
 });
 
-test("admin user search and refresh can request fresh backend data", () => {
-  assert.match(appSource, /let adminUserSearchTimer = null;/);
+test("admin user search filters locally and refresh can request fresh backend data", () => {
+  assert.match(appSource, /id="adminUserSearchInput"/);
   assert.match(appSource, /id="adminRefreshBtn"/);
-  assert.match(appSource, /clearTimeout\(adminUserSearchTimer\)/);
-  assert.match(appSource, /adminUserSearchTimer = setTimeout\(\(\) => \{\s*loadAdminUsers\(\);\s*\}, 350\);/s);
+  assert.match(appSource, /state\.adminUserSearch = event\.target\.value;/);
+  assert.match(appSource, /updateAdminUsersList\(\);/);
+  assert.match(appSource, /event\.target\.closest\("#adminLoadUsersBtn"\) \|\| event\.target\.closest\("#adminRefreshBtn"\)/);
+  assert.match(appSource, /if \(adminLoadUsersBtn\) \{\s*loadAdminUsers\(\);/s);
 });
 
 test("payment modal handles bank configuration and status refresh messaging", () => {
@@ -40,6 +42,11 @@ test("payment modal handles bank configuration and status refresh messaging", ()
   assert.match(appSource, /bankConfigured/);
   assert.match(appSource, /transfer-status-success/);
   assert.match(appSource, /refreshCurrentUserStatus\(true\)/);
+  assert.match(appSource, /function refreshVisibleVipAccessState\(\)/);
+  assert.match(appSource, /if \(state\.screen === "course"\) renderCourse\(\)/);
+  assert.match(appSource, /else if \(state\.screen === "listening"\) renderListening\(\{ silentCatalogLoad: true \}\)/);
+  assert.match(appSource, /refreshVisibleVipAccessState\(\)/);
+  assert.doesNotMatch(appSource, /Could not refresh current user status; locking VIP access/);
 });
 
 test("environment template documents SePay webhook and bank variables without real values", () => {
