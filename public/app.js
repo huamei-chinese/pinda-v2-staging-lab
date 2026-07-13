@@ -6695,19 +6695,6 @@ function renderAdmin() {
           </footer>
         </section>
 
-        ${adminTab === "users" ? `
-          <section class="admin-content-panel admin-user-covers-panel">
-            <div class="admin-content-header">
-              <div>
-                <h2>${isVi ? "Ảnh bìa cấp độ HSK" : "HSK 等级封面"}</h2>
-                <p>${isVi ? "Tùy chỉnh ảnh nền cho từng card HSK1–HSK6 trên màn hình chọn cấp độ." : "自定义 HSK1–HSK6 等级卡片的封面背景。"}</p>
-              </div>
-              <button id="adminSaveHskLevelCoversBtn" class="admin-add-user" type="button">${isVi ? "Lưu ảnh bìa" : "保存封面"}</button>
-            </div>
-            ${renderAdminHskLevelCoversHTML(isVi)}
-          </section>
-        ` : ""}
-
         <section class="admin-subscriptions-panel">
           <iframe
             class="admin-subscriptions-frame"
@@ -12512,15 +12499,6 @@ function renderHomeDesktopLayoutHTML(isVi) {
           <span class="home-desktop-streak-icon" aria-hidden="true">👑</span>
         </div>
 
-        <section class="home-desktop-stats-card">
-          <h3>${isVi ? "Tổng quan tiến độ" : "进度总览"}</h3>
-          <ul>
-            <li><span>${isVi ? "Thời gian học" : "学习时长"}</span><strong>${studyLabel}</strong></li>
-            <li><span>${isVi ? "Bài đã hoàn thành" : "已完成课程"}</span><strong>${stats.completedLessons}</strong></li>
-            <li><span>${isVi ? "Chữ đã luyện" : "已练汉字"}</span><strong>${stats.practicedChars}</strong></li>
-            <li><span>${isVi ? "Ngày liên tiếp" : "连续天数"}</span><strong>${stats.streakDays}</strong></li>
-          </ul>
-        </section>
         ${renderHomeTodayStudyCardHTML(isVi)}
       </aside>
     </div>
