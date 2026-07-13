@@ -251,9 +251,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       VALUES
         ('7d', 7, 'days', 29000, 'Gói VIP 7 ngày', '7天 VIP', TRUE, 1),
         ('30d', 30, 'days', 129000, 'Gói VIP 1 tháng', '1个月 VIP', TRUE, 2),
-        ('1m', 1, 'months', 149000, '1 Tháng', '1 个月', TRUE, 3),
-        ('3m', 3, 'months', 399000, '3 Tháng', '3 个月', TRUE, 4),
-        ('6m', 6, 'months', 699000, '6 Tháng', '6 个月', TRUE, 5)
+        ('90d', 90, 'days', 329000, 'Gói VIP 3 tháng', '3个月 VIP', TRUE, 3),
+        ('1m', 1, 'months', 149000, '1 Tháng', '1 个月', TRUE, 4),
+        ('3m', 3, 'months', 399000, '3 Tháng', '3 个月', TRUE, 5),
+        ('6m', 6, 'months', 699000, '6 Tháng', '6 个月', TRUE, 6)
       ON CONFLICT (id) DO NOTHING;
     `);
     await this.pool.query(`

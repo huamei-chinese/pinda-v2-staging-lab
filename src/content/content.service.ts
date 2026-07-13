@@ -173,37 +173,44 @@ export class ContentService {
       try {
         const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
         let topicOrder = 0;
+        const addTopic = (topic: any) => {
+          const topicId = String(topic?.id || '').trim();
+          if (!topicId) return;
+          topicOrder += 1;
+          const existingTopic = topics.get(topicId);
+          topics.set(topicId, {
+            topicId,
+            titleVi: existingTopic?.titleVi || String(topic?.label_vi || topic?.label_zh || topicId).trim(),
+            sortOrder: existingTopic?.sortOrder || topicOrder,
+            lockedForFree: existingTopic?.lockedForFree === true,
+            updatedAt: existingTopic?.updatedAt,
+          });
+
+          let lessonOrder = 0;
+          for (const lesson of topic?.lessons || []) {
+            const lessonId = String(lesson?.id || '').trim();
+            if (!lessonId) continue;
+            lessonOrder += 1;
+            const existingLesson = lessons.get(lessonId);
+            lessons.set(lessonId, {
+              lessonId,
+              topicId,
+              titleVi: existingLesson?.titleVi || String(lesson?.title_vi || lesson?.title_zh || lesson?.title || lessonId).trim(),
+              sortOrder: existingLesson?.sortOrder || lessonOrder,
+              lockedForFree: existingLesson?.lockedForFree === true,
+              updatedAt: existingLesson?.updatedAt,
+            });
+          }
+        };
+
         for (const track of catalog?.tracks || []) {
           for (const level of track?.levels || []) {
             for (const topic of level?.topics || []) {
-              const topicId = String(topic?.id || '').trim();
-              if (!topicId) continue;
-              topicOrder += 1;
-              const existingTopic = topics.get(topicId);
-              topics.set(topicId, {
-                topicId,
-                titleVi: existingTopic?.titleVi || String(topic?.label_vi || topic?.label_zh || topicId).trim(),
-                sortOrder: existingTopic?.sortOrder || topicOrder,
-                lockedForFree: existingTopic?.lockedForFree === true,
-                updatedAt: existingTopic?.updatedAt,
-              });
-
-              let lessonOrder = 0;
-              for (const lesson of topic?.lessons || []) {
-                const lessonId = String(lesson?.id || '').trim();
-                if (!lessonId) continue;
-                lessonOrder += 1;
-                const existingLesson = lessons.get(lessonId);
-                lessons.set(lessonId, {
-                  lessonId,
-                  topicId,
-                  titleVi: existingLesson?.titleVi || String(lesson?.title_vi || lesson?.title_zh || lesson?.title || lessonId).trim(),
-                  sortOrder: existingLesson?.sortOrder || lessonOrder,
-                  lockedForFree: existingLesson?.lockedForFree === true,
-                  updatedAt: existingLesson?.updatedAt,
-                });
-              }
+              addTopic(topic);
             }
+          }
+          for (const topic of track?.topics || []) {
+            addTopic(topic);
           }
         }
       } catch {

@@ -57,8 +57,8 @@ export class AdminService {
       plan,
       vip: Number(row.vip || 0),
       vipPlanId,
-      vipPlanName: vipPlanId === '7d' ? 'VIP 7 ngày' : vipPlanId === '30d' ? 'VIP 30 ngày' : null,
-      vipPlanNameZh: vipPlanId === '7d' ? '7天VIP' : vipPlanId === '30d' ? '30天VIP' : null,
+      vipPlanName: vipPlanId === '7d' ? 'VIP 7 ngày' : vipPlanId === '30d' ? 'VIP 30 ngày' : vipPlanId === '90d' ? 'VIP 3 tháng' : null,
+      vipPlanNameZh: vipPlanId === '7d' ? '7天VIP' : vipPlanId === '30d' ? '30天VIP' : vipPlanId === '90d' ? '90天VIP' : null,
       premiumUntil: row.premium_until,
       dailyReminderEnabled: row.daily_reminder_enabled !== false,
       registeredAt: row.created_at,
@@ -155,9 +155,11 @@ export class AdminService {
 
   private vipPlanIdFromDuration(planId: string | null | undefined, durationDays: number): string | null {
     const normalized = String(planId || '').trim().toLowerCase();
-    if (normalized === '7d' || normalized === '30d') return normalized;
+    if (normalized === '7d' || normalized === '30d' || normalized === '90d') return normalized;
+    if (normalized === '3m') return '90d';
     if (durationDays === 7) return '7d';
     if (durationDays === 30) return '30d';
+    if (durationDays === 90) return '90d';
     return null;
   }
 
@@ -627,14 +629,45 @@ export class AdminService {
     return new Date(Date.UTC(year, month - 1, day));
   }
 
+  private normalizeAnalyticsDateInput(value: string | number | undefined | null): string {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const ymd = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (ymd) {
+      const year = Number(ymd[1]);
+      const month = Number(ymd[2]);
+      const day = Number(ymd[3]);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+        return date.toISOString().slice(0, 10);
+      }
+      return '';
+    }
+
+    const slash = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if (!slash) return '';
+    const first = Number(slash[1]);
+    const second = Number(slash[2]);
+    const year = Number(slash[3]);
+    let month = first;
+    let day = second;
+    if (first > 12 && second <= 12) {
+      day = first;
+      month = second;
+    }
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
   private spanDays(fromYmd: string, toYmd: string): number {
     return Math.round((this.ymdToUtcDate(toYmd).getTime() - this.ymdToUtcDate(fromYmd).getTime()) / 86400000) + 1;
   }
 
   private resolveAnalyticsRange(options: { days?: number | string; from?: string; to?: string }) {
-    const ymdPattern = /^\d{4}-\d{2}-\d{2}$/;
-    let fromYmd = ymdPattern.test(String(options.from || '').trim()) ? String(options.from).trim() : '';
-    let toYmd = ymdPattern.test(String(options.to || '').trim()) ? String(options.to).trim() : '';
+    let fromYmd = this.normalizeAnalyticsDateInput(options.from);
+    let toYmd = this.normalizeAnalyticsDateInput(options.to);
 
     if (fromYmd && toYmd) {
       if (fromYmd > toYmd) [fromYmd, toYmd] = [toYmd, fromYmd];
@@ -672,6 +705,121 @@ export class AdminService {
       guard += 1;
     }
     return series;
+  }
+
+  async getVipManagement(
+    headers: Record<string, string | string[] | undefined>,
+    options: { days?: number | string; from?: string; to?: string } = {},
+  ) {
+    await this.assertAdmin(headers);
+
+    const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
+    const tz = AdminService.ANALYTICS_TZ;
+    const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
+    const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${tz}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
+    const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${tz}'), 'YYYY-MM-DD')`;
+    const params = [fromYmd, toYmd];
+
+    try {
+      const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+        this.db.query(
+          `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+          params,
+        ),
+        this.db.query(
+          `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
+           FROM payment_orders o
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+          params,
+        ),
+        this.db.query(
+          `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
+           FROM payment_orders o
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           GROUP BY 1 ORDER BY 1`,
+          params,
+        ),
+        this.db.query(
+          `SELECT o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+                  COUNT(*)::int AS activations,
+                  COALESCE(SUM(o.amount), 0)::bigint AS revenue
+           FROM payment_orders o
+           LEFT JOIN payment_plans p ON p.id = o.plan_id
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           GROUP BY o.plan_id, p.name_vi
+           ORDER BY revenue DESC, activations DESC`,
+          params,
+        ),
+        this.db.query(
+          `SELECT u.id AS user_id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id,
+                  o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+                  COUNT(*)::int AS activations,
+                  COALESCE(SUM(o.amount), 0)::bigint AS revenue,
+                  MAX(o.paid_at) AS latest_paid_at
+           FROM payment_orders o
+           JOIN users u ON u.id = o.user_id
+           LEFT JOIN payment_plans p ON p.id = o.plan_id
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
+           ORDER BY revenue DESC, latest_paid_at DESC
+           LIMIT 400`,
+          params,
+        ),
+      ]);
+
+      const usersById = new Map<string, any>();
+      for (const row of userPlanRows.rows) {
+        const userId = String(row.user_id || '');
+        if (!usersById.has(userId)) {
+          usersById.set(userId, {
+            userId,
+            fullName: row.full_name || '',
+            email: row.email || '',
+            isPremium: row.is_premium === true,
+            premiumUntil: row.premium_until || null,
+            currentPlanId: row.vip_plan_id || '',
+            totalActivations: 0,
+            totalRevenue: 0,
+            latestPaidAt: null,
+            plans: {},
+          });
+        }
+        const user = usersById.get(userId);
+        const planId = String(row.plan_id || 'unknown').toLowerCase();
+        const activations = Number(row.activations || 0);
+        const revenue = Number(row.revenue || 0);
+        user.totalActivations += activations;
+        user.totalRevenue += revenue;
+        const latestPaidAt = row.latest_paid_at || null;
+        if (latestPaidAt && (!user.latestPaidAt || new Date(latestPaidAt).getTime() > new Date(user.latestPaidAt).getTime())) {
+          user.latestPaidAt = latestPaidAt;
+        }
+        user.plans[planId] = {
+          planId,
+          planName: row.plan_name || planId,
+          activations,
+          revenue,
+        };
+      }
+
+      return {
+        meta: { days, from: fromYmd, to: toYmd },
+        vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+        vipActivations: Number(paidTotals.rows[0]?.activations || 0),
+        revenue: Number(paidTotals.rows[0]?.revenue || 0),
+        dailyRevenue: this.buildDailySeries(dailyRevenue.rows, fromYmd, toYmd),
+        planBreakdown: planBreakdown.rows.map((row) => ({
+          planId: row.plan_id || '',
+          planName: row.plan_name || row.plan_id || '',
+          activations: Number(row.activations || 0),
+          revenue: Number(row.revenue || 0),
+        })),
+        users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
+      };
+    } catch (error: any) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async getLearningAnalytics(

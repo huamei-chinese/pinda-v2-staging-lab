@@ -15,11 +15,13 @@ export interface AdminPaymentPlan extends PaymentPlan {
 export class PaymentPlansService {
   constructor(private readonly db: DatabaseService) {}
 
-  private readonly publicPlanIds = ['7d', '30d'];
+  private readonly publicPlanIds = ['7d', '30d', '90d'];
 
   private normalizePlanId(planId: string): string {
     const id = String(planId || '').trim().toLowerCase();
-    return id === '1m' ? '30d' : id;
+    if (id === '1m') return '30d';
+    if (id === '3m') return '90d';
+    return id;
   }
 
   private defaultPlan(planId: string): PaymentPlan | null {

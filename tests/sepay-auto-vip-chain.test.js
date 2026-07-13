@@ -95,6 +95,7 @@ test("Netlify SePay activation persists the selected VIP plan id", () => {
   assert.match(netlifyApiSource, /ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT/);
   assert.match(netlifyApiSource, /\{ id: "7d", months: 7, durationUnit: "days", amount: 29000/);
   assert.match(netlifyApiSource, /\{ id: "30d", months: 30, durationUnit: "days", amount: 129000/);
+  assert.match(netlifyApiSource, /\{ id: "90d", months: 90, durationUnit: "days", amount: 329000/);
   assert.match(netlifyApiSource, /INSERT INTO payment_plans \(id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order\)/);
   assert.match(netlifyApiSource, /const vipPlanId = isPremium \? normalizeVipPlanId\(row\.vip_plan_id\) : null/);
   assert.match(netlifyApiSource, /vipPlanId,/);

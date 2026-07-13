@@ -17,7 +17,7 @@ const i18n = {
     chooseSub: "Học theo giáo trình HSK hoặc luyện các chủ đề giao tiếp thường dùng.",
     hskTitle: "Khóa HSK",
     hskSub: "HSK2 đến HSK5, học theo từng bài trong giáo trình.",
-    dailyTitle: "Tiếng Trung tần suất cao",
+    dailyTitle: "Tiếng Trung thông dụng",
     dailySub: "Tình huống học tập, công việc và đời sống hằng ngày.",
     enter: "Vào học",
     continue: "Tiếp tục",
@@ -721,6 +721,12 @@ const state = {
   adminAnalyticsDraftFrom: "",
   adminAnalyticsDraftTo: "",
   adminAnalyticsCalMonth: "",
+  adminVip: null,
+  adminVipLoading: false,
+  adminVipError: "",
+  adminVipFrom: "",
+  adminVipTo: "",
+  adminVipPlanFilter: "all",
   adminUserSearch: "",
   adminUserLevelFilter: "all",
   adminUserPlanFilter: "all",
@@ -2694,6 +2700,16 @@ const LOCAL_DEFAULT_PAYMENT_PLANS = [
     sortOrder: 2,
     priceLabel: "129.000đ",
   },
+  {
+    id: "90d",
+    months: 90,
+    durationUnit: "days",
+    amount: 329000,
+    nameVi: "Gói VIP 3 tháng",
+    nameZh: "3个月 VIP",
+    sortOrder: 3,
+    priceLabel: "329.000đ",
+  },
 ];
 
 function isSevenDayVipPlan(plan) {
@@ -2704,6 +2720,10 @@ function isOneMonthVipPlan(plan) {
   return plan?.durationUnit === "days" && Number(plan.months) === 30 && Number(plan.amount) === 129000;
 }
 
+function isThreeMonthVipPlan(plan) {
+  return plan?.durationUnit === "days" && Number(plan.months) === 90 && Number(plan.amount) === 329000;
+}
+
 function selectUpgradePlansForDisplay(apiPlans = []) {
   const plans = [...(apiPlans || []), ...LOCAL_DEFAULT_PAYMENT_PLANS];
   const sevenDay = plans.find((plan) => plan.id === "7d" && isSevenDayVipPlan(plan))
@@ -2712,7 +2732,10 @@ function selectUpgradePlansForDisplay(apiPlans = []) {
   const oneMonth = plans.find((plan) => plan.id === "30d" && isOneMonthVipPlan(plan))
     || plans.find(isOneMonthVipPlan)
     || LOCAL_DEFAULT_PAYMENT_PLANS[1];
-  return [sevenDay, oneMonth];
+  const threeMonth = plans.find((plan) => plan.id === "90d" && isThreeMonthVipPlan(plan))
+    || plans.find(isThreeMonthVipPlan)
+    || LOCAL_DEFAULT_PAYMENT_PLANS[2];
+  return [sevenDay, oneMonth, threeMonth];
 }
 
 function buildDisplayPlans(apiPlans, isVi) {
@@ -2732,6 +2755,7 @@ function buildDisplayPlans(apiPlans, isVi) {
     const isDayPlan = plan.durationUnit === "days";
     const isSevenDayVip = isSevenDayVipPlan(plan);
     const isOneMonthVip = isOneMonthVipPlan(plan);
+    const isThreeMonthVip = isThreeMonthVipPlan(plan);
     const monthly = isDayPlan
       ? Math.round(plan.amount / Math.max(1, plan.months / 30))
       : Math.round(plan.amount / plan.months);
@@ -2746,6 +2770,9 @@ function buildDisplayPlans(apiPlans, isVi) {
     if (isOneMonthVip) {
       kickerVi = "Gói VIP 1 tháng";
       kickerZh = "1个月 VIP";
+    } else if (isThreeMonthVip) {
+      kickerVi = "Gói VIP 3 tháng";
+      kickerZh = "3个月 VIP";
     } else if (isDayPlan) {
       kickerVi = isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi;
       kickerZh = isSevenDayVip ? "7天 VIP" : plan.nameZh;
@@ -2770,15 +2797,15 @@ function buildDisplayPlans(apiPlans, isVi) {
       id: plan.id,
       nameVi: kickerVi,
       nameZh: kickerZh,
-      durationVi: isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi),
-      durationZh: isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh),
-      price: isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount))),
+      durationVi: isThreeMonthVip ? "Gói VIP 3 tháng" : (isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi)),
+      durationZh: isThreeMonthVip ? "3个月 VIP" : (isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh)),
+      price: isThreeMonthVip ? "329.000đ" : (isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount)))),
       note,
       discount: index === popularIndex && sorted.length > 1 ? (isVi ? "Phổ biến nhất" : "最受欢迎") : "",
       popular: index === popularIndex && sorted.length > 1,
       isSevenDayVip,
       isOneMonthVip,
-      actionVi: isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày",
+      actionVi: isThreeMonthVip ? "Đăng ký gói 3 tháng" : (isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày"),
       actionZh: "开通 VIP",
     };
   });
@@ -3175,6 +3202,7 @@ function normalizeVipPlanId(user) {
   const planId = String(user?.vipPlanId || user?.vipPlan || user?.plan || "").trim().toLowerCase();
   if (planId === "7d") return "7d";
   if (planId === "30d") return "30d";
+  if (planId === "90d" || planId === "3m") return "90d";
   return "";
 }
 
@@ -3217,7 +3245,9 @@ function getVipPlanDisplay(user, isVi = state.lang === "vi") {
     ? (isVi ? "VIP 7 ngày" : "7天VIP")
     : planId === "30d"
       ? (isVi ? "VIP 30 ngày" : "30天VIP")
-      : (user?.vipPlanName && isVi ? user.vipPlanName : user?.vipPlanNameZh || "VIP");
+      : planId === "90d"
+        ? (isVi ? "VIP 3 tháng" : "90天VIP")
+        : (user?.vipPlanName && isVi ? user.vipPlanName : user?.vipPlanNameZh || "VIP");
   return {
     badge,
     status: isVi ? `Còn ${remainingDays} ngày` : `剩余 ${remainingDays} 天`,
@@ -4145,7 +4175,7 @@ function renderAdminContentPanelHTML() {
       ${isVi ? "Khóa HSK" : "HSK 课程"}
     </button>
     <button class="admin-content-module-btn ${contentModule === "daily" ? "active" : ""}" type="button" data-admin-content-module="daily">
-      ${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}
+      ${isVi ? "Tiếng Trung thông dụng" : "高频汉语"}
     </button>
     <button class="admin-content-module-btn ${contentModule === "listening" ? "active" : ""}" type="button" data-admin-content-module="listening">
       ${isVi ? "Luyện nghe" : "听力"}
@@ -4817,6 +4847,32 @@ function analyticsParseYmd(ymd) {
   return date;
 }
 
+function analyticsNormalizeDateInput(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const ymd = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) {
+    const date = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+    date.setHours(0, 0, 0, 0);
+    return Number.isNaN(date.getTime()) ? "" : analyticsToYmd(date);
+  }
+  const slash = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (!slash) return "";
+  let first = Number(slash[1]);
+  let second = Number(slash[2]);
+  const year = Number(slash[3]);
+  let month = first;
+  let day = second;
+  if (first > 12 && second <= 12) {
+    day = first;
+    month = second;
+  }
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "";
+  return analyticsToYmd(date);
+}
+
 function analyticsAddDays(date, amount) {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
@@ -5017,13 +5073,6 @@ function renderAdminAnalyticsPanelHTML() {
     }).join("");
 
     bodyHTML = `
-      <div class="admin-analytics-cards">
-        
-        
-        
-        <div class="admin-analytics-card"><small>${isVi ? "Lượt mở popup VIP" : "VIP 弹窗次数"}</small><strong>${formatAnalyticsNumber(data.vipModalOpens)}</strong></div>
-        <div class="admin-analytics-card"><small>${isVi ? "Kích hoạt VIP" : "VIP 开通"}</small><strong>${formatAnalyticsNumber(funnel.vip)}</strong></div>
-      </div>
       <div class="admin-analytics-grid">
         <div class="admin-analytics-chart">
           <h3>${isVi ? "Xu hướng người học mỗi ngày" : "每日学习人数趋势"}</h3>
@@ -5110,6 +5159,195 @@ async function loadAdminAnalytics() {
     state.adminAnalyticsError = error.message || (isVi ? "Không thể tải dữ liệu phân tích." : "无法加载分析数据。");
   }
   state.adminAnalyticsLoading = false;
+  renderAdmin();
+}
+
+function ensureAdminVipRange() {
+  state.adminVipFrom = analyticsNormalizeDateInput(state.adminVipFrom) || state.adminVipFrom;
+  state.adminVipTo = analyticsNormalizeDateInput(state.adminVipTo) || state.adminVipTo;
+  if (!state.adminVipFrom || !state.adminVipTo) {
+    const preset = analyticsPresetRange("last30");
+    state.adminVipFrom = analyticsToYmd(preset.from);
+    state.adminVipTo = analyticsToYmd(preset.to);
+  }
+  if (state.adminVipFrom && state.adminVipTo && state.adminVipFrom > state.adminVipTo) {
+    [state.adminVipFrom, state.adminVipTo] = [state.adminVipTo, state.adminVipFrom];
+  }
+}
+
+function formatAdminVipMoney(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+}
+
+function formatAdminVipDate(value) {
+  return formatAdminRegistrationTimeOnly(value, state.lang === "vi") || "—";
+}
+
+function getAdminVipPlanLabel(planId, fallback = "") {
+  const id = String(planId || "").toLowerCase();
+  if (id === "7d") return state.lang === "vi" ? "VIP 7 ngày" : "7天 VIP";
+  if (id === "30d") return state.lang === "vi" ? "VIP 30 ngày" : "30天 VIP";
+  if (id === "90d" || id === "3m") return state.lang === "vi" ? "VIP 3 tháng" : "90天 VIP";
+  return fallback || planId || "VIP";
+}
+
+function getAdminVipUserPlanMetric(user, planId) {
+  if (!user) return { activations: 0, revenue: 0 };
+  if (planId === "all") {
+    return {
+      activations: Number(user.totalActivations || 0),
+      revenue: Number(user.totalRevenue || 0),
+    };
+  }
+  const plans = user.plans || {};
+  const plan = plans[planId] || {};
+  return {
+    activations: Number(plan.activations || 0),
+    revenue: Number(plan.revenue || 0),
+  };
+}
+
+function renderAdminVipPanelHTML() {
+  ensureAdminVipRange();
+  const isVi = state.lang === "vi";
+  const data = state.adminVip || {};
+  const selectedPlan = state.adminVipPlanFilter || "all";
+  const planBreakdown = Array.isArray(data.planBreakdown) ? data.planBreakdown : [];
+  const planIds = Array.from(new Set(["7d", "30d", "90d", ...planBreakdown.map((plan) => String(plan.planId || "").toLowerCase()).filter(Boolean)]));
+  const planTabs = [
+    { id: "all", label: isVi ? "Tất cả" : "全部", activations: data.vipActivations || 0, revenue: data.revenue || 0 },
+    ...planIds.map((planId) => {
+      const plan = planBreakdown.find((item) => String(item.planId || "").toLowerCase() === planId) || {};
+      return {
+        id: planId,
+        label: getAdminVipPlanLabel(planId, plan.planName),
+        activations: Number(plan.activations || 0),
+        revenue: Number(plan.revenue || 0),
+      };
+    }),
+  ];
+  const users = (Array.isArray(data.users) ? data.users : [])
+    .map((user) => ({ user, metric: getAdminVipUserPlanMetric(user, selectedPlan) }))
+    .filter((entry) => entry.metric.activations > 0)
+    .sort((a, b) => b.metric.revenue - a.metric.revenue || b.metric.activations - a.metric.activations);
+  const selectedPlanInfo = planTabs.find((plan) => plan.id === selectedPlan) || planTabs[0];
+  const dailyRevenue = Array.isArray(data.dailyRevenue) ? data.dailyRevenue : [];
+
+  let bodyHTML = "";
+  if (state.adminVipLoading) {
+    bodyHTML = `<div class="admin-vip-status">${isVi ? "Đang tải dữ liệu VIP..." : "正在加载 VIP 数据..."}</div>`;
+  } else if (state.adminVipError) {
+    bodyHTML = `<div class="admin-vip-status error">${escapeHtml(state.adminVipError)}</div>`;
+  } else if (!state.adminVip) {
+    bodyHTML = `<div class="admin-vip-status">${isVi ? "Chưa có dữ liệu VIP." : "暂无 VIP 数据。"}</div>`;
+  } else {
+    const rows = users.map(({ user, metric }) => `
+      <tr>
+        <td><strong>${escapeHtml(user.fullName || user.email || "User")}</strong><small>${escapeHtml(user.email || user.userId || "")}</small></td>
+        <td>${escapeHtml(selectedPlanInfo.label)}<small>${isVi ? "Gói đang xem" : "当前套餐"}</small></td>
+        <td><b>${formatAnalyticsNumber(metric.activations)}</b><small>${isVi ? "lượt kích hoạt" : "次开通"}</small></td>
+        <td><b>${escapeHtml(formatAdminVipMoney(metric.revenue))}</b><small>${isVi ? "số tiền bỏ ra" : "消费金额"}</small></td>
+        <td>${escapeHtml(formatAdminVipDate(user.latestPaidAt))}</td>
+        <td>${user.isPremium ? `<span class="admin-vip-user-state active">VIP</span>` : `<span class="admin-vip-user-state inactive">${isVi ? "Hết hạn" : "已过期"}</span>`}<small>${escapeHtml(user.premiumUntil ? formatAdminDate(user.premiumUntil) : "N/A")}</small></td>
+      </tr>
+    `).join("");
+
+    bodyHTML = `
+      <div class="admin-vip-summary">
+        <article class="admin-vip-revenue-card">
+          <span>${isVi ? "Doanh thu" : "收入"}</span>
+          <strong>${escapeHtml(formatAdminVipMoney(data.revenue))}</strong>
+          <small>${escapeHtml(analyticsRangeLabel(state.adminVipFrom, state.adminVipTo))}</small>
+        </article>
+        <article><span>${isVi ? "Kích hoạt VIP" : "VIP 开通"}</span><strong>${formatAnalyticsNumber(data.vipActivations || 0)}</strong><small>${isVi ? "đơn đã thanh toán" : "已支付订单"}</small></article>
+        <article><span>${isVi ? "Lượt mở popup VIP" : "VIP 弹窗次数"}</span><strong>${formatAnalyticsNumber(data.vipModalOpens || 0)}</strong><small>${isVi ? "theo ngày lọc" : "按日期筛选"}</small></article>
+      </div>
+      <div class="admin-vip-plan-tabs">
+        ${planTabs.map((plan) => `
+          <button type="button" class="${selectedPlan === plan.id ? "active" : ""}" data-admin-vip-plan-filter="${escapeAttr(plan.id)}">
+            <strong>${escapeHtml(plan.label)}</strong>
+            <span>${formatAnalyticsNumber(plan.activations)} · ${escapeHtml(formatAdminVipMoney(plan.revenue))}</span>
+          </button>
+        `).join("")}
+      </div>
+      <div class="admin-vip-layout">
+        <section class="admin-vip-chart">
+          <h3>${isVi ? "Doanh thu theo ngày" : "每日收入"}</h3>
+          <div class="admin-analytics-metric">${escapeHtml(formatAdminVipMoney(selectedPlanInfo.revenue))}</div>
+          ${renderAnalyticsLineChart(dailyRevenue, "#0f766e", { unitLabel: "VND" })}
+        </section>
+        <section class="admin-vip-list">
+          <h3>${isVi ? "Danh sách kích hoạt VIP" : "VIP 开通列表"}</h3>
+          <div class="admin-table-wrap">
+            <table class="admin-vip-table">
+              <thead>
+                <tr>
+                  <th>${isVi ? "Người dùng" : "用户"}</th>
+                  <th>${isVi ? "Gói" : "套餐"}</th>
+                  <th>${isVi ? "Số lần mua" : "购买次数"}</th>
+                  <th>${isVi ? "Số tiền" : "金额"}</th>
+                  <th>${isVi ? "Gần nhất" : "最近"}</th>
+                  <th>${isVi ? "Trạng thái" : "状态"}</th>
+                </tr>
+              </thead>
+              <tbody>${rows || `<tr><td colspan="6" class="admin-empty">${isVi ? "Chưa có lượt kích hoạt VIP trong khoảng ngày này." : "该日期范围内暂无 VIP 开通。"}</td></tr>`}</tbody>
+            </table>
+          </div>
+        </section>
+      </div>`;
+  }
+
+  return `
+    <section class="admin-vip-panel">
+      <header class="admin-vip-head">
+        <div>
+          <h2>${isVi ? "Quản lí VIP" : "VIP 管理"}</h2>
+          <p>${isVi ? "Theo dõi popup VIP, lượt kích hoạt, doanh thu và người dùng đã mua theo từng gói." : "查看 VIP 弹窗、开通、收入和按套餐购买的用户。"}</p>
+        </div>
+        <div class="admin-vip-range">
+          <label>${isVi ? "Từ ngày" : "开始日期"}<input id="adminVipFromInput" type="date" value="${escapeAttr(state.adminVipFrom)}" /></label>
+          <label>${isVi ? "Đến ngày" : "结束日期"}<input id="adminVipToInput" type="date" value="${escapeAttr(state.adminVipTo)}" /></label>
+          <button id="adminVipRangeApply" type="button">${isVi ? "Cập nhật" : "更新"}</button>
+        </div>
+      </header>
+      ${bodyHTML}
+    </section>
+  `;
+}
+
+async function loadAdminVipManagement() {
+  const isVi = state.lang === "vi";
+  if (!canAccessAdminConsole()) {
+    state.adminVipError = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
+    state.adminVip = null;
+    renderAdmin();
+    return;
+  }
+  ensureAdminVipRange();
+  state.adminVipLoading = true;
+  state.adminVipError = "";
+  renderAdmin();
+  try {
+    const params = new URLSearchParams({
+      from: state.adminVipFrom,
+      to: state.adminVipTo,
+    });
+    const data = await apiRequest(`/api/admin/vip/overview?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        "X-Admin-User-Id": getAdminUserId(),
+      },
+    });
+    if (data?.meta?.from && data?.meta?.to) {
+      state.adminVipFrom = analyticsNormalizeDateInput(data.meta.from) || state.adminVipFrom;
+      state.adminVipTo = analyticsNormalizeDateInput(data.meta.to) || state.adminVipTo;
+    }
+    state.adminVip = data;
+  } catch (error) {
+    state.adminVip = null;
+    state.adminVipError = error.message || (isVi ? "Không thể tải dữ liệu VIP." : "无法加载 VIP 数据。");
+  }
+  state.adminVipLoading = false;
   renderAdmin();
 }
 
@@ -5723,6 +5961,9 @@ function savePersistedRoute() {
       adminContentHskPanel: state.adminContentHskPanel,
       adminAnalyticsFrom: state.adminAnalyticsFrom,
       adminAnalyticsTo: state.adminAnalyticsTo,
+      adminVipFrom: state.adminVipFrom,
+      adminVipTo: state.adminVipTo,
+      adminVipPlanFilter: state.adminVipPlanFilter,
     };
     localStorage.setItem(APP_ROUTE_STORAGE_KEY, JSON.stringify(route));
   } catch {
@@ -5775,6 +6016,9 @@ function restorePersistedRoute() {
     if (route.adminContentHskPanel) state.adminContentHskPanel = route.adminContentHskPanel;
     if (route.adminAnalyticsFrom) state.adminAnalyticsFrom = route.adminAnalyticsFrom;
     if (route.adminAnalyticsTo) state.adminAnalyticsTo = route.adminAnalyticsTo;
+    if (route.adminVipFrom) state.adminVipFrom = route.adminVipFrom;
+    if (route.adminVipTo) state.adminVipTo = route.adminVipTo;
+    if (route.adminVipPlanFilter) state.adminVipPlanFilter = route.adminVipPlanFilter;
 
     switch (route.screen) {
       case "home":
@@ -5872,6 +6116,9 @@ function restorePersistedAdminRouteState() {
   if (route.adminContentHskPanel) state.adminContentHskPanel = route.adminContentHskPanel;
   if (route.adminAnalyticsFrom) state.adminAnalyticsFrom = route.adminAnalyticsFrom;
   if (route.adminAnalyticsTo) state.adminAnalyticsTo = route.adminAnalyticsTo;
+  if (route.adminVipFrom) state.adminVipFrom = route.adminVipFrom;
+  if (route.adminVipTo) state.adminVipTo = route.adminVipTo;
+  if (route.adminVipPlanFilter) state.adminVipPlanFilter = route.adminVipPlanFilter;
   return true;
 }
 
@@ -5890,6 +6137,9 @@ function loadActiveAdminTabData() {
       break;
     case "analytics":
       loadAdminAnalytics();
+      break;
+    case "vip":
+      loadAdminVipManagement();
       break;
     case "subscriptions":
       break;
@@ -6305,6 +6555,7 @@ function getAdminUserPlan(user) {
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
   if (plan === "7d") return isVi ? "VIP 7 ngày" : "VIP 7d";
   if (plan === "30d") return isVi ? "VIP 30 ngày" : "VIP 30d";
+  if (plan === "90d") return isVi ? "VIP 3 tháng" : "VIP 90d";
   if (plan === "PREMIUM") return "VIP";
   if (plan === "EMPLOYEE") return isVi ? "Nhân viên" : "员工";
   if (plan === "FREE") return isVi ? "Thường" : "Free";
@@ -6346,9 +6597,11 @@ function confirmAdminVipUpgrade(userId, durationDays) {
   const user = findAdminUserById(userId);
   const isVi = state.lang === "vi";
   const hasPremium = isActivePremiumUser(user);
-  const planLabel = durationDays === 30
-    ? (isVi ? "VIP 30 ngày" : "30天 VIP")
-    : (isVi ? "VIP 7 ngày" : "7天 VIP");
+  const planLabel = durationDays === 90
+    ? (isVi ? "VIP 3 tháng" : "90天 VIP")
+    : durationDays === 30
+      ? (isVi ? "VIP 30 ngày" : "30天 VIP")
+      : (isVi ? "VIP 7 ngày" : "7天 VIP");
   const target = user?.email || user?.fullName || userId;
   const currentExpiry = user?.premiumUntil ? formatAdminDate(user.premiumUntil) : "";
   const existingVipNote = hasPremium
@@ -6508,6 +6761,7 @@ function buildAdminUserRowsHTML(users, isVi) {
           <div class="admin-row-actions">
             <button class="admin-vip-user" type="button" data-vip-days="7" aria-label="VIP 7 days">VIP 7d</button>
             <button class="admin-vip-user" type="button" data-vip-days="30" aria-label="VIP 30 days">VIP 30d</button>
+            <button class="admin-vip-user" type="button" data-vip-days="90" aria-label="VIP 90 days">VIP 90d</button>
             <input class="admin-vip-expiry-input" type="date" value="${escapeAttr(expiryInputValue)}" aria-label="${isVi ? "Ngày hết hạn VIP" : "VIP 到期日期"}" />
             <button class="admin-set-vip-expiry" type="button">${isVi ? "Đặt hạn" : "设到期"}</button>
             <button class="admin-cancel-vip-user" type="button">${isVi ? "Hủy VIP" : "取消VIP"}</button>
@@ -6632,21 +6886,25 @@ function renderAdmin() {
     return;
   }
 
-  const totalUsers = state.adminUsers.length;
   const studentUsers = state.adminUsers.filter((user) => user.role !== "admin");
+  const totalUsers = studentUsers.length;
   const premiumStudentUsers = studentUsers.filter((user) => isActivePremiumUser(user));
   const vipRate = studentUsers.length > 0 ? Math.round((premiumStudentUsers.length / studentUsers.length) * 1000) / 10 : 0;
   const vipRateMeta = isVi
     ? `${premiumStudentUsers.length}/${studentUsers.length} tài khoản đã lên Pro`
     : `${premiumStudentUsers.length}/${studentUsers.length} 个账户已升级 Pro`;
-  const adminTab = isAdminUser() ? (state.adminTab === "vip" ? "users" : (state.adminTab || "users")) : (isCtvAdminUser() ? "customers" : "users");
-  if (state.adminTab === "vip") state.adminTab = "users";
+  const adminTab = isAdminUser()
+    ? (state.adminTab === "customers" ? "users" : (state.adminTab || "users"))
+    : (isCtvAdminUser() ? "customers" : "users");
+  if (isAdminUser() && state.adminTab === "customers") state.adminTab = "users";
   if (isCtvAdminUser() && state.adminTab !== "customers") state.adminTab = "customers";
+  const showAdminCustomersTab = !isAdminUser();
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
     adminTab === "collaborators" ? "admin-main--ctv" : "",
     adminTab === "analytics" ? "admin-main--analytics" : "",
+    adminTab === "vip" ? "admin-main--vip" : "",
     adminTab === "customers" ? "admin-main--customers" : "",
   ].filter(Boolean).join(" ");
   const filteredUsers = getFilteredAdminUsers();
@@ -6671,6 +6929,11 @@ function renderAdmin() {
     analytics: isVi ? "Theo dõi xu hướng học tập, kênh nguồn và chuyển đổi VIP." : "跟踪学习趋势、流量来源和 VIP 转化。",
   };
 
+  adminTitleMap.vip = isVi ? "Quản lí VIP" : "VIP 管理";
+  adminSubtitleMap.vip = isVi
+    ? "Theo dõi popup VIP, lượt kích hoạt và doanh thu theo ngày."
+    : "按日期查看 VIP 弹窗、开通和收入。";
+
   screens.admin.innerHTML = `
     <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
@@ -6683,8 +6946,9 @@ function renderAdmin() {
           <span class="${state.lang === "zh" ? "active" : ""}">中文</span>
         </button>
         <nav>
-          <button id="adminCustomersTabBtn" class="${adminTab === "customers" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Khách hàng của tôi" : "我的客户"}</button>
+          ${showAdminCustomersTab ? `<button id="adminCustomersTabBtn" class="${adminTab === "customers" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Khách hàng của tôi" : "我的客户"}</button>` : ""}
           <button id="adminUsersTabBtn" class="${adminTab === "users" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Người dùng" : "用户"}</button>
+          <button id="adminVipTabBtn" class="${adminTab === "vip" ? "active" : ""}" type="button"><span>VIP</span>${isVi ? "Quản lí VIP" : "VIP 管理"}</button>
           <button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>
           <button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>
            <button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>📚</span>${isVi ? "Khóa bài học" : "课程锁定"}</button>
@@ -6790,6 +7054,7 @@ function renderAdmin() {
         ${adminTab === "content" ? renderAdminContentPanelHTML() : ""}
         ${adminTab === "collaborators" ? renderAdminCollaboratorsPanelHTML() : ""}
         ${adminTab === "analytics" ? renderAdminAnalyticsPanelHTML() : ""}
+        ${adminTab === "vip" ? renderAdminVipPanelHTML() : ""}
       </main>
     </div>
   `;
@@ -8134,7 +8399,9 @@ async function showTransferInfoModal(planId) {
   const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
   const activationPlanLabel = normalizedPlanId === "7d"
     ? (isVi ? "7 ngày" : "7天")
-    : (isVi ? "30 ngày" : "30天");
+    : normalizedPlanId === "90d"
+      ? (isVi ? "3 tháng" : "90天")
+      : (isVi ? "30 ngày" : "30天");
   const customerEmail = state.user.email || "";
   const activationMessage = [
     isVi ? "Em đã chuyển khoản VIP." : "我已完成 VIP 转账。",
@@ -13364,7 +13631,7 @@ function renderWriteCommunicationCourseHTML() {
           </svg>
           ${isVi ? "Quay lại" : "返回"}
         </button>
-        <h1>${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}</h1>
+        <h1>${isVi ? "Tiếng Trung thông dụng" : "高频汉语"}</h1>
         <p>${isVi ? "Chọn một chủ đề giao tiếp để luyện từ vựng và câu thường dùng." : "选择一个交际主题，练习高频词汇和句子。"}</p>
       </header>
 
@@ -13753,7 +14020,7 @@ function renderDailyCourse() {
         </div>
       ` : `
       <header class="daily-course-header">
-        <h1>${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}</h1>
+        <h1>${isVi ? "Tiếng Trung thông dụng" : "高频汉语"}</h1>
         <p>${isVi
       ? "Khám phá các tình huống giao tiếp thực tế và nâng cao khả năng phản xạ tiếng Trung của bạn qua từng chủ đề cụ thể."
       : "探索真实交流场景，通过具体主题提升你的中文反应能力。"}</p>
@@ -15532,6 +15799,7 @@ function bindEvents() {
 
     const adminCustomersTabBtn = event.target.closest("#adminCustomersTabBtn");
     if (adminCustomersTabBtn) {
+      if (isAdminUser()) return;
       state.adminTab = "customers";
       renderAdmin();
       savePersistedRoute();
@@ -15546,6 +15814,16 @@ function bindEvents() {
       renderAdmin();
       savePersistedRoute();
       loadAdminContentLocks();
+      return;
+    }
+
+    const adminVipTabBtn = event.target.closest("#adminVipTabBtn");
+    if (adminVipTabBtn) {
+      if (!isAdminUser()) return;
+      state.adminTab = "vip";
+      renderAdmin();
+      savePersistedRoute();
+      loadAdminVipManagement();
       return;
     }
 
@@ -15659,6 +15937,25 @@ function bindEvents() {
         savePersistedRoute();
         loadAdminAnalytics();
       }
+      return;
+    }
+
+    const adminVipPlanFilterBtn = event.target.closest("[data-admin-vip-plan-filter]");
+    if (adminVipPlanFilterBtn && state.screen === "admin") {
+      state.adminVipPlanFilter = adminVipPlanFilterBtn.dataset.adminVipPlanFilter || "all";
+      renderAdmin();
+      savePersistedRoute();
+      return;
+    }
+
+    if (event.target.closest("#adminVipRangeApply") && state.screen === "admin") {
+      const fromInput = document.getElementById("adminVipFromInput");
+      const toInput = document.getElementById("adminVipToInput");
+      state.adminVipFrom = analyticsNormalizeDateInput(fromInput?.value) || state.adminVipFrom;
+      state.adminVipTo = analyticsNormalizeDateInput(toInput?.value) || state.adminVipTo;
+      ensureAdminVipRange();
+      savePersistedRoute();
+      loadAdminVipManagement();
       return;
     }
 
@@ -16684,6 +16981,12 @@ function bindEvents() {
     if (event.target.id === "adminCustomerTo") {
       state.adminCustomerTo = event.target.value;
       renderAdmin();
+    }
+    if (event.target.id === "adminVipFromInput") {
+      state.adminVipFrom = analyticsNormalizeDateInput(event.target.value) || event.target.value;
+    }
+    if (event.target.id === "adminVipToInput") {
+      state.adminVipTo = analyticsNormalizeDateInput(event.target.value) || event.target.value;
     }
     if (event.target.id === "adminCtvSearchInput") {
       state.adminCtvSearch = event.target.value;

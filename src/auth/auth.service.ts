@@ -10,6 +10,7 @@ export class AuthService {
     const normalized = String(planId || '').trim().toLowerCase();
     if (normalized === '7d') return '7d';
     if (normalized === '30d') return '30d';
+    if (normalized === '90d' || normalized === '3m') return '90d';
     return normalized || null;
   }
 
@@ -25,6 +26,7 @@ export class AuthService {
   private vipPlanName(planId: string | null, lang: 'vi' | 'zh'): string | null {
     if (planId === '7d') return lang === 'vi' ? 'VIP 7 ngày' : '7天VIP';
     if (planId === '30d') return lang === 'vi' ? 'VIP 30 ngày' : '30天VIP';
+    if (planId === '90d') return lang === 'vi' ? 'VIP 3 tháng' : '90天VIP';
     return planId ? (lang === 'vi' ? 'VIP' : 'VIP') : null;
   }
 

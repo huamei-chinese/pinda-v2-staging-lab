@@ -42,18 +42,22 @@ test("frontend has explicit VIP plan display helpers and localized labels", () =
   assert.match(appSource, /function getVipPlanDisplay\(/);
   assert.match(appSource, /VIP 7 ngày/);
   assert.match(appSource, /VIP 30 ngày/);
+  assert.match(appSource, /VIP 3 tháng/);
   assert.match(appSource, /7天VIP/);
   assert.match(appSource, /30天VIP/);
+  assert.match(appSource, /90天VIP/);
   assert.match(appSource, /Còn \$\{remainingDays\} ngày/);
   assert.match(appSource, /剩余 \$\{remainingDays\} 天/);
   assert.match(appSource, /Hết hạn:/);
   assert.match(appSource, /到期：/);
 });
 
-test("admin user list distinguishes VIP 7d, VIP 30d, and free plans", () => {
+test("admin user list distinguishes VIP 7d, VIP 30d, VIP 90d, and free plans", () => {
   assert.match(appSource, /function getAdminUserPlanLabel\(/);
   assert.match(appSource, /VIP 7d/);
   assert.match(appSource, /VIP 30d/);
+  assert.match(appSource, /VIP 90d/);
   assert.match(appSource, /VIP 7 ngày/);
   assert.match(appSource, /VIP 30 ngày/);
+  assert.match(appSource, /VIP 3 tháng/);
 });

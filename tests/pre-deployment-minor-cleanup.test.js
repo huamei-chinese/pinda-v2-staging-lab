@@ -14,13 +14,14 @@ const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "
 const packageJson = require("../package.json");
 const railwayJson = require("../railway.json");
 
-test("public payment plans expose only the approved 7d and 30d plans", async () => {
+test("public payment plans expose only the approved 7d, 30d, and 90d plans", async () => {
   const db = {
     async query() {
       return {
         rows: [
           { id: "7d", months: 7, duration_unit: "days", amount: 29000, name_vi: "Gói VIP 7 ngày", name_zh: "7天 VIP", sort_order: 1 },
           { id: "30d", months: 30, duration_unit: "days", amount: 129000, name_vi: "Gói VIP 1 tháng", name_zh: "1个月 VIP", sort_order: 2 },
+          { id: "90d", months: 90, duration_unit: "days", amount: 329000, name_vi: "Gói VIP 3 tháng", name_zh: "3个月 VIP", sort_order: 3 },
           { id: "1m", months: 1, duration_unit: "months", amount: 29000, name_vi: "1 Tháng", name_zh: "1 个月", sort_order: 3 },
         ],
       };
@@ -30,9 +31,10 @@ test("public payment plans expose only the approved 7d and 30d plans", async () 
 
   const plans = await service.listActivePlans();
 
-  assert.deepEqual(plans.map((plan) => plan.id), ["7d", "30d"]);
+  assert.deepEqual(plans.map((plan) => plan.id), ["7d", "30d", "90d"]);
   assert.equal(plans[0].amount, 29000);
   assert.equal(plans[1].amount, 129000);
+  assert.equal(plans[2].amount, 329000);
 });
 
 test("legacy 1m payment plan id is resolved as the approved 30d plan", async () => {
@@ -56,6 +58,29 @@ test("legacy 1m payment plan id is resolved as the approved 30d plan", async () 
   assert.equal(plan.amount, 129000);
   assert.equal(plan.durationUnit, "days");
   assert.equal(plan.months, 30);
+});
+
+test("legacy 3m payment plan id is resolved as the approved 90d plan", async () => {
+  let queryParams = null;
+  const db = {
+    async query(sql, params) {
+      queryParams = params;
+      return {
+        rows: [
+          { id: "90d", months: 90, duration_unit: "days", amount: 329000, name_vi: "Gói VIP 3 tháng", name_zh: "3个月 VIP" },
+        ],
+      };
+    },
+  };
+  const service = new PaymentPlansService(db);
+
+  const plan = await service.getPlan("3m");
+
+  assert.deepEqual(queryParams, ["90d"]);
+  assert.equal(plan.id, "90d");
+  assert.equal(plan.amount, 329000);
+  assert.equal(plan.durationUnit, "days");
+  assert.equal(plan.months, 90);
 });
 
 test(".env.example uses the Node entry port and contains only placeholder SePay variables", () => {

@@ -150,16 +150,46 @@ function analyticsYmdToUtcDate(ymd) {
   const [year, month, day] = String(ymd || "").split("-").map(Number);
   if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+}
+
+function analyticsNormalizeDateInput(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const ymd = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) {
+    const date = analyticsYmdToUtcDate(`${ymd[1]}-${ymd[2]}-${ymd[3]}`);
+    return date ? analyticsToYmd(date) : "";
+  }
+  const slash = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (!slash) return "";
+  const first = Number(slash[1]);
+  const second = Number(slash[2]);
+  const year = Number(slash[3]);
+  let month = first;
+  let day = second;
+  if (first > 12 && second <= 12) {
+    day = first;
+    month = second;
+  }
+  const date = analyticsYmdToUtcDate(`${year}-${month}-${day}`);
+  return date ? analyticsToYmd(date) : "";
 }
 
 function resolveAnalyticsRange(searchParams) {
   const today = new Date();
   const days = Math.min(ANALYTICS_MAX_SPAN_DAYS, Math.max(1, Number(searchParams.get("days") || 30) || 30));
-  const fromParam = String(searchParams.get("from") || "").trim();
-  const toParam = String(searchParams.get("to") || "").trim();
+  const fromParam = analyticsNormalizeDateInput(searchParams.get("from"));
+  const toParam = analyticsNormalizeDateInput(searchParams.get("to"));
   const toDate = analyticsYmdToUtcDate(toParam) || today;
   const fromDate = analyticsYmdToUtcDate(fromParam) || new Date(toDate.getTime() - (days - 1) * 86400000);
+  if (fromDate > toDate) {
+    const time = fromDate.getTime();
+    fromDate.setTime(toDate.getTime());
+    toDate.setTime(time);
+  }
   const spanDays = Math.max(1, Math.floor((toDate.getTime() - fromDate.getTime()) / 86400000) + 1);
   if (spanDays > ANALYTICS_MAX_SPAN_DAYS) {
     fromDate.setTime(toDate.getTime() - (ANALYTICS_MAX_SPAN_DAYS - 1) * 86400000);
@@ -1093,6 +1123,116 @@ async function handleAdminAnalyticsOverview(req, res, url) {
   });
 }
 
+async function handleAdminVipOverview(req, res, url) {
+  if (!requireDatabase(res)) return;
+  if (!(await isAdminRequest(req))) {
+    sendJson(res, 401, { error: "Vui lÃ²ng Ä‘Äƒng nháº­p báº±ng tÃ i khoáº£n admin." });
+    return;
+  }
+
+  const { fromYmd, toYmd, days } = resolveAnalyticsRange(url.searchParams);
+  const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const params = [fromYmd, toYmd];
+
+  const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
+       FROM payment_orders o
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+      params,
+    ),
+    pool.query(
+      `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
+       FROM payment_orders o
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    pool.query(
+      `SELECT o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+              COUNT(*)::int AS activations,
+              COALESCE(SUM(o.amount), 0)::bigint AS revenue
+       FROM payment_orders o
+       LEFT JOIN payment_plans p ON p.id = o.plan_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY o.plan_id, p.name_vi
+       ORDER BY revenue DESC, activations DESC`,
+      params,
+    ),
+    pool.query(
+      `SELECT u.id AS user_id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id,
+              o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+              COUNT(*)::int AS activations,
+              COALESCE(SUM(o.amount), 0)::bigint AS revenue,
+              MAX(o.paid_at) AS latest_paid_at
+       FROM payment_orders o
+       JOIN users u ON u.id = o.user_id
+       LEFT JOIN payment_plans p ON p.id = o.plan_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
+       ORDER BY revenue DESC, latest_paid_at DESC
+       LIMIT 400`,
+      params,
+    ),
+  ]);
+
+  const usersById = new Map();
+  for (const row of userPlanRows.rows) {
+    const userId = String(row.user_id || "");
+    if (!usersById.has(userId)) {
+      usersById.set(userId, {
+        userId,
+        fullName: row.full_name || "",
+        email: row.email || "",
+        isPremium: row.is_premium === true,
+        premiumUntil: row.premium_until || null,
+        currentPlanId: row.vip_plan_id || "",
+        totalActivations: 0,
+        totalRevenue: 0,
+        latestPaidAt: null,
+        plans: {},
+      });
+    }
+    const user = usersById.get(userId);
+    const planId = String(row.plan_id || "unknown").toLowerCase();
+    const activations = Number(row.activations || 0);
+    const revenue = Number(row.revenue || 0);
+    user.totalActivations += activations;
+    user.totalRevenue += revenue;
+    const latestPaidAt = row.latest_paid_at || null;
+    if (latestPaidAt && (!user.latestPaidAt || new Date(latestPaidAt).getTime() > new Date(user.latestPaidAt).getTime())) {
+      user.latestPaidAt = latestPaidAt;
+    }
+    user.plans[planId] = {
+      planId,
+      planName: row.plan_name || planId,
+      activations,
+      revenue,
+    };
+  }
+
+  sendJson(res, 200, {
+    meta: { days, from: fromYmd, to: toYmd },
+    vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+    vipActivations: Number(paidTotals.rows[0]?.activations || 0),
+    revenue: Number(paidTotals.rows[0]?.revenue || 0),
+    dailyRevenue: buildDailySeries(dailyRevenue.rows, fromYmd, toYmd),
+    planBreakdown: planBreakdown.rows.map((row) => ({
+      planId: row.plan_id || "",
+      planName: row.plan_name || row.plan_id || "",
+      activations: Number(row.activations || 0),
+      revenue: Number(row.revenue || 0),
+    })),
+    users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
+  });
+}
+
 function serveStatic(req, res, url) {
   // Local lab fallback for /listening-app/typing/ep-* exported routes.
   const usesTypingFallback = /^\/listening-app\/typing\/ep-\d+\/?$/.test(url.pathname);
@@ -1139,6 +1279,10 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/api/admin/analytics/overview" && req.method === "GET") {
       await handleAdminAnalyticsOverview(req, res, url);
+      return;
+    }
+    if (url.pathname === "/api/admin/vip/overview" && req.method === "GET") {
+      await handleAdminVipOverview(req, res, url);
       return;
     }
     if (url.pathname.startsWith("/api/")) {

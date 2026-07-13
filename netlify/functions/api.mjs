@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import net from "node:net";
 import tls from "node:tls";
+import fs from "node:fs";
+import path from "node:path";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -26,6 +28,7 @@ function applyPlanDuration(base, plan) {
 const DEFAULT_PAYMENT_PLANS = [
   { id: "7d", months: 7, durationUnit: "days", amount: 29000, nameVi: "Gói VIP 7 ngày", nameZh: "7天 VIP" },
   { id: "30d", months: 30, durationUnit: "days", amount: 129000, nameVi: "Gói VIP 1 tháng", nameZh: "1个月 VIP" },
+  { id: "90d", months: 90, durationUnit: "days", amount: 329000, nameVi: "Gói VIP 3 tháng", nameZh: "3个月 VIP" },
 ];
 
 function env(name) {
@@ -1019,13 +1022,26 @@ function normalizeVipPlanId(planId) {
   const normalized = String(planId || "").trim().toLowerCase();
   if (normalized === "7d") return "7d";
   if (normalized === "30d") return "30d";
+  if (normalized === "90d" || normalized === "3m") return "90d";
   return normalized || null;
 }
 
 function vipPlanName(planId, lang) {
   if (planId === "7d") return lang === "zh" ? "7天VIP" : "VIP 7 ngày";
   if (planId === "30d") return lang === "zh" ? "30天VIP" : "VIP 30 ngày";
+  if (planId === "90d") return lang === "zh" ? "90天VIP" : "VIP 3 tháng";
   return null;
+}
+
+function normalizePaymentPlanId(planId) {
+  const normalized = String(planId || "").trim().toLowerCase();
+  if (normalized === "1m") return "30d";
+  if (normalized === "3m") return "90d";
+  return normalized;
+}
+
+function defaultPaymentPlan(planId) {
+  return DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === planId) || null;
 }
 
 function normalizePublicRole(role) {
@@ -1070,14 +1086,15 @@ function formatVnd(amount) {
 }
 
 async function getPlanById(planId) {
+  const normalizedPlanId = normalizePaymentPlanId(planId);
   const result = await query(
     `SELECT id, months, duration_unit, amount, name_vi, name_zh
      FROM payment_plans
      WHERE id = $1`,
-    [planId],
+    [normalizedPlanId],
   );
   const row = result.rows[0];
-  if (!row) return null;
+  if (!row) return defaultPaymentPlan(normalizedPlanId);
   return {
     id: row.id,
     months: Number(row.months),
@@ -1089,14 +1106,15 @@ async function getPlanById(planId) {
 }
 
 async function getPlan(planId) {
+  const normalizedPlanId = normalizePaymentPlanId(planId);
   const result = await query(
     `SELECT id, months, duration_unit, amount, name_vi, name_zh
      FROM payment_plans
      WHERE id = $1 AND is_active = TRUE`,
-    [planId],
+    [normalizedPlanId],
   );
   const row = result.rows[0];
-  if (!row) return null;
+  if (!row) return defaultPaymentPlan(normalizedPlanId);
   return {
     id: row.id,
     months: Number(row.months),
@@ -1505,6 +1523,16 @@ function calculatePremiumUntil(plan, durationDays) {
   return premiumUntil.toISOString();
 }
 
+function vipPlanIdFromDuration(planId, durationDays) {
+  const normalized = String(planId || "").trim().toLowerCase();
+  if (normalized === "7d" || normalized === "30d" || normalized === "90d") return normalized;
+  if (normalized === "3m") return "90d";
+  if (durationDays === 7) return "7d";
+  if (durationDays === 30) return "30d";
+  if (durationDays === 90) return "90d";
+  return null;
+}
+
 async function createUser(req, body) {
   await assertAdmin(req);
   const fullName = String(body.fullName || "").trim();
@@ -1517,6 +1545,7 @@ async function createUser(req, body) {
   const durationDays = Math.max(0, Number(body.durationDays || 0));
   const isPremium = plan === "PREMIUM";
   const premiumUntil = calculatePremiumUntil(plan, durationDays);
+  const vipPlanId = isPremium ? vipPlanIdFromDuration(null, durationDays) : null;
 
   if (fullName.length < 2) throw apiError("Vui lòng nhập họ và tên.", 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw apiError("Email không hợp lệ.", 400);
@@ -1526,10 +1555,10 @@ async function createUser(req, body) {
 
   try {
     const result = await query(
-      `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil],
+      [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil, vipPlanId],
     );
     return json({ user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -1545,13 +1574,64 @@ async function updateUser(req, id, body) {
   const role = normalizeEditableRole(body.role);
   const isActive = body.isActive === true;
   const currentLevel = String(body.currentLevel || "HSK2").trim().toUpperCase();
+  const plan = String(body.plan || "").trim().toUpperCase();
+  const durationDays = Math.floor(Number(body.durationDays || 0));
+  const requestedPremiumUntil = String(body.premiumUntil || "").trim();
+  const shouldExtendPremium = plan === "PREMIUM" && Number.isFinite(durationDays) && durationDays > 0;
+  const shouldCancelPremium = plan === "FREE";
+  const shouldSetPremiumUntil = plan === "PREMIUM" && Boolean(requestedPremiumUntil) && !shouldExtendPremium;
+  const premiumUntilDate = shouldSetPremiumUntil ? new Date(requestedPremiumUntil) : null;
+  const vipPlanId = shouldExtendPremium
+    ? vipPlanIdFromDuration(null, durationDays)
+    : shouldSetPremiumUntil
+      ? vipPlanIdFromDuration(body.vipPlanId, 0)
+      : null;
+  if (plan && plan !== "PREMIUM" && plan !== "FREE") throw apiError("Invalid account plan.", 400);
+  if (shouldSetPremiumUntil) {
+    if (!premiumUntilDate || Number.isNaN(premiumUntilDate.getTime())) throw apiError("VIP expiry date is invalid.", 400);
+    if (premiumUntilDate.getTime() <= Date.now()) throw apiError("VIP expiry date must be in the future.", 400);
+  }
   if (!fullName || !email) throw apiError("Tên và email không được để trống.", 400);
   const result = await query(
     `UPDATE users
-     SET full_name = $1, email = $2, role = $3, is_active = $4, current_level = $5, updated_at = NOW()
+     SET full_name = $1,
+         email = $2,
+         role = $3,
+         is_active = $4,
+         current_level = $5,
+         is_premium = CASE
+           WHEN $10::boolean THEN FALSE
+           WHEN $7::boolean OR $11::boolean THEN TRUE
+           ELSE is_premium
+         END,
+         premium_until = CASE
+           WHEN $10::boolean THEN NULL
+           WHEN $11::boolean THEN $12::timestamptz
+           WHEN $7::boolean THEN GREATEST(COALESCE(premium_until, NOW()), NOW()) + ($8::int * INTERVAL '1 day')
+           ELSE premium_until
+         END,
+         vip_plan_id = CASE
+           WHEN $10::boolean THEN NULL
+           WHEN $7::boolean OR $11::boolean THEN COALESCE($9, vip_plan_id)
+           ELSE vip_plan_id
+         END,
+         updated_at = NOW()
      WHERE id = $6
      RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-    [fullName, email, role, isActive, currentLevel, id],
+    [
+      fullName,
+      email,
+      role,
+      isActive,
+      currentLevel,
+      id,
+      shouldExtendPremium,
+      durationDays,
+      vipPlanId,
+      shouldCancelPremium,
+      shouldSetPremiumUntil,
+      premiumUntilDate?.toISOString() || null,
+    ],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy user.", 404);
   return json({ user: publicUser(result.rows[0]) });
@@ -1628,17 +1708,22 @@ async function listPlans() {
      WHERE is_active = TRUE
      ORDER BY sort_order ASC, created_at ASC`,
   );
+  const rowsById = new Map(result.rows.map((row) => [row.id, row]));
   return json({
-    plans: result.rows.map((row) => ({
-      id: row.id,
-      months: Number(row.months),
-      durationUnit: normalizeDurationUnit(row.duration_unit),
-      amount: Number(row.amount),
-      sortOrder: Number(row.sort_order),
-      priceLabel: formatVnd(Number(row.amount)),
-      nameVi: row.name_vi,
-      nameZh: row.name_zh,
-    })),
+    plans: DEFAULT_PAYMENT_PLANS.map((plan, index) => {
+      const row = rowsById.get(plan.id) || {};
+      const amount = Number(row.amount ?? plan.amount);
+      return {
+        id: plan.id,
+        months: Number(row.months ?? plan.months),
+        durationUnit: normalizeDurationUnit(row.duration_unit ?? plan.durationUnit),
+        amount,
+        sortOrder: Number(row.sort_order ?? index + 1),
+        priceLabel: formatVnd(amount),
+        nameVi: row.name_vi ?? plan.nameVi,
+        nameZh: row.name_zh ?? plan.nameZh,
+      };
+    }),
     bankConfigured: Boolean(config.accountNumber),
   });
 }
@@ -2079,16 +2164,112 @@ async function getPublicLearningAccessRules() {
   });
 }
 
+let staticListeningLockCatalogCache = null;
+
+function listStaticListeningLockCatalog() {
+  if (staticListeningLockCatalogCache) return staticListeningLockCatalogCache;
+
+  const catalogPath = path.join(process.cwd(), "public", "listening-app", "data", "listening-catalog.json");
+  const topics = new Map();
+  const lessons = new Map();
+
+  if (fs.existsSync(catalogPath)) {
+    try {
+      const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+      let topicOrder = 0;
+      const addTopic = (topic) => {
+        const topicId = String(topic?.id || "").trim();
+        if (!topicId) return;
+        topicOrder += 1;
+        const existingTopic = topics.get(topicId);
+        topics.set(topicId, {
+          topicId,
+          titleVi: existingTopic?.titleVi || String(topic?.label_vi || topic?.label_zh || topicId).trim(),
+          sortOrder: existingTopic?.sortOrder || topicOrder,
+          lockedForFree: existingTopic?.lockedForFree === true,
+          updatedAt: existingTopic?.updatedAt,
+        });
+
+        let lessonOrder = 0;
+        for (const lesson of topic?.lessons || []) {
+          const lessonId = String(lesson?.id || "").trim();
+          if (!lessonId) continue;
+          lessonOrder += 1;
+          const existingLesson = lessons.get(lessonId);
+          lessons.set(lessonId, {
+            lessonId,
+            topicId,
+            titleVi: existingLesson?.titleVi || String(lesson?.title_vi || lesson?.title_zh || lesson?.title || lessonId).trim(),
+            sortOrder: existingLesson?.sortOrder || lessonOrder,
+            lockedForFree: existingLesson?.lockedForFree === true,
+            updatedAt: existingLesson?.updatedAt,
+          });
+        }
+      };
+
+      for (const track of catalog?.tracks || []) {
+        for (const level of track?.levels || []) {
+          for (const topic of level?.topics || []) addTopic(topic);
+        }
+        for (const topic of track?.topics || []) addTopic(topic);
+      }
+    } catch {
+      // Keep admin usable even if a local catalog file is temporarily malformed.
+    }
+  }
+
+  staticListeningLockCatalogCache = {
+    topics: [...topics.values()].sort((a, b) => a.sortOrder - b.sortOrder || a.topicId.localeCompare(b.topicId)),
+    lessons: [...lessons.values()].sort((a, b) => a.topicId.localeCompare(b.topicId) || a.sortOrder - b.sortOrder || a.lessonId.localeCompare(b.lessonId)),
+  };
+  return staticListeningLockCatalogCache;
+}
+
+function mergeListeningLocksWithStaticCatalog(topicRows = [], lessonRows = []) {
+  const staticCatalog = listStaticListeningLockCatalog();
+  const topics = new Map(staticCatalog.topics.map((item) => [item.topicId, item]));
+  const lessons = new Map(staticCatalog.lessons.map((item) => [item.lessonId, item]));
+
+  for (const row of topicRows) {
+    const topicId = String(row.topic_id || "").trim();
+    if (!topicId) continue;
+    const base = topics.get(topicId);
+    topics.set(topicId, {
+      topicId,
+      titleVi: row.title_vi || base?.titleVi || "",
+      sortOrder: Number(row.sort_order || base?.sortOrder || 0),
+      lockedForFree: row.locked_for_free === true,
+      updatedAt: row.updated_at,
+    });
+  }
+
+  for (const row of lessonRows) {
+    const lessonId = String(row.lesson_id || "").trim();
+    if (!lessonId) continue;
+    const base = lessons.get(lessonId);
+    lessons.set(lessonId, {
+      lessonId,
+      topicId: row.topic_id || base?.topicId || "",
+      titleVi: row.title_vi || base?.titleVi || "",
+      sortOrder: Number(row.sort_order || base?.sortOrder || 0),
+      lockedForFree: row.locked_for_free === true,
+      updatedAt: row.updated_at,
+    });
+  }
+
+  return {
+    topics: [...topics.values()].sort((a, b) => a.sortOrder - b.sortOrder || a.topicId.localeCompare(b.topicId)),
+    lessons: [...lessons.values()].sort((a, b) => a.topicId.localeCompare(b.topicId) || a.sortOrder - b.sortOrder || a.lessonId.localeCompare(b.lessonId)),
+  };
+}
+
 async function listAdminListeningLocks(req) {
   await assertAdmin(req);
   const [topics, lessons] = await Promise.all([
     query(`SELECT topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
     query(`SELECT lesson_id, topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
   ]);
-  return json({
-    topics: topics.rows.map((row) => ({ topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
-    lessons: lessons.rows.map((row) => ({ lessonId: row.lesson_id, topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
-  });
+  return json(mergeListeningLocksWithStaticCatalog(topics.rows, lessons.rows));
 }
 
 async function saveAdminListeningLocks(req, body) {
@@ -2489,8 +2670,35 @@ function analyticsToYmd(date) {
 }
 
 function analyticsYmdToUtcDate(ymd) {
-  const [year, month, day] = ymd.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
+  const [year, month, day] = String(ymd || "").split("-").map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return date;
+}
+
+function analyticsNormalizeDateInput(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const ymd = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) {
+    const date = analyticsYmdToUtcDate(`${ymd[1]}-${ymd[2]}-${ymd[3]}`);
+    return date ? analyticsToYmd(date) : "";
+  }
+  const slash = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (!slash) return "";
+  const first = Number(slash[1]);
+  const second = Number(slash[2]);
+  const year = Number(slash[3]);
+  let month = first;
+  let day = second;
+  if (first > 12 && second <= 12) {
+    day = first;
+    month = second;
+  }
+  const date = analyticsYmdToUtcDate(`${year}-${month}-${day}`);
+  return date ? analyticsToYmd(date) : "";
 }
 
 function analyticsSpanDays(fromYmd, toYmd) {
@@ -2498,9 +2706,8 @@ function analyticsSpanDays(fromYmd, toYmd) {
 }
 
 function resolveAnalyticsRange(searchParams) {
-  const ymdPattern = /^\d{4}-\d{2}-\d{2}$/;
-  let fromYmd = ymdPattern.test(String(searchParams.get("from") || "").trim()) ? String(searchParams.get("from")).trim() : "";
-  let toYmd = ymdPattern.test(String(searchParams.get("to") || "").trim()) ? String(searchParams.get("to")).trim() : "";
+  let fromYmd = analyticsNormalizeDateInput(searchParams.get("from"));
+  let toYmd = analyticsNormalizeDateInput(searchParams.get("to"));
 
   if (fromYmd && toYmd) {
     if (fromYmd > toYmd) [fromYmd, toYmd] = [toYmd, fromYmd];
@@ -2634,6 +2841,111 @@ async function getLearningAnalytics(req, searchParams) {
   });
 }
 
+async function getVipManagement(req, searchParams) {
+  await assertAdmin(req);
+  const { fromYmd, toYmd, days } = resolveAnalyticsRange(searchParams);
+  const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const params = [fromYmd, toYmd];
+
+  const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+    query(
+      `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    query(
+      `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
+       FROM payment_orders o
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+      params,
+    ),
+    query(
+      `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
+       FROM payment_orders o
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY 1 ORDER BY 1`,
+      params,
+    ),
+    query(
+      `SELECT o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+              COUNT(*)::int AS activations,
+              COALESCE(SUM(o.amount), 0)::bigint AS revenue
+       FROM payment_orders o
+       LEFT JOIN payment_plans p ON p.id = o.plan_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY o.plan_id, p.name_vi
+       ORDER BY revenue DESC, activations DESC`,
+      params,
+    ),
+    query(
+      `SELECT u.id AS user_id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id,
+              o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
+              COUNT(*)::int AS activations,
+              COALESCE(SUM(o.amount), 0)::bigint AS revenue,
+              MAX(o.paid_at) AS latest_paid_at
+       FROM payment_orders o
+       JOIN users u ON u.id = o.user_id
+       LEFT JOIN payment_plans p ON p.id = o.plan_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
+       ORDER BY revenue DESC, latest_paid_at DESC
+       LIMIT 400`,
+      params,
+    ),
+  ]);
+
+  const usersById = new Map();
+  for (const row of userPlanRows.rows) {
+    const userId = String(row.user_id || "");
+    if (!usersById.has(userId)) {
+      usersById.set(userId, {
+        userId,
+        fullName: row.full_name || "",
+        email: row.email || "",
+        isPremium: row.is_premium === true,
+        premiumUntil: row.premium_until || null,
+        currentPlanId: row.vip_plan_id || "",
+        totalActivations: 0,
+        totalRevenue: 0,
+        latestPaidAt: null,
+        plans: {},
+      });
+    }
+    const user = usersById.get(userId);
+    const planId = String(row.plan_id || "unknown").toLowerCase();
+    const activations = Number(row.activations || 0);
+    const revenue = Number(row.revenue || 0);
+    user.totalActivations += activations;
+    user.totalRevenue += revenue;
+    const latestPaidAt = row.latest_paid_at || null;
+    if (latestPaidAt && (!user.latestPaidAt || new Date(latestPaidAt).getTime() > new Date(user.latestPaidAt).getTime())) {
+      user.latestPaidAt = latestPaidAt;
+    }
+    user.plans[planId] = {
+      planId,
+      planName: row.plan_name || planId,
+      activations,
+      revenue,
+    };
+  }
+
+  return json({
+    meta: { days, from: fromYmd, to: toYmd },
+    vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+    vipActivations: Number(paidTotals.rows[0]?.activations || 0),
+    revenue: Number(paidTotals.rows[0]?.revenue || 0),
+    dailyRevenue: buildLearningDailySeries(dailyRevenue.rows, fromYmd, toYmd),
+    planBreakdown: planBreakdown.rows.map((row) => ({
+      planId: row.plan_id || "",
+      planName: row.plan_name || row.plan_id || "",
+      activations: Number(row.activations || 0),
+      revenue: Number(row.revenue || 0),
+    })),
+    users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
+  });
+}
+
 async function route(req) {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/\.netlify\/functions\/api/, "/api");
@@ -2641,6 +2953,7 @@ async function route(req) {
 
   if (req.method === "POST" && path === "/api/events") return recordLearningEvents(req, body);
   if (req.method === "GET" && path === "/api/admin/analytics/overview") return getLearningAnalytics(req, url.searchParams);
+  if (req.method === "GET" && path === "/api/admin/vip/overview") return getVipManagement(req, url.searchParams);
 
   if (req.method === "POST" && path === "/api/register") return register(body);
   if (req.method === "POST" && path === "/api/login") return login(body);

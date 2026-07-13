@@ -1721,6 +1721,16 @@ const LOCAL_DEFAULT_PAYMENT_PLANS = [
     sortOrder: 2,
     priceLabel: "129.000đ",
   },
+  {
+    id: "90d",
+    months: 90,
+    durationUnit: "days",
+    amount: 329000,
+    nameVi: "Gói VIP 3 tháng",
+    nameZh: "3个月 VIP",
+    sortOrder: 3,
+    priceLabel: "329.000đ",
+  },
 ];
 
 function isSevenDayVipPlan(plan) {
@@ -1731,6 +1741,10 @@ function isOneMonthVipPlan(plan) {
   return plan?.durationUnit === "days" && Number(plan.months) === 30 && Number(plan.amount) === 129000;
 }
 
+function isThreeMonthVipPlan(plan) {
+  return plan?.durationUnit === "days" && Number(plan.months) === 90 && Number(plan.amount) === 329000;
+}
+
 function selectUpgradePlansForDisplay(apiPlans = []) {
   const plans = [...(apiPlans || []), ...LOCAL_DEFAULT_PAYMENT_PLANS];
   const sevenDay = plans.find((plan) => plan.id === "7d" && isSevenDayVipPlan(plan))
@@ -1739,7 +1753,10 @@ function selectUpgradePlansForDisplay(apiPlans = []) {
   const oneMonth = plans.find((plan) => plan.id === "30d" && isOneMonthVipPlan(plan))
     || plans.find(isOneMonthVipPlan)
     || LOCAL_DEFAULT_PAYMENT_PLANS[1];
-  return [sevenDay, oneMonth];
+  const threeMonth = plans.find((plan) => plan.id === "90d" && isThreeMonthVipPlan(plan))
+    || plans.find(isThreeMonthVipPlan)
+    || LOCAL_DEFAULT_PAYMENT_PLANS[2];
+  return [sevenDay, oneMonth, threeMonth];
 }
 
 function buildDisplayPlans(apiPlans, isVi) {
@@ -1759,6 +1776,7 @@ function buildDisplayPlans(apiPlans, isVi) {
     const isDayPlan = plan.durationUnit === "days";
     const isSevenDayVip = isSevenDayVipPlan(plan);
     const isOneMonthVip = isOneMonthVipPlan(plan);
+    const isThreeMonthVip = isThreeMonthVipPlan(plan);
     const monthly = isDayPlan
       ? Math.round(plan.amount / Math.max(1, plan.months / 30))
       : Math.round(plan.amount / plan.months);
@@ -1773,6 +1791,9 @@ function buildDisplayPlans(apiPlans, isVi) {
     if (isOneMonthVip) {
       kickerVi = "Gói VIP 1 tháng";
       kickerZh = "1个月 VIP";
+    } else if (isThreeMonthVip) {
+      kickerVi = "Gói VIP 3 tháng";
+      kickerZh = "3个月 VIP";
     } else if (isDayPlan) {
       kickerVi = isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi;
       kickerZh = isSevenDayVip ? "7天 VIP" : plan.nameZh;
@@ -1797,15 +1818,15 @@ function buildDisplayPlans(apiPlans, isVi) {
       id: plan.id,
       nameVi: kickerVi,
       nameZh: kickerZh,
-      durationVi: isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi),
-      durationZh: isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh),
-      price: isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount))),
+      durationVi: isThreeMonthVip ? "Gói VIP 3 tháng" : (isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi)),
+      durationZh: isThreeMonthVip ? "3个月 VIP" : (isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh)),
+      price: isThreeMonthVip ? "329.000đ" : (isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount)))),
       note,
       discount: index === popularIndex && sorted.length > 1 ? (isVi ? "Phổ biến nhất" : "最受欢迎") : "",
       popular: index === popularIndex && sorted.length > 1,
       isSevenDayVip,
       isOneMonthVip,
-      actionVi: isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày",
+      actionVi: isThreeMonthVip ? "Đăng ký gói 3 tháng" : (isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày"),
       actionZh: "开通 VIP",
     };
   });
@@ -2054,6 +2075,7 @@ function normalizeVipPlanId(user) {
   const planId = String(user?.vipPlanId || user?.vipPlan || user?.plan || "").trim().toLowerCase();
   if (planId === "7d") return "7d";
   if (planId === "30d") return "30d";
+  if (planId === "90d" || planId === "3m") return "90d";
   return "";
 }
 
@@ -2096,7 +2118,9 @@ function getVipPlanDisplay(user, isVi = state.lang === "vi") {
     ? (isVi ? "VIP 7 ngày" : "7天VIP")
     : planId === "30d"
       ? (isVi ? "VIP 30 ngày" : "30天VIP")
-      : (user?.vipPlanName && isVi ? user.vipPlanName : user?.vipPlanNameZh || "VIP");
+      : planId === "90d"
+        ? (isVi ? "VIP 3 tháng" : "90天VIP")
+        : (user?.vipPlanName && isVi ? user.vipPlanName : user?.vipPlanNameZh || "VIP");
   return {
     badge,
     status: isVi ? `Còn ${remainingDays} ngày` : `剩余 ${remainingDays} 天`,
@@ -3665,6 +3689,7 @@ function getAdminUserPlan(user) {
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
   if (plan === "7d") return isVi ? "VIP 7 ngày" : "VIP 7d";
   if (plan === "30d") return isVi ? "VIP 30 ngày" : "VIP 30d";
+  if (plan === "90d") return isVi ? "VIP 3 tháng" : "VIP 90d";
   if (plan === "PREMIUM") return "VIP";
   if (plan === "EMPLOYEE") return isVi ? "Nhân viên" : "员工";
   if (plan === "FREE") return isVi ? "Thường" : "Free";
@@ -3693,9 +3718,11 @@ function confirmAdminVipUpgrade(userId, durationDays) {
   const user = findAdminUserById(userId);
   const isVi = state.lang === "vi";
   const hasPremium = isActivePremiumUser(user);
-  const planLabel = durationDays === 30
-    ? (isVi ? "VIP 30 ngày" : "30天 VIP")
-    : (isVi ? "VIP 7 ngày" : "7天 VIP");
+  const planLabel = durationDays === 90
+    ? (isVi ? "VIP 3 tháng" : "90天 VIP")
+    : durationDays === 30
+      ? (isVi ? "VIP 30 ngày" : "30天 VIP")
+      : (isVi ? "VIP 7 ngày" : "7天 VIP");
   const target = user?.email || user?.fullName || userId;
   const currentExpiry = user?.premiumUntil ? formatAdminDate(user.premiumUntil) : "";
   const existingVipNote = hasPremium
@@ -3856,6 +3883,7 @@ function buildAdminUserRowsHTML(users, isVi) {
           <div class="admin-row-actions">
             <button class="admin-vip-user" type="button" data-vip-days="7" aria-label="VIP 7 days">VIP 7d</button>
             <button class="admin-vip-user" type="button" data-vip-days="30" aria-label="VIP 30 days">VIP 30d</button>
+            <button class="admin-vip-user" type="button" data-vip-days="90" aria-label="VIP 90 days">VIP 90d</button>
             <input class="admin-vip-expiry-input" type="date" value="${escapeAttr(expiryInputValue)}" aria-label="${isVi ? "Ngày hết hạn VIP" : "VIP 到期日期"}" />
             <button class="admin-set-vip-expiry" type="button">${isVi ? "Đặt hạn" : "设到期"}</button>
             <button class="admin-cancel-vip-user" type="button">${isVi ? "Hủy VIP" : "取消VIP"}</button>
@@ -3928,8 +3956,8 @@ function renderAdmin() {
     return;
   }
 
-  const totalUsers = state.adminUsers.length;
   const studentUsers = state.adminUsers.filter((user) => user.role !== "admin");
+  const totalUsers = studentUsers.length;
   const premiumStudentUsers = studentUsers.filter((user) => isActivePremiumUser(user));
   const vipRate = studentUsers.length > 0 ? Math.round((premiumStudentUsers.length / studentUsers.length) * 1000) / 10 : 0;
   const vipRateMeta = isVi
@@ -5406,7 +5434,9 @@ async function showTransferInfoModal(planId) {
   const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
   const activationPlanLabel = normalizedPlanId === "7d"
     ? (isVi ? "7 ngày" : "7天")
-    : (isVi ? "30 ngày" : "30天");
+    : normalizedPlanId === "90d"
+      ? (isVi ? "3 tháng" : "90天")
+      : (isVi ? "30 ngày" : "30天");
   const customerEmail = state.user.email || "";
   const activationMessage = [
     isVi ? "Em đã chuyển khoản VIP." : "我已完成 VIP 转账。",
