@@ -1950,17 +1950,8 @@ p {
 }
 
 .screen-course .app-desktop-shell--write-communication .write-communication-screen > .write-path-hero .hsk-level-hero-back-btn {
-  position: absolute !important;
-  top: clamp(12px, 1.6vw, 22px) !important;
-  right: clamp(14px, 2.4vw, 40px) !important;
-  margin: 0 !important;
-  color: #17233c !important;
-  border-color: rgba(23, 35, 60, 0.12) !important;
-  background: rgba(255, 255, 255, 0.82) !important;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
-  z-index: 221 !important;
-  pointer-events: auto !important;
-  transform: translateZ(0);
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .write-communication-header {
@@ -20005,7 +19996,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-ctv-source-panel { border: 1px solid #dbe4f0; border-radius: 14px; background: #fff; box-shadow: 0 16px 34px rgba(15, 23, 42, .08); padding: 18px 20px; margin: 0 0 16px; }
 .admin-ctv-source-head h2 { margin: 0; font-size: 17px; font-weight: 900; color: #0f172a; }
 .admin-ctv-source-head p { margin: 4px 0 0; font-size: 13px; color: #748198; font-weight: 700; }
-.admin-ctv-source-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.admin-ctv-source-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
 .admin-ctv-source-card { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: 1px solid #e6edf6; border-radius: 12px; background: #fafbfc; }
 .admin-ctv-source-card strong { display: block; font-size: 24px; font-weight: 950; color: #0f172a; line-height: 1.1; }
 .admin-ctv-source-card small { display: block; margin-top: 2px; font-size: 12px; font-weight: 800; color: #748198; }
@@ -20014,12 +20005,14 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-ctv-source-card--tiktok .admin-ctv-source-dot { background: #111827; }
 .admin-ctv-source-card--facebook .admin-ctv-source-dot { background: #1877f2; }
 .admin-ctv-source-card--koc .admin-ctv-source-dot { background: #ec4899; }
+.admin-ctv-source-card--ctv_livestream .admin-ctv-source-dot { background: #f97316; }
 .admin-ctv-source-card--direct .admin-ctv-source-dot { background: #94a3b8; }
 .admin-ctv-src-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .admin-ctv-src-pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: #eef2f7; color: #334155; white-space: nowrap; }
 .admin-ctv-src-pill.src-tiktok { background: #e5e7eb; color: #111827; }
 .admin-ctv-src-pill.src-facebook { background: #e3edfd; color: #1553b0; }
 .admin-ctv-src-pill.src-koc { background: #fce4f1; color: #b03a7a; }
+.admin-ctv-src-pill.src-ctv_livestream { background: #ffedd5; color: #c2410c; }
 .admin-ctv-src-pill.src-direct, .admin-ctv-src-pill.src-other { background: #eef2f7; color: #64748b; }
 .admin-ctv-src-empty { color: #cbd5e1; }
 .admin-ctv-link-source { min-height: 40px; width: 100%; border: 1px solid #dbe4f0; border-radius: 8px; background: #fff; color: #172033; padding: 0 12px; font: inherit; font-weight: 750; margin-bottom: 12px; }

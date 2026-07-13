@@ -134,6 +134,7 @@ export class AdminService {
          SELECT lower(btrim(u.ref)) AS ref, COUNT(*) AS cnt
          FROM users u
          WHERE u.ref IS NOT NULL AND btrim(u.ref) <> ''
+           AND u.role = 'user'
            AND u.is_premium = TRUE
            AND (u.premium_until IS NULL OR u.premium_until > NOW())
          GROUP BY lower(btrim(u.ref))
@@ -428,6 +429,22 @@ export class AdminService {
     }
     if (this.normalizeRole(currentUser.role) !== 'ctv') {
       throw new HttpException('Chỉ tài khoản CTV mới được tạo link ref.', HttpStatus.BAD_REQUEST);
+    }
+
+    const duplicate = await this.db.query(
+      `SELECT id, full_name, email
+       FROM users
+       WHERE lower(btrim(ref)) = $1
+         AND id <> $2
+         AND role IN ('ctv', 'staff', 'employee')
+       LIMIT 1`,
+      [ref, id],
+    );
+    if (duplicate.rows[0]) {
+      throw new HttpException(
+        'Mã ref này đang được dùng bởi CTV khác. Vui lòng chọn mã ref khác.',
+        HttpStatus.CONFLICT,
+      );
     }
 
     const result = await this.db.query(

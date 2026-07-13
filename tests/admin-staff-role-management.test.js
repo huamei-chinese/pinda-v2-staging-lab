@@ -9,9 +9,19 @@ const { HttpException } = require("@nestjs/common");
 const { AdminService } = require("../src/admin/admin.service");
 
 const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
+const adminServiceSource = fs.readFileSync(path.join(__dirname, "..", "src", "admin", "admin.service.ts"), "utf8");
 
 function createAdminServiceWithDb(db) {
-  return new AdminService(db, {}, {}, {});
+  return new AdminService(db, {}, {}, {
+    normalizeReferralRef(ref) {
+      const normalized = String(ref || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, "")
+        .slice(0, 64);
+      return normalized || null;
+    },
+  });
 }
 
 test("admin can set a normal user to content role in the database", async () => {
@@ -85,6 +95,88 @@ test("admin role update only accepts normal sales ctv and content roles", async 
     () => service.updateUserRole("user-1", { role: "admin" }, { "x-admin-user-id": "admin-1" }),
     (error) => error instanceof HttpException && error.getStatus() === 400,
   );
+});
+
+test("admin cannot assign the same referral code to two ctv accounts", async () => {
+  const calls = [];
+  const db = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
+        return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, role")) {
+        return { rows: [{ id: "ctv-1", role: "ctv" }] };
+      }
+      if (sql.includes("lower(btrim(ref))")) {
+        return {
+          rows: [{
+            id: "ctv-2",
+            full_name: "Existing CTV",
+            email: "existing@example.com",
+          }],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  await assert.rejects(
+    () => service.updateUserRef("ctv-1", { ref: " TikTok1 " }, { "x-admin-user-id": "admin-1" }),
+    (error) => error instanceof HttpException && error.getStatus() === 409,
+  );
+
+  const duplicateCheck = calls.find((call) => call.sql.includes("lower(btrim(ref))"));
+  assert.deepEqual(duplicateCheck.params, ["tiktok1", "ctv-1"]);
+  assert.equal(calls.some((call) => call.sql.includes("UPDATE users")), false);
+});
+
+test("admin can assign a unique normalized referral code to a ctv account", async () => {
+  const calls = [];
+  const db = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
+        return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, role")) {
+        return { rows: [{ id: "ctv-1", role: "ctv" }] };
+      }
+      if (sql.includes("lower(btrim(ref))")) {
+        return { rows: [] };
+      }
+      if (sql.includes("UPDATE users")) {
+        return {
+          rows: [{
+            id: "ctv-1",
+            full_name: "CTV One",
+            email: "ctv@example.com",
+            role: "ctv",
+            ref: params[0],
+            is_active: true,
+            current_level: "HSK2",
+            is_premium: false,
+            premium_until: null,
+            vip_plan_id: null,
+            daily_reminder_enabled: true,
+          }],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  const result = await service.updateUserRef("ctv-1", { ref: " TikTok 1!!! " }, { "x-admin-user-id": "admin-1" });
+
+  const updateCall = calls.find((call) => call.sql.includes("UPDATE users"));
+  assert.equal(updateCall.params[0], "tiktok1");
+  assert.equal(result.user.ref, "tiktok1");
+});
+
+test("ctv vip recalculation counts only referred student users", () => {
+  assert.match(adminServiceSource, /WHERE u\.ref IS NOT NULL AND btrim\(u\.ref\) <> ''\s+AND u\.role = 'user'\s+AND u\.is_premium = TRUE/);
 });
 
 test("staff can update VIP status but cannot modify admin accounts", async () => {

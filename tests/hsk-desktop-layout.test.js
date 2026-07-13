@@ -134,9 +134,10 @@ test("home quick speaking card opens a random listening repeat sentence", () => 
   assert.match(appSource, /function openRandomListeningRepeatPractice\(\)[\s\S]*randomArrayItem\(candidates\)[\s\S]*state\.listeningView = "repeat"[\s\S]*state\.listeningSentenceIndex = selected\.sentenceIndex[\s\S]*resetListeningRepeatAttempt\(\)/);
 });
 
-test("high-frequency communication back button stays above topic cards", () => {
+test("high-frequency communication hides the floating desktop hero back button", () => {
   assert.match(styles, /\.screen-course\s+\.app-desktop-shell--write-communication\s+\.write-communication-screen\s*>\s*\.write-path-hero\s*\{[^}]*z-index:\s*220\s*!important/s);
-  assert.match(styles, /\.screen-course\s+\.app-desktop-shell--write-communication\s+\.write-communication-screen\s*>\s*\.write-path-hero\s+\.hsk-level-hero-back-btn\s*\{[^}]*z-index:\s*221\s*!important[^}]*pointer-events:\s*auto\s*!important[^}]*transform:\s*translateZ\(0\)/s);
+  assert.match(styles, /\.screen-course\s+\.app-desktop-shell--write-communication\s+\.write-communication-screen\s*>\s*\.write-path-hero\s+\.hsk-level-hero-back-btn\s*\{[^}]*display:\s*none\s*!important[^}]*pointer-events:\s*none\s*!important/s);
+  assert.match(appSource, /class="write-communication-header-back-btn" type="button" data-write-path-back/);
 });
 
 test("high-frequency communication header uses the common-topic background frame", () => {

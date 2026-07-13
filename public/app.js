@@ -4177,7 +4177,7 @@ function getAdminCtvRows() {
     });
 }
 
-const ADMIN_SOURCE_KEYS = ["tiktok", "facebook", "koc"];
+const ADMIN_SOURCE_KEYS = ["tiktok", "facebook", "koc", "ctv_livestream"];
 
 function normalizeUserSource(user) {
   const raw = String(user?.src || user?.source || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
@@ -4185,7 +4185,7 @@ function normalizeUserSource(user) {
 }
 
 function buildUserSourceCounts(users) {
-  const counts = { tiktok: 0, facebook: 0, koc: 0, direct: 0, other: 0 };
+  const counts = Object.fromEntries([...ADMIN_SOURCE_KEYS, "direct", "other"].map((key) => [key, 0]));
   for (const user of users || []) {
     const key = normalizeUserSource(user);
     if (key === "direct") counts.direct += 1;
@@ -4243,6 +4243,7 @@ const ADMIN_CTV_LINK_SOURCES = [
   { id: "tiktok", label: "TikTok" },
   { id: "facebook", label: "Facebook" },
   { id: "koc", label: "KOC" },
+  { id: "ctv_livestream", label: "CTV Livestream" },
 ];
 
 function getAdminCtvLink(ctv) {
@@ -4499,6 +4500,7 @@ function renderAdminCollaboratorsPanelHTML() {
     { key: "tiktok", label: getAnalyticsSourceLabel("tiktok"), value: sourceSummary.counts.tiktok },
     { key: "facebook", label: getAnalyticsSourceLabel("facebook"), value: sourceSummary.counts.facebook },
     { key: "koc", label: getAnalyticsSourceLabel("koc"), value: sourceSummary.counts.koc },
+    { key: "ctv_livestream", label: getAnalyticsSourceLabel("ctv_livestream"), value: sourceSummary.counts.ctv_livestream },
     { key: "direct", label: getAnalyticsSourceLabel("direct"), value: sourceSummary.counts.direct + sourceSummary.counts.other },
   ];
   const sourceSummaryHTML = summaryCards
@@ -4700,6 +4702,7 @@ function getAnalyticsSourceLabel(source) {
     tiktok: "TikTok",
     facebook: "Facebook",
     koc: "KOC",
+    ctv_livestream: "CTV Livestream",
     direct: state.lang === "vi" ? "Trực tiếp" : "直接",
   };
   return map[key] || (source ? String(source) : "—");
