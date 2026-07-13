@@ -1855,15 +1855,18 @@ function mapHskLessonLock(row) {
 
 async function getPublicHskLocks() {
   const result = await query(
-    `SELECT lesson_id, free_item_limit
+    `SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free
      FROM hsk_lesson_locks
-     WHERE free_item_limit > 0
+     WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0
      ORDER BY lesson_id ASC`,
   );
   return json({
     lessonLocks: result.rows.map((row) => ({
       lessonId: row.lesson_id,
       freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
+      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
+      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
+      lockedForFree: row.locked_for_free === true,
     })),
   });
 }
@@ -1895,7 +1898,7 @@ async function saveAdminHskLocks(req, body) {
       const freeWordLimit = Math.max(0, Number(lesson.freeWordLimit ?? freeItemLimit));
       const freeSentenceLimit = Math.max(0, Number(lesson.freeSentenceLimit ?? freeItemLimit));
       const lockedForFree = lesson.lockedForFree === true;
-      const effectiveLockedForFree = lockedForFree || freeItemLimit > 0;
+      const effectiveLockedForFree = lockedForFree;
       if (!lessonId || !level) continue;
       await client.query(
         `INSERT INTO hsk_lesson_locks (lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at)
@@ -1921,7 +1924,7 @@ async function saveAdminHskLocks(req, body) {
   }
 
   const result = await query(
-    `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, locked_for_free, updated_at
+    `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
      FROM hsk_lesson_locks
      ORDER BY level ASC, lesson_no ASC, lesson_id ASC`,
   );

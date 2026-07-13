@@ -6,12 +6,27 @@ const test = require("node:test");
 const root = path.join(__dirname, "..");
 const appSource = fs.readFileSync(path.join(root, "public", "app.js"), "utf8");
 const contentServiceSource = fs.readFileSync(path.join(root, "src", "content", "content.service.ts"), "utf8");
+const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
+const indexHtmlSource = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
+const adminV2HtmlSource = fs.readFileSync(path.join(root, "public", "admin-v2.html"), "utf8");
 
 test("public HSK locks include absolute locked lessons, not only free limits", () => {
   assert.match(contentServiceSource, /SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free/);
   assert.match(contentServiceSource, /WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0/);
   assert.match(contentServiceSource, /lockedForFree: row\.locked_for_free === true/);
   assert.doesNotMatch(contentServiceSource, /publicHskLocksCache/);
+});
+
+test("Netlify HSK lock endpoint matches the app backend contract", () => {
+  assert.match(netlifyApiSource, /SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free/);
+  assert.match(netlifyApiSource, /WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0/);
+  assert.match(netlifyApiSource, /lockedForFree: row\.locked_for_free === true/);
+  assert.match(netlifyApiSource, /const effectiveLockedForFree = lockedForFree;/);
+});
+
+test("public admin scripts use deploy cache busters", () => {
+  assert.match(indexHtmlSource, /app\.js\?v=admin-locks-20260713/);
+  assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
 });
 
 test("client content-lock API calls bypass browser cache", () => {
