@@ -25,4 +25,9 @@ export class ContentController {
     const covers = await this.contentService.listHskLevelCovers();
     return { covers };
   }
+
+  @Get('access-rules')
+  async getAccessRules() {
+    return this.contentService.listPublicLearningAccessRules();
+  }
 }

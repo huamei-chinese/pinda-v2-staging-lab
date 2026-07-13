@@ -885,6 +885,14 @@ async function ensureSchema() {
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;
     `);
     await db.query(`
+      ALTER TABLE hsk_lesson_locks
+      ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await db.query(`
+      ALTER TABLE hsk_lesson_locks
+      ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await db.query(`
       CREATE TABLE IF NOT EXISTS daily_theme_locks (
         theme_id TEXT PRIMARY KEY,
         title_vi TEXT NOT NULL DEFAULT '',
@@ -897,6 +905,31 @@ async function ensureSchema() {
     await db.query(`
       ALTER TABLE daily_theme_locks
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await db.query(`
+      ALTER TABLE daily_theme_locks
+      ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await db.query(`
+      ALTER TABLE daily_theme_locks
+      ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS listening_topic_locks (
+        topic_id TEXT PRIMARY KEY,
+        title_vi TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS listening_lesson_locks (
+        lesson_id TEXT PRIMARY KEY,
+        topic_id TEXT NOT NULL DEFAULT '',
+        title_vi TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
     `);
     await db.query(`
       CREATE TABLE IF NOT EXISTS hsk_level_covers (
@@ -1806,12 +1839,15 @@ async function deleteAdminPlan(req, id) {
 }
 
 function mapHskLessonLock(row) {
+  const legacyLimit = Math.max(0, Number(row.free_item_limit || 0));
   return {
     lessonId: row.lesson_id,
     level: row.level,
     lessonNo: Number(row.lesson_no),
     titleVi: row.title_vi,
-    freeItemLimit: Number(row.free_item_limit || 0),
+    freeItemLimit: legacyLimit,
+    freeWordLimit: Math.max(0, Number(row.free_word_limit || legacyLimit)),
+    freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || legacyLimit)),
     lockedForFree: row.locked_for_free,
     updatedAt: row.updated_at,
   };
@@ -1835,7 +1871,7 @@ async function getPublicHskLocks() {
 async function listAdminHskLocks(req) {
   await assertAdmin(req);
   const result = await query(
-    `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, locked_for_free, updated_at
+    `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
      FROM hsk_lesson_locks
      ORDER BY level ASC, lesson_no ASC, lesson_id ASC`,
   );
@@ -1856,20 +1892,24 @@ async function saveAdminHskLocks(req, body) {
       const lessonNo = Number(lesson.lessonNo || 0);
       const titleVi = String(lesson.titleVi || "").trim();
       const freeItemLimit = Math.max(0, Number(lesson.freeItemLimit || 0));
+      const freeWordLimit = Math.max(0, Number(lesson.freeWordLimit ?? freeItemLimit));
+      const freeSentenceLimit = Math.max(0, Number(lesson.freeSentenceLimit ?? freeItemLimit));
       const lockedForFree = lesson.lockedForFree === true;
       const effectiveLockedForFree = lockedForFree || freeItemLimit > 0;
       if (!lessonId || !level) continue;
       await client.query(
-        `INSERT INTO hsk_lesson_locks (lesson_id, level, lesson_no, title_vi, free_item_limit, locked_for_free, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        `INSERT INTO hsk_lesson_locks (lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
          ON CONFLICT (lesson_id) DO UPDATE
          SET level = EXCLUDED.level,
              lesson_no = EXCLUDED.lesson_no,
              title_vi = EXCLUDED.title_vi,
              free_item_limit = EXCLUDED.free_item_limit,
+             free_word_limit = EXCLUDED.free_word_limit,
+             free_sentence_limit = EXCLUDED.free_sentence_limit,
              locked_for_free = EXCLUDED.locked_for_free,
              updated_at = NOW()`,
-        [lessonId, level, lessonNo, titleVi, freeItemLimit, effectiveLockedForFree],
+        [lessonId, level, lessonNo, titleVi, freeItemLimit, freeWordLimit, freeSentenceLimit, effectiveLockedForFree],
       );
     }
     await client.query("COMMIT");
@@ -1953,11 +1993,14 @@ async function saveAdminHskLevelCovers(req, body) {
 }
 
 function mapDailyThemeLock(row) {
+  const legacyLimit = Math.max(0, Number(row.free_item_limit || 0));
   return {
     themeId: row.theme_id,
     titleVi: row.title_vi,
     sortOrder: Number(row.sort_order),
-    freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
+    freeItemLimit: legacyLimit,
+    freeWordLimit: Math.max(0, Number(row.free_word_limit || legacyLimit)),
+    freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || legacyLimit)),
     lockedForFree: row.locked_for_free,
     updatedAt: row.updated_at,
   };
@@ -1981,10 +2024,93 @@ async function getPublicDailyLocks() {
   return json({ lockedThemeIds, themeLocks });
 }
 
+async function getPublicLearningAccessRules() {
+  const [hskResult, dailyResult, topicResult, lessonResult] = await Promise.all([
+    query(`SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free FROM hsk_lesson_locks ORDER BY lesson_id ASC`),
+    query(`SELECT theme_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free FROM daily_theme_locks ORDER BY sort_order ASC, theme_id ASC`),
+    query(`SELECT topic_id, locked_for_free FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
+    query(`SELECT lesson_id, topic_id, locked_for_free FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
+  ]);
+  const normalizeLimit = (primary, legacy) => Math.max(0, Number(primary || legacy || 0));
+  return json({
+    hskLessonLocks: hskResult.rows.map((row) => ({
+      lessonId: row.lesson_id,
+      lockedForFree: row.locked_for_free === true,
+      freeWordLimit: normalizeLimit(row.free_word_limit, row.free_item_limit),
+      freeSentenceLimit: normalizeLimit(row.free_sentence_limit, row.free_item_limit),
+    })),
+    dailyThemeLocks: dailyResult.rows.map((row) => ({
+      themeId: row.theme_id,
+      lockedForFree: row.locked_for_free === true,
+      freeWordLimit: normalizeLimit(row.free_word_limit, row.free_item_limit),
+      freeSentenceLimit: normalizeLimit(row.free_sentence_limit, row.free_item_limit),
+    })),
+    listeningTopicLocks: topicResult.rows.map((row) => ({
+      topicId: row.topic_id,
+      lockedForFree: row.locked_for_free === true,
+    })),
+    listeningLessonLocks: lessonResult.rows.map((row) => ({
+      lessonId: row.lesson_id,
+      topicId: row.topic_id,
+      lockedForFree: row.locked_for_free === true,
+    })),
+  });
+}
+
+async function listAdminListeningLocks(req) {
+  await assertAdmin(req);
+  const [topics, lessons] = await Promise.all([
+    query(`SELECT topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
+    query(`SELECT lesson_id, topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
+  ]);
+  return json({
+    topics: topics.rows.map((row) => ({ topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
+    lessons: lessons.rows.map((row) => ({ lessonId: row.lesson_id, topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
+  });
+}
+
+async function saveAdminListeningLocks(req, body) {
+  await assertAdmin(req);
+  const topics = Array.isArray(body.topics) ? body.topics : [];
+  const lessons = Array.isArray(body.lessons) ? body.lessons : [];
+  if (topics.length === 0 && lessons.length === 0) throw apiError("Danh sách khóa nghe không hợp lệ.", 400);
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    for (const topic of topics) {
+      const topicId = String(topic.topicId || "").trim();
+      if (!topicId) continue;
+      await client.query(
+        `INSERT INTO listening_topic_locks (topic_id, title_vi, sort_order, locked_for_free, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (topic_id) DO UPDATE SET title_vi = EXCLUDED.title_vi, sort_order = EXCLUDED.sort_order, locked_for_free = EXCLUDED.locked_for_free, updated_at = NOW()`,
+        [topicId, String(topic.titleVi || "").trim(), Number(topic.sortOrder || 0), topic.lockedForFree === true],
+      );
+    }
+    for (const lesson of lessons) {
+      const lessonId = String(lesson.lessonId || "").trim();
+      if (!lessonId) continue;
+      await client.query(
+        `INSERT INTO listening_lesson_locks (lesson_id, topic_id, title_vi, sort_order, locked_for_free, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         ON CONFLICT (lesson_id) DO UPDATE SET topic_id = EXCLUDED.topic_id, title_vi = EXCLUDED.title_vi, sort_order = EXCLUDED.sort_order, locked_for_free = EXCLUDED.locked_for_free, updated_at = NOW()`,
+        [lessonId, String(lesson.topicId || "").trim(), String(lesson.titleVi || "").trim(), Number(lesson.sortOrder || 0), lesson.lockedForFree === true],
+      );
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  return listAdminListeningLocks(req);
+}
+
 async function listAdminDailyLocks(req) {
   await assertAdmin(req);
   const result = await query(
-    `SELECT theme_id, title_vi, sort_order, free_item_limit, locked_for_free, updated_at
+    `SELECT theme_id, title_vi, sort_order, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
      FROM daily_theme_locks
      ORDER BY sort_order ASC, theme_id ASC`,
   );
@@ -2004,18 +2130,22 @@ async function saveAdminDailyLocks(req, body) {
       const titleVi = String(theme.titleVi || "").trim();
       const sortOrder = Number(theme.sortOrder || 0);
       const freeItemLimit = Math.max(0, Number(theme.freeItemLimit || 0));
+      const freeWordLimit = Math.max(0, Number(theme.freeWordLimit ?? freeItemLimit));
+      const freeSentenceLimit = Math.max(0, Number(theme.freeSentenceLimit ?? freeItemLimit));
       const lockedForFree = theme.lockedForFree === true;
       if (!themeId) continue;
       await client.query(
-        `INSERT INTO daily_theme_locks (theme_id, title_vi, sort_order, free_item_limit, locked_for_free, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())
+        `INSERT INTO daily_theme_locks (theme_id, title_vi, sort_order, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          ON CONFLICT (theme_id) DO UPDATE
          SET title_vi = EXCLUDED.title_vi,
              sort_order = EXCLUDED.sort_order,
              free_item_limit = EXCLUDED.free_item_limit,
+             free_word_limit = EXCLUDED.free_word_limit,
+             free_sentence_limit = EXCLUDED.free_sentence_limit,
              locked_for_free = EXCLUDED.locked_for_free,
              updated_at = NOW()`,
-        [themeId, titleVi, sortOrder, freeItemLimit, lockedForFree],
+        [themeId, titleVi, sortOrder, freeItemLimit, freeWordLimit, freeSentenceLimit, lockedForFree],
       );
     }
     await client.query("COMMIT");
@@ -2027,7 +2157,7 @@ async function saveAdminDailyLocks(req, body) {
   }
 
   const result = await query(
-    `SELECT theme_id, title_vi, sort_order, free_item_limit, locked_for_free, updated_at
+    `SELECT theme_id, title_vi, sort_order, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
      FROM daily_theme_locks
      ORDER BY sort_order ASC, theme_id ASC`,
   );
@@ -2522,6 +2652,7 @@ async function route(req) {
   if (adminPlanMatch && req.method === "DELETE") return deleteAdminPlan(req, decodeURIComponent(adminPlanMatch[1]));
   if (req.method === "GET" && path === "/api/content/hsk-locks") return getPublicHskLocks();
   if (req.method === "GET" && path === "/api/content/daily-locks") return getPublicDailyLocks();
+  if (req.method === "GET" && path === "/api/content/access-rules") return getPublicLearningAccessRules();
   if (req.method === "GET" && path === "/api/content/hsk-level-covers") return getPublicHskLevelCovers();
   if (req.method === "GET" && path === "/api/admin/content/hsk-locks") return listAdminHskLocks(req);
   if (req.method === "PUT" && path === "/api/admin/content/hsk-locks") return saveAdminHskLocks(req, body);
@@ -2529,6 +2660,8 @@ async function route(req) {
   if (req.method === "PUT" && path === "/api/admin/content/hsk-level-covers") return saveAdminHskLevelCovers(req, body);
   if (req.method === "GET" && path === "/api/admin/content/daily-locks") return listAdminDailyLocks(req);
   if (req.method === "PUT" && path === "/api/admin/content/daily-locks") return saveAdminDailyLocks(req, body);
+  if (req.method === "GET" && path === "/api/admin/content/listening-locks") return listAdminListeningLocks(req);
+  if (req.method === "PUT" && path === "/api/admin/content/listening-locks") return saveAdminListeningLocks(req, body);
   if (req.method === "GET" && path === "/api/payments/plans") return listPlans();
   if (req.method === "POST" && path === "/api/payments/orders") return createOrder(body);
   const orderStatusMatch = path.match(/^\/api\/payments\/orders\/([^/]+)\/status$/);

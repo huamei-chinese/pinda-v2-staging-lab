@@ -34,4 +34,14 @@ export class AdminContentController {
   async saveHskLevelCovers(@Body() body: any, @Headers() headers: Record<string, string>) {
     return this.adminService.saveHskLevelCovers(body, headers);
   }
+
+  @Get('listening-locks')
+  async getListeningLocks(@Headers() headers: Record<string, string>) {
+    return this.adminService.getListeningLocks(headers);
+  }
+
+  @Put('listening-locks')
+  async saveListeningLocks(@Body() body: any, @Headers() headers: Record<string, string>) {
+    return this.adminService.saveListeningLocks(body, headers);
+  }
 }

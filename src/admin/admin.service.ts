@@ -73,12 +73,12 @@ export class AdminService {
     if (!userId) return null;
 
     const result = await this.db.query(
-      'SELECT role, is_active FROM users WHERE id = $1',
+      'SELECT role, ref, is_active FROM users WHERE id = $1',
       [userId],
     );
     const user = result.rows[0];
     if (!user?.is_active) return null;
-    return { id: userId, role: this.normalizeRole(user.role) };
+    return { id: userId, role: this.normalizeRole(user.role), ref: String(user.ref || '').trim().toLowerCase() };
   }
 
   async isAdminRequest(headers: Record<string, string | string[] | undefined>): Promise<boolean> {
@@ -103,7 +103,7 @@ export class AdminService {
   }
 
   async getAllUsers(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdminOrStaff(headers);
+    const requester = await this.assertAdminOrStaff(headers);
 
     try {
       await this.recalculateCtvVipCounts();
@@ -112,7 +112,11 @@ export class AdminService {
          FROM users
          ORDER BY created_at DESC`,
       );
-      return { users: result.rows.map((row) => this.publicUser(row)) };
+      const users = result.rows.map((row) => this.publicUser(row));
+      if (requester.role === 'ctv') {
+        return { users: users.filter((user) => String(user.ref || '').trim().toLowerCase() === requester.ref) };
+      }
+      return { users };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -560,6 +564,16 @@ export class AdminService {
     } catch (error: any) {
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  async getListeningLocks(headers: Record<string, string | string[] | undefined>) {
+    await this.assertAdmin(headers);
+    return { ...(await this.contentService.listListeningLocks()) };
+  }
+
+  async saveListeningLocks(body: { topics?: any[]; lessons?: any[] }, headers: Record<string, string | string[] | undefined>) {
+    await this.assertAdmin(headers);
+    return this.contentService.saveListeningLocks(body.topics || [], body.lessons || []);
   }
 
   async saveHskLevelCovers(

@@ -7,6 +7,8 @@ export interface HskLessonLockRow {
   lessonNo: number;
   titleVi: string;
   freeItemLimit: number;
+  freeWordLimit?: number;
+  freeSentenceLimit?: number;
   lockedForFree: boolean;
   updatedAt?: string;
 }
@@ -16,6 +18,8 @@ export interface DailyThemeLockRow {
   titleVi: string;
   sortOrder: number;
   freeItemLimit: number;
+  freeWordLimit?: number;
+  freeSentenceLimit?: number;
   lockedForFree: boolean;
   updatedAt?: string;
 }
@@ -27,15 +31,30 @@ export class ContentService {
   constructor(private readonly db: DatabaseService) {}
 
   private async ensureDailyThemeLocksSchema() {
+    await this.db.query(`ALTER TABLE hsk_lesson_locks ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;`);
+    await this.db.query(`ALTER TABLE hsk_lesson_locks ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;`);
     await this.db.query(`
       ALTER TABLE daily_theme_locks
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;
     `);
+    await this.db.query(`ALTER TABLE daily_theme_locks ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;`);
+    await this.db.query(`ALTER TABLE daily_theme_locks ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;`);
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS listening_topic_locks (
+        topic_id TEXT PRIMARY KEY, title_vi TEXT NOT NULL DEFAULT '', sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS listening_lesson_locks (
+        lesson_id TEXT PRIMARY KEY, topic_id TEXT NOT NULL DEFAULT '', title_vi TEXT NOT NULL DEFAULT '', sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
   }
 
   async listLocks(): Promise<HskLessonLockRow[]> {
+    await this.ensureDailyThemeLocksSchema();
     const result = await this.db.query(
-      `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, locked_for_free, updated_at
+      `SELECT lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
        FROM hsk_lesson_locks
        ORDER BY level ASC, lesson_no ASC, lesson_id ASC`,
     );
@@ -45,12 +64,15 @@ export class ContentService {
       lessonNo: Number(row.lesson_no),
       titleVi: row.title_vi,
       freeItemLimit: Number(row.free_item_limit || 0),
+      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
+      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
       lockedForFree: row.locked_for_free,
       updatedAt: row.updated_at,
     }));
   }
 
   async listPublicHskLocks(): Promise<Array<{ lessonId: string; freeItemLimit: number }>> {
+    await this.ensureDailyThemeLocksSchema();
     if (!this.publicHskLocksCache) {
       this.publicHskLocksCache = this.db.query(
         `SELECT lesson_id, free_item_limit
@@ -71,6 +93,8 @@ export class ContentService {
     lessonNo?: number;
     titleVi?: string;
     freeItemLimit?: number;
+    freeWordLimit?: number;
+    freeSentenceLimit?: number;
     lockedForFree?: boolean;
   }>) {
     if (!Array.isArray(lessons) || lessons.length === 0) {
@@ -87,21 +111,25 @@ export class ContentService {
         const titleVi = String(lesson.titleVi || '').trim();
         const lockedForFree = lesson.lockedForFree === true;
         const freeItemLimit = Math.max(0, Number(lesson.freeItemLimit || 0));
-        const effectiveLockedForFree = lockedForFree || freeItemLimit > 0;
+        const freeWordLimit = Math.max(0, Number(lesson.freeWordLimit ?? freeItemLimit));
+        const freeSentenceLimit = Math.max(0, Number(lesson.freeSentenceLimit ?? freeItemLimit));
+        const effectiveLockedForFree = lockedForFree;
 
         if (!lessonId || !level) continue;
 
         await client.query(
-          `INSERT INTO hsk_lesson_locks (lesson_id, level, lesson_no, title_vi, free_item_limit, locked_for_free, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())
+          `INSERT INTO hsk_lesson_locks (lesson_id, level, lesson_no, title_vi, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
            ON CONFLICT (lesson_id) DO UPDATE
            SET level = EXCLUDED.level,
                lesson_no = EXCLUDED.lesson_no,
                title_vi = EXCLUDED.title_vi,
                free_item_limit = EXCLUDED.free_item_limit,
+               free_word_limit = EXCLUDED.free_word_limit,
+               free_sentence_limit = EXCLUDED.free_sentence_limit,
                locked_for_free = EXCLUDED.locked_for_free,
                updated_at = NOW()`,
-          [lessonId, level, lessonNo, titleVi, freeItemLimit, effectiveLockedForFree],
+          [lessonId, level, lessonNo, titleVi, freeItemLimit, freeWordLimit, freeSentenceLimit, effectiveLockedForFree],
         );
       }
       await client.query('COMMIT');
@@ -119,7 +147,7 @@ export class ContentService {
   async listDailyLocks(): Promise<DailyThemeLockRow[]> {
     await this.ensureDailyThemeLocksSchema();
     const result = await this.db.query(
-      `SELECT theme_id, title_vi, sort_order, free_item_limit, locked_for_free, updated_at
+      `SELECT theme_id, title_vi, sort_order, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at
        FROM daily_theme_locks
        ORDER BY sort_order ASC, theme_id ASC`,
     );
@@ -128,6 +156,8 @@ export class ContentService {
       titleVi: row.title_vi,
       sortOrder: Number(row.sort_order),
       freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
+      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
+      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
       lockedForFree: row.locked_for_free,
       updatedAt: row.updated_at,
     }));
@@ -161,6 +191,8 @@ export class ContentService {
     titleVi?: string;
     sortOrder?: number;
     freeItemLimit?: number;
+    freeWordLimit?: number;
+    freeSentenceLimit?: number;
     lockedForFree?: boolean;
   }>) {
     if (!Array.isArray(themes) || themes.length === 0) {
@@ -176,20 +208,24 @@ export class ContentService {
         const titleVi = String(theme.titleVi || '').trim();
         const sortOrder = Number(theme.sortOrder || 0);
         const freeItemLimit = Math.max(0, Number(theme.freeItemLimit || 0));
+        const freeWordLimit = Math.max(0, Number(theme.freeWordLimit ?? freeItemLimit));
+        const freeSentenceLimit = Math.max(0, Number(theme.freeSentenceLimit ?? freeItemLimit));
         const lockedForFree = theme.lockedForFree === true;
 
         if (!themeId) continue;
 
         await client.query(
-          `INSERT INTO daily_theme_locks (theme_id, title_vi, sort_order, free_item_limit, locked_for_free, updated_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())
+          `INSERT INTO daily_theme_locks (theme_id, title_vi, sort_order, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
            ON CONFLICT (theme_id) DO UPDATE
            SET title_vi = EXCLUDED.title_vi,
                sort_order = EXCLUDED.sort_order,
                free_item_limit = EXCLUDED.free_item_limit,
+               free_word_limit = EXCLUDED.free_word_limit,
+               free_sentence_limit = EXCLUDED.free_sentence_limit,
                locked_for_free = EXCLUDED.locked_for_free,
                updated_at = NOW()`,
-          [themeId, titleVi, sortOrder, freeItemLimit, lockedForFree],
+          [themeId, titleVi, sortOrder, freeItemLimit, freeWordLimit, freeSentenceLimit, lockedForFree],
         );
       }
       await client.query('COMMIT');
@@ -201,6 +237,63 @@ export class ContentService {
     }
 
     return { locks: await this.listDailyLocks() };
+  }
+
+  async listPublicLearningAccessRules() {
+    await this.ensureDailyThemeLocksSchema();
+    const [hsk, daily, topics, lessons] = await Promise.all([
+      this.db.query(`SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free FROM hsk_lesson_locks ORDER BY lesson_id ASC`),
+      this.db.query(`SELECT theme_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free FROM daily_theme_locks ORDER BY sort_order ASC, theme_id ASC`),
+      this.db.query(`SELECT topic_id, locked_for_free FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
+      this.db.query(`SELECT lesson_id, topic_id, locked_for_free FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
+    ]);
+    const limit = (value: unknown, fallback: unknown) => Math.max(0, Number(value || fallback || 0));
+    return {
+      hskLessonLocks: hsk.rows.map((row) => ({ lessonId: row.lesson_id, lockedForFree: row.locked_for_free === true, freeWordLimit: limit(row.free_word_limit, row.free_item_limit), freeSentenceLimit: limit(row.free_sentence_limit, row.free_item_limit) })),
+      dailyThemeLocks: daily.rows.map((row) => ({ themeId: row.theme_id, lockedForFree: row.locked_for_free === true, freeWordLimit: limit(row.free_word_limit, row.free_item_limit), freeSentenceLimit: limit(row.free_sentence_limit, row.free_item_limit) })),
+      listeningTopicLocks: topics.rows.map((row) => ({ topicId: row.topic_id, lockedForFree: row.locked_for_free === true })),
+      listeningLessonLocks: lessons.rows.map((row) => ({ lessonId: row.lesson_id, topicId: row.topic_id, lockedForFree: row.locked_for_free === true })),
+    };
+  }
+
+  async listListeningLocks() {
+    await this.ensureDailyThemeLocksSchema();
+    const [topics, lessons] = await Promise.all([
+      this.db.query(`SELECT topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
+      this.db.query(`SELECT lesson_id, topic_id, title_vi, sort_order, locked_for_free, updated_at FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
+    ]);
+    return {
+      topics: topics.rows.map((row) => ({ topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
+      lessons: lessons.rows.map((row) => ({ lessonId: row.lesson_id, topicId: row.topic_id, titleVi: row.title_vi, sortOrder: Number(row.sort_order), lockedForFree: row.locked_for_free === true, updatedAt: row.updated_at })),
+    };
+  }
+
+  async saveListeningLocks(topics: any[], lessons: any[]) {
+    if ((!Array.isArray(topics) || topics.length === 0) && (!Array.isArray(lessons) || lessons.length === 0)) {
+      throw new HttpException('Danh sách khóa nghe không hợp lệ.', HttpStatus.BAD_REQUEST);
+    }
+    await this.ensureDailyThemeLocksSchema();
+    const client = await this.db.getPool()!.connect();
+    try {
+      await client.query('BEGIN');
+      for (const topic of topics || []) {
+        const topicId = String(topic.topicId || '').trim();
+        if (!topicId) continue;
+        await client.query(`INSERT INTO listening_topic_locks (topic_id, title_vi, sort_order, locked_for_free, updated_at) VALUES ($1, $2, $3, $4, NOW()) ON CONFLICT (topic_id) DO UPDATE SET title_vi = EXCLUDED.title_vi, sort_order = EXCLUDED.sort_order, locked_for_free = EXCLUDED.locked_for_free, updated_at = NOW()`, [topicId, String(topic.titleVi || '').trim(), Number(topic.sortOrder || 0), topic.lockedForFree === true]);
+      }
+      for (const lesson of lessons || []) {
+        const lessonId = String(lesson.lessonId || '').trim();
+        if (!lessonId) continue;
+        await client.query(`INSERT INTO listening_lesson_locks (lesson_id, topic_id, title_vi, sort_order, locked_for_free, updated_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (lesson_id) DO UPDATE SET topic_id = EXCLUDED.topic_id, title_vi = EXCLUDED.title_vi, sort_order = EXCLUDED.sort_order, locked_for_free = EXCLUDED.locked_for_free, updated_at = NOW()`, [lessonId, String(lesson.topicId || '').trim(), String(lesson.titleVi || '').trim(), Number(lesson.sortOrder || 0), lesson.lockedForFree === true]);
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.listListeningLocks();
   }
 
   async listHskLevelCovers(): Promise<Array<{ level: string; coverUrl: string; updatedAt?: string }>> {

@@ -272,6 +272,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;
     `);
     await this.pool.query(`
+      ALTER TABLE hsk_lesson_locks
+      ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
+      ALTER TABLE hsk_lesson_locks
+      ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS daily_theme_locks (
         theme_id TEXT PRIMARY KEY,
         title_vi TEXT NOT NULL DEFAULT '',
@@ -284,6 +292,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE daily_theme_locks
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
+      ALTER TABLE daily_theme_locks
+      ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
+      ALTER TABLE daily_theme_locks
+      ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;
     `);
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS hsk_level_covers (
