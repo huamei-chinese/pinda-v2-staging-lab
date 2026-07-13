@@ -9,6 +9,7 @@ const contentServiceSource = fs.readFileSync(path.join(root, "src", "content", "
 const contentControllerSource = fs.readFileSync(path.join(root, "src", "content", "content.controller.ts"), "utf8");
 const adminContentControllerSource = fs.readFileSync(path.join(root, "src", "admin", "admin-content.controller.ts"), "utf8");
 const databaseServiceSource = fs.readFileSync(path.join(root, "src", "database", "database.service.ts"), "utf8");
+const appModuleSource = fs.readFileSync(path.join(root, "src", "app.module.ts"), "utf8");
 const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
 const indexHtmlSource = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
 const adminV2HtmlSource = fs.readFileSync(path.join(root, "public", "admin-v2.html"), "utf8");
@@ -39,6 +40,12 @@ test("Railway Nest content lock endpoints self-heal schema and disable cache", (
   assert.match(databaseServiceSource, /CREATE TABLE IF NOT EXISTS listening_lesson_locks/);
   assert.match(contentControllerSource, /@Header\('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'\)/);
   assert.match(adminContentControllerSource, /@Header\('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'\)/);
+});
+
+test("Railway custom domains revalidate app shell assets after deploy", () => {
+  assert.match(appModuleSource, /serveStaticOptions/);
+  assert.match(appModuleSource, /\(\?:html\|js\|css\)/);
+  assert.match(appModuleSource, /Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'/);
 });
 
 test("client content-lock API calls bypass browser cache", () => {

@@ -15,6 +15,15 @@ import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-loc
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), 'public'),
       exclude: ['/api/*path'],
+      serveStaticOptions: {
+        setHeaders: (res, filePath) => {
+          if (/\.(?:html|js|css)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+          }
+        },
+      },
     }),
     DatabaseModule,
     AuthModule,
