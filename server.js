@@ -92,6 +92,7 @@ function publicUser(row) {
     ref: row.ref || "",
     src: row.src || "",
     isActive: row.is_active,
+    registeredAt: row.created_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     lastLoginAt: row.last_login_at,

@@ -59,7 +59,7 @@ test("app runtime lazy-loads HSK level, high-frequency, and listening catalog da
   assert.match(appSource, /async function ensureHskLevelContent\(levelKey\)/);
   assert.match(appSource, /function prefetchHskLevelContent\(levelKey\)/);
   assert.match(appSource, /const HIGH_FREQUENCY_TOPICS_SCRIPT_SRC\s*=\s*"lesson-high-frequency-v1-27-topics\.js"/);
-  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260704"/);
+  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260713-catalog"/);
   assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
   assert.match(appSource, /function warmStartupDataAfterFirstPaint\(\)/);
   assert.match(appSource, /renderHome\(\);\s*setScreen\("home"\);/);

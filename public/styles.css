@@ -19315,6 +19315,35 @@ body:has(#practiceScreen:not(.hidden)) {
   font-weight: 950;
 }
 
+.admin-user-email {
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.admin-user-email strong {
+  color: #1f4f84;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.admin-user-email small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.admin-user-registered-at {
+  display: inline-flex;
+  align-items: center;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
 .admin-user-cell small,
 .admin-duration small {
   display: block;
@@ -23811,7 +23840,7 @@ body:has(#practiceScreen:not(.hidden)) {
 
 .listening-vocab-practice-meta {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   border: 1px solid #cfe0e8;
   border-radius: 10px;
   overflow: hidden;
@@ -26594,12 +26623,6 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .listening-vocab-practice-meta>div:first-child {
-  order: 2;
-  background: linear-gradient(180deg, #eefaff 0%, #ffffff 100%);
-  border-left: 1px solid rgba(109, 91, 255, 0.12);
-}
-
-.listening-vocab-practice-meta>div:last-child {
   order: 1;
   background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%);
 }
@@ -33558,7 +33581,7 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   .listening-vocab-lesson-screen .listening-vocab-practice-meta {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
   }
 
   .listening-vocab-lesson-screen .listening-vocab-practice-meta>div {
@@ -43467,7 +43490,7 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   #listeningScreen .app-desktop-shell--listening:has(.listening-vocab-lesson-screen) .listening-vocab-practice-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     min-width: 0 !important;
   }
 
@@ -47782,5 +47805,103 @@ body:has(#practiceScreen:not(.hidden)) {
   #vocabScreen .vocab-grid {
     grid-template-columns: 1fr !important;
     gap: 14px !important;
+  }
+}
+
+/* Desktop listening detail: match the mobile active sentence color system. */
+@media (min-width: 641px) {
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover {
+    border: 1px solid rgba(14, 165, 233, 0.82) !important;
+    background:
+      radial-gradient(circle at 12% 16%, rgba(255, 255, 255, 0.54), transparent 32%),
+      linear-gradient(120deg, #bae6fd 0%, #7dd3fc 44%, #a5f3fc 100%) !important;
+    color: #0f172a !important;
+    box-shadow:
+      0 16px 34px rgba(14, 116, 144, 0.2),
+      inset 4px 0 0 #0284c7 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active>span,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover>span {
+    color: #075985 !important;
+    background: rgba(224, 242, 254, 0.88) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active .listening-line-zh,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active strong,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover .listening-line-zh,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover strong {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active .listening-line-pinyin,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active small,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover .listening-line-pinyin,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover small {
+    color: #1d4ed8 !important;
+    text-shadow: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active .listening-line-vi,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence.active em,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover .listening-line-vi,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-script-card .listening-sentence:hover em {
+    color: #075985 !important;
+    text-shadow: none !important;
+  }
+}
+
+/* Desktop listening quick practice: make the action card read as a primary dock. */
+@media (min-width: 641px) {
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card {
+    position: relative !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(14, 165, 233, 0.72) !important;
+    border-top: 4px solid #0ea5e9 !important;
+    background:
+      radial-gradient(circle at 88% 10%, rgba(59, 130, 246, 0.22), transparent 28%),
+      radial-gradient(circle at 12% 4%, rgba(224, 242, 254, 0.94), transparent 34%),
+      linear-gradient(135deg, rgba(240, 249, 255, 0.99) 0%, rgba(186, 230, 253, 0.96) 48%, rgba(147, 197, 253, 0.94) 100%) !important;
+    box-shadow:
+      0 22px 44px rgba(14, 116, 144, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card h2 {
+    position: relative !important;
+    z-index: 1 !important;
+    color: #075985 !important;
+    font-weight: 950 !important;
+    letter-spacing: 0 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card .listening-script-quick-actions {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card .listening-script-quick-actions button {
+    border: 1px solid rgba(14, 165, 233, 0.36) !important;
+    color: #0369a1 !important;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(224, 242, 254, 0.92)) !important;
+    box-shadow: 0 14px 28px rgba(14, 116, 144, 0.16) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card .listening-script-quick-actions button:hover {
+    color: #ffffff !important;
+    border-color: transparent !important;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9 62%, #14b8a6) !important;
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.32) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card .listening-script-quick-actions button svg {
+    color: #0ea5e9 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile) .listening-quick-links-card .listening-script-quick-actions button:hover svg {
+    color: #ffffff !important;
   }
 }

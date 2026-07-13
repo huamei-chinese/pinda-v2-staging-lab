@@ -285,8 +285,8 @@ const hskLevelContentScripts = {
 
 const hskLevelContentLoaded = new Set();
 const dynamicScriptPromises = {};
-const LISTENING_CATALOG_JSON_SRC = "listening-app/data/listening-catalog.json?v=20260704";
-const LISTENING_CATALOG_SCRIPT_SRC = "listening-app/data/listening-catalog.js?v=20260704";
+const LISTENING_CATALOG_JSON_SRC = "listening-app/data/listening-catalog.json?v=20260713-catalog";
+const LISTENING_CATALOG_SCRIPT_SRC = "listening-app/data/listening-catalog.js?v=20260713-catalog";
 let listeningCatalogTopics = [];
 let listeningCatalogLoaded = false;
 let listeningCatalogLoadPromise = null;
@@ -1416,6 +1416,7 @@ function listeningCatalogLessonToEpisode(lesson = {}, topic = {}) {
       vietnamese: keyword.vi || keyword.vietnamese || "",
       partOfSpeech: keyword.partOfSpeech || keyword.part_of_speech || keyword.source_pos || keyword.posVi || keyword.posZh || keyword.pos || "",
       audioNormal: listeningCatalogAssetPath(keyword.audio || ""),
+      audioSlow: listeningCatalogAssetPath(keyword.audio_slow || keyword.audioSlow || keyword.audio || ""),
       examples: (keyword.examples || []).map((example) => ({
         chinese: example.zh || example.chinese || "",
         pinyin: example.pinyin || "",
@@ -3024,6 +3025,73 @@ function formatAdminDate(value) {
   }).format(date);
 }
 
+function formatAdminRegistrationDate(value, isVi) {
+  const emptyLabel = isVi ? "Chưa có thời gian đăng ký" : "暂无注册时间";
+  if (!value) return emptyLabel;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+  let formatted = "";
+  try {
+    const parts = new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      timeZone: "Asia/Bangkok",
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).formatToParts(date).reduce((map, part) => {
+      map[part.type] = part.value;
+      return map;
+    }, {});
+    formatted = `${parts.hour}:${parts.minute} ${parts.day}/${parts.month}/${parts.year}`;
+  } catch (error) {
+    formatted = new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).format(date);
+  }
+  return isVi ? `Đăng ký: ${formatted}` : `注册: ${formatted}`;
+}
+
+function getAdminUserRegistrationTimestamp(user) {
+  return user?.registeredAt || user?.createdAt || user?.registered_at || user?.created_at || "";
+}
+
+function formatAdminRegistrationTimeOnly(value, isVi) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  try {
+    const parts = new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      timeZone: "Asia/Bangkok",
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).formatToParts(date).reduce((map, part) => {
+      map[part.type] = part.value;
+      return map;
+    }, {});
+    return `${parts.hour}:${parts.minute} ${parts.day}/${parts.month}/${parts.year}`;
+  } catch (error) {
+    return new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).format(date);
+  }
+}
+
 function formatAdminDateInput(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -4394,7 +4462,13 @@ function getAdminCtvFilteredUsers(stats) {
 }
 
 function getAdminCtvUserRegisteredAt(user) {
-  return user?.registeredAt || user?.createdAt || user?.created_at || user?.created || "";
+  return user?.registeredAt || user?.createdAt || user?.registered_at || user?.created_at || user?.created || "";
+}
+
+function formatAdminCtvUserRegisteredAt(user, isVi) {
+  const registeredAt = getAdminCtvUserRegisteredAt(user);
+  if (!registeredAt) return "-";
+  return formatAdminRegistrationTimeOnly(registeredAt, isVi) || "-";
 }
 
 function getAdminCtvUserLabel(user) {
@@ -4413,7 +4487,7 @@ function renderAdminCtvReferredUsersHTML(users, isVi) {
         <td><strong>${escapeHtml(getAdminCtvUserLabel(user))}</strong><small>${escapeHtml(user.email || user.id || "")}</small></td>
         <td><span class="admin-ctv-user-badge ${isActivePremiumUser(user) ? "vip" : "regular"}">${escapeHtml(vipInfo.badge)}</span><small>${escapeHtml(vipInfo.expiry || vipInfo.status)}</small></td>
         <td>${escapeHtml(getAnalyticsSourceLabel(source))}</td>
-        <td>${escapeHtml(getAdminCtvUserRegisteredAt(user) || "-")}</td>
+        <td>${escapeHtml(formatAdminCtvUserRegisteredAt(user, isVi))}</td>
       </tr>
     `;
   }).join("");
@@ -6398,12 +6472,14 @@ function buildAdminUserRowsHTML(users, isVi) {
     const duration = hasPremium ? vipDisplay.status : "N/A";
     const expiryInputValue = formatAdminDateInput(user.premiumUntil);
     const role = normalizeAdminRole(user.role);
+    const registeredAt = getAdminUserRegistrationTimestamp(user);
+    const registeredLabel = formatAdminRegistrationDate(registeredAt, isVi);
     const canChangeStaffRole = isAdminUser() && role !== "admin";
     const staffRoleButton = canChangeStaffRole
       ? `<select class="admin-role-select" aria-label="${isVi ? "Vai trò" : "角色"}">${renderAdminRoleOptionsHTML(role, isVi)}</select><button class="admin-role-user" type="button">${isVi ? "Lưu vai trò" : "保存角色"}</button>`
       : "";
     return `
-      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}">
+      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}" data-registered-at="${escapeAttr(registeredAt)}">
         <td>
           <div class="admin-user-cell">
             ${avatar ? `<img src="${avatar}" alt="${escapeAttr(user.fullName || user.email)}" />` : `<span>${escapeAttr(initials)}</span>`}
@@ -6413,7 +6489,12 @@ function buildAdminUserRowsHTML(users, isVi) {
             </div>
           </div>
         </td>
-        <td>${escapeAttr(user.email || "")}</td>
+        <td>
+          <div class="admin-user-email">
+            <strong>${escapeAttr(user.email || "")}</strong>
+            <small class="admin-user-registered-at">${escapeAttr(registeredLabel)}</small>
+          </div>
+        </td>
         <td><span class="admin-pill role ${role}">${escapeAttr(getAdminRoleLabel(role, isVi))}</span></td>
         <td><span class="admin-pill level">${escapeAttr(currentLevel)}</span></td>
         <td><span class="admin-pill ${plan.toLowerCase()}">${escapeAttr(getAdminUserPlanLabel(plan, isVi))}</span></td>
@@ -6462,7 +6543,7 @@ function updateAdminUsersList() {
   }
   tbody.innerHTML = pagination.pageUsers.length > 0
     ? buildAdminUserRowsHTML(pagination.pageUsers, isVi)
-    : `<tr><td colspan="6" class="admin-empty">${isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。"}</td></tr>`;
+    : `<tr><td colspan="7" class="admin-empty">${isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。"}</td></tr>`;
   if (footerText) {
     const total = filteredUsers.length;
     footerText.textContent = isVi
@@ -6688,7 +6769,7 @@ function renderAdmin() {
                 </tr>
               </thead>
               <tbody>
-                ${rows || `<tr><td colspan="6" class="admin-empty">${escapeAttr(filteredUsers.length === 0 && state.adminUsers.length > 0 ? (isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。") : (state.adminStatus || (isVi ? "Chưa có dữ liệu người dùng." : "暂无用户数据。")))}</td></tr>`}
+                ${rows || `<tr><td colspan="7" class="admin-empty">${escapeAttr(filteredUsers.length === 0 && state.adminUsers.length > 0 ? (isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。") : (state.adminStatus || (isVi ? "Chưa có dữ liệu người dùng." : "暂无用户数据。")))}</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -11372,6 +11453,9 @@ function getListeningKeyword(index) {
       pinyin: keyword.pinyin || "",
       vietnamese: keyword.vietnamese || "",
       partOfSpeech: keyword.partOfSpeech || keyword.part_of_speech || keyword.source_pos || keyword.posVi || keyword.posZh || keyword.pos || keyword.type || "",
+      audioNormal: keyword.audioNormal || keyword.audioSrc || keyword.audio || "",
+      audioSlow: keyword.audioSlow || keyword.audio_slow || keyword.audioNormal || keyword.audioSrc || keyword.audio || "",
+      audioSrc: keyword.audioSrc || keyword.audioNormal || keyword.audio || "",
       examples: Array.isArray(keyword.examples) ? keyword.examples : [],
     };
 }
@@ -11439,7 +11523,6 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
 
   const examples = getListeningKeywordExamples(keyword)
     .map((example) => normalizeListeningKeywordExample(example, keyword));
-  const keywordPartOfSpeech = getListeningKeywordPartOfSpeech(keyword);
   const examplesHTML = examples.map((example, exampleIndex) => `
     <article class="listening-vocab-example">
       <span>${state.lang === "vi" ? "Ví dụ" : "例句"} ${exampleIndex + 1}</span>
@@ -11464,7 +11547,6 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
 
       <strong class="listening-vocab-practice-word">${escapeHtml(keyword.chinese)}</strong>
       <div class="listening-vocab-practice-meta">
-        <div><span>${state.lang === "vi" ? "Loại từ" : "词类"}</span><b>${escapeHtml(keywordPartOfSpeech)}</b></div>
         <div><span>pinyin</span><p>${escapeHtml(keyword.pinyin || "—")}</p></div>
       </div>
       <div class="listening-vocab-practice-meaning">
@@ -11953,9 +12035,38 @@ function closeListeningKeywordPopup() {
 //   panel.style.top = `${rect.top + rect.height / 2}px`;
 // }
 
+function getListeningKeywordAudioSources(keyword, options = {}) {
+  const normalize = (source) => (
+    typeof listeningCatalogAssetPath === "function" ? listeningCatalogAssetPath(source) : source
+  );
+  const slow = Boolean(options.slow);
+  const normalSource = normalize(keyword?.audioNormal || keyword?.audioSrc || keyword?.audio || "");
+  const slowSource = normalize(keyword?.audioSlow || normalSource);
+  return uniqueAudioSources(slow ? [slowSource, normalSource] : [normalSource]);
+}
+
 function playListeningKeyword(index, options = {}) {
   const keyword = getListeningKeyword(index);
   if (!keyword?.chinese) return;
+
+  const slow = Boolean(options.slow);
+  const sources = getListeningKeywordAudioSources(keyword, { slow });
+  const speakFallback = () => {
+    if (!("speechSynthesis" in window)) {
+      showToast(state.lang === "vi" ? "TrÃ¬nh duyá»‡t chÆ°a há»— trá»£ phÃ¡t Ã¢m tá»« vá»±ng." : "å½“å‰æµè§ˆå™¨ä¸æ”¯æŒæœ—è¯»è¯è¯­ã€‚");
+      return;
+    }
+    browserSpeakText(keyword.chinese, { stage: "word", slow, rate: slow ? 0.72 : 0.98 });
+  };
+  if (sources.length > 0) {
+    playAudioSources(sources, speakFallback, {
+      text: keyword.chinese,
+      speed: slow ? "slow" : "normal",
+      sources,
+      playbackRate: slow ? 0.72 : 1,
+    });
+    return;
+  }
 
   if (!("speechSynthesis" in window)) {
     showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ phát âm từ vựng." : "当前浏览器不支持朗读词语。");
@@ -13810,6 +13921,7 @@ function reportAudioFallback(meta = {}) {
 
 function playAudioSources(sources, fallback, meta = {}) {
   const candidates = uniqueAudioSources(Array.isArray(sources) ? sources : [sources]);
+  const playbackRate = Number(meta.playbackRate || 1);
   stopSpeechPlayback();
   const playbackToken = speechPlaybackToken;
   const isCurrentPlayback = () => playbackToken === speechPlaybackToken;
@@ -13841,6 +13953,9 @@ function playAudioSources(sources, fallback, meta = {}) {
       tryNext();
     };
     activeSpeechAudio = audio;
+    if (Number.isFinite(playbackRate)) {
+      audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
+    }
     audio.onended = () => {
       if (!isCurrentPlayback()) return;
       if (activeSpeechAudio === audio) activeSpeechAudio = null;
@@ -13870,6 +13985,10 @@ function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
   const audio = new Audio();
   audio.preload = "none";
   audio.src = source;
+  const playbackRate = Number(meta.playbackRate || 1);
+  if (Number.isFinite(playbackRate)) {
+    audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
+  }
   let handledFailure = false;
   const resetActiveAudio = () => {
     if (activeSpeechAudio === audio) activeSpeechAudio = null;

@@ -61,6 +61,7 @@ export class AdminService {
       vipPlanNameZh: vipPlanId === '7d' ? '7天VIP' : vipPlanId === '30d' ? '30天VIP' : null,
       premiumUntil: row.premium_until,
       dailyReminderEnabled: row.daily_reminder_enabled !== false,
+      registeredAt: row.created_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       lastLoginAt: row.last_login_at,

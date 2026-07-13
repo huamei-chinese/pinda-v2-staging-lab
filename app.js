@@ -1934,6 +1934,43 @@ function formatAdminDate(value) {
   }).format(date);
 }
 
+function formatAdminRegistrationDate(value, isVi) {
+  const emptyLabel = isVi ? "Chưa có thời gian đăng ký" : "暂无注册时间";
+  if (!value) return emptyLabel;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+  let formatted = "";
+  try {
+    const parts = new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      timeZone: "Asia/Bangkok",
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).formatToParts(date).reduce((map, part) => {
+      map[part.type] = part.value;
+      return map;
+    }, {});
+    formatted = `${parts.hour}:${parts.minute} ${parts.day}/${parts.month}/${parts.year}`;
+  } catch (error) {
+    formatted = new Intl.DateTimeFormat(isVi ? "vi-VN" : "zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour12: false,
+    }).format(date);
+  }
+  return isVi ? `Đăng ký: ${formatted}` : `注册: ${formatted}`;
+}
+
+function getAdminUserRegistrationTimestamp(user) {
+  return user?.registeredAt || user?.createdAt || user?.registered_at || user?.created_at || "";
+}
+
 function formatAdminDateInput(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -3783,12 +3820,14 @@ function buildAdminUserRowsHTML(users, isVi) {
     const duration = hasPremium ? vipDisplay.status : "N/A";
     const expiryInputValue = formatAdminDateInput(user.premiumUntil);
     const role = normalizeAdminRole(user.role);
+    const registeredAt = getAdminUserRegistrationTimestamp(user);
+    const registeredLabel = formatAdminRegistrationDate(registeredAt, isVi);
     const canChangeStaffRole = isAdminUser() && role !== "admin";
     const staffRoleButton = canChangeStaffRole
       ? `<button class="admin-role-user" type="button" data-next-role="${role === "staff" ? "user" : "staff"}">${role === "staff" ? (isVi ? "Hủy CSKH" : "取消客服管理员") : (isVi ? "Đặt CSKH" : "设为客服管理员")}</button>`
       : "";
     return `
-      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}">
+      <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}" data-registered-at="${escapeAttr(registeredAt)}">
         <td>
           <div class="admin-user-cell">
             ${avatar ? `<img src="${avatar}" alt="${escapeAttr(user.fullName || user.email)}" />` : `<span>${escapeAttr(initials)}</span>`}
@@ -3798,7 +3837,12 @@ function buildAdminUserRowsHTML(users, isVi) {
             </div>
           </div>
         </td>
-        <td>${escapeAttr(user.email || "")}</td>
+        <td>
+          <div class="admin-user-email">
+            <strong>${escapeAttr(user.email || "")}</strong>
+            <small class="admin-user-registered-at">${escapeAttr(registeredLabel)}</small>
+          </div>
+        </td>
         <td><span class="admin-pill role ${role}">${escapeAttr(getAdminRoleLabel(role, isVi))}</span></td>
         <td><span class="admin-pill level">${escapeAttr(currentLevel)}</span></td>
         <td><span class="admin-pill ${plan.toLowerCase()}">${escapeAttr(getAdminUserPlanLabel(plan, isVi))}</span></td>
@@ -3847,7 +3891,7 @@ function updateAdminUsersList() {
   }
   tbody.innerHTML = pagination.pageUsers.length > 0
     ? buildAdminUserRowsHTML(pagination.pageUsers, isVi)
-    : `<tr><td colspan="6" class="admin-empty">${isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。"}</td></tr>`;
+    : `<tr><td colspan="7" class="admin-empty">${isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。"}</td></tr>`;
   if (footerText) {
     const total = filteredUsers.length;
     footerText.textContent = isVi
@@ -4006,7 +4050,7 @@ function renderAdmin() {
                 </tr>
               </thead>
               <tbody>
-                ${rows || `<tr><td colspan="6" class="admin-empty">${escapeAttr(filteredUsers.length === 0 && state.adminUsers.length > 0 ? (isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。") : (state.adminStatus || (isVi ? "Chưa có dữ liệu người dùng." : "暂无用户数据。")))}</td></tr>`}
+                ${rows || `<tr><td colspan="7" class="admin-empty">${escapeAttr(filteredUsers.length === 0 && state.adminUsers.length > 0 ? (isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。") : (state.adminStatus || (isVi ? "Chưa có dữ liệu người dùng." : "暂无用户数据。")))}</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -7219,6 +7263,9 @@ function getListeningKeyword(index) {
       pinyin: keyword.pinyin || "",
       vietnamese: keyword.vietnamese || "",
       partOfSpeech: keyword.partOfSpeech || keyword.pos || keyword.type || "",
+      audioNormal: keyword.audioNormal || keyword.audioSrc || keyword.audio || "",
+      audioSlow: keyword.audioSlow || keyword.audio_slow || keyword.audioNormal || keyword.audioSrc || keyword.audio || "",
+      audioSrc: keyword.audioSrc || keyword.audioNormal || keyword.audio || "",
       examples: Array.isArray(keyword.examples) ? keyword.examples : [],
     };
 }
@@ -7626,9 +7673,37 @@ function renderListeningKeywordDetail(index, button = null) {
   `;
 }
 
+function getListeningKeywordAudioSources(keyword, options = {}) {
+  const normalize = (source) => (
+    typeof listeningCatalogAssetPath === "function" ? listeningCatalogAssetPath(source) : source
+  );
+  const slow = Boolean(options.slow);
+  const normalSource = normalize(keyword?.audioNormal || keyword?.audioSrc || keyword?.audio || "");
+  const slowSource = normalize(keyword?.audioSlow || normalSource);
+  return uniqueAudioSources(slow ? [slowSource, normalSource] : [normalSource]);
+}
+
 function playListeningKeyword(index, options = {}) {
   const keyword = getListeningKeyword(index);
   if (!keyword?.chinese) return;
+
+  const slow = Boolean(options.slow);
+  const sources = getListeningKeywordAudioSources(keyword, { slow });
+  if (sources.length > 0) {
+    playAudioSources(sources, () => {
+      if (!("speechSynthesis" in window)) {
+        showToast(state.lang === "vi" ? "TrÃ¬nh duyá»‡t chÆ°a há»— trá»£ phÃ¡t Ã¢m tá»« vá»±ng." : "å½“å‰æµè§ˆå™¨ä¸æ”¯æŒæœ—è¯»è¯è¯­ã€‚");
+        return;
+      }
+      browserSpeakText(keyword.chinese, { stage: "word", slow, rate: slow ? 0.72 : 0.98 });
+    }, {
+      text: keyword.chinese,
+      speed: slow ? "slow" : "normal",
+      sources,
+      playbackRate: slow ? 0.72 : 1,
+    });
+    return;
+  }
 
   if (!("speechSynthesis" in window)) {
     showToast(state.lang === "vi" ? "Trình duyệt chưa hỗ trợ phát âm từ vựng." : "当前浏览器不支持朗读词语。");
@@ -8980,6 +9055,7 @@ function reportAudioFallback(meta = {}) {
 
 function playAudioSources(sources, fallback, meta = {}) {
   const candidates = uniqueAudioSources(Array.isArray(sources) ? sources : [sources]);
+  const playbackRate = Number(meta.playbackRate || 1);
   if (candidates.length === 0) {
     reportAudioFallback({ ...meta, sources: candidates });
     fallback?.();
@@ -9004,6 +9080,9 @@ function playAudioSources(sources, fallback, meta = {}) {
       tryNext();
     };
     activeSpeechAudio = audio;
+    if (Number.isFinite(playbackRate)) {
+      audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
+    }
     audio.onended = () => {
       if (activeSpeechAudio === audio) activeSpeechAudio = null;
     };
@@ -9030,6 +9109,10 @@ function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
 
   stopSpeechPlayback();
   const audio = new Audio(source);
+  const playbackRate = Number(meta.playbackRate || 1);
+  if (Number.isFinite(playbackRate)) {
+    audio.playbackRate = Math.max(0.5, Math.min(2, playbackRate));
+  }
   let handledFailure = false;
   const resetActiveAudio = () => {
     if (activeSpeechAudio === audio) activeSpeechAudio = null;

@@ -2,12 +2,20 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
+const vm = require("node:vm");
 
 const repoRoot = path.join(__dirname, "..");
 const packageJson = require("../package.json");
 const rootIndex = fs.readFileSync(path.join(repoRoot, "index.html"), "utf8");
 const publicIndex = fs.readFileSync(path.join(repoRoot, "public", "index.html"), "utf8");
 const appSource = fs.readFileSync(path.join(repoRoot, "public", "app.js"), "utf8");
+const listeningCatalogJson = JSON.parse(fs.readFileSync(path.join(repoRoot, "public", "listening-app", "data", "listening-catalog.json"), "utf8"));
+
+function loadListeningCatalogScript() {
+  const sandbox = { globalThis: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(repoRoot, "public", "listening-app", "data", "listening-catalog.js"), "utf8"), sandbox);
+  return JSON.parse(JSON.stringify(sandbox.globalThis.pindaListeningCatalog));
+}
 
 function assertCatalogIsLazyLoadedByApp(html) {
   const catalogIndex = html.indexOf("listening-app/data/listening-catalog.js");
@@ -20,12 +28,31 @@ function assertCatalogIsLazyLoadedByApp(html) {
 test("SPA entries lazy-load the listening catalog through the UI runtime", () => {
   assertCatalogIsLazyLoadedByApp(rootIndex);
   assertCatalogIsLazyLoadedByApp(publicIndex);
-  assert.match(appSource, /const LISTENING_CATALOG_JSON_SRC\s*=\s*"listening-app\/data\/listening-catalog\.json\?v=20260704"/);
-  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260704"/);
+  assert.match(appSource, /const LISTENING_CATALOG_JSON_SRC\s*=\s*"listening-app\/data\/listening-catalog\.json\?v=20260713-catalog"/);
+  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260713-catalog"/);
   assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
   assert.match(appSource, /function loadListeningCatalogData\(\)/);
   assert.match(appSource, /fetch\(LISTENING_CATALOG_JSON_SRC, \{ cache: "force-cache" \}\)/);
   assert.match(appSource, /loadDynamicScript\(LISTENING_CATALOG_SCRIPT_SRC\)/);
+});
+
+test("listening JSON catalog stays in sync with the script catalog labels", () => {
+  const scriptCatalog = loadListeningCatalogScript();
+  const levelIds = new Set(["dialogue-so-cap", "dialogue-trung-cap", "dialogue-cao-cap"]);
+  const extractLabels = (catalog) => catalog.tracks
+    .flatMap((track) => track.levels || [])
+    .filter((level) => levelIds.has(level.legacy_level_id))
+    .map((level) => ({
+      level: level.legacy_level_id,
+      topics: (level.topics || []).map((topic) => topic.label_vi),
+    }));
+
+  assert.deepEqual(extractLabels(listeningCatalogJson), extractLabels(scriptCatalog));
+  assert.deepEqual(extractLabels(listeningCatalogJson).map((level) => level.topics[0]), [
+    "1.Tự tin giao tiếp",
+    "1.Cuộc sống tự lập",
+    "1.Lựa chọn nghề nghiệp",
+  ]);
 });
 
 test("listening UI reads catalog data without putting imported topic ids in app.js", () => {
