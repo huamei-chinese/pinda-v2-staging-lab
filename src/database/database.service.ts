@@ -310,6 +310,25 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
     `);
     await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS listening_topic_locks (
+        topic_id TEXT PRIMARY KEY,
+        title_vi TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS listening_lesson_locks (
+        lesson_id TEXT PRIMARY KEY,
+        topic_id TEXT NOT NULL DEFAULT '',
+        title_vi TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS learning_events (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,

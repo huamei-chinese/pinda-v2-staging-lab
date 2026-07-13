@@ -266,8 +266,29 @@ export class ContentService {
   }
 
   private async ensureDailyThemeLocksSchema() {
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS hsk_lesson_locks (
+        lesson_id TEXT PRIMARY KEY,
+        level TEXT NOT NULL DEFAULT '',
+        lesson_no INTEGER NOT NULL DEFAULT 0,
+        title_vi TEXT NOT NULL DEFAULT '',
+        free_item_limit INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
     await this.db.query(`ALTER TABLE hsk_lesson_locks ADD COLUMN IF NOT EXISTS free_word_limit INTEGER NOT NULL DEFAULT 0;`);
     await this.db.query(`ALTER TABLE hsk_lesson_locks ADD COLUMN IF NOT EXISTS free_sentence_limit INTEGER NOT NULL DEFAULT 0;`);
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS daily_theme_locks (
+        theme_id TEXT PRIMARY KEY,
+        title_vi TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        free_item_limit INTEGER NOT NULL DEFAULT 0,
+        locked_for_free BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
     await this.db.query(`
       ALTER TABLE daily_theme_locks
       ADD COLUMN IF NOT EXISTS free_item_limit INTEGER NOT NULL DEFAULT 0;

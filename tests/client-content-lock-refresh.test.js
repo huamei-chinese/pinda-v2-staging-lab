@@ -6,6 +6,9 @@ const test = require("node:test");
 const root = path.join(__dirname, "..");
 const appSource = fs.readFileSync(path.join(root, "public", "app.js"), "utf8");
 const contentServiceSource = fs.readFileSync(path.join(root, "src", "content", "content.service.ts"), "utf8");
+const contentControllerSource = fs.readFileSync(path.join(root, "src", "content", "content.controller.ts"), "utf8");
+const adminContentControllerSource = fs.readFileSync(path.join(root, "src", "admin", "admin-content.controller.ts"), "utf8");
+const databaseServiceSource = fs.readFileSync(path.join(root, "src", "database", "database.service.ts"), "utf8");
 const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
 const indexHtmlSource = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
 const adminV2HtmlSource = fs.readFileSync(path.join(root, "public", "admin-v2.html"), "utf8");
@@ -25,8 +28,17 @@ test("Netlify HSK lock endpoint matches the app backend contract", () => {
 });
 
 test("public admin scripts use deploy cache busters", () => {
-  assert.match(indexHtmlSource, /app\.js\?v=vip-refresh-20260713/);
+  assert.match(indexHtmlSource, /app\.js\?v=railway-vip-locks-20260713/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
+});
+
+test("Railway Nest content lock endpoints self-heal schema and disable cache", () => {
+  assert.match(contentServiceSource, /CREATE TABLE IF NOT EXISTS hsk_lesson_locks/);
+  assert.match(contentServiceSource, /CREATE TABLE IF NOT EXISTS daily_theme_locks/);
+  assert.match(databaseServiceSource, /CREATE TABLE IF NOT EXISTS listening_topic_locks/);
+  assert.match(databaseServiceSource, /CREATE TABLE IF NOT EXISTS listening_lesson_locks/);
+  assert.match(contentControllerSource, /@Header\('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'\)/);
+  assert.match(adminContentControllerSource, /@Header\('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'\)/);
 });
 
 test("client content-lock API calls bypass browser cache", () => {
