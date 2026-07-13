@@ -47905,3 +47905,35 @@ body:has(#practiceScreen:not(.hidden)) {
     color: #ffffff !important;
   }
 }
+
+/* Desktop listening topic hero: keep level names on one line. */
+@media (min-width: 901px) {
+  #listeningScreen .app-desktop-shell--listening .listening-dashboard-content .listening-topic-hero .listening-topic-hero-copy {
+    width: min(52%, 620px) !important;
+    min-width: min(420px, 100%) !important;
+    max-width: none !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-dashboard-content .listening-topic-hero .listening-topic-hero-copy > h2 {
+    display: block !important;
+    width: max-content !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+    text-wrap: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: clamp(30px, 2.85vw, 42px) !important;
+    line-height: 1.02 !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1080px) {
+  #listeningScreen .app-desktop-shell--listening .listening-dashboard-content .listening-topic-hero .listening-topic-hero-copy {
+    width: min(60%, 540px) !important;
+    min-width: min(360px, 100%) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-dashboard-content .listening-topic-hero .listening-topic-hero-copy > h2 {
+    font-size: clamp(27px, 3vw, 34px) !important;
+  }
+}
