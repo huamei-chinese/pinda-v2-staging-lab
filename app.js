@@ -491,14 +491,20 @@ const state = {
   contentLocksError: "",
   pendingUpgradePlanId: "",
   hskLessonFreeItemLimits: {},
+  hskLessonAccessRules: {},
   hskLevelCovers: {},
   dailyLockedThemeIds: new Set(),
   dailyThemeFreeItemLimits: {},
+  dailyThemeAccessRules: {},
+  listeningTopicAccessRules: {},
+  listeningLessonAccessRules: {},
   adminContentLevel: "HSK2",
   adminContentModule: "hsk",
   adminContentHskPanel: "locks",
   adminContentLocks: {},
   adminContentDailyLocks: {},
+  adminListeningTopicLocks: {},
+  adminListeningLessonLocks: {},
   adminHskLevelCovers: {},
   adminContentStatus: "",
   adminUserSearch: "",
@@ -2110,6 +2116,15 @@ function accessRule(status, freeLimit = null) {
 }
 
 function getHskAccessRule(lessonId, contentType = "word") {
+  const configured = state.hskLessonAccessRules?.[lessonId];
+  if (configured) {
+    if (configured.lockedForFree === true) return accessRule("locked", 0);
+    const limit = contentType === "sentence"
+      ? Number(configured.freeSentenceLimit || 0)
+      : Number(configured.freeWordLimit || 0);
+    if (limit > 0) return accessRule("partial", Math.floor(limit));
+    return accessRule("open");
+  }
   const { level, lessonNo } = parseHskLessonAccessMeta(lessonId);
   const itemType = normalizeAccessItemType(contentType);
   if (!level || !lessonNo) return accessRule("locked", 0);
@@ -2136,6 +2151,15 @@ function getDailyThemeAccessIndex(themeId) {
 }
 
 function getDailyThemeAccessRule(themeId, contentType = "word") {
+  const configured = state.dailyThemeAccessRules?.[themeId];
+  if (configured) {
+    if (configured.lockedForFree === true) return accessRule("locked", 0);
+    const limit = contentType === "sentence"
+      ? Number(configured.freeSentenceLimit || 0)
+      : Number(configured.freeWordLimit || 0);
+    if (limit > 0) return accessRule("partial", Math.floor(limit));
+    return accessRule("open");
+  }
   const themeIndex = getDailyThemeAccessIndex(themeId);
   const itemType = normalizeAccessItemType(contentType);
   if (themeIndex === 1) return accessRule("open");
@@ -2266,18 +2290,23 @@ async function loadContentLocks() {
   state.contentLocksError = "";
   if (BACKEND_DISABLED) {
     state.hskLessonFreeItemLimits = {};
+    state.hskLessonAccessRules = {};
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
     state.dailyThemeFreeItemLimits = {};
+    state.dailyThemeAccessRules = {};
+    state.listeningTopicAccessRules = {};
+    state.listeningLessonAccessRules = {};
     state.contentLocksFailed = true;
     state.contentLocksError = backendDisabledMessage();
     return;
   }
   try {
-    const [hskData, dailyData, coverData] = await Promise.all([
+    const [hskData, dailyData, coverData, accessData] = await Promise.all([
       apiRequest("/api/content/hsk-locks"),
       apiRequest("/api/content/daily-locks"),
       apiRequest("/api/content/hsk-level-covers"),
+      apiRequest("/api/content/access-rules"),
     ]);
     if (!Array.isArray(hskData.lessonLocks) || !Array.isArray(dailyData.themeLocks) || !Array.isArray(dailyData.lockedThemeIds)) {
       throw new Error("Invalid content lock response");
@@ -2287,6 +2316,13 @@ async function loadContentLocks() {
         .map((item) => [item.lessonId, Math.max(0, Number(item.freeItemLimit || 0))])
         .filter(([, limit]) => limit > 0),
     );
+    state.hskLessonAccessRules = Object.fromEntries(
+      (accessData.hskLessonLocks || []).map((item) => [item.lessonId, {
+        lockedForFree: item.lockedForFree === true,
+        freeWordLimit: Math.max(0, Number(item.freeWordLimit || 0)),
+        freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || 0)),
+      }]),
+    );
     state.hskLevelCovers = Object.fromEntries(
       (coverData.covers || []).map((item) => [item.level, String(item.coverUrl || "").trim()]),
     );
@@ -2294,6 +2330,22 @@ async function loadContentLocks() {
       (dailyData.themeLocks || [])
         .map((item) => [item.themeId, Math.max(0, Number(item.freeItemLimit || 0))])
         .filter(([, limit]) => limit > 0),
+    );
+    state.dailyThemeAccessRules = Object.fromEntries(
+      (accessData.dailyThemeLocks || []).map((item) => [item.themeId, {
+        lockedForFree: item.lockedForFree === true,
+        freeWordLimit: Math.max(0, Number(item.freeWordLimit || 0)),
+        freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || 0)),
+      }]),
+    );
+    state.listeningTopicAccessRules = Object.fromEntries(
+      (accessData.listeningTopicLocks || []).map((item) => [item.topicId, { lockedForFree: item.lockedForFree === true }]),
+    );
+    state.listeningLessonAccessRules = Object.fromEntries(
+      (accessData.listeningLessonLocks || []).map((item) => [item.lessonId, {
+        topicId: item.topicId || "",
+        lockedForFree: item.lockedForFree === true,
+      }]),
     );
     state.dailyLockedThemeIds = new Set(
       (dailyData.lockedThemeIds || []).filter((themeId) => !state.dailyThemeFreeItemLimits?.[themeId]),
@@ -2303,9 +2355,13 @@ async function loadContentLocks() {
     state.contentLocksError = "";
   } catch (error) {
     state.hskLessonFreeItemLimits = {};
+    state.hskLessonAccessRules = {};
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
     state.dailyThemeFreeItemLimits = {};
+    state.dailyThemeAccessRules = {};
+    state.listeningTopicAccessRules = {};
+    state.listeningLessonAccessRules = {};
     state.contentLocksReady = false;
     state.contentLocksFailed = true;
     state.contentLocksError = error?.message || "Failed to load content locks";
@@ -2340,6 +2396,9 @@ function buildAdminContentLocksMap(locks = []) {
   locks.forEach((item) => {
     map[item.lessonId] = {
       freeItemLimit: Math.max(0, Number(item.freeItemLimit || 0)),
+      freeWordLimit: Math.max(0, Number(item.freeWordLimit || item.freeItemLimit || 0)),
+      freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || item.freeItemLimit || 0)),
+      lockedForFree: item.lockedForFree === true,
     };
   });
   return map;
@@ -2351,45 +2410,58 @@ function parseAdminFreeItemLimit(value) {
 }
 
 function syncAdminHskContentLocksFromDOM(root = document) {
-  root.querySelectorAll("[data-admin-content-limit]").forEach((input) => {
-    if (!input.matches("input[type='number']")) return;
-    const lessonId = input.dataset.adminContentLimit;
+  root.querySelectorAll("[data-admin-content-limit], [data-admin-content-word-limit], [data-admin-content-sentence-limit], [data-admin-content-lock]").forEach((input) => {
+    if (!input.matches("input[type='number'], input[type='checkbox']")) return;
+    const lessonId = input.dataset.adminContentLimit || input.dataset.adminContentWordLimit || input.dataset.adminContentSentenceLimit || input.dataset.adminContentLock;
     if (!lessonId) return;
+    const prev = state.adminContentLocks[lessonId] || { freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0, lockedForFree: false };
     state.adminContentLocks[lessonId] = {
-      freeItemLimit: parseAdminFreeItemLimit(input.value),
+      ...prev,
+      freeItemLimit: input.dataset.adminContentLimit ? parseAdminFreeItemLimit(input.value) : prev.freeItemLimit,
+      freeWordLimit: input.dataset.adminContentWordLimit ? parseAdminFreeItemLimit(input.value) : prev.freeWordLimit,
+      freeSentenceLimit: input.dataset.adminContentSentenceLimit ? parseAdminFreeItemLimit(input.value) : prev.freeSentenceLimit,
+      lockedForFree: input.dataset.adminContentLock ? input.checked : prev.lockedForFree,
     };
   });
 }
 
 function syncAdminDailyContentLocksFromDOM(root = document) {
-  root.querySelectorAll("[data-admin-content-daily-limit]").forEach((input) => {
-    if (!input.matches("input[type='number']")) return;
-    const themeId = input.dataset.adminContentDailyLimit;
+  root.querySelectorAll("[data-admin-content-daily-limit], [data-admin-content-daily-word-limit], [data-admin-content-daily-sentence-limit], [data-admin-content-daily-lock]").forEach((input) => {
+    if (!input.matches("input[type='number'], input[type='checkbox']")) return;
+    const themeId = input.dataset.adminContentDailyLimit || input.dataset.adminContentDailyWordLimit || input.dataset.adminContentDailySentenceLimit || input.dataset.adminContentDailyLock;
     if (!themeId) return;
-    const prev = state.adminContentDailyLocks[themeId] || { lockedForFree: false, freeItemLimit: 0 };
+    const prev = state.adminContentDailyLocks[themeId] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
     state.adminContentDailyLocks[themeId] = {
       ...prev,
-      freeItemLimit: parseAdminFreeItemLimit(input.value),
+      freeItemLimit: input.dataset.adminContentDailyLimit ? parseAdminFreeItemLimit(input.value) : prev.freeItemLimit,
+      freeWordLimit: input.dataset.adminContentDailyWordLimit ? parseAdminFreeItemLimit(input.value) : prev.freeWordLimit,
+      freeSentenceLimit: input.dataset.adminContentDailySentenceLimit ? parseAdminFreeItemLimit(input.value) : prev.freeSentenceLimit,
+      lockedForFree: input.dataset.adminContentDailyLock ? input.checked : prev.lockedForFree,
     };
   });
 }
 
 function updateAdminDailyLockConfig(themeId, patch = {}) {
-  const prev = state.adminContentDailyLocks[themeId] || { lockedForFree: false, freeItemLimit: 0 };
+  const prev = state.adminContentDailyLocks[themeId] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
   state.adminContentDailyLocks[themeId] = {
     lockedForFree: patch.lockedForFree !== undefined ? patch.lockedForFree === true : prev.lockedForFree === true,
     freeItemLimit: parseAdminFreeItemLimit(
       patch.freeItemLimit !== undefined ? patch.freeItemLimit : prev.freeItemLimit,
     ),
+    freeWordLimit: parseAdminFreeItemLimit(patch.freeWordLimit !== undefined ? patch.freeWordLimit : prev.freeWordLimit),
+    freeSentenceLimit: parseAdminFreeItemLimit(patch.freeSentenceLimit !== undefined ? patch.freeSentenceLimit : prev.freeSentenceLimit),
   };
 }
 
 function updateAdminHskLockConfig(lessonId, patch = {}) {
-  const prev = state.adminContentLocks[lessonId] || { freeItemLimit: 0 };
+  const prev = state.adminContentLocks[lessonId] || { freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0, lockedForFree: false };
   state.adminContentLocks[lessonId] = {
     freeItemLimit: parseAdminFreeItemLimit(
       patch.freeItemLimit !== undefined ? patch.freeItemLimit : prev.freeItemLimit,
     ),
+    freeWordLimit: parseAdminFreeItemLimit(patch.freeWordLimit !== undefined ? patch.freeWordLimit : prev.freeWordLimit),
+    freeSentenceLimit: parseAdminFreeItemLimit(patch.freeSentenceLimit !== undefined ? patch.freeSentenceLimit : prev.freeSentenceLimit),
+    lockedForFree: patch.lockedForFree !== undefined ? patch.lockedForFree === true : prev.lockedForFree === true,
   };
 }
 
@@ -2454,9 +2526,46 @@ function buildAdminContentDailyLocksMap(locks = []) {
     map[item.themeId] = {
       lockedForFree: item.lockedForFree === true,
       freeItemLimit: Math.max(0, Number(item.freeItemLimit || 0)),
+      freeWordLimit: Math.max(0, Number(item.freeWordLimit || item.freeItemLimit || 0)),
+      freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || item.freeItemLimit || 0)),
     };
   });
   return map;
+}
+
+function buildAdminListeningLocksMap(topics = [], lessons = []) {
+  return {
+    topics: Object.fromEntries((topics || []).map((item) => [item.topicId, {
+      lockedForFree: item.lockedForFree === true,
+      titleVi: item.titleVi || "",
+      sortOrder: Number(item.sortOrder || 0),
+    }])),
+    lessons: Object.fromEntries((lessons || []).map((item) => [item.lessonId, {
+      topicId: item.topicId || "",
+      lockedForFree: item.lockedForFree === true,
+      titleVi: item.titleVi || "",
+      sortOrder: Number(item.sortOrder || 0),
+    }])),
+  };
+}
+
+function getListeningAdminCatalog() {
+  const topics = [
+    ["daily-conversation", "Giao tiếp hằng ngày", "ep-001"],
+    ["hsk-listening", "HSK Listening", "ep-002"],
+    ["pronunciation", "Phát âm", "ep-003"],
+    ["travel", "Du lịch", "ep-004"],
+    ["shopping", "Mua sắm", "ep-004"],
+    ["work", "Công việc", "ep-001"],
+    ["food", "Ẩm thực", "ep-003"],
+  ].map(([topicId, titleVi, lessonId], index) => ({ topicId, titleVi, sortOrder: index + 1, lessonId }));
+  const lessons = listeningEpisodes.map((episode, index) => ({
+    lessonId: episode.id,
+    topicId: topics.find((topic) => topic.lessonId === episode.id)?.topicId || "daily-conversation",
+    titleVi: episode.title || episode.titleZh || episode.id,
+    sortOrder: index + 1,
+  }));
+  return { topics, lessons };
 }
 
 async function loadAdminContentLocks() {
@@ -2465,6 +2574,8 @@ async function loadAdminContentLocks() {
     state.adminContentStatus = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
     state.adminContentLocks = {};
     state.adminContentDailyLocks = {};
+    state.adminListeningTopicLocks = {};
+    state.adminListeningLessonLocks = {};
     state.adminHskLevelCovers = {};
     renderAdmin();
     return;
@@ -2474,14 +2585,18 @@ async function loadAdminContentLocks() {
   renderAdmin();
   try {
     const headers = { "X-Admin-User-Id": getAdminUserId() };
-    const [hskData, dailyData, coverData] = await Promise.all([
+    const [hskData, dailyData, coverData, listeningData] = await Promise.all([
       apiRequest("/api/admin/content/hsk-locks", { headers }),
       apiRequest("/api/admin/content/daily-locks", { headers }),
       apiRequest("/api/admin/content/hsk-level-covers", { headers }),
+      apiRequest("/api/admin/content/listening-locks", { headers }),
     ]);
     state.adminContentLocks = buildAdminContentLocksMap(hskData.locks || []);
     state.adminContentDailyLocks = buildAdminContentDailyLocksMap(dailyData.locks || []);
     state.adminHskLevelCovers = buildAdminHskLevelCoversMap(coverData.covers || []);
+    const listeningLocks = buildAdminListeningLocksMap(listeningData.topics || [], listeningData.lessons || []);
+    state.adminListeningTopicLocks = listeningLocks.topics;
+    state.adminListeningLessonLocks = listeningLocks.lessons;
     const lockedHsk = (hskData.locks || []).filter((item) => Number(item.freeItemLimit || 0) > 0).length;
     const lockedDaily = (dailyData.locks || []).filter((item) => item.lockedForFree || Number(item.freeItemLimit || 0) > 0).length;
     state.adminContentStatus = isVi
@@ -2490,6 +2605,8 @@ async function loadAdminContentLocks() {
   } catch (error) {
     state.adminContentLocks = {};
     state.adminContentDailyLocks = {};
+    state.adminListeningTopicLocks = {};
+    state.adminListeningLessonLocks = {};
     state.adminHskLevelCovers = {};
     state.adminContentStatus = error.message;
   }
@@ -2547,12 +2664,20 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
   `).join("");
   const lockedInLevel = lessons.filter((lesson) => Number(locksMap[lesson.id]?.freeItemLimit || 0) > 0).length;
   const rows = lessons.map((lesson) => {
-    const freeItemLimit = Math.max(0, Number(locksMap[lesson.id]?.freeItemLimit || 0));
+    const config = locksMap[lesson.id] || {};
+    const freeWordLimit = Math.max(0, Number(config.freeWordLimit || config.freeItemLimit || 0));
+    const freeSentenceLimit = Math.max(0, Number(config.freeSentenceLimit || config.freeItemLimit || 0));
+    const locked = config.lockedForFree === true;
     return `
       <tr>
         <td>${lesson.no}</td>
         <td><code>${escapeAttr(lesson.id)}</code></td>
         <td>${escapeAttr(isVi ? (lesson.titleVi || lesson.title) : (lesson.titleZh || lesson.title))}</td>
+        <td>
+          <label>Khóa bài <input type="checkbox" data-admin-content-lock="${escapeAttr(lesson.id)}" ${locked ? "checked" : ""} /></label>
+          <label>Từ đến câu <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-word-limit="${escapeAttr(lesson.id)}" value="${freeWordLimit > 0 ? freeWordLimit : ""}" /></label>
+          <label>Câu đến câu <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-sentence-limit="${escapeAttr(lesson.id)}" value="${freeSentenceLimit > 0 ? freeSentenceLimit : ""}" /></label>
+        </td>
         <td>
           <input
             class="admin-content-limit-input"
@@ -2560,10 +2685,6 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
             min="0"
             step="1"
             placeholder="${isVi ? "0 = không giới hạn" : "0 = 不限"}"
-            data-admin-content-limit="${escapeAttr(lesson.id)}"
-            value="${freeItemLimit > 0 ? freeItemLimit : ""}"
-          />
-        </td>
       </tr>
     `;
   }).join("");
@@ -2607,16 +2728,17 @@ function renderAdminContentHskSectionHTML(isVi) {
       </button>
     </div>
   `;
-  return `${panelTabs}${panel === "covers" ? renderAdminHskLevelCoversHTML(isVi) : renderAdminContentHskLocksSectionHTML(isVi)}`;
+  return `${panelTabs}${panel === "covers" ? renderAdminHskLevelCoversHTML(isVi) : renderAdminContentHskLocksSectionHTMLLegacy(isVi)}`;
 }
 
 function renderAdminContentDailySectionHTML(isVi) {
   const locksMap = state.adminContentDailyLocks || {};
-  const lockedCount = dailyThemes.filter((theme) => locksMap[theme.id]?.lockedForFree === true || Number(locksMap[theme.id]?.freeItemLimit || 0) > 0).length;
+  const lockedCount = dailyThemes.filter((theme) => locksMap[theme.id]?.lockedForFree === true || Number(locksMap[theme.id]?.freeWordLimit || locksMap[theme.id]?.freeSentenceLimit || locksMap[theme.id]?.freeItemLimit || 0) > 0).length;
   const rows = dailyThemes.map((theme, index) => {
-    const lockConfig = locksMap[theme.id] || { lockedForFree: false, freeItemLimit: 0 };
-    const freeItemLimit = Math.max(0, Number(lockConfig.freeItemLimit || 0));
-    const locked = lockConfig.lockedForFree === true && freeItemLimit <= 0;
+    const lockConfig = locksMap[theme.id] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
+    const freeWordLimit = Math.max(0, Number(lockConfig.freeWordLimit || lockConfig.freeItemLimit || 0));
+    const freeSentenceLimit = Math.max(0, Number(lockConfig.freeSentenceLimit || lockConfig.freeItemLimit || 0));
+    const locked = lockConfig.lockedForFree === true;
     const cardMeta = getDailyThemeCardMeta(theme);
     return `
       <tr>
@@ -2624,15 +2746,9 @@ function renderAdminContentDailySectionHTML(isVi) {
         <td><code>${escapeAttr(theme.id)}</code></td>
         <td>${escapeAttr(isVi ? cardMeta.title : (theme.zh || cardMeta.title))}</td>
         <td>
-          <input
-            class="admin-content-limit-input"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="${isVi ? "VD: 8" : "例：8"}"
-            value="${freeItemLimit > 0 ? freeItemLimit : ""}"
-            data-admin-content-daily-limit="${escapeAttr(theme.id)}"
-          />
+          <label>Khóa chủ đề <input type="checkbox" data-admin-content-daily-lock="${escapeAttr(theme.id)}" ${locked ? "checked" : ""} /></label>
+          <label>Từ đến câu <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-daily-word-limit="${escapeAttr(theme.id)}" value="${freeWordLimit > 0 ? freeWordLimit : ""}" /></label>
+          <label>Câu đến câu <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-daily-sentence-limit="${escapeAttr(theme.id)}" value="${freeSentenceLimit > 0 ? freeSentenceLimit : ""}" /></label>
         </td>
       </tr>
     `;
@@ -2664,6 +2780,39 @@ function renderAdminContentDailySectionHTML(isVi) {
   `;
 }
 
+function renderAdminContentHskLocksSectionHTMLLegacy(isVi) {
+  const level = state.adminContentLevel || "HSK2";
+  const locksMap = state.adminContentLocks || {};
+  const lessons = hskLevels[level] || [];
+  const levelTabs = Object.keys(hskLevels).map((levelKey) => `<button class="admin-content-level-btn ${levelKey === level ? "active" : ""}" type="button" data-admin-content-level="${levelKey}">${levelKey}</button>`).join("");
+  const rows = lessons.map((lesson) => {
+    const config = locksMap[lesson.id] || {};
+    const wordLimit = Math.max(0, Number(config.freeWordLimit || config.freeItemLimit || 0));
+    const sentenceLimit = Math.max(0, Number(config.freeSentenceLimit || config.freeItemLimit || 0));
+    return `<tr><td>${lesson.no}</td><td><code>${escapeAttr(lesson.id)}</code></td><td>${escapeHtml(isVi ? (lesson.titleVi || lesson.title) : (lesson.titleZh || lesson.title))}</td><td><label>Lock <input type="checkbox" data-admin-content-lock="${escapeAttr(lesson.id)}" ${config.lockedForFree === true ? "checked" : ""}></label><label>Words <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-word-limit="${escapeAttr(lesson.id)}" value="${wordLimit || ""}"></label><label>Sentences <input class="admin-content-limit-input" type="number" min="0" step="1" data-admin-content-sentence-limit="${escapeAttr(lesson.id)}" value="${sentenceLimit || ""}"></label></td></tr>`;
+  }).join("");
+  return `<p class="admin-content-subtitle">${isVi ? "Khóa toàn bài hoặc giới hạn số từ/câu miễn phí trong từng bài HSK." : "锁定整课，或设置每个 HSK 课程的免费词汇/句子数量。"}</p><div class="admin-content-level-tabs">${levelTabs}</div><div class="admin-table-wrap"><table class="admin-users-table admin-content-table"><thead><tr><th>Lesson</th><th>ID</th><th>Title</th><th>Access policy</th></tr></thead><tbody>${rows}</tbody></table></div><div class="admin-content-actions"><button id="adminLockAllContentBtn" type="button">${isVi ? "Giới hạn tất cả đến câu 8" : "Limit all to 8"}</button><button id="adminUnlockAllContentBtn" type="button">${isVi ? "Bỏ giới hạn cấp này" : "Unlock level"}</button></div>`;
+}
+
+function renderAdminListeningSectionHTML(isVi) {
+  const catalog = getListeningAdminCatalog();
+  const topicLocks = state.adminListeningTopicLocks || {};
+  const lessonLocks = state.adminListeningLessonLocks || {};
+  const topicRows = catalog.topics.map((topic) => `
+    <tr><td>${topic.sortOrder}</td><td><code>${escapeAttr(topic.topicId)}</code></td><td>${escapeHtml(topic.titleVi)}</td><td><input type="checkbox" data-admin-listening-topic-lock="${escapeAttr(topic.topicId)}" ${topicLocks[topic.topicId]?.lockedForFree ? "checked" : ""} /></td></tr>
+  `).join("");
+  const lessonRows = catalog.lessons.map((lesson) => `
+    <tr><td>${lesson.sortOrder}</td><td><code>${escapeAttr(lesson.lessonId)}</code></td><td>${escapeHtml(lesson.titleVi)}</td><td><input type="checkbox" data-admin-listening-lesson-lock="${escapeAttr(lesson.lessonId)}" ${lessonLocks[lesson.lessonId]?.lockedForFree ? "checked" : ""} /></td></tr>
+  `).join("");
+  return `
+    <p class="admin-content-subtitle">${isVi ? "Khóa chủ đề hoặc bài nghe riêng lẻ cho tài khoản Free. VIP và Admin vẫn truy cập đầy đủ." : "为 Free 用户锁定听力主题或单独课程。VIP 和管理员仍可完整访问。"}</p>
+    <h3>${isVi ? "Chủ đề nghe" : "听力主题"}</h3>
+    <div class="admin-table-wrap"><table class="admin-users-table admin-content-table"><thead><tr><th>#</th><th>ID</th><th>${isVi ? "Chủ đề" : "主题"}</th><th>${isVi ? "Khóa VIP" : "VIP 锁定"}</th></tr></thead><tbody>${topicRows}</tbody></table></div>
+    <h3>${isVi ? "Bài nghe" : "听力课程"}</h3>
+    <div class="admin-table-wrap"><table class="admin-users-table admin-content-table"><thead><tr><th>#</th><th>ID</th><th>${isVi ? "Bài học" : "课程"}</th><th>${isVi ? "Khóa VIP" : "VIP 锁定"}</th></tr></thead><tbody>${lessonRows}</tbody></table></div>
+  `;
+}
+
 function renderAdminContentPanelHTML() {
   const isVi = state.lang === "vi";
   const contentModule = state.adminContentModule || "hsk";
@@ -2676,6 +2825,7 @@ function renderAdminContentPanelHTML() {
       ${isVi ? "Tiếng Trung tần suất cao" : "高频汉语"}
     </button>
   `;
+  const moduleTabsWithListening = `${moduleTabs}<button class="admin-content-module-btn ${contentModule === "listening" ? "active" : ""}" type="button" data-admin-content-module="listening">Luyện nghe</button>`;
   const saveBtn = contentModule === "hsk" && hskPanel === "covers"
     ? `<button id="adminSaveHskLevelCoversBtn" class="admin-add-user" type="button">${isVi ? "Lưu ảnh bìa" : "保存封面"}</button>`
     : `<button id="adminSaveContentLocksBtn" class="admin-add-user" type="button">${isVi ? "Lưu cấu hình" : "保存配置"}</button>`;
@@ -2698,8 +2848,8 @@ function renderAdminContentPanelHTML() {
         ${saveBtn}
       </div>
       <p class="admin-content-status">${escapeAttr(state.adminContentStatus || "")}</p>
-      <div class="admin-content-module-tabs">${moduleTabs}</div>
-      ${contentModule === "daily" ? renderAdminContentDailySectionHTML(isVi) : renderAdminContentHskSectionHTML(isVi)}
+      <div class="admin-content-module-tabs">${moduleTabsWithListening}</div>
+      ${contentModule === "daily" ? renderAdminContentDailySectionHTML(isVi) : contentModule === "listening" ? renderAdminListeningSectionHTML(isVi) : renderAdminContentHskSectionHTML(isVi)}
     </section>
   `;
 }
@@ -5838,6 +5988,7 @@ function renderListeningDashboard() {
   const isVi = state.lang === "vi";
   const topicCards = [
     {
+      topicId: "daily-conversation",
       titleVi: "Giao tiếp hằng ngày",
       titleZh: "日常交流",
       levelVi: "Sơ cấp",
@@ -5851,6 +6002,7 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
+      topicId: "hsk-listening",
       titleVi: "HSK Listening",
       titleZh: "HSK 听力",
       levelVi: "Trung cấp",
@@ -5864,6 +6016,7 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
+      topicId: "pronunciation",
       titleVi: "Phát âm",
       titleZh: "发音",
       levelVi: "Sơ cấp",
@@ -5877,6 +6030,7 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
+      topicId: "travel",
       titleVi: "Du lịch",
       titleZh: "旅行",
       levelVi: "Sơ cấp",
@@ -5890,6 +6044,7 @@ function renderListeningDashboard() {
       actionZh: "继续",
     },
     {
+      topicId: "shopping",
       titleVi: "Mua sắm",
       titleZh: "购物",
       levelVi: "Sơ cấp",
@@ -5903,6 +6058,7 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
+      topicId: "work",
       titleVi: "Công việc",
       titleZh: "工作",
       levelVi: "Trung cấp",
@@ -5916,6 +6072,7 @@ function renderListeningDashboard() {
       actionZh: "开始听",
     },
     {
+      topicId: "food",
       titleVi: "Ẩm thực",
       titleZh: "美食",
       levelVi: "Sơ cấp",
@@ -5941,8 +6098,10 @@ function renderListeningDashboard() {
     };
     return icons[icon] || icons.chat;
   };
-  const cardsHTML = topicCards.map((topic) => `
-    <button class="listening-topic-card listening-topic-card--${topic.tone}" type="button" data-listening-open="${escapeAttr(topic.openId)}">
+  const cardsHTML = topicCards.map((topic) => {
+    const locked = isListeningTopicLockedForUser(topic.topicId) || isListeningLessonLockedForUser(topic.openId);
+    return `
+    <button class="listening-topic-card listening-topic-card--${topic.tone}${locked ? " is-locked" : ""}" type="button" data-listening-topic="${escapeAttr(topic.topicId)}" data-listening-open="${escapeAttr(topic.openId)}">
       <span class="listening-topic-title">${escapeHtml(isVi ? topic.titleVi : topic.titleZh)}</span>
       ${topicIconHTML(topic.icon)}
       <span class="listening-topic-chip">${escapeHtml(isVi ? topic.levelVi : topic.levelZh)}</span>
@@ -5951,9 +6110,13 @@ function renderListeningDashboard() {
         <span class="listening-topic-bar"><i style="width:${topic.progress}%"></i></span>
         <span>${topic.minutes} ${isVi ? "phút" : "分钟"}</span>
       </span>
-      <span class="listening-topic-action">${escapeHtml(isVi ? topic.actionVi : topic.actionZh)}</span>
+      <span class="listening-topic-action">${escapeHtml(locked ? (isVi ? "Mở khóa VIP" : "解锁 VIP") : (isVi ? topic.actionVi : topic.actionZh))}</span>
     </button>
-  `).join("");
+    <span class="hidden">
+      ${isVi ? "Luyện nghe" : "听力"}
+    </span>
+  `;
+  }).join("");
   const recommended = listeningEpisodes[0] || {};
   const listenedMinutes = 512;
   const targetMinutes = 750;
@@ -6491,6 +6654,18 @@ function getListeningRecordingOptions() {
   ];
   const mimeType = candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
   return mimeType ? { mimeType } : {};
+}
+
+function isListeningTopicLockedForUser(topicId) {
+  if (hasPremiumAccess()) return false;
+  return state.listeningTopicAccessRules?.[topicId]?.lockedForFree === true;
+}
+
+function isListeningLessonLockedForUser(lessonId) {
+  if (hasPremiumAccess()) return false;
+  const lessonRule = state.listeningLessonAccessRules?.[lessonId];
+  if (lessonRule?.lockedForFree === true) return true;
+  return lessonRule?.topicId ? isListeningTopicLockedForUser(lessonRule.topicId) : false;
 }
 
 function stopListeningRepeatSilenceMonitor() {
@@ -8171,8 +8346,10 @@ function renderHskLessonListHTML(options = {}) {
         <div class="hsk-lesson-left">
           <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${isLocked ? renderContentLockIconHTML("number") : lessonItem.no}</div>
           <div class="hsk-lesson-info">
-            ${accessStatusBadgeHTML(accessStatus)}
-            <h4>${isVi ? `Bài ${lessonItem.no}` : `第 ${lessonItem.no} 课`}</h4>
+            <h4>
+              <span>${isVi ? `Bài ${lessonItem.no}` : `第 ${lessonItem.no} 课`}</span>
+              ${isLocked ? accessStatusBadgeHTML(accessStatus) : ""}
+            </h4>
             <p>${state.lang === "vi" ? (lessonItem.titleVi || lessonItem.title) : (lessonItem.titleZh || lessonItem.title)}</p>
           </div>
         </div>
@@ -9684,7 +9861,13 @@ function bindEvents() {
       const listeningOpenBtn = event.target.closest("[data-listening-open]");
       if (listeningOpenBtn) {
         event.preventDefault();
-        state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
+        const topicId = listeningOpenBtn.dataset.listeningTopic || "";
+        const episodeId = listeningOpenBtn.dataset.listeningOpen;
+        if (isListeningTopicLockedForUser(topicId) || isListeningLessonLockedForUser(episodeId)) {
+          promptUpgradeLocked();
+          return;
+        }
+        state.listeningEpisodeId = episodeId;
         state.listeningView = "detail";
         state.listeningSentenceIndex = 0;
         renderListening();
@@ -10187,11 +10370,31 @@ function bindEvents() {
       return;
     }
 
+    const adminListeningTopicLock = event.target.closest("[data-admin-listening-topic-lock]");
+    if (adminListeningTopicLock) {
+      const topicId = adminListeningTopicLock.dataset.adminListeningTopicLock;
+      state.adminListeningTopicLocks[topicId] = {
+        ...(state.adminListeningTopicLocks[topicId] || {}),
+        lockedForFree: adminListeningTopicLock.checked,
+      };
+      return;
+    }
+
+    const adminListeningLessonLock = event.target.closest("[data-admin-listening-lesson-lock]");
+    if (adminListeningLessonLock) {
+      const lessonId = adminListeningLessonLock.dataset.adminListeningLessonLock;
+      state.adminListeningLessonLocks[lessonId] = {
+        ...(state.adminListeningLessonLocks[lessonId] || {}),
+        lockedForFree: adminListeningLessonLock.checked,
+      };
+      return;
+    }
+
     const adminLockAllContentBtn = event.target.closest("#adminLockAllContentBtn");
     if (adminLockAllContentBtn) {
       if ((state.adminContentModule || "hsk") === "daily") {
         dailyThemes.forEach((theme) => {
-          updateAdminDailyLockConfig(theme.id, { lockedForFree: false, freeItemLimit: 8 });
+          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 8, freeSentenceLimit: 8 });
         });
       } else {
         const level = state.adminContentLevel || "HSK2";
@@ -10207,7 +10410,7 @@ function bindEvents() {
     if (adminUnlockAllContentBtn) {
       if ((state.adminContentModule || "hsk") === "daily") {
         dailyThemes.forEach((theme) => {
-          updateAdminDailyLockConfig(theme.id, { lockedForFree: false, freeItemLimit: 0 });
+          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 0, freeSentenceLimit: 0 });
         });
       } else {
         const level = state.adminContentLevel || "HSK2";
@@ -10222,25 +10425,59 @@ function bindEvents() {
     const adminSaveContentLocksBtn = event.target.closest("#adminSaveContentLocksBtn");
     if (adminSaveContentLocksBtn) {
       const isVi = state.lang === "vi";
+      if ((state.adminContentModule || "hsk") === "listening") {
+        const catalog = getListeningAdminCatalog();
+        const topics = catalog.topics.map((topic) => ({
+          ...topic,
+          lockedForFree: state.adminListeningTopicLocks[topic.topicId]?.lockedForFree === true,
+        }));
+        const lessons = catalog.lessons.map((lesson) => ({
+          ...lesson,
+          lockedForFree: state.adminListeningLessonLocks[lesson.lessonId]?.lockedForFree === true,
+        }));
+        state.adminContentStatus = isVi ? "Đang lưu khóa nghe..." : "正在保存听力锁定...";
+        renderAdmin();
+        apiRequest("/api/admin/content/listening-locks", {
+          method: "PUT",
+          headers: { "X-Admin-User-Id": getAdminUserId() },
+          body: JSON.stringify({ topics, lessons }),
+        }).then((data) => {
+          const maps = buildAdminListeningLocksMap(data.topics || [], data.lessons || []);
+          state.adminListeningTopicLocks = maps.topics;
+          state.adminListeningLessonLocks = maps.lessons;
+          state.adminContentStatus = isVi ? "Đã lưu cấu hình khóa nghe." : "听力锁定配置已保存。";
+          loadContentLocks();
+          renderAdmin();
+        }).catch((error) => {
+          state.adminContentStatus = error.message;
+          renderAdmin();
+        });
+        return;
+      }
       syncAdminHskContentLocksFromDOM();
       syncAdminDailyContentLocksFromDOM();
       const lessons = getHskLessonsCatalog().map((lesson) => {
-        const freeItemLimit = parseAdminFreeItemLimit(state.adminContentLocks[lesson.lessonId]?.freeItemLimit);
+        const config = state.adminContentLocks[lesson.lessonId] || {};
+        const freeWordLimit = parseAdminFreeItemLimit(config.freeWordLimit ?? config.freeItemLimit);
+        const freeSentenceLimit = parseAdminFreeItemLimit(config.freeSentenceLimit ?? config.freeItemLimit);
         return {
           ...lesson,
-          lockedForFree: freeItemLimit > 0,
-          freeItemLimit,
+          lockedForFree: config.lockedForFree === true,
+          freeItemLimit: Math.max(freeWordLimit, freeSentenceLimit),
+          freeWordLimit,
+          freeSentenceLimit,
         };
       });
       const themes = getDailyThemesCatalog().map((theme) => {
-        const dailyLimitInput = Array.from(document.querySelectorAll("[data-admin-content-daily-limit]"))
-          .find((input) => input.dataset.adminContentDailyLimit === theme.themeId);
         const dailyConfig = state.adminContentDailyLocks[theme.themeId] || {};
-        const freeItemLimit = parseAdminFreeItemLimit(dailyLimitInput ? dailyLimitInput.value : dailyConfig.freeItemLimit);
+        const freeWordLimit = parseAdminFreeItemLimit(dailyConfig.freeWordLimit ?? dailyConfig.freeItemLimit);
+        const freeSentenceLimit = parseAdminFreeItemLimit(dailyConfig.freeSentenceLimit ?? dailyConfig.freeItemLimit);
         return {
           ...theme,
-          lockedForFree: freeItemLimit > 0 ? false : dailyConfig.lockedForFree === true,
-          freeItemLimit,
+          lockedForFree: dailyConfig.lockedForFree === true,
+          freeItemLimit: Math.max(freeWordLimit, freeSentenceLimit),
+          freeWordLimit,
+          freeSentenceLimit,
         };
       });
       state.adminContentStatus = isVi ? "Đang lưu cấu hình..." : "正在保存配置...";
@@ -10956,6 +11193,16 @@ function bindEvents() {
     if (event.target.matches?.("[data-admin-content-daily-limit]")) {
       updateAdminDailyLockConfig(event.target.dataset.adminContentDailyLimit, {
         freeItemLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-daily-word-limit]")) {
+      updateAdminDailyLockConfig(event.target.dataset.adminContentDailyWordLimit, {
+        freeWordLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-daily-sentence-limit]")) {
+      updateAdminDailyLockConfig(event.target.dataset.adminContentDailySentenceLimit, {
+        freeSentenceLimit: event.target.value,
       });
     }
     if (event.target.matches?.("[data-admin-hsk-cover-url]")) {

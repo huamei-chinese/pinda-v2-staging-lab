@@ -2704,6 +2704,10 @@ p {
 }
 
 .hsk-lesson-screen .hsk-lesson-info h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   font-size: 17px;
   color: #111827;
   margin-bottom: 5px;
@@ -19909,6 +19913,25 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-main--analytics .admin-dashboard-grid,
 .admin-main--analytics .admin-users-panel,
 .admin-main--analytics .admin-subscriptions-panel { display: none; }
+.admin-main--customers .admin-title-row,
+.admin-main--customers .admin-dashboard-grid,
+.admin-main--customers .admin-users-panel,
+.admin-main--customers .admin-user-covers-panel,
+.admin-main--customers .admin-subscriptions-panel { display: none; }
+.admin-console--staff .admin-sidebar nav button:not(#adminCustomersTabBtn) { opacity: .42; cursor: not-allowed; pointer-events: none; }
+.admin-customers-panel { margin-top: 28px; }
+.admin-customers-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.admin-customers-header h2 { margin: 0 0 6px; color: #0f172a; font-size: 28px; }
+.admin-customers-header p { margin: 0; color: #64748b; font-size: 14px; }
+.admin-customers-header input { width: min(290px, 100%); min-height: 40px; border: 1px solid #dbe4f0; border-radius: 10px; padding: 0 12px; }
+.admin-customer-filters { display: flex; align-items: flex-end; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.admin-customer-filters label { display: grid; gap: 5px; color: #64748b; font-size: 11px; font-weight: 800; }
+.admin-customer-filters input[type="date"] { width: 150px; }
+.admin-customer-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.admin-customer-metrics article { padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 8px 18px rgba(15,23,42,.05); }
+.admin-customer-metrics span { display: block; color: #475569; font-size: 12px; }
+.admin-customer-metrics strong { display: block; margin-top: 6px; color: #0f172a; font-size: 24px; }
+@media (max-width: 780px) { .admin-customers-header { flex-direction: column; } .admin-customer-metrics { grid-template-columns: 1fr; } }
 .admin-content-panel { margin-top: 28px; }
 .admin-content-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
 .admin-content-header h2 { margin: 0 0 8px; font-size: 28px; color: #0f172a; }
@@ -19927,6 +19950,25 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-content-limit-input { width: 96px; min-height: 36px; padding: 0 10px; border: 1px solid #dbe4f0; border-radius: 10px; background: #fff; color: #0f172a; font-weight: 700; }
 .admin-content-actions { display: flex; gap: 10px; margin-top: 16px; }
 .admin-content-actions button { border: 1px solid #dbe4f0; background: #fff; color: #334155; border-radius: 10px; padding: 10px 14px; font-weight: 750; cursor: pointer; }
+.admin-content-lock-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.admin-content-lock-card { min-width: 0; border: 1px solid #dbe4f0; border-radius: 16px; background: #fff; padding: 14px; }
+.admin-content-lock-card h3 { margin: 0 0 12px; color: #0f172a; font-size: 15px; }
+.admin-lock-toggle { display: inline-flex; align-items: center; gap: 8px; color: #334155; font-size: 13px; font-weight: 750; cursor: pointer; }
+.admin-lock-toggle input { width: 16px; height: 16px; accent-color: #047857; }
+.admin-content-table tr[data-admin-listening-topic-select] { cursor: pointer; }
+.admin-content-table tr[data-admin-listening-topic-select]:hover { background: #f8fafc; }
+.admin-content-topic-back { margin: 0 0 12px; border: 0; background: transparent; color: #047857; font-weight: 800; cursor: pointer; padding: 0; }
+.listening-content-locked { opacity: .62; filter: saturate(.65); cursor: not-allowed !important; }
+.listening-content-locked strong::after { content: none; }
+.listening-content-locked .listening-topic-card-v2-arrow,
+.listening-content-locked .listening-lesson-arrow { font-size: 0; }
+.listening-content-locked .listening-topic-card-v2-arrow::after,
+.listening-content-locked .listening-lesson-arrow::after { content: "VIP"; display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 22px; padding: 0 8px; border: 1px solid #d7dee8; border-radius: 999px; background: #f4f7fb; color: #637084; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.listening-content-locked .listening-topic-card-v2-arrow::after,
+.listening-content-locked .listening-lesson-arrow::after { content: none; }
+.listening-vip-badge { display: inline-flex; align-items: center; width: fit-content; min-height: 21px; padding: 0 8px; border: 1px solid #d7dee8; border-radius: 999px; background: #f4f7fb; color: #637084; font-size: 11px; font-weight: 800; letter-spacing: .03em; }
+.listening-locked-flame { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #fff 0 42%, #ffe0bd 43% 67%, #ffd2a4 68% 100%); box-shadow: 0 0 0 5px rgba(255, 197, 132, .24); font-size: 24px; opacity: 1; filter: none; }
+.listening-content-locked .listening-lesson-play { background: transparent !important; box-shadow: none !important; }
 .admin-content-hsk-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .admin-content-hsk-tab { border: 1px solid #dbe4f0; background: #fff; color: #334155; border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: 12px; cursor: pointer; }
 .admin-content-hsk-tab.active { background: #047857; border-color: #047857; color: #fff; }
@@ -19942,6 +19984,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-hsk-cover-file-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; border: 1px dashed #94a3b8; border-radius: 10px; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; }
 .admin-hsk-cover-reset { border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; padding: 0; }
 .admin-hsk-cover-reset:hover { color: #047857; }
+@media (max-width: 900px) { .admin-content-lock-grid { grid-template-columns: 1fr; } }
 .admin-ctv-panel { margin-top: 24px; color: #172033; }
 .admin-ctv-hero { min-height: 118px; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 18px; align-items: center; padding: 22px 24px; border-radius: 18px 18px 0 0; background: linear-gradient(90deg, #f7fff7 0%, #fff9e8 58%, #e8f7ef 100%); position: relative; overflow: hidden; }
 .admin-ctv-hero::after { content: ""; position: absolute; right: 24px; top: 12px; width: 260px; height: 88px; opacity: .42; background: linear-gradient(140deg, transparent 0 50%, rgba(4, 120, 87, .22) 51% 55%, transparent 56%), radial-gradient(circle at 70% 35%, rgba(245, 176, 65, .45), transparent 18%); pointer-events: none; }
@@ -20196,15 +20239,17 @@ body:has(#practiceScreen:not(.hidden)) {
 
 .hsk-lesson-card.locked,
 .hsk-lesson-screen .hsk-lesson-card.locked {
-  border-color: #cbd5e1;
-  background: linear-gradient(90deg, #f8fafc 0%, #ffffff 55%);
-  opacity: .92;
+  border-color: #d7e0ee;
+  background:
+    radial-gradient(circle at 18px 18px, rgba(251, 146, 60, 0.14), transparent 24px),
+    linear-gradient(90deg, #fbfdff 0%, #ffffff 58%);
+  opacity: .96;
 }
 
 .hsk-lesson-card.locked:hover,
 .hsk-lesson-screen .hsk-lesson-card.locked:hover {
-  border-color: #94a3b8;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  border-color: #f4b47a;
+  box-shadow: 0 10px 24px rgba(251, 146, 60, 0.12);
 }
 
 .hsk-lesson-card.locked .hsk-lesson-number,
@@ -20226,6 +20271,11 @@ body:has(#practiceScreen:not(.hidden)) {
   width: 100%;
   height: 100%;
   border-radius: 50%;
+}
+
+.hsk-lesson-card.locked .content-lock-icon--number,
+.hsk-lesson-screen .hsk-lesson-card.locked .content-lock-icon--number {
+  filter: drop-shadow(0 8px 14px rgba(251, 146, 60, 0.24));
 }
 
 .content-lock-icon--inline {
@@ -20257,9 +20307,10 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .access-rule-badge--locked {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: #f1f5f9;
+  border: 1px solid rgba(251, 146, 60, 0.26);
+  background: #fff7ed;
   color: #475569;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.12);
 }
 
 .hsk-lesson-card.access-rule-partial,
@@ -45354,7 +45405,7 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .write-communication-topic-card.locked .write-communication-topic-cover::after {
-  content: "VIP";
+  content: none;
   color: #b45309;
   background: rgba(255, 251, 235, 0.96);
 }
