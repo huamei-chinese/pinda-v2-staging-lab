@@ -678,6 +678,8 @@ const state = {
   contentLocksReady: false,
   contentLocksFailed: false,
   contentLocksError: "",
+  contentLocksLoadedAt: 0,
+  contentLocksLoadingPromise: null,
   pendingUpgradePlanId: "",
   hskLessonFreeItemLimits: {},
   hskLockedLessonIds: new Set(),
@@ -694,6 +696,8 @@ const state = {
   adminContentDailyLocks: {},
   adminListeningTopicLocks: {},
   adminListeningLessonLocks: {},
+  adminListeningCatalogTopics: [],
+  adminListeningCatalogLessons: [],
   adminListeningSelectedTopicId: "",
   adminHskLevelCovers: {},
   adminContentStatus: "",
@@ -742,6 +746,8 @@ const screens = {
 };
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
 let homeTodayStudySession = { area: "", startedAt: Date.now() };
+const MOBILE_PAGE_TRANSITION_CLASS = "mobile-page-transition-enter";
+const mobilePageTransitionTimers = new WeakMap();
 
 function shouldRunMobilePageTransition() {
   const isMobile = window.matchMedia?.("(max-width: 700px)")?.matches ?? window.innerWidth <= 700;
@@ -2817,10 +2823,13 @@ async function apiRequest(path, options = {}) {
     throw new Error(backendDisabledMessage());
   }
 
+  const shouldBypassCache = /^\/api\/(?:content|admin\/content)\//.test(path);
   const response = await fetch(path, {
+    cache: shouldBypassCache ? "no-store" : options.cache,
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
       ...(options.headers || {}),
     },
   });
@@ -3482,7 +3491,8 @@ async function loadContentLocks() {
     state.listeningLockedLessonIds = new Set();
     state.contentLocksFailed = true;
     state.contentLocksError = backendDisabledMessage();
-    return;
+    state.contentLocksLoadedAt = 0;
+    return false;
   }
   try {
     const [hskData, dailyData, coverData, accessData] = await Promise.all([
@@ -3494,11 +3504,20 @@ async function loadContentLocks() {
     if (!Array.isArray(hskData.lessonLocks) || !Array.isArray(dailyData.themeLocks) || !Array.isArray(dailyData.lockedThemeIds)) {
       throw new Error("Invalid content lock response");
     }
-    state.hskLessonFreeItemLimits = Object.fromEntries(
-      (hskData.lessonLocks || [])
-        .map((item) => [item.lessonId, Math.max(0, Number(item.freeItemLimit || 0))])
-        .filter(([, limit]) => limit > 0),
-    );
+    const hskLimitEntries = [
+      ...(hskData.lessonLocks || []).map((item) => [
+        item.lessonId,
+        Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)),
+      ]),
+      ...(accessData.hskLessonLocks || []).map((item) => [
+        item.lessonId,
+        Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)),
+      ]),
+    ].filter(([lessonId, limit]) => lessonId && limit > 0);
+    state.hskLessonFreeItemLimits = hskLimitEntries.reduce((limits, [lessonId, limit]) => {
+      limits[lessonId] = Math.max(Number(limits[lessonId] || 0), Number(limit || 0));
+      return limits;
+    }, {});
     state.hskLevelCovers = Object.fromEntries(
       (coverData.covers || []).map((item) => [item.level, String(item.coverUrl || "").trim()]),
     );
@@ -3517,14 +3536,17 @@ async function loadContentLocks() {
     state.dailyLockedThemeIds = new Set(
       (dailyData.lockedThemeIds || []).filter((themeId) => !state.dailyThemeFreeItemLimits?.[themeId]),
     );
-    state.hskLockedLessonIds = new Set(
-      (accessData.hskLessonLocks || []).filter((item) => item.lockedForFree).map((item) => item.lessonId),
-    );
+    state.hskLockedLessonIds = new Set([
+      ...(hskData.lessonLocks || []).filter((item) => item.lockedForFree).map((item) => item.lessonId),
+      ...(accessData.hskLessonLocks || []).filter((item) => item.lockedForFree).map((item) => item.lessonId),
+    ]);
     state.listeningLockedTopicIds = new Set((accessData.listeningTopicLocks || []).filter((item) => item.lockedForFree).map((item) => item.topicId));
     state.listeningLockedLessonIds = new Set((accessData.listeningLessonLocks || []).filter((item) => item.lockedForFree).map((item) => item.lessonId));
     state.contentLocksReady = true;
     state.contentLocksFailed = false;
     state.contentLocksError = "";
+    state.contentLocksLoadedAt = Date.now();
+    return true;
   } catch (error) {
     state.hskLessonFreeItemLimits = {};
     state.hskLockedLessonIds = new Set();
@@ -3537,7 +3559,29 @@ async function loadContentLocks() {
     state.contentLocksReady = false;
     state.contentLocksFailed = true;
     state.contentLocksError = error?.message || "Failed to load content locks";
+    state.contentLocksLoadedAt = 0;
+    return false;
   }
+}
+
+async function refreshContentLocksIfStale(maxAgeMs = 10000, options = {}) {
+  if (BACKEND_DISABLED) return false;
+  const force = options.force === true;
+  const loadedAt = Number(state.contentLocksLoadedAt || 0);
+  const isFresh = state.contentLocksReady === true && loadedAt > 0 && Date.now() - loadedAt < maxAgeMs;
+  if (!force && isFresh) return true;
+  if (!state.contentLocksLoadingPromise) {
+    state.contentLocksLoadingPromise = loadContentLocks().finally(() => {
+      state.contentLocksLoadingPromise = null;
+    });
+  }
+  const ok = await state.contentLocksLoadingPromise;
+  if (options.rerender === true) {
+    if (state.screen === "course") renderCourse();
+    if (state.screen === "listening") renderListening({ silentCatalogLoad: true });
+    if (state.screen === "home") renderHome();
+  }
+  return ok;
 }
 
 async function loadHskLessonLocks() {
@@ -3593,6 +3637,22 @@ function getDailyThemesCatalog() {
 }
 
 function getListeningLocksCatalog() {
+  if (Array.isArray(state.adminListeningCatalogTopics) && state.adminListeningCatalogTopics.length > 0) {
+    const topics = state.adminListeningCatalogTopics.map((topic, topicIndex) => ({
+      topicId: topic.topicId,
+      sortOrder: Number(topic.sortOrder || topicIndex + 1),
+      titleVi: topic.titleVi || topic.title || topic.topicId || "",
+    }));
+    const topicOrder = Object.fromEntries(topics.map((topic, index) => [topic.topicId, index + 1]));
+    const lessons = (state.adminListeningCatalogLessons || []).map((lesson, lessonIndex) => ({
+      lessonId: lesson.lessonId,
+      topicId: lesson.topicId || "",
+      sortOrder: Number(lesson.sortOrder || lessonIndex + 1),
+      titleVi: lesson.titleVi || lesson.title || lesson.lessonId || "",
+    })).sort((a, b) => (topicOrder[a.topicId] || 9999) - (topicOrder[b.topicId] || 9999) || a.sortOrder - b.sortOrder || a.lessonId.localeCompare(b.lessonId));
+    return { topics, lessons };
+  }
+
   const topics = listeningCatalogTopics.map((topic, topicIndex) => ({
     topicId: topic.id,
     sortOrder: topicIndex + 1,
@@ -3760,6 +3820,8 @@ async function loadAdminContentLocks() {
     state.adminContentDailyLocks = {};
     state.adminListeningTopicLocks = {};
     state.adminListeningLessonLocks = {};
+    state.adminListeningCatalogTopics = [];
+    state.adminListeningCatalogLessons = [];
     state.adminHskLevelCovers = {};
     renderAdmin();
     return;
@@ -3782,6 +3844,8 @@ async function loadAdminContentLocks() {
     state.adminContentDailyLocks = buildAdminContentDailyLocksMap(dailyData.locks || []);
     state.adminListeningTopicLocks = buildAdminListeningLocksMap(listeningData.topics || [], "topicId");
     state.adminListeningLessonLocks = buildAdminListeningLocksMap(listeningData.lessons || [], "lessonId");
+    state.adminListeningCatalogTopics = listeningData.topics || [];
+    state.adminListeningCatalogLessons = listeningData.lessons || [];
     state.adminHskLevelCovers = buildAdminHskLevelCoversMap(coverData.covers || []);
     const lockedHsk = (hskData.locks || []).filter((item) => item.lockedForFree || Number(item.freeItemLimit || 0) > 0).length;
     const lockedDaily = (dailyData.locks || []).filter((item) => item.lockedForFree || Number(item.freeItemLimit || 0) > 0).length;
@@ -3794,6 +3858,8 @@ async function loadAdminContentLocks() {
     state.adminContentDailyLocks = {};
     state.adminListeningTopicLocks = {};
     state.adminListeningLessonLocks = {};
+    state.adminListeningCatalogTopics = [];
+    state.adminListeningCatalogLessons = [];
     state.adminHskLevelCovers = {};
     state.adminContentStatus = error.message;
   }
@@ -5505,7 +5571,7 @@ function navigatePrimaryTab(target) {
   $("#mobileMenu")?.classList.remove("active");
 }
 
-function openDailyTopicFromHome(themeId, options = {}) {
+async function openDailyTopicFromHome(themeId, options = {}) {
   if (!options.skipHighFrequencyLoad && !highFrequencyTopicsLoaded) {
     const fallbackThemeIndex = fallbackDailyThemes.findIndex((item) => item.id === themeId);
     state.fromRoadmap = false;
@@ -5527,6 +5593,7 @@ function openDailyTopicFromHome(themeId, options = {}) {
   }
   const theme = dailyThemes.find((item) => item.id === themeId);
   if (!theme) return;
+  await refreshContentLocksIfStale(0, { force: true });
   if (isDailyThemeLockedForUser(theme.id)) {
     promptUpgradeLocked();
     return;
@@ -5760,7 +5827,9 @@ function loadActiveAdminTabData() {
 function setScreen(name) {
   syncHomeTodayStudySession(name);
   state.screen = name;
-  if (name === "listening") void loadListeningAccessRules();
+  if (name === "course" || name === "listening" || name === "home") {
+    void refreshContentLocksIfStale(8000, { rerender: true });
+  }
   Object.entries(screens).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
   triggerMobilePageTransition(name);
   $("#backBtn")?.classList.toggle("hidden", name === "home" || name === "course" || name === "admin" || name === "vocab" || name === "listening" || name === "subscriptions" || name === "account");
@@ -14782,6 +14851,7 @@ function bindEvents() {
         event.preventDefault();
 
         const topicId = listeningTopicListBtn.dataset.listeningTopicId || getListeningTopicByEpisodeId(listeningTopicListBtn.dataset.listeningTopicList)?.id || "";
+        await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId)) {
           showListeningLockedMessage();
           return;
@@ -14803,6 +14873,7 @@ function bindEvents() {
         event.preventDefault();
         const lessonId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
         const topicId = getListeningTopicByEpisodeId(lessonId)?.id || "";
+        await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId, lessonId)) {
           showListeningLockedMessage();
           return;
@@ -14828,6 +14899,7 @@ function bindEvents() {
         event.preventDefault();
         const lessonId = listeningOpenBtn.dataset.listeningOpen;
         const topicId = getListeningTopicByEpisodeId(lessonId)?.id || "";
+        await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId, lessonId)) {
           showListeningLockedMessage();
           return;
@@ -15528,6 +15600,9 @@ function bindEvents() {
       syncAdminHskLevelCoversFromDOM();
       state.adminContentModule = adminContentModuleBtn.dataset.adminContentModule;
       renderAdmin();
+      if (state.adminContentModule === "listening" && !state.adminListeningCatalogTopics.length) {
+        loadAdminContentLocks();
+      }
       savePersistedRoute();
       return;
     }
@@ -15647,6 +15722,8 @@ function bindEvents() {
         }).then((data) => {
           state.adminListeningTopicLocks = buildAdminListeningLocksMap(data.topics || [], "topicId");
           state.adminListeningLessonLocks = buildAdminListeningLocksMap(data.lessons || [], "lessonId");
+          state.adminListeningCatalogTopics = data.topics || [];
+          state.adminListeningCatalogLessons = data.lessons || [];
           state.adminContentStatus = isVi ? "Đã lưu khóa Luyện nghe." : "听力锁定已保存。";
           loadContentLocks();
           renderAdmin();
@@ -16118,6 +16195,7 @@ function bindEvents() {
     const writeCommunicationThemeBtn = event.target.closest(".write-communication-screen [data-theme]");
     if (writeCommunicationThemeBtn) {
       const themeId = writeCommunicationThemeBtn.dataset.theme;
+      await refreshContentLocksIfStale(0, { force: true });
       if (isDailyThemeLockedForUser(themeId)) {
         promptUpgradeLocked();
         return;
@@ -16170,6 +16248,7 @@ function bindEvents() {
     if (hskContentTypeBtn) {
       const nextContentType = hskContentTypeBtn.dataset.hskContentType;
       if (state.hskPendingLessonId) {
+        await refreshContentLocksIfStale(0, { force: true });
         if (getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked") {
           promptHskLessonLocked();
           return;
@@ -16189,6 +16268,7 @@ function bindEvents() {
     const lessonBtn = event.target.closest("[data-lesson]");
     if (lessonBtn) {
       const lessonId = lessonBtn.dataset.lesson;
+      await refreshContentLocksIfStale(0, { force: true });
       if (isHskLessonLockedForUser(lessonId)) {
         promptHskLessonLocked();
         return;
@@ -16201,6 +16281,7 @@ function bindEvents() {
     const themeBtn = event.target.closest("[data-theme]");
     if (themeBtn) {
       const themeId = themeBtn.dataset.theme;
+      await refreshContentLocksIfStale(0, { force: true });
       if (isDailyThemeLockedForUser(themeId)) {
         promptUpgradeLocked();
         return;
@@ -16286,6 +16367,7 @@ function bindEvents() {
     // Redesigned HSK course click handlers
     const hskContinueBtn = event.target.closest("#hskContinueBtn");
     if (hskContinueBtn) {
+      await refreshContentLocksIfStale(0, { force: true });
       const incompleteLesson = hskLevels[state.level].find((lesson) => !state.completed.has(lesson.id) && canAccessHskLesson(lesson.id))
         || hskLevels[state.level].find((lesson) => canAccessHskLesson(lesson.id));
       if (incompleteLesson) {
@@ -16314,6 +16396,7 @@ function bindEvents() {
     // Redesigned daily themes click handlers
     const dailyStartBtn = event.target.closest("#dailyStartBtn");
     if (dailyStartBtn) {
+      await refreshContentLocksIfStale(0, { force: true });
       const firstTheme = dailyThemes.find((theme) => !state.completed.has(theme.id) && canAccessDailyTheme(theme.id))
         || dailyThemes.find((theme) => canAccessDailyTheme(theme.id));
       if (firstTheme) {
@@ -16728,19 +16811,14 @@ function init() {
     flushHomeTodayStudySession();
     flushLearningEvents(true);
   });
-  Promise.allSettled([
-    refreshCurrentUserStatus(),
-    loadAllContentAccessRules(),
-    prefetchPaymentPlans(),
-  ]).finally(() => {
-    renderChrome();
-    if (window.location.pathname === "/admin") {
-      restorePersistedAdminRouteState();
-      renderAdmin();
-      setScreen("admin");
-      loadActiveAdminTabData();
-    } else {
-      if (applyRouteFromLocation()) { return; }
+  renderChrome();
+  if (window.location.pathname === "/admin") {
+    restorePersistedAdminRouteState();
+    renderAdmin();
+    setScreen("admin");
+    loadActiveAdminTabData();
+  } else {
+    if (!applyRouteFromLocation()) {
       const restored = restorePersistedRoute();
       if (!restored) {
         renderHome();
@@ -16748,7 +16826,8 @@ function init() {
         savePersistedRoute();
       }
     }
-  });
+  }
+  warmStartupDataAfterFirstPaint();
   
 }
 
