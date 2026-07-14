@@ -6163,6 +6163,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   const isVi = state.lang === "vi";
   const active = activeNavOverride || getDesktopNavActive();
   const navClass = (id) => `home-desktop-nav-item${active === id ? " is-active" : ""}`;
+  const stats = getHomeDashboardStats();
 
   return `
     <aside class="home-desktop-sidebar" aria-label="${isVi ? "Điều hướng" : "导航"}">
@@ -6193,6 +6194,17 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
       </nav>
+
+      <div class="home-desktop-sidebar-streak">
+        <span class="home-desktop-sidebar-streak-icon" aria-hidden="true">🔥</span>
+        <div>
+          <strong>${stats.streakDays} ${isVi ? "ngày" : "天"}</strong>
+          <small>${isVi ? "Chuỗi ngày học" : "连续学习"}</small>
+        </div>
+      </div>
+
+      <div class="home-desktop-sidebar-panda" aria-hidden="true"></div>
+
       <div class="home-desktop-sidebar-foot">
         ${state.user ? `
           <button type="button" class="home-desktop-logout-btn" id="homeDesktopLogoutBtn">

@@ -48042,9 +48042,14 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   .app-desktop-shell .home-desktop-sidebar-panda {
+    display: block !important;
     flex: 1 1 96px !important;
     min-height: 72px !important;
     max-height: 132px !important;
+  }
+
+  .app-desktop-shell .home-desktop-sidebar-streak {
+    display: flex !important;
   }
 
   .app-desktop-shell .home-desktop-sidebar-foot {
@@ -48064,8 +48069,6 @@ body:has(#practiceScreen:not(.hidden)) {
     justify-content: center !important;
   }
 
-  .app-desktop-shell .home-desktop-sidebar-streak,
-  .app-desktop-shell .home-desktop-sidebar-panda,
   .app-desktop-shell .home-desktop-sidebar-foot:empty {
     display: none !important;
   }
