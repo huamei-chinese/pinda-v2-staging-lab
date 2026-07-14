@@ -3565,6 +3565,12 @@ function renderChrome() {
   if (bottomVocabBtn) {
     bottomVocabBtn.querySelector(".mobile-bottom-nav-label").textContent = t("vocab");
   }
+  if (bottomSubscriptionsBtn) {
+    bottomSubscriptionsBtn.dataset.bottomNav = "vip";
+    bottomSubscriptionsBtn.setAttribute("aria-label", isVi ? "Mở Gói VIP" : "打开 VIP 套餐");
+    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-label").textContent = "VIP";
+    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("vip");
+  }
   if (bottomListeningBtn) {
     bottomListeningBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? t("listening") : "听力";
   }
@@ -5401,7 +5407,7 @@ function showUpgradePlansModal() {
       <button class="upgrade-plans-close" id="closeUpgradePlansModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
       <div class="upgrade-plans-heading">
         <span class="upgrade-mobile-pill">VIP</span>
-        <h2>${isVi ? "Gói VIP 7 ngày" : "7天 VIP"}</h2>
+        <h2>${isVi ? "Nâng cấp Gói VIP" : "7天 VIP"}</h2>
         <h3>${isVi ? "29.000đ / 7 ngày" : "29.000đ / 7天"}</h3>
         <p>${isVi ? "Chọn gói VIP phù hợp. Nếu chưa đăng nhập, hệ thống sẽ yêu cầu đăng nhập trước khi thanh toán." : "选择适合的 VIP 套餐。未登录时，点击开通后会先进入登录/注册流程。"}</p>
       </div>
@@ -6148,6 +6154,7 @@ function desktopNavIcon(name) {
     vocab: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 3v18"/><path d="M14 3v18"/></svg>`,
     listening: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
     account: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
+    vip: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.3 2.55 5.16 5.7.83-4.12 4.02.97 5.67L12 16.3l-5.1 2.68.97-5.67-4.12-4.02 5.7-.83L12 3.3z"/></svg>`,
   };
   return icons[name] || "";
 }
@@ -10253,6 +10260,10 @@ function bindEvents() {
   $("#mobileBottomNav")?.addEventListener("click", (event) => {
     const bottomNavBtn = event.target.closest("[data-bottom-nav]");
     if (bottomNavBtn) {
+      if (bottomNavBtn.dataset.bottomNav === "vip") {
+        showUpgradePlansModal();
+        return;
+      }
       navigatePrimaryTab(bottomNavBtn.dataset.bottomNav);
     }
   });

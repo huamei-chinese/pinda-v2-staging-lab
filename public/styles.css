@@ -12802,9 +12802,9 @@ p {
   .upgrade-plans-modal {
     width: 100%;
     min-height: 100vh;
-    padding: 18px 14px 28px;
-    border-left: 4px solid #4f46e5;
-    border-right: 4px solid #4f46e5;
+    padding: 18px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+    border-left: 3px solid rgba(16, 185, 129, 0.9);
+    border-right: 3px solid rgba(16, 185, 129, 0.9);
   }
 
   .upgrade-plans-close {
@@ -12857,6 +12857,8 @@ p {
   .upgrade-plans-grid {
     grid-template-columns: 1fr;
     gap: 12px;
+    width: min(100%, 390px);
+    margin-inline: auto;
   }
 
   .upgrade-plans-grid.upgrade-plans-grid--single {
@@ -38362,14 +38364,13 @@ body:has(#practiceScreen:not(.hidden)) {
 @media (max-width: 900px) {
 
   #bottomNavDailyBtn,
-  #bottomNavVocabBtn,
-  #bottomNavSubscriptionsBtn {
+  #bottomNavVocabBtn {
     display: none !important;
   }
 
   .mobile-bottom-nav:not(.hidden) {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 4px !important;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
   }
@@ -38396,6 +38397,20 @@ body:has(#practiceScreen:not(.hidden)) {
   .mobile-bottom-nav-item.active {
     color: #10a352 !important;
     background: rgba(16, 163, 82, 0.08) !important;
+  }
+
+  .mobile-bottom-nav-vip {
+    color: #a16207 !important;
+  }
+
+  .mobile-bottom-nav-vip .mobile-bottom-nav-icon {
+    color: #d97706 !important;
+  }
+
+  .mobile-bottom-nav-vip:active,
+  .mobile-bottom-nav-vip.active {
+    color: #92400e !important;
+    background: rgba(255, 214, 69, 0.18) !important;
   }
 }
 
