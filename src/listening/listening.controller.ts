@@ -64,6 +64,12 @@ export class ListeningController {
       throw new NotFoundException('Listening page not found');
     }
 
+    if (/\.html$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+
     return res.sendFile(filePath);
   }
 }

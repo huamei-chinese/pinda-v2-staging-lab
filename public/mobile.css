@@ -191,11 +191,11 @@
   }
 
   #practiceScreen:not(.hidden) {
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto minmax(0, auto) auto;
     gap: 6px;
-    height: auto;
+    height: 100dvh;
     min-height: 100dvh;
-    padding: 4px 5px calc(8px + env(safe-area-inset-bottom));
+    padding: 4px 5px calc(6px + env(safe-area-inset-bottom));
     background: #f1fbf7;
     overflow-y: auto;
     align-content: start;
@@ -278,14 +278,14 @@
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
-    gap: 6px;
+    gap: 5px;
     height: auto;
     min-height: 0;
     overflow: visible;
   }
 
   #practiceScreen .exercise-card {
-    min-height: clamp(300px, 50dvh, 430px);
+    min-height: clamp(210px, 31dvh, 300px);
     height: auto;
     justify-content: start;
     border: 1px solid rgba(203, 213, 225, 0.9);
@@ -307,7 +307,7 @@
   }
 
   #practiceScreen .exercise-card > p {
-    margin: 7px 0 0;
+    margin: 5px 0 0;
     font-size: clamp(8px, 2.15vw, 11px);
     font-weight: 600;
     line-height: 1.25;
@@ -318,9 +318,28 @@
   #practiceScreen .exercise-card h1.practice-prompt--small,
   #practiceScreen .exercise-card h1.practice-prompt--tiny {
     max-width: 100%;
-    margin: 8px auto 9px;
-    font-size: clamp(20px, 7.4vw, 32px);
+    margin: 6px auto 7px;
+    font-size: clamp(19px, 6.8vw, 30px);
     line-height: 1.08;
+  }
+
+  #practiceScreen[data-practice-stage="sentence"] .exercise-card {
+    min-height: clamp(220px, 32dvh, 310px);
+    padding: 7px 7px 9px;
+  }
+
+  #practiceScreen[data-practice-stage="sentence"] .exercise-card h1,
+  #practiceScreen[data-practice-stage="sentence"] .exercise-card h1.practice-prompt--compact {
+    margin: 5px auto 6px;
+    font-size: clamp(17px, 5.6vw, 24px);
+    line-height: 1.12;
+  }
+
+  #practiceScreen[data-practice-stage="sentence"] .exercise-card h1.practice-prompt--small,
+  #practiceScreen[data-practice-stage="sentence"] .exercise-card h1.practice-prompt--tiny {
+    margin: 4px auto 5px;
+    font-size: clamp(15px, 4.8vw, 20px);
+    line-height: 1.15;
   }
 
   #practiceScreen .slot-row {
@@ -330,16 +349,34 @@
     gap: 4px;
   }
 
+  #practiceScreen[data-practice-stage="sentence"] .slot-row {
+    max-width: min(100%, 330px);
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    row-gap: 3px;
+  }
+
   #practiceScreen .answer-slot {
     width: 100%;
     min-width: 0;
   }
 
+  #practiceScreen[data-practice-stage="sentence"] .answer-slot {
+    flex: 1 1 clamp(104px, 46%, 156px);
+    max-width: 156px;
+  }
+
   #practiceScreen .slot-line {
-    min-height: clamp(40px, 10vw, 58px);
-    padding: 5px 7px 4px;
+    min-height: clamp(36px, 9vw, 48px);
+    padding: 4px 7px 3px;
     border-bottom-width: 3px;
     border-radius: 5px 5px 0 0;
+  }
+
+  #practiceScreen[data-practice-stage="sentence"] .slot-line {
+    min-height: clamp(32px, 8vw, 42px);
+    padding: 4px 6px 3px;
   }
 
   #practiceScreen .answer-slot input {
@@ -365,11 +402,11 @@
 
   #practiceScreen .memory-panel {
     display: block;
-    min-height: clamp(118px, 28vw, 152px);
+    min-height: clamp(92px, 23vw, 120px);
     height: auto;
     border: 1px solid rgba(203, 213, 225, 0.9);
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 7px 10px;
     background: #ffffff;
     box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);
     overflow: visible;
@@ -393,7 +430,7 @@
 
   #practiceScreen .memory-panel strong {
     min-height: 0;
-    font-size: clamp(19px, 6vw, 28px);
+    font-size: clamp(18px, 5.5vw, 26px);
     line-height: 1;
   }
 
@@ -413,6 +450,16 @@
     display: none;
   }
 
+  #practiceScreen[data-practice-stage="sentence"] .memory-panel {
+    max-height: clamp(92px, 21dvh, 128px);
+    overflow: auto;
+  }
+
+  #practiceScreen[data-practice-stage="sentence"] .memory-panel.ready strong {
+    font-size: clamp(16px, 5vw, 22px);
+    line-height: 1.15;
+  }
+
   #practiceScreen .function-dock {
     width: 100%;
     max-width: 390px;
@@ -420,7 +467,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5px;
     margin: 0 auto;
-    padding: 6px;
+    padding: 5px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
@@ -430,8 +477,8 @@
   #practiceScreen .function-dock button:not(.primary) {
     width: 100%;
     min-width: 0;
-    min-height: clamp(24px, 10vw, 40px);
-    height: clamp(24px, 10vw, 40px);
+    min-height: clamp(24px, 8.8vw, 36px);
+    height: clamp(24px, 8.8vw, 36px);
     padding: 0 6px;
     border-width: 1px;
     border-radius: 6px;
@@ -485,8 +532,8 @@
   #practiceScreen .function-dock #nextBtn,
   #practiceScreen .function-dock button.primary {
     grid-column: 1 / -1;
-    min-height: clamp(26px, 10.4vw, 42px);
-    height: clamp(26px, 10.4vw, 42px);
+    min-height: clamp(28px, 9.2vw, 38px);
+    height: clamp(28px, 9.2vw, 38px);
     border-radius: 6px;
     background: #16c96f;
     border-color: #11b864;

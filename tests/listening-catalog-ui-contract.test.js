@@ -28,8 +28,10 @@ function assertCatalogIsLazyLoadedByApp(html) {
 test("SPA entries lazy-load the listening catalog through the UI runtime", () => {
   assertCatalogIsLazyLoadedByApp(rootIndex);
   assertCatalogIsLazyLoadedByApp(publicIndex);
-  assert.match(appSource, /const LISTENING_CATALOG_JSON_SRC\s*=\s*"listening-app\/data\/listening-catalog\.json\?v=20260713-catalog"/);
-  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260713-catalog"/);
+  assert.match(appSource, /listening-app\/data\/listening-catalog\.json\?v=20260713-catalog/);
+  assert.match(appSource, /listening-app\/data\/listening-catalog\.js\?v=20260713-catalog/);
+  assert.match(appSource, /getHuameiAssetConfig\(\)\.listeningCatalogJsonUrl/);
+  assert.match(appSource, /resolvePublicAssetPath\("listening-app\/data\/listening-catalog\.json\?v=20260713-catalog", "listeningApp"\)/);
   assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
   assert.match(appSource, /function loadListeningCatalogData\(\)/);
   assert.match(appSource, /fetch\(LISTENING_CATALOG_JSON_SRC, \{ cache: "force-cache" \}\)/);

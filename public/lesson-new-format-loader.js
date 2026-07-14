@@ -110,12 +110,18 @@
         audio.slow,
         item.slow_audio,
         item.audioSlow,
+        item.audio_slow,
+        item.audioNormal,
+        item.audioSrc,
+        typeof item.audio === "string" ? item.audio : "",
       ]);
     }
     return firstTextValue([
       item.audio_normal_path,
       audio.normal,
       item.normal_audio,
+      item.audioNormal,
+      item.audioSrc,
       typeof item.audio === "string" ? item.audio : "",
     ]);
   }

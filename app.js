@@ -2,6 +2,47 @@ const VIETNAMESE_QA_HOOK =
   "HOOK: Vietnamese UI, prompts, and explanations must be natural, accurate, and idiomatic for Vietnamese learners.";
 // Test compatibility: state.complete ? t("continuePrompt") : ""
 
+function getHuameiAssetConfig() {
+  return globalThis.HUAMEI_ASSET_CONFIG && typeof globalThis.HUAMEI_ASSET_CONFIG === "object"
+    ? globalThis.HUAMEI_ASSET_CONFIG
+    : {};
+}
+
+function stripTrailingSlash(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function joinAssetUrl(baseUrl, assetPath = "") {
+  const base = stripTrailingSlash(baseUrl);
+  if (!base) return assetPath;
+  const value = String(assetPath || "").trim();
+  if (!value) return "";
+  const [pathPart, suffix = ""] = value.split(/([?#].*)/, 2);
+  return `${base}/${pathPart.replace(/^\/+/, "")}${suffix}`;
+}
+
+function resolvePublicAssetPath(path = "", scope = "asset") {
+  const value = String(path || "").trim();
+  if (!value) return "";
+  if (/^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:)/i.test(value)) return value;
+
+  const config = getHuameiAssetConfig();
+  const normalized = value.replace(/^\/+/, "");
+
+  if (scope === "listeningApp") {
+    if (config.listeningAppBaseUrl) return joinAssetUrl(config.listeningAppBaseUrl, normalized.replace(/^listening-app\//, ""));
+    if (config.assetBaseUrl) return joinAssetUrl(config.assetBaseUrl, normalized);
+  }
+
+  if (scope === "audio") {
+    if (config.audioBaseUrl) return joinAssetUrl(config.audioBaseUrl, normalized.replace(/^audio\//, ""));
+    if (config.assetBaseUrl) return joinAssetUrl(config.assetBaseUrl, normalized);
+  }
+
+  if (config.assetBaseUrl) return joinAssetUrl(config.assetBaseUrl, normalized);
+  return value;
+}
+
 const i18n = {
   vi: {
     brandSubtitle: "Dành cho người Việt học tiếng Trung",
@@ -512,6 +553,8 @@ const state = {
   adminUserPlanFilter: "all",
   adminUserPage: 1,
   adminUserPageSize: 9,
+  adminUserPagination: null,
+  adminUserSummary: null,
   paymentPlansLoaded: false,
   paymentBankConfigured: false,
   paymentPlansPromise: null,
@@ -560,7 +603,7 @@ function makeKeywords(rows = []) {
 function getListeningDefaultAudioSrc(episodeId) {
   const episodeNumber = String(episodeId || "").match(/\d+/)?.[0] || "001";
   const extension = episodeId === "ep-001" ? "MP3" : "mp3";
-  return `/listening-app/audio/main/daily-${episodeNumber}-main.${extension}`;
+  return resolvePublicAssetPath(`/listening-app/audio/main/daily-${episodeNumber}-main.${extension}`, "listeningApp");
 }
 
 function getListeningItemDuration(sentences = []) {
@@ -1887,6 +1930,110 @@ async function apiRequest(path, options = {}) {
     throw new Error(message);
   }
   return data;
+}
+
+const TRAFFIC_SOURCE_KEY = "v2-traffic-source";
+const REFERRAL_REF_KEY = "v2-referral-ref";
+
+function normalizeReferralParam(value, maxLength = 64) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, maxLength);
+}
+
+function readReferralParamsFromSearch(search = "") {
+  try {
+    const params = new URLSearchParams(search || "");
+    return {
+      ref: normalizeReferralParam(
+        params.get("r") || params.get("ref") || params.get("referral") || params.get("referral_ref") || "",
+        64,
+      ),
+      src: normalizeReferralParam(
+        params.get("src") || params.get("source") || params.get("utm_source") || "",
+        40,
+      ),
+    };
+  } catch {
+    return { ref: "", src: "" };
+  }
+}
+
+function writeReferralStorage(key, value) {
+  if (!value) return;
+  try { localStorage.setItem(key, value); } catch { /* ignore storage errors */ }
+  try { sessionStorage.setItem(key, value); } catch { /* ignore storage errors */ }
+}
+
+function readReferralStorage(key) {
+  try {
+    return localStorage.getItem(key) || sessionStorage.getItem(key) || "";
+  } catch {
+    try { return sessionStorage.getItem(key) || ""; } catch { return ""; }
+  }
+}
+
+function removeReferralStorage(key) {
+  try { localStorage.removeItem(key); } catch { /* ignore storage errors */ }
+  try { sessionStorage.removeItem(key); } catch { /* ignore storage errors */ }
+}
+
+function persistReferralParams(params) {
+  if (params?.ref) writeReferralStorage(REFERRAL_REF_KEY, params.ref);
+  if (params?.src) writeReferralStorage(TRAFFIC_SOURCE_KEY, params.src);
+}
+
+function captureReferralParams() {
+  if (typeof window === "undefined") return;
+  persistReferralParams(readReferralParamsFromSearch(window.location.search));
+}
+
+function captureReferralRef() {
+  captureReferralParams();
+}
+
+function captureTrafficSource() {
+  captureReferralParams();
+}
+
+function getReferralRefFromUrl() {
+  if (typeof window !== "undefined") {
+    const params = readReferralParamsFromSearch(window.location.search);
+    persistReferralParams(params);
+    if (params.ref) return params.ref;
+  }
+  return readReferralStorage(REFERRAL_REF_KEY);
+}
+
+function getTrafficSource() {
+  if (typeof window !== "undefined") {
+    const params = readReferralParamsFromSearch(window.location.search);
+    persistReferralParams(params);
+    if (params.src) return params.src;
+  }
+  return readReferralStorage(TRAFFIC_SOURCE_KEY);
+}
+
+function clearReferralAttribution() {
+  removeReferralStorage(REFERRAL_REF_KEY);
+  removeReferralStorage(TRAFFIC_SOURCE_KEY);
+}
+
+function ensureReferralQueryInAddress() {
+  if (typeof window === "undefined" || !window.history?.replaceState) return;
+  if (state.user?.id || window.location.pathname === "/admin") return;
+  const params = new URLSearchParams(window.location.search);
+  const current = readReferralParamsFromSearch(window.location.search);
+  const storedRef = current.ref || readReferralStorage(REFERRAL_REF_KEY);
+  const storedSrc = current.src || readReferralStorage(TRAFFIC_SOURCE_KEY);
+  if (!storedRef || current.ref) return;
+  params.set("r", storedRef);
+  if (storedSrc && !current.src) params.set("src", storedSrc);
+  const nextSearch = params.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash || ""}`;
+  window.history.replaceState(window.history.state, "", nextUrl);
 }
 
 function getPaymentOrderErrorMessage(error, isVi = state.lang === "vi") {
@@ -3663,16 +3810,23 @@ async function loadAdminUsers() {
   state.adminStatus = isVi ? "Đang tải danh sách người dùng..." : "正在加载用户列表...";
   renderAdmin();
   try {
-    const data = await apiRequest("/api/admin/users", {
+    const data = await apiRequest(getAdminUsersRequestUrl(), {
       method: "GET",
       headers: {
         "X-Admin-User-Id": getAdminUserId(),
       },
     });
     state.adminUsers = data.users || [];
-    state.adminStatus = isVi ? `Đã tải ${state.adminUsers.length} người dùng.` : `已加载 ${state.adminUsers.length} 个用户。`;
+    state.adminUserPagination = normalizeAdminUsersPagination(data.pagination, state.adminUsers.length);
+    state.adminUserSummary = data.summary || null;
+    state.adminUserPage = state.adminUserPagination.page;
+    state.adminUserPageSize = state.adminUserPagination.pageSize;
+    const total = state.adminUserPagination.serverSide ? state.adminUserPagination.total : state.adminUsers.length;
+    state.adminStatus = isVi ? `Đã tải ${total} người dùng.` : `已加载 ${total} 个用户。`;
   } catch (error) {
     state.adminUsers = [];
+    state.adminUserPagination = null;
+    state.adminUserSummary = null;
     state.adminStatus = error.message;
   }
   renderAdmin();
@@ -3684,6 +3838,57 @@ function getAdminUserPlan(user) {
   if (user?.role === "admin") return "PREMIUM";
   if (isActivePremiumUser(user)) return normalizeVipPlanId(user) || "PREMIUM";
   return "FREE";
+}
+
+const ADMIN_USER_PLAN_FILTER_VALUES = new Set(["all", "7d", "30d", "90d"]);
+
+function normalizeAdminUserPlanFilter(value) {
+  const normalized = String(value || "all").trim().toLowerCase();
+  return ADMIN_USER_PLAN_FILTER_VALUES.has(normalized) ? normalized : "all";
+}
+
+function shouldUseAdminUsersServerPagination() {
+  return state.screen === "admin" && (state.adminTab || "users") === "users";
+}
+
+function getAdminUsersRequestUrl() {
+  if (!shouldUseAdminUsersServerPagination()) return "/api/admin/users";
+  const params = new URLSearchParams();
+  params.set("page", String(Math.max(1, Number(state.adminUserPage || 1))));
+  params.set("pageSize", String(Math.max(1, Number(state.adminUserPageSize || 9))));
+  const search = String(state.adminUserSearch || "").trim();
+  const level = state.adminUserLevelFilter || "all";
+  const plan = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
+  if (search) params.set("search", search);
+  if (level !== "all") params.set("level", level);
+  if (plan !== "all") params.set("plan", plan);
+  return `/api/admin/users?${params.toString()}`;
+}
+
+function normalizeAdminUsersPagination(rawPagination, fallbackCount = 0) {
+  const total = Math.max(0, Number(rawPagination?.total ?? fallbackCount) || 0);
+  const pageSize = Math.max(1, Number(rawPagination?.pageSize ?? state.adminUserPageSize ?? 9) || 9);
+  const totalPages = Math.max(1, Number(rawPagination?.totalPages ?? Math.ceil(total / pageSize)) || 1);
+  const page = Math.min(totalPages, Math.max(1, Number(rawPagination?.page ?? state.adminUserPage ?? 1) || 1));
+  const startIndex = total > 0 ? (page - 1) * pageSize : 0;
+  const endIndex = total > 0 ? Math.min(startIndex + pageSize, total) : 0;
+  return {
+    page,
+    pageSize,
+    total,
+    totalPages,
+    startIndex,
+    endIndex,
+    serverSide: rawPagination?.serverSide === true,
+  };
+}
+
+function hasAdminUsersServerPagination() {
+  return state.adminUserPagination?.serverSide === true;
+}
+
+function getAdminUserVipPlanFilterValue(user) {
+  return normalizeVipPlanId(user);
 }
 
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
@@ -3778,15 +3983,15 @@ function buildAdminUserPatchPayload(row, extra = {}) {
 }
 
 function getFilteredAdminUsers() {
+  if (hasAdminUsersServerPagination()) return state.adminUsers || [];
   const query = normalizeLatin(state.adminUserSearch.trim());
   const levelFilter = state.adminUserLevelFilter || "all";
-  const planFilter = state.adminUserPlanFilter || "all";
+  const planFilter = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
 
   return state.adminUsers.filter((user) => {
     const level = user.currentLevel || user.level || "HSK2";
-    const plan = getAdminUserPlan(user);
     if (levelFilter !== "all" && level !== levelFilter) return false;
-    if (planFilter !== "all" && plan !== planFilter) return false;
+    if (planFilter !== "all" && getAdminUserVipPlanFilterValue(user) !== planFilter) return false;
     if (!query) return true;
     const name = normalizeLatin(user.fullName || "");
     const email = normalizeLatin(user.email || "");
@@ -3796,6 +4001,13 @@ function getFilteredAdminUsers() {
 }
 
 function getAdminUserPagination(users) {
+  if (hasAdminUsersServerPagination()) {
+    return {
+      ...state.adminUserPagination,
+      currentPage: state.adminUserPagination.page,
+      pageUsers: users,
+    };
+  }
   const pageSize = Math.max(1, Number(state.adminUserPageSize || 9));
   const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
   const currentPage = Math.min(Math.max(1, Number(state.adminUserPage || 1)), totalPages);
@@ -3921,7 +4133,7 @@ function updateAdminUsersList() {
     ? buildAdminUserRowsHTML(pagination.pageUsers, isVi)
     : `<tr><td colspan="7" class="admin-empty">${isVi ? "Không có người dùng phù hợp bộ lọc." : "没有符合筛选条件的用户。"}</td></tr>`;
   if (footerText) {
-    const total = filteredUsers.length;
+    const total = hasAdminUsersServerPagination() ? pagination.total : filteredUsers.length;
     footerText.textContent = isVi
       ? `Hiển thị ${total > 0 ? pagination.startIndex + 1 : 0} - ${pagination.endIndex} trên ${total} kết quả`
       : `显示 ${total > 0 ? pagination.startIndex + 1 : 0} - ${pagination.endIndex} / ${total} 个结果`;
@@ -3957,12 +4169,14 @@ function renderAdmin() {
   }
 
   const studentUsers = state.adminUsers.filter((user) => user.role !== "admin");
-  const totalUsers = studentUsers.length;
+  const adminUserSummary = state.adminUserSummary || {};
+  const totalUsers = Number.isFinite(Number(adminUserSummary.totalUsers)) ? Number(adminUserSummary.totalUsers) : studentUsers.length;
   const premiumStudentUsers = studentUsers.filter((user) => isActivePremiumUser(user));
-  const vipRate = studentUsers.length > 0 ? Math.round((premiumStudentUsers.length / studentUsers.length) * 1000) / 10 : 0;
+  const premiumStudentUsersTotal = Number.isFinite(Number(adminUserSummary.premiumUsers)) ? Number(adminUserSummary.premiumUsers) : premiumStudentUsers.length;
+  const vipRate = totalUsers > 0 ? Math.round((premiumStudentUsersTotal / totalUsers) * 1000) / 10 : 0;
   const vipRateMeta = isVi
-    ? `${premiumStudentUsers.length}/${studentUsers.length} tài khoản đã lên Pro`
-    : `${premiumStudentUsers.length}/${studentUsers.length} 个账户已升级 Pro`;
+    ? `${premiumStudentUsersTotal}/${totalUsers} tài khoản đã lên Pro`
+    : `${premiumStudentUsersTotal}/${totalUsers} 个账户已升级 Pro`;
   const adminTab = isAdminUser() ? (state.adminTab || "users") : "users";
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
@@ -3971,7 +4185,7 @@ function renderAdmin() {
   const filteredUsers = getFilteredAdminUsers();
   const userPagination = getAdminUserPagination(filteredUsers);
   const levelFilter = state.adminUserLevelFilter || "all";
-  const planFilter = state.adminUserPlanFilter || "all";
+  const planFilter = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
   const rows = buildAdminUserRowsHTML(userPagination.pageUsers, isVi);
   const adminTitleMap = {
     users: isVi ? "Quản lý người dùng" : "用户管理",
@@ -4049,10 +4263,10 @@ function renderAdmin() {
               ${Object.keys(hskLevels).map((level) => `<option value="${level}" ${levelFilter === level ? "selected" : ""}>${level}</option>`).join("")}
             </select>
             <select id="adminUserPlanFilter" class="admin-filter-select" aria-label="${isVi ? "Lọc theo gói" : "按套餐筛选"}">
-              <option value="all" ${planFilter === "all" ? "selected" : ""}>${isVi ? "Tất cả gói" : "所有套餐"}</option>
-              <option value="FREE" ${planFilter === "FREE" ? "selected" : ""}>Free</option>
-              <option value="PREMIUM" ${planFilter === "PREMIUM" ? "selected" : ""}>Pro</option>
-              <option value="EMPLOYEE" ${planFilter === "EMPLOYEE" ? "selected" : ""}>${isVi ? "Nhân viên" : "员工"}</option>
+              <option value="all" ${planFilter === "all" ? "selected" : ""}>${isVi ? "Tất cả" : "全部"}</option>
+              <option value="7d" ${planFilter === "7d" ? "selected" : ""}>${isVi ? "VIP 7 ngày" : "7天 VIP"}</option>
+              <option value="30d" ${planFilter === "30d" ? "selected" : ""}>${isVi ? "VIP 30 ngày" : "30天 VIP"}</option>
+              <option value="90d" ${planFilter === "90d" ? "selected" : ""}>${isVi ? "VIP 3 tháng" : "90天 VIP"}</option>
             </select>
             <button id="adminRefreshBtn" class="admin-filter-refresh" type="button">${isVi ? "Làm mới" : "刷新"}</button>
           </div>
@@ -4207,11 +4421,18 @@ function showModal(type) {
     try {
       const data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
         method: "POST",
-        body: JSON.stringify(isLogin ? { email, password } : { fullName, email, password }),
+        body: JSON.stringify(isLogin ? { email, password } : {
+          fullName,
+          email,
+          password,
+          ref: getReferralRefFromUrl(),
+          src: getTrafficSource(),
+        }),
       });
       if (["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
         throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
       }
+      if (!isLogin) clearReferralAttribution();
       state.user = data.user;
       saveState();
       loadContentLocks().then(() => {
@@ -4546,7 +4767,7 @@ function showAdminCreateAccountModal() {
         body: JSON.stringify(payload),
       });
       state.adminUsers = [data.user, ...state.adminUsers.filter((user) => user.id !== data.user.id)];
-      renderAdmin();
+      loadAdminUsers();
       showToast(isVi ? "Đã tạo tài khoản học viên." : "已创建学员账户。");
       closeModal();
     } catch (error) {
@@ -4616,7 +4837,7 @@ function showAdminDeleteUserConfirm(row) {
       });
       state.adminUsers = state.adminUsers.filter((user) => user.id !== userId);
       closeModal();
-      updateAdminUsersList();
+      loadAdminUsers();
       showToast(isVi ? "Đã xóa người dùng." : "已删除用户。");
     } catch (error) {
       message.textContent = error.message;
@@ -8969,11 +9190,12 @@ function formatAudioIndex(index) {
 }
 
 function audioPath(...segments) {
-  return segments
+  const value = segments
     .filter(Boolean)
     .flatMap((segment) => String(segment).split("/").filter(Boolean))
     .map((segment) => encodeURIComponent(segment))
     .join("/");
+  return resolvePublicAssetPath(value, "audio");
 }
 
 function getAudioFileName(index, slow = false) {
@@ -8990,13 +9212,23 @@ function getHskAudioTypeFolder(type) {
   return "";
 }
 
+function resolveAudioAssetCandidate(candidate) {
+  const value = String(candidate || "").trim();
+  if (!value) return "";
+  if (/^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:)/i.test(value)) return value;
+  const normalized = value.replace(/^\/+/, "");
+  if (normalized.startsWith("listening-app/")) return resolvePublicAssetPath(value, "listeningApp");
+  return resolvePublicAssetPath(value, "audio");
+}
+
 function uniqueAudioSources(sources) {
   return sources.filter(Boolean).reduce((result, source) => {
     const expanded = globalThis.runtimeAudio?.expandAudioPathCandidates
       ? globalThis.runtimeAudio.expandAudioPathCandidates(source)
       : [source];
     for (const candidate of expanded) {
-      if (candidate && !result.includes(candidate)) result.push(candidate);
+      const resolved = resolveAudioAssetCandidate(candidate);
+      if (resolved && !result.includes(resolved)) result.push(resolved);
     }
     return result;
   }, []);
@@ -9004,14 +9236,16 @@ function uniqueAudioSources(sources) {
 
 function resolveAudioSource(item, speed = "normal") {
   if (globalThis.runtimeAudio?.resolveAudioSource) {
-    return globalThis.runtimeAudio.resolveAudioSource(item, speed);
+    const runtimeSource = globalThis.runtimeAudio.resolveAudioSource(item, speed);
+    if (runtimeSource) return runtimeSource;
   }
   if (!item || typeof item !== "object") return "";
   const audio = item.audio && typeof item.audio === "object" ? item.audio : {};
+  const audioString = typeof item.audio === "string" ? item.audio : "";
   if (speed === "slow") {
-    return item.audio_slow_path || audio.slow || item.slow_audio || item.audioSlow || "";
+    return item.audio_slow_path || audio.slow || item.slow_audio || item.audioSlow || item.audio_slow || item.audioNormal || item.audioSrc || audioString || "";
   }
-  return item.audio_normal_path || audio.normal || item.normal_audio || (typeof item.audio === "string" ? item.audio : "");
+  return item.audio_normal_path || audio.normal || item.normal_audio || item.audioNormal || item.audioSrc || audioString || "";
 }
 
 function getLegacyAudioFileNames(index, type, slow = false) {
@@ -9057,14 +9291,50 @@ function getPracticeAudioSource(options = {}) {
   return getPracticeAudioSources(options)[0] || null;
 }
 
-function getVocabAudioSources(text) {
-  const config = globalThis.speechConfig?.getLessonAudioConfig?.() || {};
-  const extension = config.fileExtension || "mp3";
-  return uniqueAudioSources([audioPath(config.vocabBasePath || "audio/vocab", `${text}.${extension}`)]);
+function getVocabTargetText(target) {
+  if (typeof target === "string") return target;
+  if (!target || typeof target !== "object") return "";
+  return target.hanzi || target.chinese || target.zh || target.text || "";
 }
 
-function getVocabAudioSource(text) {
-  return getVocabAudioSources(text)[0] || null;
+function resolveVocabCatalogAudioPath(source) {
+  const value = String(source || "").trim();
+  if (!value) return "";
+  if (/^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:)/i.test(value)) return value;
+  const normalized = value.replace(/^\/+/, "");
+  if (normalized.startsWith("listening-app/")) return value;
+  if (normalized.startsWith("audio/") && typeof listeningCatalogAssetPath === "function") {
+    return listeningCatalogAssetPath(value);
+  }
+  return value;
+}
+
+function getItemAudioSources(item, options = {}) {
+  if (!item || typeof item !== "object") return [];
+  const slow = Boolean(options.slow);
+  const audio = item.audio && typeof item.audio === "object" ? item.audio : {};
+  const audioString = typeof item.audio === "string" ? item.audio : "";
+  const normalSource = resolveVocabCatalogAudioPath(
+    resolveAudioSource(item, "normal") || item.audioNormal || item.audioSrc || audio.normal || audioString || "",
+  );
+  const slowSource = resolveVocabCatalogAudioPath(
+    resolveAudioSource(item, "slow") || item.audioSlow || item.audio_slow || audio.slow || normalSource,
+  );
+  return uniqueAudioSources(slow ? [slowSource, normalSource] : [normalSource]);
+}
+
+function getVocabAudioSources(target, options = {}) {
+  const text = getVocabTargetText(target);
+  const item = target && typeof target === "object" ? target : findItemByHanzi(text);
+  const itemSources = getItemAudioSources(item, options);
+  const config = globalThis.speechConfig?.getLessonAudioConfig?.() || {};
+  const extension = config.fileExtension || "mp3";
+  const genericSource = text ? audioPath(config.vocabBasePath || "audio/vocab", `${text}.${extension}`) : "";
+  return uniqueAudioSources([...itemSources, genericSource]);
+}
+
+function getVocabAudioSource(target) {
+  return getVocabAudioSources(target)[0] || null;
 }
 
 function reportAudioFallback(meta = {}) {
@@ -9178,34 +9448,118 @@ function playAudioSegmentSource(source, start, end, fallback, meta = {}) {
   audio.load();
 }
 
-function speakText(text) {
-  const sources = getVocabAudioSources(text);
-  playAudioSources(sources, () => browserSpeakText(text), { text, speed: "normal", sources });
+function speakText(target, options = {}) {
+  const text = getVocabTargetText(target);
+  if (!text) return;
+  const item = target && typeof target === "object" ? target : findItemByHanzi(text);
+  const slow = Boolean(options.slow);
+  const sources = getVocabAudioSources(item || text, { slow });
+  playAudioSources(
+    sources,
+    () => browserSpeakText(text, { slow, stage: item?.stage || "word" }),
+    { item, text, speed: slow ? "slow" : "normal", sources },
+  );
+}
+
+function normalizeListeningKeywordForVocab(keyword = {}, hanzi = "") {
+  const source = typeof keyword === "string" ? { chinese: keyword } : keyword;
+  const text = source.hanzi || source.chinese || source.zh || source.text || hanzi;
+  if (!text) return null;
+  const nestedAudio = source.audio && typeof source.audio === "object" ? source.audio : {};
+  const audioString = typeof source.audio === "string" ? source.audio : "";
+  const audioNormal = resolveVocabCatalogAudioPath(source.audioNormal || source.audioSrc || source.audio_normal_path || source.normal_audio || nestedAudio.normal || audioString || "");
+  const audioSlow = resolveVocabCatalogAudioPath(source.audioSlow || source.audio_slow || source.audio_slow_path || source.slow_audio || nestedAudio.slow || audioNormal);
+  return {
+    ...source,
+    hanzi: text,
+    pinyin: source.pinyin || "",
+    tone: source.tone || source.pinyin || "",
+    vi: source.vi || source.vietnamese || source.meaning || "",
+    pos: source.pos || source.partOfSpeech || source.part_of_speech || source.source_pos || "",
+    stage: source.stage || "word",
+    audioNormal,
+    audioSlow,
+    audioSrc: resolveVocabCatalogAudioPath(source.audioSrc || audioNormal),
+  };
+}
+
+function findListeningKeywordByHanzi(hanzi) {
+  const target = String(hanzi || "").trim();
+  if (!target) return null;
+
+  for (const episode of Array.isArray(listeningEpisodes) ? listeningEpisodes : []) {
+    for (const keyword of episode.keywords || []) {
+      const item = normalizeListeningKeywordForVocab(keyword, target);
+      if (item?.hanzi === target) return item;
+    }
+  }
+
+  const catalog = globalThis.pindaListeningCatalog;
+  const tracks = Array.isArray(catalog?.tracks) ? catalog.tracks : [];
+  for (const track of tracks) {
+    const lessonGroups = [
+      ...(track.levels || []).flatMap((level) => level.topics || []),
+      ...(track.topics || []),
+    ];
+    for (const topic of lessonGroups) {
+      for (const lesson of topic.lessons || []) {
+        for (const keyword of lesson.keywords || []) {
+          const item = normalizeListeningKeywordForVocab(keyword, target);
+          if (item?.hanzi === target) return item;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function withListeningAudioFallback(item, hanzi) {
+  if (!item) return findListeningKeywordByHanzi(hanzi);
+  if (getItemAudioSources(item).length > 0) return item;
+  const listeningKeyword = findListeningKeywordByHanzi(hanzi);
+  if (!listeningKeyword || getItemAudioSources(listeningKeyword).length === 0) return item;
+  return {
+    ...item,
+    audioNormal: listeningKeyword.audioNormal || listeningKeyword.audioSrc || "",
+    audioSlow: listeningKeyword.audioSlow || listeningKeyword.audioNormal || listeningKeyword.audioSrc || "",
+    audioSrc: listeningKeyword.audioSrc || listeningKeyword.audioNormal || "",
+  };
 }
 
 function findItemByHanzi(hanzi) {
   for (const level of Object.values(hskLevels)) {
     for (const lesson of level) {
       const found = lesson.items.find(item => item.hanzi === hanzi);
-      if (found) return found;
+      if (found) return withListeningAudioFallback(found, hanzi);
     }
   }
   for (const theme of dailyThemes) {
     const found = theme.items.find(item => item.hanzi === hanzi);
-    if (found) return found;
+    if (found) return withListeningAudioFallback(found, hanzi);
   }
+  const listeningKeyword = findListeningKeywordByHanzi(hanzi);
+  if (listeningKeyword) return listeningKeyword;
   for (const level of Object.values(hskLevels)) {
     for (const lesson of level) {
       for (const item of lesson.items) {
-        const foundWord = item.words.find(w => w.text === hanzi);
+        const foundWord = (item.words || []).find(w => w.text === hanzi);
         if (foundWord) {
-          return {
+          const nestedAudio = foundWord.audio && typeof foundWord.audio === "object" ? foundWord.audio : {};
+          const audioString = typeof foundWord.audio === "string" ? foundWord.audio : "";
+          const audioNormal = foundWord.audioNormal || foundWord.audioSrc || foundWord.audio_normal_path || foundWord.normal_audio || nestedAudio.normal || audioString || "";
+          const audioSlow = foundWord.audioSlow || foundWord.audio_slow || foundWord.audio_slow_path || foundWord.slow_audio || nestedAudio.slow || audioNormal;
+          const wordItem = {
             hanzi: foundWord.text,
             pinyin: foundWord.pinyin,
             tone: foundWord.tone,
             vi: foundWord.vi,
-            stage: "word"
+            stage: "word",
+            audioNormal,
+            audioSlow,
+            audioSrc: foundWord.audioSrc || audioNormal,
           };
+          return withListeningAudioFallback(wordItem, hanzi);
         }
       }
     }
@@ -9222,6 +9576,8 @@ function findItemByHanzi(hanzi) {
 function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
   const item = itemDetail || {};
   const itemHanzi = item.hanzi || hanzi;
+  const audioNormal = resolveAudioSource(item, "normal") || item.audioNormal || item.audioSrc || "";
+  const audioSlow = resolveAudioSource(item, "slow") || item.audioSlow || item.audio_slow || audioNormal;
   const words = Array.isArray(item.words) && item.words.length > 0
     ? item.words
     : itemHanzi
@@ -9231,6 +9587,9 @@ function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
         tone: item.tone || "",
         pos: item.pos || "",
         vi: item.vi || "",
+        audioNormal,
+        audioSlow,
+        audioSrc: item.audioSrc || audioNormal,
       }]
       : [];
 
@@ -9239,6 +9598,9 @@ function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
     hanzi: itemHanzi,
     vi: item.vi || "",
     stage: item.stage || "word",
+    audioNormal,
+    audioSlow,
+    audioSrc: item.audioSrc || audioNormal,
     words,
   };
 }
@@ -9476,6 +9838,8 @@ function renderPractice() {
   const collection = currentCollection();
   const itemNow = currentItem();
   const promptVariant = state.mode === "dictation" ? "dictation" : getPromptSizeVariant(itemNow.vi);
+  const practiceStage = learningContentBucket(itemNow);
+  screens.practice.dataset.practiceStage = practiceStage;
   screens.practice.innerHTML = `
     <header class="practice-top">
       <button id="practiceCloseBtn" class="practice-close-btn" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>  
@@ -9492,7 +9856,7 @@ function renderPractice() {
       </div>
     <section class="practice-layout">
       <section class="exercise-card">
-        <span class="stage-pill">${hskContentTypeLabel(learningContentBucket(itemNow))}</span>
+        <span class="stage-pill">${hskContentTypeLabel(practiceStage)}</span>
         <p>${state.mode === "translate" ? t("translateHint") : t("dictationHint")}</p>
         <h1 class="practice-prompt practice-prompt--${promptVariant}">${state.mode === "dictation" ? "听一听" : itemNow.vi}</h1>
         <div class="slot-row">
@@ -10399,7 +10763,7 @@ function bindEvents() {
     const adminUserPageBtn = event.target.closest("[data-admin-user-page]");
     if (adminUserPageBtn && state.screen === "admin") {
       state.adminUserPage = Math.max(1, Number(adminUserPageBtn.dataset.adminUserPage || 1));
-      updateAdminUsersList();
+      loadAdminUsers();
       return;
     }
 
@@ -11227,7 +11591,7 @@ function bindEvents() {
       const card = vocabSpeakBtn.closest("[data-vocab-hanzi]");
       if (card) {
         const hanzi = card.dataset.vocabHanzi;
-        speakText(hanzi);
+        speakText(findItemByHanzi(hanzi) || hanzi);
       }
       return;
     }
@@ -11292,7 +11656,6 @@ function bindEvents() {
     if (event.target.id === "adminUserSearchInput") {
       state.adminUserSearch = event.target.value;
       state.adminUserPage = 1;
-      updateAdminUsersList();
       if (adminUserSearchTimer) clearTimeout(adminUserSearchTimer);
       adminUserSearchTimer = setTimeout(() => {
         loadAdminUsers();
@@ -11389,12 +11752,12 @@ function bindEvents() {
     if (event.target.id === "adminUserLevelFilter") {
       state.adminUserLevelFilter = event.target.value;
       state.adminUserPage = 1;
-      updateAdminUsersList();
+      loadAdminUsers();
     }
     if (event.target.id === "adminUserPlanFilter") {
-      state.adminUserPlanFilter = event.target.value;
+      state.adminUserPlanFilter = normalizeAdminUserPlanFilter(event.target.value);
       state.adminUserPage = 1;
-      updateAdminUsersList();
+      loadAdminUsers();
     }
   });
   document.addEventListener("keydown", (event) => {
@@ -11420,6 +11783,9 @@ function renderAll() {
 
 function init() {
   console.info(VIETNAMESE_QA_HOOK);
+  captureReferralRef();
+  captureTrafficSource();
+  ensureReferralQueryInAddress();
   bindEvents();
   Promise.allSettled([
     refreshCurrentUserStatus(),

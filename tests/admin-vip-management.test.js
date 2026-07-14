@@ -34,6 +34,9 @@ test("admin VIP backend aggregates paid orders and popup opens", () => {
   assert.match(adminServiceSource, /\^\(\\d\{1,2\}\)\[\.\/-\]\(\\d\{1,2\}\)\[\.\/-\]\(\\d\{4\}\)\$/);
   assert.match(adminServiceSource, /FROM payment_orders o/);
   assert.match(adminServiceSource, /o\.status = 'paid'/);
+  assert.match(adminServiceSource, /date::timestamp AT TIME ZONE/);
+  assert.match(adminServiceSource, /o\.amount IN \(29000, 129000, 329000\)/);
+  assert.match(adminServiceSource, /LOWER\(COALESCE\(u\.email, ''\)\) NOT LIKE 'test%@%'/);
   assert.match(adminServiceSource, /COALESCE\(SUM\(o\.amount\), 0\)::bigint AS revenue/);
   assert.match(adminServiceSource, /event_type = 'vip_modal_opened'/);
   assert.match(adminVipControllerSource, /@Controller\('api\/admin\/vip'\)/);
@@ -43,6 +46,8 @@ test("admin VIP backend aggregates paid orders and popup opens", () => {
 test("Netlify and local server expose the VIP overview before API fallback", () => {
   assert.match(netlifyApiSource, /path === "\/api\/admin\/vip\/overview"/);
   assert.match(netlifyApiSource, /function getVipManagement/);
+  assert.match(netlifyApiSource, /o\.amount IN \(29000, 129000, 329000\)/);
+  assert.match(netlifyApiSource, /LOWER\(COALESCE\(u\.email, ''\)\) NOT LIKE 'test%@%'/);
   assert.match(netlifyApiSource, /function analyticsNormalizeDateInput\(value\)/);
   assert.match(serverSource, /function analyticsNormalizeDateInput\(value\)/);
   assert.match(serverSource, /const fromParam = analyticsNormalizeDateInput\(searchParams\.get\("from"\)\)/);

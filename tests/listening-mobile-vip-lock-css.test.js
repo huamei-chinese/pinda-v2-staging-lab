@@ -26,6 +26,6 @@ test("mobile listening locked content shows a clear VIP state", () => {
   );
 });
 
-test("mobile stylesheet cache is busted for the VIP lock CSS", () => {
-  assert.match(indexHtml, /mobile\.css\?v=mobile-vip-lock-20260713/);
+test("mobile stylesheet cache key is current", () => {
+  assert.match(indexHtml, /mobile\.css\?v=practice-mobile-compact-20260714/);
 });

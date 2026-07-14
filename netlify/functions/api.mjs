@@ -1152,6 +1152,21 @@ function bankConfig() {
   };
 }
 
+function parseSepayTransactionDate(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return null;
+
+  const localMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (localMatch) {
+    const [, year, month, day, hour, minute, second = "00"] = localMatch;
+    const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}+07:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function cloudinaryConfig() {
   return {
     cloudName: env("CLOUDINARY_CLOUD_NAME"),
@@ -2510,7 +2525,8 @@ async function handleSepayWebhook(req, payload) {
     await markWebhookProcessed(payload.id, order.id);
     return json({ success: true, underpaid: true });
   }
-  await activateOrder(order, payload.id);
+  const paidAt = parseSepayTransactionDate(payload.transactionDate) || new Date();
+  await activateOrder(order, payload.id, paidAt);
   return json({ success: true, orderId: order.id });
 }
 
@@ -2536,7 +2552,7 @@ async function findOrderFromWebhook(payload) {
   return null;
 }
 
-async function activateOrder(order, sepayId) {
+async function activateOrder(order, sepayId, paidAt = new Date()) {
   const plan = await getPlanById(order.plan_id);
   if (!plan) return;
   const client = await getPool().connect();
@@ -2546,7 +2562,8 @@ async function activateOrder(order, sepayId) {
     const now = new Date();
     const currentEnd = userResult.rows[0]?.premium_until ? new Date(userResult.rows[0].premium_until) : null;
     const premiumUntil = applyPlanDuration(currentEnd && currentEnd > now ? currentEnd : now, plan);
-    await client.query("UPDATE payment_orders SET status = 'paid', paid_at = NOW() WHERE id = $1 AND status = 'pending'", [order.id]);
+    const paidAtIso = Number.isNaN(paidAt.getTime()) ? new Date().toISOString() : paidAt.toISOString();
+    await client.query("UPDATE payment_orders SET status = 'paid', paid_at = $2 WHERE id = $1 AND status = 'pending'", [order.id, paidAtIso]);
     await client.query("UPDATE users SET is_premium = TRUE, premium_until = $2, vip_plan_id = $3, updated_at = NOW() WHERE id = $1", [order.user_id, premiumUntil.toISOString(), order.plan_id]);
     await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, order.id]);
     await client.query("COMMIT");
@@ -2844,9 +2861,11 @@ async function getLearningAnalytics(req, searchParams) {
 async function getVipManagement(req, searchParams) {
   await assertAdmin(req);
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(searchParams);
-  const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
-  const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const validVipPaymentFilter = `o.amount IN (29000, 129000, 329000)`;
+  const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
   const params = [fromYmd, toYmd];
 
   const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
@@ -2857,13 +2876,15 @@ async function getVipManagement(req, searchParams) {
     query(
       `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
        FROM payment_orders o
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+       JOIN users u ON u.id = o.user_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}`,
       params,
     ),
     query(
       `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
        FROM payment_orders o
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       JOIN users u ON u.id = o.user_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
@@ -2872,8 +2893,9 @@ async function getVipManagement(req, searchParams) {
               COUNT(*)::int AS activations,
               COALESCE(SUM(o.amount), 0)::bigint AS revenue
        FROM payment_orders o
+       JOIN users u ON u.id = o.user_id
        LEFT JOIN payment_plans p ON p.id = o.plan_id
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY o.plan_id, p.name_vi
        ORDER BY revenue DESC, activations DESC`,
       params,
@@ -2887,7 +2909,7 @@ async function getVipManagement(req, searchParams) {
        FROM payment_orders o
        JOIN users u ON u.id = o.user_id
        LEFT JOIN payment_plans p ON p.id = o.plan_id
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
        ORDER BY revenue DESC, latest_paid_at DESC
        LIMIT 400`,

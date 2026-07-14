@@ -1,4 +1,21 @@
 
+function getListeningDetailAssetConfig() {
+  return window.HUAMEI_ASSET_CONFIG && typeof window.HUAMEI_ASSET_CONFIG === "object"
+    ? window.HUAMEI_ASSET_CONFIG
+    : {};
+}
+
+function resolveListeningDetailAudio(path = "") {
+  const value = String(path || "").trim();
+  if (!value || /^(?:https?:)?\/\//i.test(value) || /^(?:data:|blob:)/i.test(value)) return value;
+  const config = getListeningDetailAssetConfig();
+  const audioBase = String(config.audioBaseUrl || "").trim().replace(/\/+$/, "");
+  if (audioBase) return `${audioBase}/${value.replace(/^\/+/, "").replace(/^audio\//, "")}`;
+  const assetBase = String(config.assetBaseUrl || "").trim().replace(/\/+$/, "");
+  if (assetBase) return `${assetBase}/${value.replace(/^\/+/, "")}`;
+  return value;
+}
+
 function sub(id, start, end, zh, pinyin, vi) {
   return { id, start, end, zh, pinyin, vi };
 }
@@ -24,7 +41,7 @@ const listeningContentMap = {
     zh: "内容 1",
     titleVi: "Một chiếc quần mới mềm mại",
     titleZh: "一条柔软的新裤子",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-1/daily-005-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-1/daily-005-main.mp3"),
     audioSlow: "",
     duration: 97,
     subtitles: [
@@ -60,7 +77,7 @@ const listeningContentMap = {
     zh: "内容 2",
     titleVi: "Ưu điểm và nhược điểm của làm việc tại nhà",
     titleZh: "居家办公的优点和缺点",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-2/daily-006-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-2/daily-006-main.mp3"),
     audioSlow: "",
     duration: 89,
     subtitles: [
@@ -99,7 +116,7 @@ const listeningContentMap = {
     zh: "内容 3",
     titleVi: "Thoải mái là chính mình",
     titleZh: "大大方方做自己",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-3/daily-007-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-3/daily-007-main.mp3"),
     audioSlow: "",
     duration: 86,
     subtitles: [
@@ -136,7 +153,7 @@ const listeningContentMap = {
     zh: "内容 4",
     titleVi: "Học cách kết thúc những mối quan hệ làm mình hao tổn",
     titleZh: "学会结束内耗的关系",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-4/daily-008-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-4/daily-008-main.mp3"),
     audioSlow: "",
     duration: 83,
     subtitles: [
@@ -170,7 +187,7 @@ const listeningContentMap = {
     zh: "内容 5",
     titleVi: "Sức mạnh của sự lặp lại",
     titleZh: "重复的力量",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-5/daily-009-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-5/daily-009-main.mp3"),
     audioSlow: "",
     duration: 79,
     subtitles: [
@@ -204,7 +221,7 @@ const listeningContentMap = {
     zh: "内容 6",
     titleVi: "Cứ từ từ nỗ lực, rồi gặp nhau trên đỉnh cao",
     titleZh: "慢慢努力，顶峰相见",
-    audioNormal: "/audio/Listening/dialogue-so-cap/Topic-6/daily-010-main.mp3",
+    audioNormal: resolveListeningDetailAudio("/audio/Listening/dialogue-so-cap/Topic-6/daily-010-main.mp3"),
     audioSlow: "",
     duration: 94,
     subtitles: [

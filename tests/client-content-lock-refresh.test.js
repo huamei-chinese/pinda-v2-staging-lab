@@ -13,6 +13,7 @@ const appModuleSource = fs.readFileSync(path.join(root, "src", "app.module.ts"),
 const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
 const indexHtmlSource = fs.readFileSync(path.join(root, "public", "index.html"), "utf8");
 const adminV2HtmlSource = fs.readFileSync(path.join(root, "public", "admin-v2.html"), "utf8");
+const subscriptionsHtmlSource = fs.readFileSync(path.join(root, "public", "subscriptions.html"), "utf8");
 
 test("public HSK locks include absolute locked lessons, not only free limits", () => {
   assert.match(contentServiceSource, /SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free/);
@@ -29,8 +30,15 @@ test("Netlify HSK lock endpoint matches the app backend contract", () => {
 });
 
 test("public admin scripts use deploy cache busters", () => {
-  assert.match(indexHtmlSource, /app\.js\?v=railway-vip-locks-20260713/);
+  assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
+  assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
+  assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=static-cache-20260714/);
+  assert.match(indexHtmlSource, /app\.js\?v=static-cache-20260714/);
+  assert.match(indexHtmlSource, /asset-config\.js/);
+  assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
+  assert.match(subscriptionsHtmlSource, /subscriptions\.css\?v=static-cache-20260714/);
+  assert.match(subscriptionsHtmlSource, /subscriptions\.js\?v=static-cache-20260714/);
 });
 
 test("Railway Nest content lock endpoints self-heal schema and disable cache", () => {
@@ -42,10 +50,13 @@ test("Railway Nest content lock endpoints self-heal schema and disable cache", (
   assert.match(adminContentControllerSource, /@Header\('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'\)/);
 });
 
-test("Railway custom domains revalidate app shell assets after deploy", () => {
+test("Railway custom domains cache static assets while keeping HTML and runtime config fresh", () => {
   assert.match(appModuleSource, /serveStaticOptions/);
-  assert.match(appModuleSource, /\(\?:html\|js\|css\)/);
-  assert.match(appModuleSource, /Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'/);
+  assert.match(appModuleSource, /NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, proxy-revalidate'/);
+  assert.match(appModuleSource, /LONG_LIVED_STATIC_CACHE_CONTROL = 'public, max-age=31536000, immutable'/);
+  assert.match(appModuleSource, /fileName === 'asset-config\.js'/);
+  assert.match(appModuleSource, /\\\.html\$\/i\.test\(filePath\)/);
+  assert.match(appModuleSource, /\(\?:js\|css\|json\|png\|jpe\?g\|webp\|svg\|mp3\|wav\|ogg\|ttf\|woff2\?\)/);
 });
 
 test("client content-lock API calls bypass browser cache", () => {

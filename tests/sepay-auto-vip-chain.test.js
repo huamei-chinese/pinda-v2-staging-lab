@@ -93,6 +93,9 @@ test("SePay order activation does not extend VIP when the order is already proce
 
 test("Netlify SePay activation persists the selected VIP plan id", () => {
   assert.match(netlifyApiSource, /ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT/);
+  assert.match(netlifyApiSource, /function parseSepayTransactionDate\(value\)/);
+  assert.match(netlifyApiSource, /parseSepayTransactionDate\(payload\.transactionDate\)/);
+  assert.match(netlifyApiSource, /paid_at = \$2/);
   assert.match(netlifyApiSource, /\{ id: "7d", months: 7, durationUnit: "days", amount: 29000/);
   assert.match(netlifyApiSource, /\{ id: "30d", months: 30, durationUnit: "days", amount: 129000/);
   assert.match(netlifyApiSource, /\{ id: "90d", months: 90, durationUnit: "days", amount: 329000/);

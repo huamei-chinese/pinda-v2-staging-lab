@@ -40,6 +40,9 @@ async function bootstrap() {
   app.use(urlencoded({ extended: true, limit: '30mb' }));
   app.use('/admin', (req: any, res: any, next: any) => {
     if (req.method !== 'GET') return next();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     return res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
   });
 

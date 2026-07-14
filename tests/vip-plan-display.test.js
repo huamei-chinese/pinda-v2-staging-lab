@@ -61,3 +61,16 @@ test("admin user list distinguishes VIP 7d, VIP 30d, VIP 90d, and free plans", (
   assert.match(appSource, /VIP 30 ngày/);
   assert.match(appSource, /VIP 3 tháng/);
 });
+
+test("admin user plan filter only tracks sellable VIP plan durations", () => {
+  const filterSelect = appSource.match(/<select id="adminUserPlanFilter"[\s\S]*?<\/select>/)?.[0] || "";
+  assert.match(filterSelect, /value="all"[\s\S]*Tất cả/);
+  assert.match(filterSelect, /value="7d"[\s\S]*VIP 7 ngày/);
+  assert.match(filterSelect, /value="30d"[\s\S]*VIP 30 ngày/);
+  assert.match(filterSelect, /value="90d"[\s\S]*VIP 3 tháng/);
+  assert.doesNotMatch(filterSelect, /value="FREE"|value="PREMIUM"|value="EMPLOYEE"/);
+  assert.match(appSource, /const ADMIN_USER_PLAN_FILTER_VALUES = new Set\(\["all", "7d", "30d", "90d"\]\)/);
+  assert.match(appSource, /function normalizeAdminUserPlanFilter\(/);
+  assert.match(appSource, /function getAdminUserVipPlanFilterValue\(/);
+  assert.match(appSource, /getAdminUserVipPlanFilterValue\(user\) !== planFilter/);
+});

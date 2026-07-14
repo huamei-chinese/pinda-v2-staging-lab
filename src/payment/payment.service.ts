@@ -256,8 +256,26 @@ export class PaymentService {
       return { success: true, underpaid: true };
     }
 
-    await this.activateOrder(order, payload.id);
+    const paidAt = this.parseSepayTransactionDate(payload.transactionDate) || new Date();
+    await this.activateOrder(order, payload.id, paidAt);
     return { success: true, orderId: order.id };
+  }
+
+  private parseSepayTransactionDate(value?: string): Date | null {
+    const normalized = String(value || '').trim();
+    if (!normalized) return null;
+
+    const localMatch = normalized.match(
+      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/,
+    );
+    if (localMatch) {
+      const [, year, month, day, hour, minute, second = '00'] = localMatch;
+      const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}+07:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private async findOrderFromWebhook(payload: SepayWebhookPayload) {
@@ -288,7 +306,7 @@ export class PaymentService {
     return null;
   }
 
-  private async activateOrder(order: any, sepayId: number) {
+  private async activateOrder(order: any, sepayId: number, paidAt = new Date()) {
     const client = await this.db.getPool()!.connect();
     try {
       await client.query('BEGIN');
@@ -330,12 +348,13 @@ export class PaymentService {
       const currentEnd = user?.premium_until ? new Date(user.premium_until) : null;
       const base = currentEnd && currentEnd > now ? currentEnd : now;
       const premiumUntil = applyPlanDuration(base, plan);
+      const paidAtIso = Number.isNaN(paidAt.getTime()) ? new Date().toISOString() : paidAt.toISOString();
 
       const paidResult = await client.query(
         `UPDATE payment_orders
-         SET status = 'paid', paid_at = NOW()
+         SET status = 'paid', paid_at = $2
          WHERE id = $1 AND status = 'pending'`,
-        [lockedOrder.id],
+        [lockedOrder.id, paidAtIso],
       );
       if (paidResult.rowCount !== 1) {
         await client.query(

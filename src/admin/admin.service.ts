@@ -103,21 +103,151 @@ export class AdminService {
     return requester;
   }
 
-  async getAllUsers(headers: Record<string, string | string[] | undefined>) {
+  private normalizeAdminUsersPage(value: string | string[] | undefined): number {
+    const raw = Array.isArray(value) ? value[0] : value;
+    return Math.max(1, Math.floor(Number(raw || 1)) || 1);
+  }
+
+  private normalizeAdminUsersPageSize(value: string | string[] | undefined): number {
+    const raw = Array.isArray(value) ? value[0] : value;
+    return Math.min(100, Math.max(1, Math.floor(Number(raw || 9)) || 9));
+  }
+
+  private normalizeAdminUsersPlanFilter(value: string | string[] | undefined): 'all' | '7d' | '30d' | '90d' {
+    const raw = String(Array.isArray(value) ? value[0] : value || 'all').trim().toLowerCase();
+    if (raw === '7d' || raw === '30d') return raw;
+    if (raw === '90d' || raw === '3m') return '90d';
+    return 'all';
+  }
+
+  private hasAdminUsersQueryOptions(query: Record<string, string | string[] | undefined> = {}): boolean {
+    return ['page', 'pageSize', 'search', 'level', 'plan'].some((key) => query[key] !== undefined);
+  }
+
+  async getAllUsers(
+    headers: Record<string, string | string[] | undefined>,
+    query: Record<string, string | string[] | undefined> = {},
+  ) {
     const requester = await this.assertAdminOrStaff(headers);
 
     try {
       await this.recalculateCtvVipCounts();
+      const useServerPagination = this.hasAdminUsersQueryOptions(query);
+      const filters: string[] = [];
+      const filterParams: any[] = [];
+      const addFilterParam = (value: any) => {
+        filterParams.push(value);
+        return `$${filterParams.length}`;
+      };
+      const scopedFilters: string[] = [];
+      const scopedParams: any[] = [];
+      const addScopedParam = (value: any) => {
+        scopedParams.push(value);
+        return `$${scopedParams.length}`;
+      };
+
+      if (requester.role === 'ctv') {
+        const ctvRef = String(requester.ref || '').trim().toLowerCase();
+        filters.push(`lower(btrim(ref)) = ${addFilterParam(ctvRef)}`);
+        scopedFilters.push(`lower(btrim(ref)) = ${addScopedParam(ctvRef)}`);
+      }
+
+      const search = String(Array.isArray(query.search) ? query.search[0] : query.search || '').trim();
+      if (search) {
+        const placeholder = addFilterParam(`%${search}%`);
+        filters.push(`(full_name ILIKE ${placeholder} OR email ILIKE ${placeholder} OR id::text ILIKE ${placeholder})`);
+      }
+
+      const level = String(Array.isArray(query.level) ? query.level[0] : query.level || 'all').trim().toUpperCase();
+      if (/^HSK[1-6]$/.test(level)) {
+        filters.push(`current_level = ${addFilterParam(level)}`);
+      }
+
+      const plan = this.normalizeAdminUsersPlanFilter(query.plan);
+      if (plan !== 'all') {
+        const planPlaceholder = addFilterParam(plan);
+        filters.push(`is_premium = TRUE`);
+        filters.push(`(premium_until IS NULL OR premium_until > NOW())`);
+        filters.push(`CASE
+          WHEN lower(coalesce(vip_plan_id, '')) = '7d' THEN '7d'
+          WHEN lower(coalesce(vip_plan_id, '')) = '30d' THEN '30d'
+          WHEN lower(coalesce(vip_plan_id, '')) IN ('90d', '3m') THEN '90d'
+          ELSE ''
+        END = ${planPlaceholder}`);
+      }
+
+      const whereSql = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+      const scopedWhereSql = scopedFilters.length ? `WHERE ${scopedFilters.join(' AND ')}` : '';
+      const summaryResult = await this.db.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE role <> 'admin')::int AS total_users,
+           COUNT(*) FILTER (
+             WHERE role <> 'admin'
+               AND is_premium = TRUE
+               AND (premium_until IS NULL OR premium_until > NOW())
+           )::int AS premium_users
+         FROM users
+         ${scopedWhereSql}`,
+        scopedParams,
+      );
+      const summaryRow = summaryResult.rows[0] || {};
+      const summary = {
+        totalUsers: Number(summaryRow.total_users || 0),
+        premiumUsers: Number(summaryRow.premium_users || 0),
+      };
+
+      if (useServerPagination) {
+        const pageSize = this.normalizeAdminUsersPageSize(query.pageSize);
+        const requestedPage = this.normalizeAdminUsersPage(query.page);
+        const countResult = await this.db.query(
+          `SELECT COUNT(*)::int AS total FROM users ${whereSql}`,
+          filterParams,
+        );
+        const total = Number(countResult.rows[0]?.total || 0);
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const page = Math.min(requestedPage, totalPages);
+        const offset = (page - 1) * pageSize;
+        const pageParams = [...filterParams, pageSize, offset];
+        const result = await this.db.query(
+          `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+           FROM users
+           ${whereSql}
+           ORDER BY created_at DESC
+           LIMIT $${pageParams.length - 1} OFFSET $${pageParams.length}`,
+          pageParams,
+        );
+        return {
+          users: result.rows.map((row) => this.publicUser(row)),
+          pagination: {
+            page,
+            pageSize,
+            total,
+            totalPages,
+            serverSide: true,
+          },
+          summary,
+        };
+      }
+
       const result = await this.db.query(
         `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
          FROM users
+         ${whereSql}
          ORDER BY created_at DESC`,
+        filterParams,
       );
       const users = result.rows.map((row) => this.publicUser(row));
-      if (requester.role === 'ctv') {
-        return { users: users.filter((user) => String(user.ref || '').trim().toLowerCase() === requester.ref) };
-      }
-      return { users };
+      return {
+        users,
+        pagination: {
+          page: 1,
+          pageSize: users.length || 1,
+          total: users.length,
+          totalPages: 1,
+          serverSide: false,
+        },
+        summary,
+      };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -715,9 +845,11 @@ export class AdminService {
 
     const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
     const tz = AdminService.ANALYTICS_TZ;
-    const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
-    const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${tz}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
+    const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
+    const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
     const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${tz}'), 'YYYY-MM-DD')`;
+    const validVipPaymentFilter = `o.amount IN (29000, 129000, 329000)`;
+    const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
     const params = [fromYmd, toYmd];
 
     try {
@@ -729,13 +861,15 @@ export class AdminService {
         this.db.query(
           `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
            FROM payment_orders o
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+           JOIN users u ON u.id = o.user_id
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}`,
           params,
         ),
         this.db.query(
           `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
            FROM payment_orders o
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           JOIN users u ON u.id = o.user_id
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
            GROUP BY 1 ORDER BY 1`,
           params,
         ),
@@ -744,8 +878,9 @@ export class AdminService {
                   COUNT(*)::int AS activations,
                   COALESCE(SUM(o.amount), 0)::bigint AS revenue
            FROM payment_orders o
+           JOIN users u ON u.id = o.user_id
            LEFT JOIN payment_plans p ON p.id = o.plan_id
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
            GROUP BY o.plan_id, p.name_vi
            ORDER BY revenue DESC, activations DESC`,
           params,
@@ -759,7 +894,7 @@ export class AdminService {
            FROM payment_orders o
            JOIN users u ON u.id = o.user_id
            LEFT JOIN payment_plans p ON p.id = o.plan_id
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
            GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
            ORDER BY revenue DESC, latest_paid_at DESC
            LIMIT 400`,

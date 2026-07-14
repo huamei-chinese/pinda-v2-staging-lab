@@ -1131,9 +1131,11 @@ async function handleAdminVipOverview(req, res, url) {
   }
 
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(url.searchParams);
-  const eventWithinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
-  const paidWithinRange = `o.paid_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
+  const validVipPaymentFilter = `o.amount IN (29000, 129000, 329000)`;
+  const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
   const params = [fromYmd, toYmd];
 
   const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
@@ -1144,13 +1146,15 @@ async function handleAdminVipOverview(req, res, url) {
     pool.query(
       `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
        FROM payment_orders o
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}`,
+       JOIN users u ON u.id = o.user_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}`,
       params,
     ),
     pool.query(
       `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
        FROM payment_orders o
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       JOIN users u ON u.id = o.user_id
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY 1 ORDER BY 1`,
       params,
     ),
@@ -1159,8 +1163,9 @@ async function handleAdminVipOverview(req, res, url) {
               COUNT(*)::int AS activations,
               COALESCE(SUM(o.amount), 0)::bigint AS revenue
        FROM payment_orders o
+       JOIN users u ON u.id = o.user_id
        LEFT JOIN payment_plans p ON p.id = o.plan_id
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY o.plan_id, p.name_vi
        ORDER BY revenue DESC, activations DESC`,
       params,
@@ -1174,7 +1179,7 @@ async function handleAdminVipOverview(req, res, url) {
        FROM payment_orders o
        JOIN users u ON u.id = o.user_id
        LEFT JOIN payment_plans p ON p.id = o.plan_id
-       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${paidWithinRange}
+       WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
        ORDER BY revenue DESC, latest_paid_at DESC
        LIMIT 400`,
