@@ -48090,3 +48090,959 @@ body:has(#practiceScreen:not(.hidden)) {
     background: #fef2f2 !important;
   }
 }
+
+/* iPad/tablet responsive pass: keep every main screen usable from portrait to Pro landscape. */
+@media (min-width: 641px) and (max-width: 1366px) {
+
+  html,
+  body,
+  #app,
+  .screen,
+  .app-desktop-shell,
+  .app-desktop-content {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  .app-desktop-content img,
+  .screen img,
+  .home-duo-art img,
+  .home-desktop-module-cover,
+  .home-mobile-module-cover {
+    max-width: 100% !important;
+  }
+
+  .hsk-level-picker,
+  .daily-course-layout,
+  .vocab-screen,
+  .account-layout,
+  .account-panel,
+  .listening-spa-layout,
+  .listening-dashboard-main,
+  .listening-lessons-screen,
+  .listening-detail-spa,
+  .listening-vocab-lesson-screen,
+  .listening-repeat-lesson-screen,
+  .listening-repeat-lesson-screen--compact {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .hsk-level-grid,
+  .listening-topic-grid,
+  .home-desktop-vocab-grid,
+  .home-mobile-saved-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)) !important;
+  }
+
+  .account-panel-grid,
+  .account-panel.account-mobile-stack,
+  .daily-course-layout,
+  .listening-repeat-practice-grid,
+  .repeat-ai-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+
+  body.has-mobile-bottom-nav {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .app-desktop-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .screen-home .app-desktop-shell--home .app-desktop-content {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .screen-home .home-desktop-main,
+  .screen-course .app-desktop-content,
+  .screen-vocab .app-desktop-content,
+  .screen-listening .app-desktop-content,
+  .screen-account .app-desktop-content {
+    width: min(100%, 860px) !important;
+    margin-inline: auto !important;
+    padding-inline: 24px !important;
+    box-sizing: border-box !important;
+  }
+
+  .screen-home .home-desktop-main {
+    padding-top: 24px !important;
+    gap: 18px !important;
+  }
+
+  .screen-home .home-desktop-topbar {
+    min-height: auto !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding-inline: 0 !important;
+  }
+
+  .screen-home .home-desktop-topbar h1 {
+    font-size: 40px !important;
+    line-height: 1.08 !important;
+  }
+
+  .screen-home .home-desktop-topbar p {
+    font-size: 15px !important;
+  }
+
+  .screen-home .home-desktop-modules,
+  .screen-home .home-desktop-modules--duo,
+  .screen-home .home-duo-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px !important;
+  }
+
+  .screen-home .home-duo-card,
+  .screen-home .home-desktop-module-card.home-duo-card {
+    min-height: 260px !important;
+    border-radius: 26px !important;
+  }
+
+  .screen-home .home-duo-copy {
+    max-width: 64% !important;
+    padding: 24px 20px !important;
+  }
+
+  .screen-home .home-duo-copy h3 {
+    font-size: 38px !important;
+    line-height: 1 !important;
+  }
+
+  .screen-home .home-duo-copy p {
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+  }
+
+  .screen-home .home-duo-art {
+    width: 45% !important;
+    right: 8px !important;
+  }
+
+  .screen-home .home-mobile-topics-section {
+    width: min(100%, 860px) !important;
+    margin-inline: auto !important;
+    padding: 0 24px 100px !important;
+    box-sizing: border-box !important;
+  }
+
+  .screen-home .home-mobile-topics-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .screen-home .home-mobile-topic-card {
+    grid-template-columns: 30px 74px minmax(0, 1fr) !important;
+    min-height: 126px !important;
+  }
+
+  .screen-home .home-mobile-topic-start {
+    grid-column: 3 !important;
+    justify-self: start !important;
+  }
+
+  .mobile-bottom-nav:not(.hidden) {
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    width: min(calc(100% - 32px), 760px) !important;
+    transform: translateX(-50%) !important;
+    border-radius: 24px !important;
+    padding: 10px 14px !important;
+  }
+
+  .mobile-bottom-nav-item {
+    min-height: 54px !important;
+    border-radius: 16px !important;
+  }
+
+  .mobile-bottom-nav-label {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+
+  .app-desktop-shell {
+    --desktop-sidebar-width: 184px !important;
+  }
+
+  .home-desktop-sidebar {
+    width: var(--desktop-sidebar-width) !important;
+    padding: 18px 12px 14px !important;
+  }
+
+  .home-desktop-brand {
+    gap: 10px !important;
+    margin-bottom: 18px !important;
+    padding-inline: 4px !important;
+  }
+
+  .home-desktop-brand-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+  }
+
+  .home-desktop-brand strong {
+    font-size: 16px !important;
+  }
+
+  .home-desktop-brand small {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .home-desktop-nav {
+    gap: 6px !important;
+  }
+
+  .home-desktop-nav-item {
+    min-height: 42px !important;
+    gap: 9px !important;
+    padding-inline: 10px !important;
+    border-radius: 13px !important;
+    font-size: 13px !important;
+  }
+
+  .home-desktop-nav-item span,
+  .home-desktop-nav-item span svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .home-desktop-logout-btn {
+    min-height: 40px !important;
+    font-size: 12px !important;
+  }
+
+  .app-desktop-content {
+    width: auto !important;
+    max-width: none !important;
+    margin-left: var(--desktop-sidebar-width) !important;
+    padding: 16px !important;
+  }
+
+  .screen-home .app-desktop-content {
+    padding: 16px !important;
+  }
+
+  .screen-home .home-desktop-layout,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-dashboard-main) .listening-dashboard-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .screen-home .home-desktop-rail,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-dashboard-main) .listening-dashboard-rail-v3 {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .screen-home .home-desktop-profile-card {
+    display: none !important;
+  }
+
+  .screen-home .home-desktop-topbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .screen-home .home-desktop-topbar h1 {
+    font-size: 38px !important;
+  }
+
+  .screen-home .home-desktop-modules,
+  .screen-home .home-desktop-modules--duo,
+  .screen-home .home-duo-modules {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .screen-home .home-duo-card,
+  .screen-home .home-desktop-module-card.home-duo-card {
+    min-height: 250px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1366px) {
+
+  .app-desktop-shell {
+    --desktop-sidebar-width: 216px !important;
+  }
+
+  .home-desktop-sidebar {
+    width: var(--desktop-sidebar-width) !important;
+  }
+
+  .app-desktop-content {
+    margin-left: var(--desktop-sidebar-width) !important;
+    padding: 20px !important;
+  }
+
+  .screen-home .home-desktop-layout {
+    grid-template-columns: minmax(0, 1fr) 280px !important;
+    gap: 18px !important;
+  }
+
+  .screen-home .home-desktop-topbar h1 {
+    font-size: 42px !important;
+  }
+
+  .screen-home .home-duo-card,
+  .screen-home .home-desktop-module-card.home-duo-card {
+    min-height: 260px !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: portrait) {
+  .screen-home .home-desktop-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .screen-home .home-desktop-rail {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) and (orientation: portrait) {
+
+  .screen-home .home-desktop-modules,
+  .screen-home .home-desktop-modules--duo,
+  .screen-home .home-duo-modules {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .screen-home .home-duo-card,
+  .screen-home .home-desktop-module-card.home-duo-card {
+    min-height: 300px !important;
+  }
+
+  .screen-home .home-duo-copy h3 {
+    font-size: 46px !important;
+  }
+}
+
+/* iPad portrait listening detail: make the lesson page feel native to tablet widths. */
+@media (min-width: 641px) and (max-width: 900px) {
+
+  body:has(#listeningScreen:not(.hidden) .listening-detail-spa),
+  body.has-mobile-bottom-nav:has(#listeningScreen:not(.hidden) .listening-detail-spa) {
+    min-height: 100dvh !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y: auto !important;
+    overflow-x: clip !important;
+  }
+
+  #listeningScreen:not(.hidden),
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening .app-desktop-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  #listeningScreen:not(.hidden) .mobile-page-return-bar--listening {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa {
+    width: min(100%, 860px) !important;
+    max-width: 860px !important;
+    min-height: auto !important;
+    margin: 0 auto !important;
+    padding: 28px 36px calc(118px + env(safe-area-inset-bottom, 0px)) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 20px !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-topbar,
+  #listeningScreen:not(.hidden) .listening-detail-hero {
+    display: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-card,
+  #listeningScreen:not(.hidden) .listening-script-card,
+  #listeningScreen:not(.hidden) .listening-keyword-block,
+  #listeningScreen:not(.hidden) .listening-translation-panel,
+  #listeningScreen:not(.hidden) .listening-repeat-box,
+  #listeningScreen:not(.hidden) .listening-repeat-card,
+  #listeningScreen:not(.hidden) .listening-quick-links-card,
+  #listeningScreen:not(.hidden) .listening-vocab-practice-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    border-radius: 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-card {
+    min-height: 156px !important;
+    padding: 18px 18px 20px !important;
+    position: sticky !important;
+    top: 12px !important;
+    z-index: 12 !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: blur(14px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.08) !important;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.1) !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 6px 14px !important;
+    align-items: start !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status > div {
+    min-width: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status strong,
+  #listeningScreen:not(.hidden) .listening-player-status small {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status strong {
+    font-size: 16px !important;
+    line-height: 1.15 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status small {
+    font-size: 13px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status > span {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+    font-weight: 900 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-player-status .listening-waveform,
+  #listeningScreen:not(.hidden) .listening-player-status > span:first-of-type {
+    display: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-time-row {
+    display: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-track {
+    margin: 10px 0 16px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-controls {
+    width: 100% !important;
+    min-height: 62px !important;
+    display: grid !important;
+    grid-template-columns: minmax(132px, 1fr) 36px 64px 36px minmax(170px, 1fr) !important;
+    gap: 10px !important;
+    align-items: center !important;
+    justify-items: center !important;
+    padding: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-speed-menu,
+  #listeningScreen:not(.hidden) .listening-replay-link {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-speed-toggle,
+  #listeningScreen:not(.hidden) .listening-replay-link {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: center !important;
+    padding: 0 14px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-speed-options {
+    left: 0 !important;
+    right: auto !important;
+    min-width: 300px !important;
+    max-width: min(360px, calc(100vw - 72px)) !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-step-btn {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 48px !important;
+    padding: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-step-btn span {
+    display: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-main-play {
+    width: 64px !important;
+    min-width: 64px !important;
+    height: 64px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-practice-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 20px !important;
+    min-width: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-card {
+    padding: 20px !important;
+    overflow: hidden !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-card--mobile,
+  #listeningScreen:not(.hidden) .listening-script-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: start !important;
+    gap: 14px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-title,
+  #listeningScreen:not(.hidden) .listening-mobile-section-title {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-title {
+    font-size: 26px !important;
+    line-height: 1.12 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-head {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    width: min(360px, 45vw) !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-head strong,
+  #listeningScreen:not(.hidden) .listening-script-head p {
+    display: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-subtitle-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-subtitle-actions button {
+    min-width: 0 !important;
+    min-height: 42px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence-list {
+    grid-column: 1 / -1 !important;
+    max-height: 470px !important;
+    overflow-y: auto !important;
+    gap: 12px !important;
+    padding: 2px 6px 2px 0 !important;
+    scrollbar-width: thin !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence {
+    min-height: 104px !important;
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) !important;
+    gap: 16px !important;
+    padding: 18px 20px !important;
+    border-radius: 18px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence--title,
+  #listeningScreen:not(.hidden) .listening-sentence--title.active {
+    min-height: 126px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence > span,
+  #listeningScreen:not(.hidden) .listening-sentence > i {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence strong,
+  #listeningScreen:not(.hidden) .listening-sentence .listening-line-zh {
+    font-size: clamp(22px, 3.2vw, 28px) !important;
+    line-height: 1.18 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence small,
+  #listeningScreen:not(.hidden) .listening-sentence em,
+  #listeningScreen:not(.hidden) .listening-sentence .listening-line-pinyin,
+  #listeningScreen:not(.hidden) .listening-sentence .listening-line-vi {
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-translation-btn {
+    grid-column: 1 / -1 !important;
+    min-height: 48px !important;
+    font-size: 15px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-repeat-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-keyword-block,
+  #listeningScreen:not(.hidden) .listening-translation-panel,
+  #listeningScreen:not(.hidden) .listening-repeat-box,
+  #listeningScreen:not(.hidden) .listening-quick-links-card {
+    padding: 22px !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-keyword-block > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-keyword-block button {
+    min-height: 40px !important;
+    padding-inline: 18px !important;
+    font-size: 16px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-quick-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-script-quick-actions button {
+    min-height: 104px !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) and (orientation: landscape) {
+  #listeningScreen:not(.hidden) .listening-detail-spa {
+    width: min(100%, 1024px) !important;
+    max-width: 1024px !important;
+    padding-inline: 28px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-sentence-list {
+    max-height: 380px !important;
+  }
+}
+
+/* iPad/tablet repeat speaking: fill the tablet viewport without using phone layout. */
+@media (min-width: 701px) and (max-width: 1024px) {
+
+  body.has-mobile-bottom-nav:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) {
+    padding-bottom: 0 !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact),
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) #app,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) #listeningScreen,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .app-desktop-shell--listening-repeat,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .app-desktop-content {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) #mobileBottomNav,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .mobile-bottom-nav,
+  body:has(#listeningScreen:not(.hidden) .listening-repeat-lesson-screen--compact) .mobile-page-return-bar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-lesson-screen--compact {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    padding: clamp(16px, 2.8vw, 30px) clamp(18px, 4vw, 42px) clamp(18px, 3vw, 32px) !important;
+    background-position: center center !important;
+    overflow: hidden !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-workspace--compact,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-practice-grid,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-sentence-feed {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-card--active {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    display: grid !important;
+    grid-template-rows: minmax(92px, 18dvh) minmax(230px, 34dvh) minmax(118px, 18dvh) minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: clamp(10px, 1.5dvh, 18px) !important;
+    padding: clamp(18px, 2.8vw, 30px) clamp(68px, 8.4vw, 96px) clamp(16px, 2.6vw, 28px) !important;
+    overflow: hidden !important;
+    border-radius: clamp(24px, 3vw, 34px) !important;
+    background:
+      radial-gradient(circle at 50% 34%, rgba(255, 255, 255, .84), rgba(255, 255, 255, .38) 62%, rgba(255, 255, 255, .16)),
+      linear-gradient(135deg, rgba(229, 246, 255, .34), rgba(255, 251, 243, .30)) !important;
+    box-shadow:
+      0 26px 64px rgba(15, 23, 42, .12),
+      inset 0 1px 0 rgba(255, 255, 255, .74) !important;
+    backdrop-filter: blur(12px) saturate(1.05) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-card--active::before {
+    grid-row: 1 !important;
+    width: min(78vw, 640px) !important;
+    height: clamp(54px, 11dvh, 112px) !important;
+    align-self: center !important;
+    opacity: .30 !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-index {
+    top: clamp(18px, 2.4vw, 28px) !important;
+    right: clamp(20px, 3vw, 34px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content {
+    grid-row: 2 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    justify-self: center !important;
+    align-self: center !important;
+    width: min(100%, 660px) !important;
+    height: auto !important;
+    min-height: clamp(230px, 29dvh, 330px) !important;
+    max-height: min(38dvh, 360px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: clamp(9px, 1.25dvh, 15px) !important;
+    margin: 0 !important;
+    padding: clamp(22px, 2.8dvh, 34px) clamp(28px, 5vw, 54px) !important;
+    overflow: hidden !important;
+    border-radius: clamp(26px, 3vw, 34px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content strong {
+    max-height: none !important;
+    font-size: clamp(34px, 5.2vw, 54px) !important;
+    line-height: 1.08 !important;
+    overflow: visible !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content.is-long strong {
+    font-size: clamp(29px, 4.4vw, 46px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content.is-very-long strong {
+    font-size: clamp(24px, 3.7vw, 38px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content small {
+    width: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 8px 16px !important;
+    font-size: clamp(15px, 2.1vw, 18px) !important;
+    line-height: 1.22 !important;
+    overflow: visible !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content em {
+    width: 100% !important;
+    max-height: none !important;
+    font-size: clamp(14px, 1.8vw, 17px) !important;
+    line-height: 1.32 !important;
+    overflow: visible !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-card-actions--triad {
+    grid-row: 3 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    justify-self: center !important;
+    align-self: center !important;
+    width: min(100%, 380px) !important;
+    height: auto !important;
+    max-width: 380px !important;
+    gap: clamp(18px, 4.2vw, 34px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-play-large,
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-score-playback {
+    width: clamp(56px, 7vw, 68px) !important;
+    height: clamp(56px, 7vw, 68px) !important;
+    min-width: clamp(56px, 7vw, 68px) !important;
+    min-height: clamp(56px, 7vw, 68px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-mic-large {
+    width: clamp(88px, 11vw, 108px) !important;
+    height: clamp(88px, 11vw, 108px) !important;
+    min-width: clamp(88px, 11vw, 108px) !important;
+    min-height: clamp(88px, 11vw, 108px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-nav {
+    top: 44% !important;
+    width: clamp(52px, 7vw, 62px) !important;
+    height: clamp(52px, 7vw, 62px) !important;
+    min-width: clamp(52px, 7vw, 62px) !important;
+    min-height: clamp(52px, 7vw, 62px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-nav--prev {
+    left: clamp(18px, 4vw, 34px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-nav--next {
+    right: clamp(18px, 4vw, 34px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-corner-back {
+    top: clamp(18px, 2.8vw, 28px) !important;
+    left: clamp(18px, 2.8vw, 28px) !important;
+    width: clamp(48px, 6.4vw, 58px) !important;
+    height: clamp(48px, 6.4vw, 58px) !important;
+    min-width: clamp(48px, 6.4vw, 58px) !important;
+    min-height: clamp(48px, 6.4vw, 58px) !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1024px) and (max-height: 820px) {
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-card--active {
+    grid-template-rows: minmax(64px, 14dvh) minmax(200px, 35dvh) minmax(96px, 20dvh) minmax(0, 1fr) !important;
+    padding-block: clamp(12px, 2.2vw, 22px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-feed-active-content {
+    min-height: clamp(200px, 34dvh, 280px) !important;
+    max-height: min(40dvh, 300px) !important;
+    padding-block: clamp(16px, 2.5dvh, 24px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-card-actions--triad {
+    gap: clamp(16px, 3.4vw, 28px) !important;
+  }
+
+  #listeningScreen:not(.hidden) .app-desktop-shell--listening-repeat .listening-repeat-mic-large {
+    width: clamp(78px, 9vw, 92px) !important;
+    height: clamp(78px, 9vw, 92px) !important;
+    min-width: clamp(78px, 9vw, 92px) !important;
+    min-height: clamp(78px, 9vw, 92px) !important;
+  }
+}
+
+/* iPad listening detail: audio player must be the first block. */
+@media (min-width: 641px) and (max-width: 900px) {
+  #listeningScreen:not(.hidden) .listening-detail-spa {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa > .listening-player-card {
+    order: -999 !important;
+    position: relative !important;
+    top: auto !important;
+    z-index: 30 !important;
+    margin: 0 0 8px !important;
+    flex: 0 0 auto !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa > .listening-detail-practice-grid {
+    order: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa > :not(.listening-player-card):not(.listening-detail-topbar):not(.listening-detail-hero) {
+    order: 1 !important;
+  }
+}
+
+/* iPad listening detail: remove the dead space caused by the old sticky player. */
+@media (min-width: 641px) and (max-width: 900px) {
+  #listeningScreen:not(.hidden) .listening-detail-spa {
+    gap: 10px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa > .listening-player-card {
+    position: relative !important;
+    top: auto !important;
+    margin-bottom: 8px !important;
+  }
+
+  #listeningScreen:not(.hidden) .listening-detail-spa .listening-script-card {
+    margin-top: 0 !important;
+  }
+}

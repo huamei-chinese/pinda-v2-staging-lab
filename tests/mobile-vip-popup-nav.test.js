@@ -21,7 +21,7 @@ test("mobile bottom nav shows a VIP button", () => {
 test("mobile VIP nav opens the upgrade popup", () => {
   assert.match(
     appJs,
-    /bottomSubscriptionsBtn[\s\S]*?dataset\.bottomNav = "vip";[\s\S]*?textContent = "VIP";[\s\S]*?desktopNavIcon\("vip"\)/,
+    /bottomSubscriptionsBtn[\s\S]*?dataset\.bottomNav = "vip";[\s\S]*?textContent = isVi \? "Gói VIP" : "VIP";[\s\S]*?desktopNavIcon\("vip"\)/,
   );
   assert.match(
     appJs,
@@ -36,6 +36,6 @@ test("mobile bottom nav fits five tabs with VIP styling", () => {
   assert.doesNotMatch(stylesCss, /#bottomNavDailyBtn,\s*#bottomNavVocabBtn,\s*#bottomNavSubscriptionsBtn\s*\{/);
   assert.match(stylesCss, /\.mobile-bottom-nav-vip\s*\{[\s\S]*?color:\s*#a16207 !important;/);
   assert.match(stylesCss, /\.upgrade-plans-grid\s*\{[\s\S]*?width:\s*min\(100%,\s*390px\);/);
-  assert.match(indexHtml, /styles\.css\?v=mobile-vip-popup-20260714/);
-  assert.match(indexHtml, /app\.js\?v=mobile-pindagou-label-20260714/);
+  assert.match(indexHtml, /styles\.css\?v=ipad-repeat-responsive-20260714/);
+  assert.match(indexHtml, /app\.js\?v=mobile-vip-label-full-20260714/);
 });
