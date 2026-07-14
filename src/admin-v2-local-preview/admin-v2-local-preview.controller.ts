@@ -462,7 +462,7 @@ export class AdminV2LocalPreviewController {
   }
 
   private dataPath() {
-    return path.join(process.cwd(), 'public', 'admin-v2-local-data.json');
+    return path.join(process.cwd(), 'dev-only', 'admin-v2-local-data.json');
   }
 
   private readLocalData() {

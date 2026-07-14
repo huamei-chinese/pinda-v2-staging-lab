@@ -10207,6 +10207,43 @@ p {
   color: #8a6814;
 }
 
+.account-profile-logout-btn {
+  width: min(100%, 220px);
+  min-height: 44px;
+  margin: 18px auto 0;
+  padding: 0 18px;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(220, 38, 38, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.account-profile-logout-btn:hover,
+.account-profile-logout-btn:focus-visible {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(220, 38, 38, 0.28);
+  outline: none;
+}
+
+.account-profile-logout-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.account-profile-logout-btn svg {
+  flex: 0 0 auto;
+}
+
 .account-streak {
   display: flex;
   align-items: center;
@@ -10357,10 +10394,6 @@ p {
 .account-mobile-upgrade,
 .account-joined-note,
 .account-password-card {
-  display: none;
-}
-
-.account-mobile-logout-btn {
   display: none;
 }
 
@@ -10894,20 +10927,12 @@ p {
     flex-shrink: 0;
   }
 
-  .account-mobile-logout-btn {
+  .account-profile-logout-btn {
     width: 100%;
     min-height: 52px;
-    border: 0;
+    margin: 14px 0 18px;
     border-radius: 16px;
-    background: #fff1f2;
-    color: #dc2626;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 18px;
     font-size: 15px;
-    font-weight: 900;
-    cursor: pointer;
   }
 
   .account-mobile-language-btn {
@@ -11533,7 +11558,6 @@ p {
 
   .account-mobile-upgrade,
   .account-password-card,
-  .account-mobile-logout-btn,
   .account-joined-note {
     display: none !important;
   }
@@ -48029,68 +48053,6 @@ body:has(#practiceScreen:not(.hidden)) {
   #listeningScreen .app-desktop-shell--listening .listening-dashboard-main .listening-dashboard-content .listening-topic-hero {
     min-height: 178px !important;
     padding-block: 16px !important;
-  }
-}
-
-/* Desktop sidebar: keep the signed-in logout action reachable. */
-@media (min-width: 901px) {
-  .app-desktop-shell .home-desktop-sidebar {
-    height: calc(100dvh - 24px) !important;
-    max-height: calc(100dvh - 24px) !important;
-    overflow-y: auto !important;
-    scrollbar-gutter: stable;
-  }
-
-  .app-desktop-shell .home-desktop-sidebar-panda {
-    display: block !important;
-    flex: 1 1 96px !important;
-    min-height: 72px !important;
-    max-height: 132px !important;
-  }
-
-  .app-desktop-shell .home-desktop-sidebar-streak {
-    display: flex !important;
-  }
-
-  .app-desktop-shell .home-desktop-sidebar-foot {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 5 !important;
-    flex: 0 0 auto !important;
-    margin-top: 10px !important;
-    padding-top: 10px !important;
-    padding-bottom: 2px !important;
-    background: transparent !important;
-  }
-
-  .app-desktop-shell .home-desktop-logout-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .app-desktop-shell .home-desktop-sidebar-foot:empty {
-    display: none !important;
-  }
-
-  .app-desktop-shell .home-desktop-nav .home-desktop-logout-btn--nav {
-    width: 100% !important;
-    min-height: 42px !important;
-    margin: 2px 0 0 !important;
-    border: 1px solid rgba(220, 38, 38, 0.16) !important;
-    border-radius: 14px !important;
-    background: rgba(255, 255, 255, 0.72) !important;
-    color: #64748b !important;
-    font-family: var(--font-display) !important;
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    box-shadow: none !important;
-  }
-
-  .app-desktop-shell .home-desktop-nav .home-desktop-logout-btn--nav:hover {
-    color: #dc2626 !important;
-    border-color: #fecaca !important;
-    background: #fef2f2 !important;
   }
 }
 

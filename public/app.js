@@ -316,12 +316,12 @@ const hskLevels = {
 };
 
 const hskLevelContentScripts = {
-  HSK1: "lesson-hsk1-word-sentence-audit.js",
-  HSK2: "lesson-hsk2-word-sentence-audit.js",
-  HSK3: "lesson-hsk3-word-sentence-audit.js",
-  HSK4: "lesson-hsk4-word-sentence-audit.js",
-  HSK5: "lesson-hsk5-word-sentence-audit.js",
-  HSK6: "lesson-hsk6-word-sentence-audit.js",
+  HSK1: "lesson-hsk1-word-sentence-content.js",
+  HSK2: "lesson-hsk2-word-sentence-content.js",
+  HSK3: "lesson-hsk3-word-sentence-content.js",
+  HSK4: "lesson-hsk4-word-sentence-content.js",
+  HSK5: "lesson-hsk5-word-sentence-content.js",
+  HSK6: "lesson-hsk6-word-sentence-content.js",
 };
 
 const hskLevelContentLoaded = new Set();
@@ -8120,6 +8120,15 @@ function renderAccount() {
               <article><img src="assets/review_user_3.png" alt="" /><strong>${isVi ? "Bộ từ" : "生词本"}</strong><small>${isVi ? `${savedCount} từ vựng` : `${savedCount} 个已收藏词`}</small></article>
             </div>
           </section>
+          <button type="button" class="account-profile-logout-btn" data-account-logout>
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 17l5-5-5-5" />
+              <path d="M15 12H3" />
+              <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
+              <path d="M13 21h6a2 2 0 0 0 2-2" />
+            </svg>
+            <span>${t("logout")}</span>
+          </button>
           <div class="account-streak">
             <span class="account-streak-calendar" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -8287,10 +8296,6 @@ function renderAccount() {
             <path d="M9 6l6 6-6 6"/>
           </svg>
         </button>
-        <button type="button" class="account-mobile-logout-btn" id="accountMobileLogoutBtn">
-          ${t("logout")}
-        </button>
-
       </div>
     </div>
   `, "app-desktop-shell--account", "account");
@@ -15928,7 +15933,7 @@ function bindEvents() {
       return;
     }
 
-    if (event.target.closest("#accountMobileLogoutBtn")) {
+    if (event.target.closest("[data-account-logout]")) {
       logoutCurrentUser();
       return;
     }

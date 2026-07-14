@@ -54,12 +54,14 @@ test("entry documents keep heavy lesson and listening data out of initial loadin
 test("app runtime lazy-loads HSK level, high-frequency, and listening catalog data", () => {
   assert.match(appSource, /const hskLevelContentScripts\s*=\s*\{/);
   for (const level of ["hsk1", "hsk2", "hsk3", "hsk4", "hsk5", "hsk6"]) {
-    assert.match(appSource, new RegExp(`lesson-${level}-word-sentence-audit\\.js`));
+    assert.match(appSource, new RegExp(`lesson-${level}-word-sentence-content\\.js`));
   }
   assert.match(appSource, /async function ensureHskLevelContent\(levelKey\)/);
   assert.match(appSource, /function prefetchHskLevelContent\(levelKey\)/);
   assert.match(appSource, /const HIGH_FREQUENCY_TOPICS_SCRIPT_SRC\s*=\s*"lesson-high-frequency-v1-27-topics\.js"/);
-  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=\s*"listening-app\/data\/listening-catalog\.js\?v=20260713-catalog"/);
+  assert.match(appSource, /const LISTENING_CATALOG_SCRIPT_SRC\s*=/);
+  assert.match(appSource, /listeningCatalogScriptUrl/);
+  assert.match(appSource, /resolvePublicAssetPath\("listening-app\/data\/listening-catalog\.js\?v=20260713-catalog", "listeningApp"\)/);
   assert.match(appSource, /function ensureListeningCatalogLoaded\(options = \{\}\)/);
   assert.match(appSource, /function warmStartupDataAfterFirstPaint\(\)/);
   assert.match(appSource, /renderHome\(\);\s*setScreen\("home"\);/);

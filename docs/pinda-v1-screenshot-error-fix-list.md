@@ -23,7 +23,7 @@
 | ID | 范围 | 错在哪里 | 怎么修改 | 影响文件 |
 | --- | --- | --- | --- | --- |
 | G-001 | HSK1 课名列表 | 截图 `053-066` 显示多处 `=`，课名前缺少 HSK 级别和课文编号 | 把课名统一显示为 `HSK1 第X课 - 原课名`，例如 `HSK1 第1课 - Chào hỏi cơ bản - Từ vựng` | 课表/课程标题数据或渲染标题字段 |
-| G-002 | 所有 HSK 课程 | `△` 标注的整句被放在“词汇”页 | 把对应条目的 `type/stage` 从 `word` 改为 `sentence`，并确保进入句子练习列表 | `public/lesson-hsk*-word-sentence-audit.js` / 生成脚本 |
+| G-002 | 所有 HSK 课程 | `△` 标注的整句被放在“词汇”页 | 把对应条目的 `type/stage` 从 `word` 改为 `sentence`，并确保进入句子练习列表 | `public/lesson-hsk*-word-sentence-content.js` / 生成脚本 |
 | G-003 | 所有 HSK 课程 | `X` 标注的词性错误会误导学习者 | 按截图逐条修 `pos`，只允许合理词性：noun/verb/adj/adv/pron/prep/particle/phrase | 课程内容文件 |
 | G-004 | 所有 HSK 课程 | `O` 标注说明越南语翻译不准 | 修正越南语义项，不改中文、拼音、音频路径 | 课程内容文件 |
 | G-005 | 所有 HSK 课程 | `✓/@` 标注说明音频或答案绑定异常 | 对照 `audio_normal_path`、`audio_slow_path`、题目答案和音频文件名重新绑定 | 课程内容文件 + audio 路径 |
@@ -201,7 +201,7 @@
 
 ### B6 HSK6 审计结论
 
-- HSK6 课表入口正常，当前 `public/lesson-hsk6-word-sentence-audit.js` 提供 40 课，顺序为 `hsk6-l1` 到 `hsk6-l40`。
+- HSK6 课表入口正常，当前 `public/lesson-hsk6-word-sentence-content.js` 提供 40 课，顺序为 `hsk6-l1` 到 `hsk6-l40`。
 - HSK6 第 1-20 课、第 31-40 课包含 40 个词语 + 25 个句子；对应 `word` 和 `sentence` 音频目录存在。
 - HSK6 第 21-30 课当前只包含词语内容，没有句子内容；对应音频目录也只有 `word`，没有 `sentence`。这是素材源缺口，不应通过猜测生成句子或假绑音频修复。
 - HSK6 第 28 课当前包含 55 个词语，且有 110 个词语音频文件（normal/slow）。保留该数据状态，后续如需统一为 40 词，需要先有老板或内容负责人确认删减规则。

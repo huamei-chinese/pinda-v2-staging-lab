@@ -29,7 +29,7 @@ function sendJson(res, status, payload) {
 }
 
 function dataPath() {
-  return path.join(root, "public", "admin-v2-local-data.json");
+  return path.join(root, "dev-only", "admin-v2-local-data.json");
 }
 
 function readLocalData() {
@@ -93,7 +93,7 @@ function buildStage8LocalApiHandoff(data) {
       {
         path: "/api/admin-v2/local-preview",
         status: "json-ready",
-        source: "public/admin-v2-local-data.json",
+        source: "dev-only/admin-v2-local-data.json",
       },
       {
         path: "/api/admin-v2/real-users-readonly-preview",

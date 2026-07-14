@@ -5,7 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 function loadHsk5AuditContent() {
-  const sourcePath = path.join(__dirname, "..", "public", "lesson-hsk5-word-sentence-audit.js");
+  const sourcePath = path.join(__dirname, "..", "public", "lesson-hsk5-word-sentence-content.js");
   const source = fs.readFileSync(sourcePath, "utf8");
   const sandbox = { lessonContent: {} };
   vm.runInNewContext(source, sandbox, { filename: sourcePath });

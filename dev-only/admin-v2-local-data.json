@@ -1088,7 +1088,7 @@
   ],
   "stage8LocalApiHandoff": {
     "status": "local-api-ready",
-    "source": "public/admin-v2-local-data.json",
+    "source": "dev-only/admin-v2-local-data.json",
     "realDatabaseConnected": false,
     "writeEnabled": false,
     "productionDeployEnabled": false,

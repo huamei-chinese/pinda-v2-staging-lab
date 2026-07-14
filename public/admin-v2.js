@@ -116,7 +116,7 @@ const adminV2LocalBridge = {
   stage8HandoffUrl: "/api/admin-v2/stage8-local-api-handoff",
   stage9ReadinessUrl: "/api/admin-v2/stage9-pr-readiness",
   stage10FinalUrl: "/api/admin-v2/stage10-final-acceptance",
-  dataUrl: "admin-v2-local-data.json",
+  dataUrl: "/api/admin-v2/local-preview",
   blockedEndpoints: [
     "/api/payments/orders",
     "/api/webhooks/sepay",
@@ -386,7 +386,7 @@ function renderAdminV2LocalData(data) {
   if (apiPath) {
     apiPath.textContent = connectedByApi
       ? "数据来自 /api/admin-v2/local-preview"
-      : "后端不可用时回退 admin-v2-local-data.json";
+      : "后端不可用时回退 local-preview API";
   }
 
   const lastSync = document.querySelector("[data-api-last-sync]");
@@ -1464,7 +1464,7 @@ function renderStage8LocalApiHandoff(data) {
   const handoff = data || {};
 
   if (status) status.textContent = handoff.status || "local-api-ready";
-  if (source) source.textContent = handoff.source || "public/admin-v2-local-data.json";
+  if (source) source.textContent = handoff.source || "local-preview API";
   if (database) database.textContent = handoff.realDatabaseConnected ? "已连接" : "不连接";
   if (write) write.textContent = handoff.writeEnabled ? "开启" : "关闭";
   if (deploy) deploy.textContent = handoff.productionDeployEnabled ? "可发布" : "不可发布";

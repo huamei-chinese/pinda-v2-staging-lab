@@ -10,7 +10,7 @@ const srcDir = path.join(repoRoot, "src");
 const html = fs.readFileSync(path.join(publicDir, "admin-v2.html"), "utf8");
 const css = fs.readFileSync(path.join(publicDir, "admin-v2.css"), "utf8");
 const js = fs.readFileSync(path.join(publicDir, "admin-v2.js"), "utf8");
-const localData = JSON.parse(fs.readFileSync(path.join(publicDir, "admin-v2-local-data.json"), "utf8"));
+const localData = JSON.parse(fs.readFileSync(path.join((typeof repoRoot !== "undefined" ? repoRoot : root), "dev-only", "admin-v2-local-data.json"), "utf8"));
 const controller = fs.readFileSync(
   path.join(srcDir, "admin-v2-local-preview", "admin-v2-local-preview.controller.ts"),
   "utf8",

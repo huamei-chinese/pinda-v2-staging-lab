@@ -8,7 +8,7 @@ const publicDir = path.join(root, "public");
 const html = fs.readFileSync(path.join(publicDir, "admin-v2.html"), "utf8");
 const css = fs.readFileSync(path.join(publicDir, "admin-v2.css"), "utf8");
 const js = fs.readFileSync(path.join(publicDir, "admin-v2.js"), "utf8");
-const localDataPath = path.join(publicDir, "admin-v2-local-data.json");
+const localDataPath = path.join((typeof repoRoot !== "undefined" ? repoRoot : root), "dev-only", "admin-v2-local-data.json");
 
 test("admin v2 exposes a safe local frontend-backend bridge shell", () => {
   const text = html.replace(/\s+/g, " ");
@@ -30,10 +30,11 @@ test("admin v2 exposes a safe local frontend-backend bridge shell", () => {
   assert.match(css, /\.bridge-status-grid/);
 });
 
-test("admin v2 local bridge defaults to mock json and blocks high risk endpoints", () => {
+test("admin v2 local bridge uses local preview API and blocks high risk endpoints", () => {
   assert.match(js, /adminV2LocalBridge/);
   assert.match(js, /mode:\s*"mock"/);
-  assert.match(js, /dataUrl:\s*"admin-v2-local-data\.json"/);
+  assert.match(js, /dataUrl:\s*"\/api\/admin-v2\/local-preview"/);
+  assert.doesNotMatch(js, /dataUrl:\s*"admin-v2-local-data\.json"/);
   assert.match(js, /renderAdminV2LocalData/);
 
   for (const blocked of [

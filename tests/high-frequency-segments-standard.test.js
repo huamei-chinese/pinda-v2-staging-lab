@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const data = require("../public/lesson-high-frequency-daily-interview-test.js");
+const data = require("../dev-only/lesson-high-frequency-daily-interview-test.js");
 const legacyHighFrequencyData = require("../public/lesson-high-frequency-topics.js");
 
 const allowedSegmentTypes = new Set(["词", "短语", "功能词块"]);

@@ -7,7 +7,7 @@ const targetFiles = [
   "public/admin-v2.html",
   "public/admin-v2.css",
   "public/admin-v2.js",
-  "public/admin-v2-local-data.json",
+  "dev-only/admin-v2-local-data.json",
   "src/admin-v2-local-preview/admin-v2-local-preview.controller.ts",
   "src/admin-v2-local-preview/admin-v2-local-preview.module.ts",
 ];
@@ -34,8 +34,8 @@ const checks = [
 const allowedDisplayOnly = [
   { file: "public/admin-v2.html", label: "server database dependency", includes: "DATABASE_URL off" },
   { file: "public/admin-v2.js", label: "server payment dependency", includes: "/api/webhooks/sepay" },
-  { file: "public/admin-v2-local-data.json", label: "server database dependency", includes: "payment_orders" },
-  { file: "public/admin-v2-local-data.json", label: "server payment dependency", includes: "/api/webhooks/sepay" },
+  { file: "dev-only/admin-v2-local-data.json", label: "server database dependency", includes: "payment_orders" },
+  { file: "dev-only/admin-v2-local-data.json", label: "server payment dependency", includes: "/api/webhooks/sepay" },
 ];
 
 const realReadonlyAdapterFile = "src/admin-v2-local-preview/admin-v2-real-readonly.service.ts";

@@ -10,7 +10,7 @@ const publicDir = path.join(repoRoot, "public");
 const serveLocal = fs.readFileSync(path.join(repoRoot, "serve-local.mjs"), "utf8");
 const html = fs.readFileSync(path.join(publicDir, "admin-v2.html"), "utf8");
 const js = fs.readFileSync(path.join(publicDir, "admin-v2.js"), "utf8");
-const localData = JSON.parse(fs.readFileSync(path.join(publicDir, "admin-v2-local-data.json"), "utf8"));
+const localData = JSON.parse(fs.readFileSync(path.join((typeof repoRoot !== "undefined" ? repoRoot : root), "dev-only", "admin-v2-local-data.json"), "utf8"));
 
 function requestJson(port, pathname) {
   return new Promise((resolve, reject) => {
