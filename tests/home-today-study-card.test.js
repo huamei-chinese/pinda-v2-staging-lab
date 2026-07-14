@@ -25,7 +25,7 @@ test("today study card uses Vietnam date and three requested targets", () => {
   assert.match(appSource, /HOME_TODAY_VOCAB_TARGET\s*=\s*20/);
   assert.match(appSource, /const savedVocabCount = state\.saved instanceof Set \? state\.saved\.size : 0/);
   assert.match(todayCardSource, /Luyện nghe/);
-  assert.match(todayCardSource, /Luyện viết/);
+  assert.match(todayCardSource, /Luyện gõ/);
   assert.match(appSource, /totalCount:\s*3/);
   assert.doesNotMatch(todayCardSource, /Flashcard/);
   assert.doesNotMatch(todayCardSource, /6 mục/);

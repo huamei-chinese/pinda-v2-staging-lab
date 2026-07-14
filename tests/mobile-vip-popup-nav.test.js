@@ -27,6 +27,7 @@ test("mobile VIP nav opens the upgrade popup", () => {
     appJs,
     /if \(bottomNavBtn\.dataset\.bottomNav === "vip"\) \{[\s\S]*?showUpgradePlansModal\(\);[\s\S]*?return;/,
   );
+  assert.match(appJs, /<h3>\$\{isVi \? "Nâng cấp Gói VIP" : "VIP 套餐"\}<\/h3>/);
   assert.match(appJs, /vip:\s*`<svg[\s\S]*?m12 3\.3 2\.55 5\.16/);
 });
 
@@ -36,5 +37,5 @@ test("mobile bottom nav fits five tabs with VIP styling", () => {
   assert.match(stylesCss, /\.mobile-bottom-nav-vip\s*\{[\s\S]*?color:\s*#a16207 !important;/);
   assert.match(stylesCss, /\.upgrade-plans-grid\s*\{[\s\S]*?width:\s*min\(100%,\s*390px\);/);
   assert.match(indexHtml, /styles\.css\?v=mobile-vip-popup-20260714/);
-  assert.match(indexHtml, /app\.js\?v=mobile-vip-popup-20260714/);
+  assert.match(indexHtml, /app\.js\?v=mobile-pindagou-label-20260714/);
 });

@@ -3557,7 +3557,7 @@ function renderChrome() {
     bottomHomeBtn.querySelector(".mobile-bottom-nav-label").textContent = t("homeTab");
   }
   if (bottomHskBtn) {
-    bottomHskBtn.querySelector(".mobile-bottom-nav-label").textContent = t("hskTitle");
+    bottomHskBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Luyện gõ" : "拼打";
   }
   if (bottomDailyBtn) {
     bottomDailyBtn.querySelector(".mobile-bottom-nav-label").textContent = t("dailyTabNav");
@@ -3568,7 +3568,7 @@ function renderChrome() {
   if (bottomSubscriptionsBtn) {
     bottomSubscriptionsBtn.dataset.bottomNav = "vip";
     bottomSubscriptionsBtn.setAttribute("aria-label", isVi ? "Mở Gói VIP" : "打开 VIP 套餐");
-    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-label").textContent = "VIP";
+    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Gói VIP" : "VIP";
     bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("vip");
   }
   if (bottomListeningBtn) {
@@ -5408,7 +5408,7 @@ function showUpgradePlansModal() {
       <div class="upgrade-plans-heading">
         <span class="upgrade-mobile-pill">VIP</span>
         <h2>${isVi ? "Nâng cấp Gói VIP" : "7天 VIP"}</h2>
-        <h3>${isVi ? "29.000đ / 7 ngày" : "29.000đ / 7天"}</h3>
+        <h3>${isVi ? "Nâng cấp Gói VIP" : "VIP 套餐"}</h3>
         <p>${isVi ? "Chọn gói VIP phù hợp. Nếu chưa đăng nhập, hệ thống sẽ yêu cầu đăng nhập trước khi thanh toán." : "选择适合的 VIP 套餐。未登录时，点击开通后会先进入登录/注册流程。"}</p>
       </div>
       <div class="upgrade-plans-grid">
@@ -8261,8 +8261,8 @@ function renderHomeDesktopLayoutHTML(isVi) {
       <div class="home-desktop-main">
         <header class="home-desktop-topbar">
           <div>
-            <h1>${isVi ? "Luyện viết tiếng Trung" : "中文书写练习"}</h1>
-            <p>${isVi ? "Viết đúng – Nhớ lâu" : "正确书写 · 终身受益"}</p>
+            <h1>${isVi ? "Luyện gõ tiếng Trung" : "中文拼打"}</h1>
+            <p>${isVi ? "Gõ đúng – Nhớ lâu" : "拼得准 · 记得牢"}</p>
           </div>
           <button type="button" class="home-desktop-lang-btn" id="homeDesktopTopbarLanguageBtn" aria-label="${isVi ? "Đổi ngôn ngữ" : "切换语言"}">
             <span class="${isVi ? "active" : ""}">VI</span>
@@ -8355,10 +8355,10 @@ function renderHomeMobileTopbarHTML(isVi) {
       <div class="home-mobile-topbar-brand">
         <h1>
           ${isVi
-      ? `Luyện viết<br>tiếng <span class="home-mobile-topbar-accent">Trung</span>`
-      : `中文<br><span class="home-mobile-topbar-accent">书写</span>练习`}
+      ? `Luyện gõ<br>tiếng <span class="home-mobile-topbar-accent">Trung</span>`
+      : `中文<br><span class="home-mobile-topbar-accent">拼打</span>`}
         </h1>
-        <p>${isVi ? "Viết đúng – Nhớ lâu" : "写对笔画 · 记得更牢"}</p>
+        <p>${isVi ? "Gõ đúng – Nhớ lâu" : "拼得准 · 记得牢"}</p>
       </div>
 
       <div class="home-mobile-topbar-profile${isGuest ? " home-mobile-topbar-profile--guest" : ""}" ${isGuest ? "data-home-login" : ""}>

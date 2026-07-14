@@ -34557,7 +34557,7 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   #bottomNavListeningBtn .mobile-bottom-nav-label::after {
-    content: "Nghe";
+    content: "Luyện nghe";
     font-size: 11px;
     font-weight: 800;
   }
@@ -48029,5 +48029,64 @@ body:has(#practiceScreen:not(.hidden)) {
   #listeningScreen .app-desktop-shell--listening .listening-dashboard-main .listening-dashboard-content .listening-topic-hero {
     min-height: 178px !important;
     padding-block: 16px !important;
+  }
+}
+
+/* Desktop sidebar: keep the signed-in logout action reachable. */
+@media (min-width: 901px) {
+  .app-desktop-shell .home-desktop-sidebar {
+    height: calc(100dvh - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable;
+  }
+
+  .app-desktop-shell .home-desktop-sidebar-panda {
+    flex: 1 1 96px !important;
+    min-height: 72px !important;
+    max-height: 132px !important;
+  }
+
+  .app-desktop-shell .home-desktop-sidebar-foot {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 5 !important;
+    flex: 0 0 auto !important;
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+    padding-bottom: 2px !important;
+    background: transparent !important;
+  }
+
+  .app-desktop-shell .home-desktop-logout-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .app-desktop-shell .home-desktop-sidebar-streak,
+  .app-desktop-shell .home-desktop-sidebar-panda,
+  .app-desktop-shell .home-desktop-sidebar-foot:empty {
+    display: none !important;
+  }
+
+  .app-desktop-shell .home-desktop-nav .home-desktop-logout-btn--nav {
+    width: 100% !important;
+    min-height: 42px !important;
+    margin: 2px 0 0 !important;
+    border: 1px solid rgba(220, 38, 38, 0.16) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: #64748b !important;
+    font-family: var(--font-display) !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
+  }
+
+  .app-desktop-shell .home-desktop-nav .home-desktop-logout-btn--nav:hover {
+    color: #dc2626 !important;
+    border-color: #fecaca !important;
+    background: #fef2f2 !important;
   }
 }

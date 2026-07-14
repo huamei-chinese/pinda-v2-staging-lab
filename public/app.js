@@ -6381,7 +6381,7 @@ function renderChrome() {
 
   if (bottomHskBtn) {
     bottomHskBtn.dataset.bottomNav = "write";
-    bottomHskBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Luyện viết" : "写作";
+    bottomHskBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Luyện gõ" : "拼打";
     bottomHskBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("write");
   }
 
@@ -6394,7 +6394,7 @@ function renderChrome() {
   if (bottomSubscriptionsBtn) {
     bottomSubscriptionsBtn.dataset.bottomNav = "vip";
     bottomSubscriptionsBtn.setAttribute("aria-label", isVi ? "Mở Gói VIP" : "打开 VIP 套餐");
-    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-label").textContent = "VIP";
+    bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Gói VIP" : "VIP";
     bottomSubscriptionsBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("vip");
   }
 
@@ -8327,7 +8327,7 @@ function showUpgradePlansModal() {
       <div class="upgrade-plans-heading">
         <span class="upgrade-mobile-pill">VIP</span>
         <h2>${isVi ? "Nâng cấp Gói VIP" : "7天 VIP"}</h2>
-        <h3>${isVi ? "29.000đ / 7 ngày" : "29.000đ / 7天"}</h3>
+        <h3>${isVi ? "Nâng cấp Gói VIP" : "VIP 套餐"}</h3>
         <p>${isVi ? "Chọn gói VIP phù hợp. Nếu chưa đăng nhập, hệ thống sẽ yêu cầu đăng nhập trước khi thanh toán." : "选择适合的 VIP 套餐。未登录时，点击开通后会先进入登录/注册流程。"}</p>
       </div>
       <div class="upgrade-plans-grid">
@@ -8995,7 +8995,7 @@ function renderHomeTodayStudyCardHTML(isVi) {
       done: progress.listenSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
     },
     {
-      label: isVi ? "Luyện viết" : "写作练习",
+      label: isVi ? "Luyện gõ" : "拼打",
       value: `${writeMinutes} / 30 ${isVi ? "phút" : "分钟"}`,
       done: progress.writeSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
     },
@@ -9079,8 +9079,8 @@ function renderHomeDesktopModulesHTML(isVi) {
       <article class="home-desktop-module-card home-duo-card home-duo-card--write" data-home-module="write" role="button" tabindex="0">
         <div class="home-duo-card-bg" aria-hidden="true"></div>
         <div class="home-duo-copy">
-          <span class="home-duo-badge">${isVi ? "✦ Mỗi ngày luyện viết" : "✦ 每日写作练习"}</span>
-          <h3>${isVi ? "Luyện viết" : "写作练习"}</h3>
+          <span class="home-duo-badge">${isVi ? "✦ Mỗi ngày luyện gõ" : "✦ 每日拼打"}</span>
+          <h3>${isVi ? "Luyện gõ" : "拼打"}</h3>
           <p>${isVi ? "Khóa HSK theo cấp độ và tiếng Trung tần suất cao" : "分级 HSK 课程与高频汉语"}</p>
           <button type="button" class="home-duo-btn" data-home-module="write">
             ${isVi ? "Bắt đầu học" : "开始学习"} <span>›</span>
@@ -9154,7 +9154,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
           <span aria-hidden="true">${desktopNavIcon("home")}</span>${isVi ? "Trang chủ" : "首页"}
         </button>
         <button type="button" class="${navClass("write")}" data-home-nav="write">
-        <span aria-hidden="true">${desktopNavIcon("write")}</span>${isVi ? "Luyện viết" : "写作练习"}
+        <span aria-hidden="true">${desktopNavIcon("write")}</span>${isVi ? "Luyện gõ" : "拼打"}
       </button>
       <button type="button" class="${navClass("listening")}" data-home-nav="listen">
         <span aria-hidden="true">${desktopNavIcon("listening")}</span>${t("listening")}
@@ -13100,10 +13100,10 @@ function renderHomeMobileTopbarHTML(isVi) {
       <div class="home-mobile-topbar-brand">
         <h1>
           ${isVi
-      ? `Luyện viết<br>tiếng <span class="home-mobile-topbar-accent">Trung</span>`
-      : `中文<br><span class="home-mobile-topbar-accent">书写</span>练习`}
+      ? `Luyện gõ<br>tiếng <span class="home-mobile-topbar-accent">Trung</span>`
+      : `中文<br><span class="home-mobile-topbar-accent">拼打</span>`}
         </h1>
-        <p>${isVi ? "Viết đúng – Nhớ lâu" : "写对笔画 · 记得更牢"}</p>
+        <p>${isVi ? "Gõ đúng – Nhớ lâu" : "拼得准 · 记得牢"}</p>
       </div>
 
       <div class="home-mobile-topbar-profile${isGuest ? " home-mobile-topbar-profile--guest" : ""}" ${isGuest ? "data-home-login" : ""}>
