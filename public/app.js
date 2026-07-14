@@ -642,14 +642,28 @@ function readStoredJson(key) {
   }
 }
 
+const ADMIN_PORTAL_ROLE_KEYS = ["admin", "sales", "ctv", "content"];
+
+function normalizeAdminPortalRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "sales" || normalized === "koc") return "sales";
+  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "content" || normalized === "content_manager") return "content";
+  return "user";
+}
+
+function isAdminPortalRole(role) {
+  return ADMIN_PORTAL_ROLE_KEYS.includes(normalizeAdminPortalRole(role));
+}
+
 function readStoredStudentUser() {
-  const user = readStoredJson(STUDENT_USER_STORAGE_KEY);
-  return user && !["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(user.role || "").toLowerCase()) ? user : null;
+  return readStoredJson(STUDENT_USER_STORAGE_KEY) || readStoredJson(ADMIN_USER_STORAGE_KEY);
 }
 
 function readStoredAdminUser() {
   const user = readStoredJson(ADMIN_USER_STORAGE_KEY);
-  return ["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(user?.role || "").toLowerCase()) ? user : null;
+  return isAdminPortalRole(user?.role) ? user : null;
 }
 
 function clearLegacyAuthStorage() {
@@ -769,7 +783,13 @@ const state = {
   adminVipError: "",
   adminVipFrom: "",
   adminVipTo: "",
+  adminVipPickerOpen: false,
+  adminVipDraftFrom: "",
+  adminVipDraftTo: "",
+  adminVipCalMonth: "",
   adminVipPlanFilter: "all",
+  adminVipUserPage: 1,
+  adminVipUserPageSize: 8,
   adminUserSearch: "",
   adminUserLevelFilter: "all",
   adminUserPlanFilter: "all",
@@ -4018,7 +4038,7 @@ function buildAdminContentDailyLocksMap(locks = []) {
 
 async function loadAdminContentLocks() {
   const isVi = state.lang === "vi";
-  if (!isAdminUser()) {
+  if (!shouldShowAdminTab("content")) {
     state.adminContentStatus = isVi ? "Vui lòng đăng nhập bằng tài khoản admin." : "请使用管理员账户登录。";
     state.adminContentLocks = {};
     state.adminContentDailyLocks = {};
@@ -5281,6 +5301,100 @@ function ensureAdminVipRange() {
   }
 }
 
+function getActiveAdminVipPreset() {
+  for (const preset of ANALYTICS_PRESETS) {
+    const range = analyticsPresetRange(preset.id);
+    if (analyticsToYmd(range.from) === state.adminVipFrom && analyticsToYmd(range.to) === state.adminVipTo) {
+      return preset.id;
+    }
+  }
+  return "";
+}
+
+function renderAdminVipCalendarMonth(year, month) {
+  const draftFrom = state.adminVipDraftFrom;
+  const draftTo = state.adminVipDraftTo;
+  const isVi = state.lang === "vi";
+  const first = new Date(year, month, 1);
+  const startDow = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weekdays = isVi ? ["T2", "T3", "T4", "T5", "T6", "T7", "CN"] : ["一", "二", "三", "四", "五", "六", "日"];
+
+  let cells = "";
+  for (let i = 0; i < startDow; i += 1) cells += `<span class="cal-cell cal-empty"></span>`;
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const ymd = analyticsToYmd(new Date(year, month, day));
+    const hasRange = draftFrom && draftTo;
+    const inRange = hasRange && ymd >= draftFrom && ymd <= draftTo;
+    const isEndpoint = ymd === draftFrom || ymd === draftTo;
+    const cls = ["cal-cell", "cal-day", inRange ? "in-range" : "", isEndpoint ? "selected" : ""].filter(Boolean).join(" ");
+    cells += `<button type="button" class="${cls}" data-admin-vip-day="${ymd}">${day}</button>`;
+  }
+  return `
+    <div class="admin-analytics-cal-month">
+      <div class="cal-head">${isVi ? `Tháng ${month + 1} ${year}` : `${year}年${month + 1}月`}</div>
+      <div class="cal-weekdays">${weekdays.map((w) => `<span>${w}</span>`).join("")}</div>
+      <div class="cal-grid">${cells}</div>
+    </div>`;
+}
+
+function renderAdminVipRangeControl() {
+  const triggerLabel = analyticsRangeLabel(state.adminVipFrom, state.adminVipTo);
+  if (!state.adminVipPickerOpen) {
+    return `
+      <div class="admin-vip-range admin-vip-range--picker">
+        <div class="admin-analytics-daterange admin-vip-daterange">
+          <button id="adminVipRangeTrigger" class="admin-analytics-range-trigger admin-vip-range-trigger" type="button">
+            <span class="range-icon">&#128197;</span><span>${escapeHtml(triggerLabel)}</span><span class="range-caret">▾</span>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  const activePreset = getActiveAdminVipPreset();
+  const calMonthDate = analyticsParseYmd(`${state.adminVipCalMonth}-01`) || analyticsTodayLocal();
+  const leftYear = calMonthDate.getFullYear();
+  const leftMonth = calMonthDate.getMonth();
+  const rightDate = new Date(leftYear, leftMonth + 1, 1);
+  const isVi = state.lang === "vi";
+  const presetsHTML = ANALYTICS_PRESETS
+    .map((preset) => `<button type="button" data-admin-vip-preset="${preset.id}" class="${activePreset === preset.id ? "active" : ""}">${isVi ? preset.label : preset.labelZh}</button>`)
+    .join("");
+
+  return `
+    <div class="admin-vip-range admin-vip-range--picker">
+      <div class="admin-analytics-daterange admin-vip-daterange">
+        <button id="adminVipRangeTrigger" class="admin-analytics-range-trigger admin-vip-range-trigger open" type="button">
+          <span class="range-icon">&#128197;</span><span>${escapeHtml(triggerLabel)}</span><span class="range-caret">▴</span>
+        </button>
+        <div class="admin-analytics-range-backdrop" id="adminVipRangeBackdrop"></div>
+        <div class="admin-analytics-range-pop admin-vip-range-pop">
+          <div class="admin-analytics-presets">${presetsHTML}</div>
+          <div class="admin-analytics-cal">
+            <div class="cal-nav">
+              <button type="button" data-admin-vip-cal-nav="-1" aria-label="${isVi ? "Tháng trước" : "上个月"}">‹</button>
+              <button type="button" data-admin-vip-cal-nav="1" aria-label="${isVi ? "Tháng sau" : "下个月"}">›</button>
+            </div>
+            <div class="cal-months">
+              ${renderAdminVipCalendarMonth(leftYear, leftMonth)}
+              ${renderAdminVipCalendarMonth(rightDate.getFullYear(), rightDate.getMonth())}
+            </div>
+            <div class="admin-analytics-range-footer">
+              <div class="admin-analytics-range-summary">
+                <strong>${escapeHtml(analyticsRangeLabel(state.adminVipDraftFrom, state.adminVipDraftTo))}</strong>
+                <small>${state.lang === "vi" ? "Ngày hiển thị theo Giờ TP Hồ Chí Minh" : "日期按胡志明市时间显示"}</small>
+              </div>
+              <div class="admin-analytics-range-actions">
+                <button type="button" id="adminVipRangeCancel">${state.lang === "vi" ? "Hủy" : "取消"}</button>
+                <button type="button" id="adminVipRangeApply" class="primary" ${state.adminVipDraftFrom && state.adminVipDraftTo ? "" : "disabled"}>${state.lang === "vi" ? "Cập nhật" : "更新"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function formatAdminVipMoney(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} đ`;
 }
@@ -5313,6 +5427,46 @@ function getAdminVipUserPlanMetric(user, planId) {
   };
 }
 
+function renderAdminVipUserPagination(totalItems, totalPages, currentPage, pageSize, isVi) {
+  if (!totalItems) return "";
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(totalItems, currentPage * pageSize);
+  const pages = [];
+  const addPage = (value) => {
+    if (value >= 1 && value <= totalPages && !pages.includes(value)) pages.push(value);
+  };
+  addPage(1);
+  addPage(currentPage - 1);
+  addPage(currentPage);
+  addPage(currentPage + 1);
+  addPage(totalPages);
+  pages.sort((a, b) => a - b);
+
+  const pageButtons = [];
+  let previousPage = 0;
+  for (const page of pages) {
+    if (previousPage && page - previousPage > 1) {
+      pageButtons.push(`<span class="admin-vip-page-ellipsis">…</span>`);
+    }
+    pageButtons.push(`
+      <button type="button" class="${page === currentPage ? "active" : ""}" data-admin-vip-user-page="${page}" data-admin-vip-total-pages="${totalPages}" ${page === currentPage ? "aria-current=\"page\"" : ""}>
+        ${page}
+      </button>`);
+    previousPage = page;
+  }
+
+  return `
+    <div class="admin-vip-pagination">
+      <span>${isVi ? "Hiển thị" : "显示"} ${formatAnalyticsNumber(startItem)}–${formatAnalyticsNumber(endItem)} / ${formatAnalyticsNumber(totalItems)} ${isVi ? "người dùng" : "用户"}</span>
+      ${totalPages > 1 ? `
+        <div class="admin-vip-pagination-actions">
+          <button type="button" data-admin-vip-user-page="prev" data-admin-vip-total-pages="${totalPages}" ${currentPage <= 1 ? "disabled" : ""}>‹</button>
+          ${pageButtons.join("")}
+          <button type="button" data-admin-vip-user-page="next" data-admin-vip-total-pages="${totalPages}" ${currentPage >= totalPages ? "disabled" : ""}>›</button>
+        </div>` : ""}
+    </div>`;
+}
+
 function renderAdminVipPanelHTML() {
   ensureAdminVipRange();
   const isVi = state.lang === "vi";
@@ -5338,6 +5492,12 @@ function renderAdminVipPanelHTML() {
     .sort((a, b) => b.metric.revenue - a.metric.revenue || b.metric.activations - a.metric.activations);
   const selectedPlanInfo = planTabs.find((plan) => plan.id === selectedPlan) || planTabs[0];
   const dailyRevenue = Array.isArray(data.dailyRevenue) ? data.dailyRevenue : [];
+  const registeredUsers = Number(data.registeredUsers ?? data.registeredCount ?? 0);
+  const vipUserPageSize = Math.max(1, Number(state.adminVipUserPageSize || 8));
+  const vipUserTotalPages = Math.max(1, Math.ceil(users.length / vipUserPageSize));
+  const vipUserPage = Math.min(Math.max(1, Number(state.adminVipUserPage || 1)), vipUserTotalPages);
+  state.adminVipUserPage = vipUserPage;
+  const pagedUsers = users.slice((vipUserPage - 1) * vipUserPageSize, vipUserPage * vipUserPageSize);
 
   let bodyHTML = "";
   if (state.adminVipLoading) {
@@ -5347,7 +5507,7 @@ function renderAdminVipPanelHTML() {
   } else if (!state.adminVip) {
     bodyHTML = `<div class="admin-vip-status">${isVi ? "Chưa có dữ liệu VIP." : "暂无 VIP 数据。"}</div>`;
   } else {
-    const rows = users.map(({ user, metric }) => `
+    const rows = pagedUsers.map(({ user, metric }) => `
       <tr>
         <td><strong>${escapeHtml(user.fullName || user.email || "User")}</strong><small>${escapeHtml(user.email || user.userId || "")}</small></td>
         <td>${escapeHtml(selectedPlanInfo.label)}<small>${isVi ? "Gói đang xem" : "当前套餐"}</small></td>
@@ -5357,6 +5517,7 @@ function renderAdminVipPanelHTML() {
         <td>${user.isPremium ? `<span class="admin-vip-user-state active">VIP</span>` : `<span class="admin-vip-user-state inactive">${isVi ? "Hết hạn" : "已过期"}</span>`}<small>${escapeHtml(user.premiumUntil ? formatAdminDate(user.premiumUntil) : "N/A")}</small></td>
       </tr>
     `).join("");
+    const paginationHTML = renderAdminVipUserPagination(users.length, vipUserTotalPages, vipUserPage, vipUserPageSize, isVi);
 
     bodyHTML = `
       <div class="admin-vip-summary">
@@ -5375,6 +5536,10 @@ function renderAdminVipPanelHTML() {
             <span>${formatAnalyticsNumber(plan.activations)} · ${escapeHtml(formatAdminVipMoney(plan.revenue))}</span>
           </button>
         `).join("")}
+        <article class="admin-vip-registration-card">
+          <strong>${isVi ? "Số lượng người đăng kí" : "注册用户数"}</strong>
+          <span>${formatAnalyticsNumber(registeredUsers)} · ${isVi ? "người đăng kí trong khoảng này" : "所选日期注册用户"}</span>
+        </article>
       </div>
       <div class="admin-vip-layout">
         <section class="admin-vip-chart">
@@ -5399,6 +5564,7 @@ function renderAdminVipPanelHTML() {
               <tbody>${rows || `<tr><td colspan="6" class="admin-empty">${isVi ? "Chưa có lượt kích hoạt VIP trong khoảng ngày này." : "该日期范围内暂无 VIP 开通。"}</td></tr>`}</tbody>
             </table>
           </div>
+          ${paginationHTML}
         </section>
       </div>`;
   }
@@ -5410,11 +5576,7 @@ function renderAdminVipPanelHTML() {
           <h2>${isVi ? "Quản lí VIP" : "VIP 管理"}</h2>
           <p>${isVi ? "Theo dõi popup VIP, lượt kích hoạt, doanh thu và người dùng đã mua theo từng gói." : "查看 VIP 弹窗、开通、收入和按套餐购买的用户。"}</p>
         </div>
-        <div class="admin-vip-range">
-          <label>${isVi ? "Từ ngày" : "开始日期"}<input id="adminVipFromInput" type="date" value="${escapeAttr(state.adminVipFrom)}" /></label>
-          <label>${isVi ? "Đến ngày" : "结束日期"}<input id="adminVipToInput" type="date" value="${escapeAttr(state.adminVipTo)}" /></label>
-          <button id="adminVipRangeApply" type="button">${isVi ? "Cập nhật" : "更新"}</button>
-        </div>
+        ${renderAdminVipRangeControl()}
       </header>
       ${bodyHTML}
     </section>
@@ -5831,22 +5993,55 @@ function showRecentActivitiesDrawer() {
   drawer.focus();
 }
 
+function getAdminPortalRole(user = state.adminUser) {
+  return normalizeAdminPortalRole(user?.role);
+}
+
+function getAllowedAdminTabsForRole(role) {
+  const normalized = normalizeAdminPortalRole(role);
+  if (normalized === "admin") return ["users", "vip", "subscriptions", "content", "collaborators", "analytics"];
+  if (normalized === "sales" || normalized === "ctv") return ["customers"];
+  if (normalized === "content") return ["content"];
+  return [];
+}
+
+function getDefaultAdminTabForRole(role) {
+  return getAllowedAdminTabsForRole(role)[0] || "users";
+}
+
+function isAdminTabAllowed(tab, role = getAdminPortalRole()) {
+  return getAllowedAdminTabsForRole(role).includes(String(tab || "").trim().toLowerCase());
+}
+
+function getSafeAdminTab(tab = state.adminTab) {
+  const normalized = String(tab || "").trim().toLowerCase();
+  return isAdminTabAllowed(normalized) ? normalized : getDefaultAdminTabForRole(getAdminPortalRole());
+}
+
+function shouldShowAdminTab(tab) {
+  return isAdminTabAllowed(tab);
+}
+
 function isAdminUser() {
-  return String(state.adminUser?.role || "").toLowerCase() === "admin";
+  return getAdminPortalRole() === "admin";
 }
 
 function isStaffAdminUser() {
-  const role = String(state.adminUser?.role || "").toLowerCase();
-  return role === "staff" || role === "employee" || role === "ctv";
+  const role = getAdminPortalRole();
+  return role !== "admin" && isAdminPortalRole(role);
+}
+
+function isKocAdminUser() {
+  return getAdminPortalRole() === "sales";
 }
 
 function isCtvAdminUser() {
-  const role = String(state.adminUser?.role || "").toLowerCase();
-  return role === "ctv" || role === "staff" || role === "employee";
+  const role = getAdminPortalRole();
+  return role === "ctv" || role === "sales";
 }
 
 function canAccessAdminConsole() {
-  return isAdminUser() || isStaffAdminUser();
+  return isAdminPortalRole(getAdminPortalRole());
 }
 
 function getAdminUserId() {
@@ -6070,6 +6265,7 @@ function savePersistedRoute() {
       adminVipFrom: state.adminVipFrom,
       adminVipTo: state.adminVipTo,
       adminVipPlanFilter: state.adminVipPlanFilter,
+      adminVipUserPage: state.adminVipUserPage,
     };
     localStorage.setItem(APP_ROUTE_STORAGE_KEY, JSON.stringify(route));
   } catch {
@@ -6125,6 +6321,7 @@ function restorePersistedRoute() {
     if (route.adminVipFrom) state.adminVipFrom = route.adminVipFrom;
     if (route.adminVipTo) state.adminVipTo = route.adminVipTo;
     if (route.adminVipPlanFilter) state.adminVipPlanFilter = route.adminVipPlanFilter;
+    if (route.adminVipUserPage) state.adminVipUserPage = Math.max(1, Number(route.adminVipUserPage) || 1);
 
     switch (route.screen) {
       case "home":
@@ -6225,13 +6422,16 @@ function restorePersistedAdminRouteState() {
   if (route.adminVipFrom) state.adminVipFrom = route.adminVipFrom;
   if (route.adminVipTo) state.adminVipTo = route.adminVipTo;
   if (route.adminVipPlanFilter) state.adminVipPlanFilter = route.adminVipPlanFilter;
+  if (route.adminVipUserPage) state.adminVipUserPage = Math.max(1, Number(route.adminVipUserPage) || 1);
   return true;
 }
 
 function loadActiveAdminTabData() {
-  if (!isAdminUser()) return;
+  if (!canAccessAdminConsole()) return;
+  const safeTab = getSafeAdminTab(state.adminTab);
+  state.adminTab = safeTab;
 
-  switch (state.adminTab || "users") {
+  switch (safeTab) {
     case "customers":
       if (!state.adminUsers.length) loadAdminUsers();
       break;
@@ -6736,7 +6936,7 @@ function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
 function normalizeAdminRole(role) {
   const normalized = String(role || "").toLowerCase();
   if (normalized === "admin") return "admin";
-  if (normalized === "sales") return "sales";
+  if (normalized === "sales" || normalized === "koc") return "sales";
   if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
@@ -6745,7 +6945,7 @@ function normalizeAdminRole(role) {
 function getAdminRoleLabel(role, isVi = state.lang === "vi") {
   const normalized = normalizeAdminRole(role);
   if (normalized === "admin") return isVi ? "Quản trị viên cao nhất" : "超级管理员";
-  if (normalized === "sales") return "Sales";
+  if (normalized === "sales") return "KOC";
   if (normalized === "ctv") return "CTV";
   if (normalized === "content") return "Content";
   return isVi ? "Thường" : "普通用户";
@@ -7073,12 +7273,14 @@ function renderAdmin() {
   const vipRateMeta = isVi
     ? `${premiumStudentUsersTotal}/${totalUsers} tài khoản đã lên Pro`
     : `${premiumStudentUsersTotal}/${totalUsers} 个账户已升级 Pro`;
-  const adminTab = isAdminUser()
-    ? (state.adminTab === "customers" ? "users" : (state.adminTab || "users"))
-    : (isCtvAdminUser() ? "customers" : "users");
-  if (isAdminUser() && state.adminTab === "customers") state.adminTab = "users";
-  if (isCtvAdminUser() && state.adminTab !== "customers") state.adminTab = "customers";
-  const showAdminCustomersTab = !isAdminUser();
+  const adminTab = getSafeAdminTab(state.adminTab);
+  state.adminTab = adminTab;
+  const showAdminCustomersTab = shouldShowAdminTab("customers");
+  const showAdminUsersTab = shouldShowAdminTab("users");
+  const showAdminVipTab = shouldShowAdminTab("vip");
+  const showAdminCtvTab = shouldShowAdminTab("collaborators");
+  const showAdminAnalyticsTab = shouldShowAdminTab("analytics");
+  const showAdminContentTab = shouldShowAdminTab("content");
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
@@ -7127,12 +7329,12 @@ function renderAdmin() {
         </button>
         <nav>
           ${showAdminCustomersTab ? `<button id="adminCustomersTabBtn" class="${adminTab === "customers" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Khách hàng của tôi" : "我的客户"}</button>` : ""}
-          <button id="adminUsersTabBtn" class="${adminTab === "users" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Người dùng" : "用户"}</button>
-          <button id="adminVipTabBtn" class="${adminTab === "vip" ? "active" : ""}" type="button"><span>VIP</span>${isVi ? "Quản lí VIP" : "VIP 管理"}</button>
-          <button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>
-          <button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>
-           <button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>📚</span>${isVi ? "Khóa bài học" : "课程锁定"}</button>
-           </nav>
+          ${showAdminUsersTab ? `<button id="adminUsersTabBtn" class="${adminTab === "users" ? "active" : ""}" type="button"><span>👥</span>${isVi ? "Người dùng" : "用户"}</button>` : ""}
+          ${showAdminVipTab ? `<button id="adminVipTabBtn" class="${adminTab === "vip" ? "active" : ""}" type="button"><span>VIP</span>${isVi ? "Quản lí VIP" : "VIP 管理"}</button>` : ""}
+          ${showAdminCtvTab ? `<button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>` : ""}
+          ${showAdminAnalyticsTab ? `<button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>` : ""}
+          ${showAdminContentTab ? `<button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>📚</span>${isVi ? "Khóa bài học" : "课程锁定"}</button>` : ""}
+        </nav>
         
         <div class="admin-sidebar-foot">
           <button class="admin-language-btn" id="adminLogoutBtn" type="button">
@@ -7353,11 +7555,10 @@ function showModal(type) {
           src: getTrafficSource(),
         }),
       });
-      if (["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(data.user?.role || "").toLowerCase())) {
-        throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
-      }
       if (!isLogin) clearReferralAttribution();
       state.user = data.user;
+      state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
+      if (state.adminUser) state.adminTab = getSafeAdminTab(state.adminTab);
       saveState();
       loadContentLocks().then(() => {
         renderChrome();
@@ -8233,6 +8434,17 @@ function renderAccount() {
                 </select>
               </span>
             </label>
+            <button type="button" class="account-password-card" id="accountMobileChangePasswordBtn">
+              <span class="account-password-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                </svg>
+              </span>
+              <span class="account-password-label">${isVi ? "Đổi mật khẩu" : "修改密码"}</span>
+              <svg class="account-password-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </button>
             <div class="account-security-banner">
               <span class="account-security-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3v8z" /><path d="m9 12 2 2 4-5" /></svg>
@@ -8284,18 +8496,6 @@ function renderAccount() {
           </div>
           <p class="account-joined-note">${isVi ? `Tham gia từ: ${joinedLabel}` : `加入时间：${joinedLabel}`}</p>
         </section>
-
-        <button type="button" class="account-password-card" id="accountMobileChangePasswordBtn">
-          <span class="account-password-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-            </svg>
-          </span>
-          <span class="account-password-label">${isVi ? "Đổi mật khẩu" : "修改密码"}</span>
-          <svg class="account-password-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 6l6 6-6 6"/>
-          </svg>
-        </button>
       </div>
     </div>
   `, "app-desktop-shell--account", "account");
@@ -15507,10 +15707,12 @@ function bindEvents() {
       body: JSON.stringify({ email, password }),
     })
       .then((data) => {
-        if (!["admin", "staff", "employee", "sales", "ctv", "content"].includes(String(data.user?.role || "").toLowerCase())) {
-          throw new Error(state.lang === "vi" ? "Tài khoản này không có quyền admin." : "该账户没有管理员权限。");
+        if (!isAdminPortalRole(data.user?.role)) {
+          throw new Error(state.lang === "vi" ? "Tai khoan nay khong co quyen vao khu quan tri." : "This account cannot access the admin portal.");
         }
         state.adminUser = data.user;
+        state.user = data.user;
+        state.adminTab = getDefaultAdminTabForRole(getAdminPortalRole(data.user));
         state.adminStatus = "";
         saveState();
         renderChrome();
@@ -16133,7 +16335,7 @@ function bindEvents() {
 
     const adminCustomersTabBtn = event.target.closest("#adminCustomersTabBtn");
     if (adminCustomersTabBtn) {
-      if (isAdminUser()) return;
+      if (!shouldShowAdminTab("customers")) return;
       state.adminTab = "customers";
       renderAdmin();
       savePersistedRoute();
@@ -16143,7 +16345,7 @@ function bindEvents() {
 
     const adminUsersTabBtn = event.target.closest("#adminUsersTabBtn");
     if (adminUsersTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("users")) return;
       state.adminTab = "users";
       renderAdmin();
       savePersistedRoute();
@@ -16153,7 +16355,7 @@ function bindEvents() {
 
     const adminVipTabBtn = event.target.closest("#adminVipTabBtn");
     if (adminVipTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("vip")) return;
       state.adminTab = "vip";
       renderAdmin();
       savePersistedRoute();
@@ -16163,7 +16365,7 @@ function bindEvents() {
 
     const adminSubscriptionsTabBtn = event.target.closest("#adminSubscriptionsTabBtn");
     if (adminSubscriptionsTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("subscriptions")) return;
       state.adminTab = "subscriptions";
       renderAdmin();
       savePersistedRoute();
@@ -16172,7 +16374,7 @@ function bindEvents() {
 
     const adminContentTabBtn = event.target.closest("#adminContentTabBtn");
     if (adminContentTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("content")) return;
       state.adminTab = "content";
       renderAdmin();
       savePersistedRoute();
@@ -16182,7 +16384,7 @@ function bindEvents() {
 
     const adminCtvTabBtn = event.target.closest("#adminCtvTabBtn");
     if (adminCtvTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("collaborators")) return;
       state.adminTab = "collaborators";
       renderAdmin();
       savePersistedRoute();
@@ -16192,7 +16394,7 @@ function bindEvents() {
 
     const adminAnalyticsTabBtn = event.target.closest("#adminAnalyticsTabBtn");
     if (adminAnalyticsTabBtn) {
-      if (!isAdminUser()) return;
+      if (!shouldShowAdminTab("analytics")) return;
       state.adminTab = "analytics";
       renderAdmin();
       savePersistedRoute();
@@ -16274,22 +16476,108 @@ function bindEvents() {
       return;
     }
 
-    const adminVipPlanFilterBtn = event.target.closest("[data-admin-vip-plan-filter]");
-    if (adminVipPlanFilterBtn && state.screen === "admin") {
-      state.adminVipPlanFilter = adminVipPlanFilterBtn.dataset.adminVipPlanFilter || "all";
+    const adminVipRangeTrigger = event.target.closest("#adminVipRangeTrigger");
+    if (adminVipRangeTrigger && state.screen === "admin") {
+      if (state.adminVipPickerOpen) {
+        state.adminVipPickerOpen = false;
+      } else {
+        state.adminVipPickerOpen = true;
+        state.adminVipDraftFrom = state.adminVipFrom || "";
+        state.adminVipDraftTo = state.adminVipTo || "";
+        const anchor = analyticsParseYmd(state.adminVipTo) || analyticsTodayLocal();
+        state.adminVipCalMonth = `${anchor.getFullYear()}-${String(anchor.getMonth()).padStart(2, "0")}`;
+      }
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminVipRangeBackdrop") && state.screen === "admin") {
+      state.adminVipPickerOpen = false;
+      renderAdmin();
+      return;
+    }
+
+    const adminVipPresetBtn = event.target.closest("[data-admin-vip-preset]");
+    if (adminVipPresetBtn && state.screen === "admin") {
+      const range = analyticsPresetRange(adminVipPresetBtn.dataset.adminVipPreset);
+      state.adminVipFrom = analyticsToYmd(range.from);
+      state.adminVipTo = analyticsToYmd(range.to);
+      state.adminVipPickerOpen = false;
+      state.adminVipUserPage = 1;
+      savePersistedRoute();
+      loadAdminVipManagement();
+      return;
+    }
+
+    const adminVipCalNav = event.target.closest("[data-admin-vip-cal-nav]");
+    if (adminVipCalNav && state.screen === "admin") {
+      const base = analyticsParseYmd(`${state.adminVipCalMonth}-01`) || analyticsTodayLocal();
+      base.setMonth(base.getMonth() + Number(adminVipCalNav.dataset.adminVipCalNav || 0));
+      state.adminVipCalMonth = `${base.getFullYear()}-${String(base.getMonth()).padStart(2, "0")}`;
+      renderAdmin();
+      return;
+    }
+
+    const adminVipDayBtn = event.target.closest("[data-admin-vip-day]");
+    if (adminVipDayBtn && state.screen === "admin") {
+      const ymd = adminVipDayBtn.dataset.adminVipDay;
+      if (!state.adminVipDraftFrom || (state.adminVipDraftFrom && state.adminVipDraftTo)) {
+        state.adminVipDraftFrom = ymd;
+        state.adminVipDraftTo = "";
+      } else if (ymd < state.adminVipDraftFrom) {
+        state.adminVipDraftTo = state.adminVipDraftFrom;
+        state.adminVipDraftFrom = ymd;
+      } else {
+        state.adminVipDraftTo = ymd;
+      }
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminVipRangeCancel") && state.screen === "admin") {
+      state.adminVipPickerOpen = false;
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("#adminVipRangeApply") && state.screen === "admin") {
+      if (state.adminVipDraftFrom && state.adminVipDraftTo) {
+        state.adminVipFrom = state.adminVipDraftFrom;
+        state.adminVipTo = state.adminVipDraftTo;
+        state.adminVipPickerOpen = false;
+        state.adminVipUserPage = 1;
+        ensureAdminVipRange();
+        savePersistedRoute();
+        loadAdminVipManagement();
+      }
+      return;
+    }
+
+    const adminVipUserPageBtn = event.target.closest("[data-admin-vip-user-page]");
+    if (adminVipUserPageBtn && state.screen === "admin") {
+      if (adminVipUserPageBtn.disabled) return;
+      const action = adminVipUserPageBtn.dataset.adminVipUserPage;
+      const totalPages = Math.max(1, Number(adminVipUserPageBtn.dataset.adminVipTotalPages || 1));
+      const currentPage = Math.min(Math.max(1, Number(state.adminVipUserPage || 1)), totalPages);
+      let nextPage = currentPage;
+      if (action === "prev") nextPage = currentPage - 1;
+      else if (action === "next") nextPage = currentPage + 1;
+      else {
+        const parsedPage = Number(action || currentPage);
+        nextPage = Number.isFinite(parsedPage) ? parsedPage : currentPage;
+      }
+      state.adminVipUserPage = Math.min(Math.max(1, nextPage), totalPages);
       renderAdmin();
       savePersistedRoute();
       return;
     }
 
-    if (event.target.closest("#adminVipRangeApply") && state.screen === "admin") {
-      const fromInput = document.getElementById("adminVipFromInput");
-      const toInput = document.getElementById("adminVipToInput");
-      state.adminVipFrom = analyticsNormalizeDateInput(fromInput?.value) || state.adminVipFrom;
-      state.adminVipTo = analyticsNormalizeDateInput(toInput?.value) || state.adminVipTo;
-      ensureAdminVipRange();
+    const adminVipPlanFilterBtn = event.target.closest("[data-admin-vip-plan-filter]");
+    if (adminVipPlanFilterBtn && state.screen === "admin") {
+      state.adminVipPlanFilter = adminVipPlanFilterBtn.dataset.adminVipPlanFilter || "all";
+      state.adminVipUserPage = 1;
+      renderAdmin();
       savePersistedRoute();
-      loadAdminVipManagement();
       return;
     }
 

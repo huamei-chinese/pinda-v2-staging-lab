@@ -16,7 +16,7 @@ export class AdminService {
   private normalizeRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'staff' | 'admin' {
     const normalized = String(role || '').trim().toLowerCase();
     if (normalized === 'admin') return 'admin';
-    if (normalized === 'sales') return 'sales';
+    if (normalized === 'sales' || normalized === 'koc') return 'sales';
     if (normalized === 'ctv' || normalized === 'staff' || normalized === 'employee') return 'ctv';
     if (normalized === 'content' || normalized === 'content_manager') return 'content';
     return 'user';
@@ -30,7 +30,7 @@ export class AdminService {
 
   private isEditableRoleValue(role: string | null | undefined): boolean {
     const normalized = String(role || '').trim().toLowerCase();
-    return ['user', 'sales', 'ctv', 'content', 'staff', 'employee', 'content_manager'].includes(normalized);
+    return ['user', 'sales', 'koc', 'ctv', 'content', 'staff', 'employee', 'content_manager'].includes(normalized);
   }
 
   publicUser(row: any) {
@@ -103,6 +103,14 @@ export class AdminService {
     return requester;
   }
 
+  private async assertAdminOrContent(headers: Record<string, string | string[] | undefined>) {
+    const requester = await this.getAdminRequester(headers);
+    if (!requester || !['admin', 'content'].includes(requester.role)) {
+      throw new HttpException('Please sign in with an admin or content account.', HttpStatus.UNAUTHORIZED);
+    }
+    return requester;
+  }
+
   private normalizeAdminUsersPage(value: string | string[] | undefined): number {
     const raw = Array.isArray(value) ? value[0] : value;
     return Math.max(1, Math.floor(Number(raw || 1)) || 1);
@@ -146,7 +154,7 @@ export class AdminService {
         return `$${scopedParams.length}`;
       };
 
-      if (requester.role === 'ctv') {
+      if (requester.role === 'ctv' || requester.role === 'sales') {
         const ctvRef = String(requester.ref || '').trim().toLowerCase();
         filters.push(`lower(btrim(ref)) = ${addFilterParam(ctvRef)}`);
         scopedFilters.push(`lower(btrim(ref)) = ${addScopedParam(ctvRef)}`);
@@ -256,7 +264,7 @@ export class AdminService {
 
   private async recalculateCtvVipCounts() {
     await this.db.query(
-      `UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee')`,
+      `UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee', 'sales', 'koc')`,
     );
     await this.db.query(
       `UPDATE users c
@@ -271,7 +279,7 @@ export class AdminService {
          GROUP BY lower(btrim(u.ref))
        ) sub
        WHERE lower(btrim(c.ref)) = sub.ref
-         AND c.role IN ('ctv', 'staff', 'employee')`,
+         AND c.role IN ('ctv', 'staff', 'employee', 'sales', 'koc')`,
     );
   }
 
@@ -560,7 +568,7 @@ export class AdminService {
     if (!currentUser) {
       throw new HttpException('Không tìm thấy user.', HttpStatus.NOT_FOUND);
     }
-    if (this.normalizeRole(currentUser.role) !== 'ctv') {
+    if (!['ctv', 'sales'].includes(this.normalizeRole(currentUser.role))) {
       throw new HttpException('Chỉ tài khoản CTV mới được tạo link ref.', HttpStatus.BAD_REQUEST);
     }
 
@@ -569,7 +577,7 @@ export class AdminService {
        FROM users
        WHERE lower(btrim(ref)) = $1
          AND id <> $2
-         AND role IN ('ctv', 'staff', 'employee')
+         AND role IN ('ctv', 'staff', 'employee', 'sales', 'koc')
        LIMIT 1`,
       [ref, id],
     );
@@ -644,7 +652,7 @@ export class AdminService {
   }
 
   async getHskLessonLocks(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       const locks = await this.contentService.listLocks();
       return { locks };
@@ -666,7 +674,7 @@ export class AdminService {
     },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       return await this.contentService.saveLocks(body.lessons || []);
     } catch (error: any) {
@@ -676,7 +684,7 @@ export class AdminService {
   }
 
   async getDailyThemeLocks(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       const locks = await this.contentService.listDailyLocks();
       return { locks };
@@ -697,7 +705,7 @@ export class AdminService {
     },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       return await this.contentService.saveDailyLocks(body.themes || []);
     } catch (error: any) {
@@ -707,7 +715,7 @@ export class AdminService {
   }
 
   async getHskLevelCovers(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       const covers = await this.contentService.listHskLevelCovers();
       return { covers };
@@ -717,12 +725,12 @@ export class AdminService {
   }
 
   async getListeningLocks(headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     return { ...(await this.contentService.listListeningLocks()) };
   }
 
   async saveListeningLocks(body: { topics?: any[]; lessons?: any[] }, headers: Record<string, string | string[] | undefined>) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     return this.contentService.saveListeningLocks(body.topics || [], body.lessons || []);
   }
 
@@ -735,7 +743,7 @@ export class AdminService {
     },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrContent(headers);
     try {
       return await this.contentService.saveHskLevelCovers(body.covers || []);
     } catch (error: any) {
@@ -853,9 +861,13 @@ export class AdminService {
     const params = [fromYmd, toYmd];
 
     try {
-      const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+      const [vipModalOpens, registeredUsers, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
         this.db.query(
           `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+          params,
+        ),
+        this.db.query(
+          `SELECT COUNT(*) AS value FROM users WHERE ${eventWithinRange}`,
           params,
         ),
         this.db.query(
@@ -896,8 +908,7 @@ export class AdminService {
            LEFT JOIN payment_plans p ON p.id = o.plan_id
            WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
            GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
-           ORDER BY revenue DESC, latest_paid_at DESC
-           LIMIT 400`,
+           ORDER BY revenue DESC, latest_paid_at DESC`,
           params,
         ),
       ]);
@@ -940,6 +951,7 @@ export class AdminService {
       return {
         meta: { days, from: fromYmd, to: toYmd },
         vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+        registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
         vipActivations: Number(paidTotals.rows[0]?.activations || 0),
         revenue: Number(paidTotals.rows[0]?.revenue || 0),
         dailyRevenue: this.buildDailySeries(dailyRevenue.rows, fromYmd, toYmd),

@@ -102,7 +102,7 @@ function publicUser(row) {
 function normalizePublicRole(role) {
   const normalized = String(role || "").trim().toLowerCase();
   if (normalized === "admin") return "admin";
-  if (normalized === "sales") return "sales";
+  if (normalized === "sales" || normalized === "koc") return "sales";
   if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
@@ -115,7 +115,7 @@ function normalizeEditableRole(role) {
 
 function isEditableRoleValue(role) {
   const normalized = String(role || "").trim().toLowerCase();
-  return ["user", "sales", "ctv", "content", "staff", "employee", "content_manager"].includes(normalized);
+  return ["user", "sales", "koc", "ctv", "content", "staff", "employee", "content_manager"].includes(normalized);
 }
 
 function normalizeReferralRef(ref) {
@@ -964,7 +964,7 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 404, { error: "Không tìm thấy user." });
       return;
     }
-    if (normalizePublicRole(currentUser.role) !== "ctv") {
+    if (!["ctv", "sales"].includes(normalizePublicRole(currentUser.role))) {
       sendJson(res, 400, { error: "Chỉ tài khoản CTV mới được tạo link ref." });
       return;
     }
@@ -1138,9 +1138,13 @@ async function handleAdminVipOverview(req, res, url) {
   const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
   const params = [fromYmd, toYmd];
 
-  const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+  const [vipModalOpens, registeredUsers, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
     pool.query(
       `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    pool.query(
+      `SELECT COUNT(*) AS value FROM users WHERE ${eventWithinRange}`,
       params,
     ),
     pool.query(
@@ -1181,8 +1185,7 @@ async function handleAdminVipOverview(req, res, url) {
        LEFT JOIN payment_plans p ON p.id = o.plan_id
        WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
-       ORDER BY revenue DESC, latest_paid_at DESC
-       LIMIT 400`,
+       ORDER BY revenue DESC, latest_paid_at DESC`,
       params,
     ),
   ]);
@@ -1225,6 +1228,7 @@ async function handleAdminVipOverview(req, res, url) {
   sendJson(res, 200, {
     meta: { days, from: fromYmd, to: toYmd },
     vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+    registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
     vipActivations: Number(paidTotals.rows[0]?.activations || 0),
     revenue: Number(paidTotals.rows[0]?.revenue || 0),
     dailyRevenue: buildDailySeries(dailyRevenue.rows, fromYmd, toYmd),

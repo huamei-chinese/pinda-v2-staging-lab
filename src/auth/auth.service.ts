@@ -17,7 +17,7 @@ export class AuthService {
   private normalizeRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'admin' {
     const normalized = String(role || '').trim().toLowerCase();
     if (normalized === 'admin') return 'admin';
-    if (normalized === 'sales') return 'sales';
+    if (normalized === 'sales' || normalized === 'koc') return 'sales';
     if (normalized === 'ctv' || normalized === 'staff' || normalized === 'employee') return 'ctv';
     if (normalized === 'content' || normalized === 'content_manager') return 'content';
     return 'user';

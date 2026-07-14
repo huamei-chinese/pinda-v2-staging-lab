@@ -460,14 +460,28 @@ function readStoredJson(key) {
   }
 }
 
+const ADMIN_PORTAL_ROLE_KEYS = ["admin", "sales", "ctv", "content"];
+
+function normalizeAdminPortalRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+  if (normalized === "admin") return "admin";
+  if (normalized === "sales" || normalized === "koc") return "sales";
+  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "content" || normalized === "content_manager") return "content";
+  return "user";
+}
+
+function isAdminPortalRole(role) {
+  return ADMIN_PORTAL_ROLE_KEYS.includes(normalizeAdminPortalRole(role));
+}
+
 function readStoredStudentUser() {
-  const user = readStoredJson(STUDENT_USER_STORAGE_KEY);
-  return user && !["admin", "staff", "employee"].includes(String(user.role || "").toLowerCase()) ? user : null;
+  return readStoredJson(STUDENT_USER_STORAGE_KEY) || readStoredJson(ADMIN_USER_STORAGE_KEY);
 }
 
 function readStoredAdminUser() {
   const user = readStoredJson(ADMIN_USER_STORAGE_KEY);
-  return ["admin", "staff", "employee"].includes(String(user?.role || "").toLowerCase()) ? user : null;
+  return isAdminPortalRole(user?.role) ? user : null;
 }
 
 function clearLegacyAuthStorage() {
@@ -3324,17 +3338,55 @@ function showRecentActivitiesDrawer() {
   drawer.focus();
 }
 
+function getAdminPortalRole(user = state.adminUser) {
+  return normalizeAdminPortalRole(user?.role);
+}
+
+function getAllowedAdminTabsForRole(role) {
+  const normalized = normalizeAdminPortalRole(role);
+  if (normalized === "admin") return ["users", "vip", "subscriptions", "content", "collaborators", "analytics"];
+  if (normalized === "sales" || normalized === "ctv") return ["customers"];
+  if (normalized === "content") return ["content"];
+  return [];
+}
+
+function getDefaultAdminTabForRole(role) {
+  return getAllowedAdminTabsForRole(role)[0] || "users";
+}
+
+function isAdminTabAllowed(tab, role = getAdminPortalRole()) {
+  return getAllowedAdminTabsForRole(role).includes(String(tab || "").trim().toLowerCase());
+}
+
+function getSafeAdminTab(tab = state.adminTab) {
+  const normalized = String(tab || "").trim().toLowerCase();
+  return isAdminTabAllowed(normalized) ? normalized : getDefaultAdminTabForRole(getAdminPortalRole());
+}
+
+function shouldShowAdminTab(tab) {
+  return isAdminTabAllowed(tab);
+}
+
 function isAdminUser() {
-  return String(state.adminUser?.role || "").toLowerCase() === "admin";
+  return getAdminPortalRole() === "admin";
 }
 
 function isStaffAdminUser() {
-  const role = String(state.adminUser?.role || "").toLowerCase();
-  return role === "staff" || role === "employee";
+  const role = getAdminPortalRole();
+  return role !== "admin" && isAdminPortalRole(role);
+}
+
+function isKocAdminUser() {
+  return getAdminPortalRole() === "sales";
+}
+
+function isCtvAdminUser() {
+  const role = getAdminPortalRole();
+  return role === "ctv" || role === "sales";
 }
 
 function canAccessAdminConsole() {
-  return isAdminUser() || isStaffAdminUser();
+  return isAdminPortalRole(getAdminPortalRole());
 }
 
 function getAdminUserId() {
@@ -4435,11 +4487,10 @@ function showModal(type) {
           src: getTrafficSource(),
         }),
       });
-      if (["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
-        throw new Error(isVi ? "Vui lòng dùng trang Admin để đăng nhập quản trị." : "请使用后台入口登录管理员账号。");
-      }
       if (!isLogin) clearReferralAttribution();
       state.user = data.user;
+      state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
+      if (state.adminUser) state.adminTab = getSafeAdminTab(state.adminTab);
       saveState();
       loadContentLocks().then(() => {
         renderChrome();
@@ -5315,6 +5366,17 @@ function renderAccount() {
                 </select>
               </span>
             </label>
+            <button type="button" class="account-password-card" id="accountMobileChangePasswordBtn">
+              <span class="account-password-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+                </svg>
+              </span>
+              <span class="account-password-label">${isVi ? "Đổi mật khẩu" : "修改密码"}</span>
+              <svg class="account-password-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </button>
             <div class="account-security-banner">
               <span class="account-security-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V5l8-3 8 3v8z" /><path d="m9 12 2 2 4-5" /></svg>
@@ -5366,18 +5428,6 @@ function renderAccount() {
           </div>
           <p class="account-joined-note">${isVi ? `Tham gia từ: ${joinedLabel}` : `加入时间：${joinedLabel}`}</p>
         </section>
-
-        <button type="button" class="account-password-card" id="accountMobileChangePasswordBtn">
-          <span class="account-password-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-            </svg>
-          </span>
-          <span class="account-password-label">${isVi ? "Đổi mật khẩu" : "修改密码"}</span>
-          <svg class="account-password-chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 6l6 6-6 6"/>
-          </svg>
-        </button>
       </div>
     </div>
   `, "app-desktop-shell--account", "account");
@@ -10341,10 +10391,12 @@ function bindEvents() {
       body: JSON.stringify({ email, password }),
     })
       .then((data) => {
-        if (!["admin", "staff", "employee"].includes(String(data.user?.role || "").toLowerCase())) {
-          throw new Error(state.lang === "vi" ? "Tài khoản này không có quyền admin." : "该账户没有管理员权限。");
+        if (!isAdminPortalRole(data.user?.role)) {
+          throw new Error(state.lang === "vi" ? "Tai khoan nay khong co quyen vao khu quan tri." : "This account cannot access the admin portal.");
         }
         state.adminUser = data.user;
+        state.user = data.user;
+        state.adminTab = getDefaultAdminTabForRole(getAdminPortalRole(data.user));
         state.adminStatus = "";
         saveState();
         renderChrome();

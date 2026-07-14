@@ -2868,9 +2868,13 @@ async function getVipManagement(req, searchParams) {
   const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
   const params = [fromYmd, toYmd];
 
-  const [vipModalOpens, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
+  const [vipModalOpens, registeredUsers, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
     query(
       `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
+      params,
+    ),
+    query(
+      `SELECT COUNT(*) AS value FROM users WHERE ${eventWithinRange}`,
       params,
     ),
     query(
@@ -2911,8 +2915,7 @@ async function getVipManagement(req, searchParams) {
        LEFT JOIN payment_plans p ON p.id = o.plan_id
        WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
        GROUP BY u.id, u.full_name, u.email, u.is_premium, u.premium_until, u.vip_plan_id, o.plan_id, p.name_vi
-       ORDER BY revenue DESC, latest_paid_at DESC
-       LIMIT 400`,
+       ORDER BY revenue DESC, latest_paid_at DESC`,
       params,
     ),
   ]);
@@ -2955,6 +2958,7 @@ async function getVipManagement(req, searchParams) {
   return json({
     meta: { days, from: fromYmd, to: toYmd },
     vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
+    registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
     vipActivations: Number(paidTotals.rows[0]?.activations || 0),
     revenue: Number(paidTotals.rows[0]?.revenue || 0),
     dailyRevenue: buildLearningDailySeries(dailyRevenue.rows, fromYmd, toYmd),

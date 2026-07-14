@@ -32,11 +32,13 @@ test("admin manual VIP upgrade requires an explicit confirmation before PATCH", 
   assert.match(appSource, /existing VIP/i);
 });
 
-test("admin user search filters locally and refresh can request fresh backend data", () => {
+test("admin user search resets pagination and refresh can request fresh backend data", () => {
   assert.match(appSource, /id="adminUserSearchInput"/);
   assert.match(appSource, /id="adminRefreshBtn"/);
   assert.match(appSource, /state\.adminUserSearch = event\.target\.value;/);
-  assert.match(appSource, /updateAdminUsersList\(\);/);
+  assert.match(appSource, /state\.adminUserPage = 1;/);
+  assert.match(appSource, /if \(adminUserSearchTimer\) clearTimeout\(adminUserSearchTimer\);/);
+  assert.match(appSource, /adminUserSearchTimer = setTimeout\(\(\) => \{\s*loadAdminUsers\(\);\s*\}, 350\);/s);
   assert.match(appSource, /event\.target\.closest\("#adminLoadUsersBtn"\) \|\| event\.target\.closest\("#adminRefreshBtn"\)/);
   assert.match(appSource, /if \(adminLoadUsersBtn\) \{\s*loadAdminUsers\(\);/s);
 });

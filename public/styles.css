@@ -10767,37 +10767,43 @@ p {
 
   .account-info-card {
     min-height: 0;
-    padding: 22px 18px 18px;
+    padding: 20px 18px 18px;
+    border: 1px solid rgba(203, 213, 225, 0.82);
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(240, 253, 250, 0.65) 0%, rgba(255, 255, 255, 0.96) 36%, #ffffff 100%);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
   }
 
   .account-form {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 
   .account-form label {
-    gap: 8px;
+    gap: 7px;
     color: #0f172a;
-    font-size: 12px;
-    font-weight: 850;
+    font-size: 14px;
+    font-weight: 900;
   }
 
   .account-field {
-    min-height: 48px;
-    border: 1px solid #dbe4f0;
-    border-radius: 12px;
-    background: #ffffff;
-    color: #475569;
+    min-height: 56px;
+    border: 1px solid #d8e5f2;
+    border-radius: 16px;
+    background: rgba(248, 251, 255, 0.9);
+    color: #334155;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 14px;
+    padding: 0 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 
   .account-field svg {
-    width: 19px;
-    height: 19px;
-    color: #475569;
+    width: 20px;
+    height: 20px;
+    color: #64748b;
     flex: 0 0 auto;
   }
 
@@ -10812,7 +10818,8 @@ p {
     padding: 0;
     box-shadow: none;
     font-size: 14px;
-    font-weight: 750;
+    font-weight: 850;
+    color: #1e293b;
   }
 
   .account-form input:focus,
@@ -10823,6 +10830,7 @@ p {
 
   .account-field:focus-within {
     border-color: #10b981;
+    background: #ffffff;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
   }
 
@@ -10892,15 +10900,16 @@ p {
   .account-password-card {
     width: 100%;
     min-height: 58px;
-    border: 0;
-    border-radius: 18px;
-    background: #fff;
+    border: 1px solid #d9e7f5;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 0 18px;
+    padding: 0 16px;
     cursor: pointer;
     text-align: left;
+    box-shadow: 0 10px 22px rgba(59, 130, 246, 0.08);
   }
 
   .account-password-icon {
@@ -11001,7 +11010,7 @@ p {
   }
 
   .account-info-card {
-    padding: 28px 22px;
+    padding: 20px 18px 18px;
   }
 
   .account-info-header em {
@@ -19989,7 +19998,13 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-vip-range { display: flex; align-items: flex-end; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
 .admin-vip-range label { display: grid; gap: 5px; color: #64748b; font-size: 11px; font-weight: 850; }
 .admin-vip-range input { min-height: 40px; width: 152px; border: 1px solid #dbe4f0; border-radius: 10px; background: #fff; color: #0f172a; padding: 0 12px; font: inherit; font-weight: 750; }
-.admin-vip-range button { min-height: 40px; border: 1px solid #0f766e; border-radius: 10px; background: #0f766e; color: #fff; padding: 0 16px; font: inherit; font-weight: 900; cursor: pointer; }
+.admin-vip-range > button { min-height: 40px; border: 1px solid #0f766e; border-radius: 10px; background: #0f766e; color: #fff; padding: 0 16px; font: inherit; font-weight: 900; cursor: pointer; }
+.admin-vip-range--picker { min-width: min(360px, 100%); align-items: flex-start; }
+.admin-vip-daterange { width: 100%; }
+.admin-vip-daterange .admin-vip-range-trigger { width: 100%; justify-content: center; min-height: 48px; border-color: #7dd3fc; border-radius: 12px; background: linear-gradient(180deg, #fff 0%, #f8fbff 100%); box-shadow: 0 10px 28px rgba(14, 165, 233, .13); }
+.admin-vip-daterange .admin-vip-range-trigger.open { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(14,165,233,.16), 0 16px 36px rgba(14,165,233,.18); }
+.admin-vip-daterange .admin-vip-range-trigger .range-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 7px; background: #eef6ff; font-size: 13px; }
+.admin-vip-range-pop { min-width: 600px; }
 .admin-vip-status { min-height: 110px; display: grid; place-items: center; border: 1px solid #dbe4f0; border-radius: 14px; background: #fff; color: #64748b; font-weight: 800; }
 .admin-vip-status.error { color: #b91c1c; background: #fff5f5; border-color: #fecaca; }
 .admin-vip-summary { display: grid; grid-template-columns: 1.35fr repeat(2, minmax(0, .8fr)); gap: 14px; margin-bottom: 14px; }
@@ -20005,6 +20020,9 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-vip-plan-tabs strong, .admin-vip-plan-tabs span { display: block; }
 .admin-vip-plan-tabs strong { font-size: 13px; font-weight: 950; }
 .admin-vip-plan-tabs span { margin-top: 4px; color: #64748b; font-size: 12px; font-weight: 800; }
+.admin-vip-registration-card { min-height: 54px; border: 1px solid #bfdbfe; border-radius: 10px; background: linear-gradient(135deg, #eff6ff, #f8fafc); color: #1d4ed8; padding: 8px 14px; min-width: 185px; box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+.admin-vip-registration-card strong { color: #1e3a8a; }
+.admin-vip-registration-card span { color: #2563eb; }
 .admin-vip-layout { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(0, 1.55fr); gap: 14px; }
 .admin-vip-chart, .admin-vip-list { border: 1px solid #dbe4f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 14px 30px rgba(15,23,42,.07); }
 .admin-vip-chart h3, .admin-vip-list h3 { margin: 0 0 12px; color: #0f172a; font-size: 17px; font-weight: 950; }
@@ -20016,6 +20034,12 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-vip-user-state { display: inline-flex; align-items: center; min-height: 24px; border-radius: 999px; padding: 0 9px; font-size: 12px; font-weight: 900; }
 .admin-vip-user-state.active { background: #dcfce7; color: #047857; }
 .admin-vip-user-state.inactive { background: #eef2f7; color: #64748b; }
+.admin-vip-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; color: #64748b; font-size: 12px; font-weight: 800; }
+.admin-vip-pagination-actions { display: inline-flex; align-items: center; gap: 6px; }
+.admin-vip-pagination-actions button { min-width: 32px; height: 32px; border: 1px solid #dbe4f0; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-weight: 900; cursor: pointer; }
+.admin-vip-pagination-actions button.active { border-color: #0f766e; background: #0f766e; color: #fff; box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
+.admin-vip-pagination-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.admin-vip-page-ellipsis { min-width: 18px; text-align: center; color: #94a3b8; font-weight: 900; }
 @media (max-width: 980px) { .admin-vip-head { flex-direction: column; } .admin-vip-summary, .admin-vip-layout { grid-template-columns: 1fr; } }
 .admin-content-panel { margin-top: 28px; }
 .admin-content-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
@@ -20272,6 +20296,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-analytics-range-actions button.primary:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 760px) {
   .admin-analytics-range-pop { flex-direction: column; right: auto; left: 0; max-width: 94vw; }
+  .admin-vip-range-pop { min-width: 0; }
   .cal-months { flex-direction: column; gap: 14px; }
   .admin-analytics-presets { flex-direction: row; flex-wrap: wrap; min-width: 0; border-right: 0; border-bottom: 1px solid #eef2f7; }
 }

@@ -13,9 +13,9 @@ test("frontend and admin sessions use separate HuaMei storage keys", () => {
   assert.match(appSource, /localStorage\.removeItem\("v2-user"\)/);
 });
 
-test("admin login persists only admin session state", () => {
+test("admin login mirrors portal account into client session state", () => {
   assert.match(appSource, /state\.adminUser\s*=\s*data\.user/);
-  assert.doesNotMatch(appSource, /state\.user\s*=\s*data\.user;\s*\n\s*state\.adminStatus\s*=\s*""/);
+  assert.match(appSource, /state\.user\s*=\s*data\.user;\s*\n\s*state\.adminTab\s*=\s*getDefaultAdminTabForRole/);
 });
 
 test("admin API calls use admin user id instead of student user id", () => {
@@ -23,9 +23,10 @@ test("admin API calls use admin user id instead of student user id", () => {
   assert.doesNotMatch(appSource, /"X-Admin-User-Id": state\.user\?\.id \|\| ""/);
 });
 
-test("student login cannot store an admin account as the frontend learner", () => {
-  assert.match(appSource, /\["admin", "staff", "employee", "sales", "ctv", "content"\]\.includes\(String\(data\.user\?\.role/);
+test("client login can store portal accounts as frontend learners", () => {
+  assert.doesNotMatch(appSource, /\["admin", "staff", "employee", "sales", "ctv", "content"\]\.includes\(String\(data\.user\?\.role/);
   assert.match(appSource, /state\.user\s*=\s*data\.user/);
+  assert.match(appSource, /state\.adminUser\s*=\s*isAdminPortalRole\(data\.user\?\.role\) \? data\.user : null/);
 });
 
 test("student and admin logout paths are separated", () => {
