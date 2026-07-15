@@ -667,9 +667,24 @@ function readStoredAdminUser() {
   return isAdminPortalRole(user?.role) ? user : null;
 }
 
+function removeAuthStorageKey(key) {
+  try { localStorage.removeItem(key); } catch { /* ignore storage errors */ }
+  try { sessionStorage.removeItem(key); } catch { /* ignore storage errors */ }
+}
+
 function clearLegacyAuthStorage() {
-  localStorage.removeItem("v2-user");
-  LEGACY_AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  removeAuthStorageKey("v2-user");
+  LEGACY_AUTH_STORAGE_KEYS.forEach(removeAuthStorageKey);
+}
+
+function clearAllAuthStorage() {
+  [
+    STUDENT_USER_STORAGE_KEY,
+    ADMIN_USER_STORAGE_KEY,
+    STUDENT_TOKEN_STORAGE_KEY,
+    ADMIN_TOKEN_STORAGE_KEY,
+  ].forEach(removeAuthStorageKey);
+  clearLegacyAuthStorage();
 }
 
 const state = {
@@ -780,6 +795,9 @@ const state = {
   adminAnalyticsDraftFrom: "",
   adminAnalyticsDraftTo: "",
   adminAnalyticsCalMonth: "",
+  adminVipContentSummaryPage: 1,
+  adminVipSessionPage: 1,
+  adminVipHighEngagementPage: 1,
   adminVip: null,
   adminVipLoading: false,
   adminVipError: "",
@@ -2382,6 +2400,7 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
   const buttonLabel = isLocked ? lockedContentCtaText() : (isVi ? "Vào học" : "开始学习");
   const title = isVi ? config.titleVi : config.titleZh;
   const desc = isVi ? config.descVi : config.descZh;
+  const accessBadgeHTML = accessStatusBadgeHTML(accessStatus, { type: "daily-theme", theme, config });
   return `
       <article class="daily-theme-card daily-theme-card--featured daily-theme-card--${config.tone} access-rule-${accessStatus} ${isLocked ? "locked" : ""}" data-theme="${theme.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <img
@@ -2394,7 +2413,7 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
         <div class="daily-theme-card-time-content">
           <div class="daily-theme-card-time-top">
             <span class="daily-theme-count-badge">${itemCount} ${countLabel}</span>
-            ${accessStatusBadgeHTML(accessStatus)}
+            ${accessBadgeHTML}
           </div>
           <div class="daily-theme-card-time-body">
             <div class="daily-theme-time-title-row">
@@ -2958,9 +2977,20 @@ const ALLOWED_LEARNING_EVENT_TYPES = new Set([
   "practice_completed",
   "paywall_shown",
   "vip_modal_opened",
+  "study_session_started",
+  "study_session_heartbeat",
+  "study_session_ended",
 ]);
 let learningEventQueue = [];
 let learningEventFlushTimer = null;
+const LEARNING_BEHAVIOR_HEARTBEAT_MS = 30000;
+let learningBehaviorSession = {
+  key: "",
+  context: null,
+  startedAt: 0,
+  lastHeartbeatAt: 0,
+  heartbeatTimer: null,
+};
 
 function normalizeReferralParam(value, maxLength = 64) {
   return String(value || "")
@@ -3107,6 +3137,111 @@ function flushLearningEvents(useBeacon = false) {
   apiRequest("/api/events", { method: "POST", headers, body: bodyString }).catch(() => {
     /* analytics must never break the UX */
   });
+}
+
+function normalizeLearningBehaviorPart(value) {
+  return String(value || "").trim();
+}
+
+function buildLearningBehaviorContext(screenName = state.screen) {
+  if (!state.user?.id || screenName === "admin") return null;
+  if (screenName === "listening") {
+    if (!["detail", "repeat", "vocab"].includes(state.listeningView)) return null;
+    const episode = typeof getListeningEpisode === "function" ? getListeningEpisode(state.listeningEpisodeId) : null;
+    const topic = typeof getListeningTopicByEpisodeId === "function" ? getListeningTopicByEpisodeId(state.listeningEpisodeId) : null;
+    return {
+      module: "listening",
+      level: state.listeningLevelId || episode?.levelId || null,
+      lessonId: state.listeningEpisodeId || episode?.id || null,
+      topicId: state.listeningTopicId || topic?.id || null,
+      questionId: state.listeningView || null,
+    };
+  }
+  if (screenName === "practice" || screenName === "complete") {
+    const isDaily = state.module === "daily";
+    const contentType = isDaily ? (state.dailyContentType || "daily") : (state.hskContentType || "hsk");
+    return {
+      module: "writing",
+      level: isDaily ? "daily" : (state.level || null),
+      lessonId: isDaily ? null : (state.lessonId || null),
+      topicId: isDaily ? (state.themeId || null) : null,
+      questionId: `${state.mode || "practice"}:${contentType}`,
+    };
+  }
+  return null;
+}
+
+function getLearningBehaviorSessionKey(context) {
+  if (!context) return "";
+  return [
+    context.module,
+    context.level,
+    context.lessonId,
+    context.topicId,
+    context.questionId,
+  ].map(normalizeLearningBehaviorPart).join("|");
+}
+
+function clearLearningBehaviorHeartbeat() {
+  if (!learningBehaviorSession.heartbeatTimer) return;
+  clearTimeout(learningBehaviorSession.heartbeatTimer);
+  learningBehaviorSession.heartbeatTimer = null;
+}
+
+function sendLearningBehaviorHeartbeat(force = false) {
+  if (!learningBehaviorSession.key || !learningBehaviorSession.context) return;
+  const now = Date.now();
+  if (!force && now - learningBehaviorSession.lastHeartbeatAt < LEARNING_BEHAVIOR_HEARTBEAT_MS - 1000) return;
+  learningBehaviorSession.lastHeartbeatAt = now;
+  trackEvent("study_session_heartbeat", learningBehaviorSession.context);
+}
+
+function scheduleLearningBehaviorHeartbeat() {
+  clearLearningBehaviorHeartbeat();
+  if (!learningBehaviorSession.key || !learningBehaviorSession.context) return;
+  learningBehaviorSession.heartbeatTimer = setTimeout(() => {
+    sendLearningBehaviorHeartbeat(true);
+    scheduleLearningBehaviorHeartbeat();
+  }, LEARNING_BEHAVIOR_HEARTBEAT_MS);
+}
+
+function endLearningBehaviorSession() {
+  if (learningBehaviorSession.key && learningBehaviorSession.context) {
+    sendLearningBehaviorHeartbeat(true);
+    trackEvent("study_session_ended", learningBehaviorSession.context);
+  }
+  clearLearningBehaviorHeartbeat();
+  learningBehaviorSession = {
+    key: "",
+    context: null,
+    startedAt: 0,
+    lastHeartbeatAt: 0,
+    heartbeatTimer: null,
+  };
+}
+
+function syncLearningBehaviorSession(screenName = state.screen) {
+  const context = buildLearningBehaviorContext(screenName);
+  const nextKey = getLearningBehaviorSessionKey(context);
+  if (!context || !nextKey) {
+    endLearningBehaviorSession();
+    return;
+  }
+  if (learningBehaviorSession.key === nextKey) {
+    scheduleLearningBehaviorHeartbeat();
+    return;
+  }
+  endLearningBehaviorSession();
+  const now = Date.now();
+  learningBehaviorSession = {
+    key: nextKey,
+    context,
+    startedAt: now,
+    lastHeartbeatAt: now,
+    heartbeatTimer: null,
+  };
+  trackEvent("study_session_started", context);
+  scheduleLearningBehaviorHeartbeat();
 }
 
 function buildPracticeEventContext() {
@@ -3543,8 +3678,21 @@ function getDailyContentTypeAccessStatus(themeId, contentType) {
   return getDailyThemeAccessRule(themeId, contentType).status;
 }
 
-function accessStatusBadgeHTML(status) {
+function shouldShowPartialAccessBadge(context = {}) {
+  if (context.type !== "daily-theme") return true;
+  const theme = context.theme || {};
+  const config = context.config || {};
+  const id = String(theme.id || "").trim().toLowerCase();
+  const title = `${theme.vi || ""} ${theme.titleVi || ""} ${theme.lesson_title_vi || ""} ${config.titleVi || ""}`.toLowerCase();
+  return id === "housing"
+    || id === "renting_life"
+    || id === "renting"
+    || (title.includes("thuê nhà") && (title.includes("chuyển nhà") || title.includes("sinh hoạt")));
+}
+
+function accessStatusBadgeHTML(status, context = {}) {
   if (status === "partial") {
+    if (!shouldShowPartialAccessBadge(context)) return "";
     return `<span class="access-rule-badge access-rule-badge--partial">${state.lang === "vi" ? "Miễn phí một phần" : "部分免费"}</span>`;
   }
   if (status === "locked") {
@@ -3903,12 +4051,22 @@ function getDailyThemesCatalog() {
   }));
 }
 
+function getAdminLocalizedCatalogTitle(item = {}, isVi = state.lang === "vi", fallback = "") {
+  const titleVi = String(item.titleVi || item.title || "").trim();
+  const titleZh = String(item.titleZh || item.title_zh || "").trim();
+  const safeFallback = String(fallback || item.topicId || item.lessonId || item.id || "").trim();
+  return isVi
+    ? (titleVi || titleZh || safeFallback)
+    : (titleZh || titleVi || safeFallback);
+}
+
 function getListeningLocksCatalog() {
   if (Array.isArray(state.adminListeningCatalogTopics) && state.adminListeningCatalogTopics.length > 0) {
     const topics = state.adminListeningCatalogTopics.map((topic, topicIndex) => ({
       topicId: topic.topicId,
       sortOrder: Number(topic.sortOrder || topicIndex + 1),
       titleVi: topic.titleVi || topic.title || topic.topicId || "",
+      titleZh: topic.titleZh || topic.title || topic.titleVi || topic.topicId || "",
     }));
     const topicOrder = Object.fromEntries(topics.map((topic, index) => [topic.topicId, index + 1]));
     const lessons = (state.adminListeningCatalogLessons || []).map((lesson, lessonIndex) => ({
@@ -3916,6 +4074,7 @@ function getListeningLocksCatalog() {
       topicId: lesson.topicId || "",
       sortOrder: Number(lesson.sortOrder || lessonIndex + 1),
       titleVi: lesson.titleVi || lesson.title || lesson.lessonId || "",
+      titleZh: lesson.titleZh || lesson.title || lesson.titleVi || lesson.lessonId || "",
     })).sort((a, b) => (topicOrder[a.topicId] || 9999) - (topicOrder[b.topicId] || 9999) || a.sortOrder - b.sortOrder || a.lessonId.localeCompare(b.lessonId));
     return { topics, lessons };
   }
@@ -3924,11 +4083,13 @@ function getListeningLocksCatalog() {
     topicId: topic.id,
     sortOrder: topicIndex + 1,
     titleVi: topic.label_vi || topic.label_zh || topic.id || "",
+    titleZh: topic.label_zh || topic.label_vi || topic.id || "",
     lessons: (topic.lessons || []).map((lesson, lessonIndex) => ({
       lessonId: lesson.id,
       topicId: topic.id,
       sortOrder: lessonIndex + 1,
       titleVi: lesson.title_vi || lesson.title_zh || lesson.title || lesson.id || "",
+      titleZh: lesson.title_zh || lesson.title_vi || lesson.title || lesson.id || "",
     })),
   }));
   return { topics, lessons: topics.flatMap((topic) => topic.lessons) };
@@ -4362,15 +4523,24 @@ function renderAdminContentListeningSectionHTML(isVi) {
   const selectedTopic = catalog.topics.find((topic) => topic.topicId === state.adminListeningSelectedTopicId) || null;
   const lockedTopics = catalog.topics.filter((topic) => state.adminListeningTopicLocks[topic.topicId]).length;
   const lockedLessons = catalog.lessons.filter((lesson) => state.adminListeningLessonLocks[lesson.lessonId]).length;
-  const topicRows = catalog.topics.map((topic) => `
-    <tr data-admin-listening-topic-select="${escapeAttr(topic.topicId)}"><td><code>${escapeAttr(topic.topicId)}</code></td><td>${escapeHtml(topic.titleVi)}</td><td><label class="admin-lock-toggle"><input type="checkbox" data-admin-listening-topic-lock="${escapeAttr(topic.topicId)}" ${state.adminListeningTopicLocks[topic.topicId] ? "checked" : ""} /> ${isVi ? "Khóa chủ đề" : "锁定主题"}</label></td></tr>
-  `).join("");
-  const lessonRows = catalog.lessons.filter((lesson) => !selectedTopic || lesson.topicId === selectedTopic.topicId).map((lesson) => `
-    <tr><td><code>${escapeAttr(lesson.lessonId)}</code></td><td>${escapeHtml(lesson.topicId)}</td><td>${escapeHtml(lesson.titleVi)}</td><td><label class="admin-lock-toggle"><input type="checkbox" data-admin-listening-lesson-lock="${escapeAttr(lesson.lessonId)}" ${state.adminListeningLessonLocks[lesson.lessonId] ? "checked" : ""} /> ${isVi ? "Khóa bài" : "锁定课程"}</label></td></tr>
-  `).join("");
+  const topicRows = catalog.topics.map((topic) => {
+    const topicTitle = getAdminLocalizedCatalogTitle(topic, isVi, topic.topicId);
+    return `
+      <tr data-admin-listening-topic-select="${escapeAttr(topic.topicId)}"><td><code>${escapeAttr(topic.topicId)}</code></td><td>${escapeHtml(topicTitle)}</td><td><label class="admin-lock-toggle"><input type="checkbox" data-admin-listening-topic-lock="${escapeAttr(topic.topicId)}" ${state.adminListeningTopicLocks[topic.topicId] ? "checked" : ""} /> ${isVi ? "Khóa chủ đề" : "锁定主题"}</label></td></tr>
+    `;
+  }).join("");
+  const lessonRows = catalog.lessons.filter((lesson) => !selectedTopic || lesson.topicId === selectedTopic.topicId).map((lesson) => {
+    const topic = catalog.topics.find((item) => item.topicId === lesson.topicId) || { topicId: lesson.topicId };
+    const topicTitle = getAdminLocalizedCatalogTitle(topic, isVi, lesson.topicId);
+    const lessonTitle = getAdminLocalizedCatalogTitle(lesson, isVi, lesson.lessonId);
+    return `
+      <tr><td><code>${escapeAttr(lesson.lessonId)}</code></td><td>${escapeHtml(topicTitle)}</td><td>${escapeHtml(lessonTitle)}</td><td><label class="admin-lock-toggle"><input type="checkbox" data-admin-listening-lesson-lock="${escapeAttr(lesson.lessonId)}" ${state.adminListeningLessonLocks[lesson.lessonId] ? "checked" : ""} /> ${isVi ? "Khóa bài" : "锁定课程"}</label></td></tr>
+    `;
+  }).join("");
+  const selectedTopicTitle = selectedTopic ? getAdminLocalizedCatalogTitle(selectedTopic, isVi, selectedTopic.topicId) : "";
   return `
     <p class="admin-content-subtitle">${isVi ? `Khóa theo chủ đề hoặc từng bài nghe. (${lockedTopics} chủ đề, ${lockedLessons} bài đang khóa)` : `可按听力主题或单独课程锁定。（${lockedTopics} 个主题，${lockedLessons} 节课程已锁定）`}</p>
-    ${selectedTopic ? `<button type="button" class="admin-content-topic-back" data-admin-listening-topic-back>‹ ${isVi ? "Quay lại danh sách chủ đề" : "返回主题列表"}</button><p class="admin-content-subtitle"><strong>${escapeHtml(selectedTopic.titleVi)}</strong> · ${isVi ? "Danh sách bài nghe trong chủ đề" : "主题内的听力课程"}</p>` : ""}
+    ${selectedTopic ? `<button type="button" class="admin-content-topic-back" data-admin-listening-topic-back>‹ ${isVi ? "Quay lại danh sách chủ đề" : "返回主题列表"}</button><p class="admin-content-subtitle"><strong>${escapeHtml(selectedTopicTitle)}</strong> · ${isVi ? "Danh sách bài nghe trong chủ đề" : "主题内的听力课程"}</p>` : ""}
     <div class="admin-content-lock-grid">
       <div class="admin-content-lock-card"><h3>${isVi ? "Khóa chủ đề Luyện nghe" : "锁定听力主题"}</h3><div class="admin-table-wrap"><table class="admin-users-table admin-content-table"><thead><tr><th>ID</th><th>${isVi ? "Chủ đề" : "主题"}</th><th>${isVi ? "Trạng thái" : "状态"}</th></tr></thead><tbody>${topicRows || `<tr><td colspan="3" class="admin-empty">${isVi ? "Chưa có chủ đề nghe." : "暂无听力主题。"}</td></tr>`}</tbody></table></div></div>
       <div class="admin-content-lock-card"><h3>${isVi ? "Khóa từng bài nghe" : "锁定单独听力课程"}</h3><div class="admin-table-wrap"><table class="admin-users-table admin-content-table"><thead><tr><th>ID</th><th>${isVi ? "Chủ đề" : "主题"}</th><th>${isVi ? "Bài học" : "课程"}</th><th>${isVi ? "Trạng thái" : "状态"}</th></tr></thead><tbody>${lessonRows || `<tr><td colspan="4" class="admin-empty">${isVi ? "Chưa có bài nghe." : "暂无听力课程。"}</td></tr>`}</tbody></table></div></div>
@@ -4913,6 +5083,308 @@ function formatAnalyticsNumber(value) {
   return Number(value || 0).toLocaleString("vi-VN");
 }
 
+function formatAnalyticsDurationSeconds(value) {
+  const total = Math.max(0, Math.floor(Number(value) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}p`;
+  if (minutes > 0) return `${minutes}p ${String(seconds).padStart(2, "0")}s`;
+  return `${seconds}s`;
+}
+
+function getLearningBehaviorModuleLabel(module, isVi = state.lang === "vi") {
+  const key = String(module || "").toLowerCase();
+  const vi = {
+    listening: "Luyện nghe",
+    writing: "Luyện viết",
+    hsk: "HSK",
+    daily: "Tiếng Trung thông dụng",
+  };
+  const zh = {
+    listening: "听力",
+    writing: "拼写",
+    hsk: "HSK",
+    daily: "高频汉语",
+  };
+  return (isVi ? vi : zh)[key] || (module ? String(module) : "—");
+}
+
+function getHskLessonMetaById(lessonId = "") {
+  const id = String(lessonId || "");
+  for (const [level, lessons] of Object.entries(hskLevels || {})) {
+    const lesson = (lessons || []).find((item) => item.id === id);
+    if (lesson) return { level, lesson };
+  }
+  return null;
+}
+
+function formatLearningBehaviorHskLevel(level = "", isVi = state.lang === "vi") {
+  const match = String(level || "").match(/^HSK\s*([1-6])$/i);
+  if (match) return `HSK ${match[1]}`;
+  return level || (isVi ? "Ch\u01b0a r\u00f5 c\u1ea5p" : "\u672a\u77e5\u7ea7\u522b");
+}
+
+function getLearningBehaviorListeningTopic(row = {}) {
+  const topicId = String(row.topicId || row.topic_id || "");
+  const lessonId = String(row.lessonId || row.lesson_id || "");
+  if (topicId) {
+    const direct = listeningCatalogTopics.find((topic) => topic.id === topicId);
+    if (direct) return direct;
+  }
+  if (lessonId) {
+    const byLesson = listeningCatalogTopics.find((topic) =>
+      (topic.lessons || []).some((lesson) => lesson.id === lessonId)
+    );
+    if (byLesson) return byLesson;
+  }
+  return null;
+}
+
+function getLearningBehaviorListeningLesson(row = {}) {
+  const lessonId = String(row.lessonId || row.lesson_id || "");
+  const topic = getLearningBehaviorListeningTopic(row);
+  const topicLessons = Array.isArray(topic?.lessons) ? topic.lessons : [];
+  const topicLessonIndex = topicLessons.findIndex((lesson) => lesson.id === lessonId);
+  const topicLesson = topicLessonIndex >= 0 ? topicLessons[topicLessonIndex] : null;
+  const episode = listeningEpisodes.find((item) => item.id === lessonId) || null;
+  const globalIndex = listeningEpisodes.findIndex((item) => item.id === lessonId);
+  return {
+    topic,
+    no: topicLessonIndex >= 0 ? topicLessonIndex + 1 : (globalIndex >= 0 ? globalIndex + 1 : 0),
+    titleVi: topicLesson?.title_vi || topicLesson?.title || episode?.title || lessonId,
+    titleZh: topicLesson?.title_zh || topicLesson?.zh || episode?.titleZh || episode?.title || lessonId,
+  };
+}
+
+function getLearningBehaviorLevelLabel(row = {}, isVi = state.lang === "vi") {
+  const moduleKey = String(row.module || "").toLowerCase();
+  const level = String(row.level || "");
+  if (moduleKey === "writing") {
+    if (level === "daily") return isVi ? "Ti\u1ebfng Trung th\u00f4ng d\u1ee5ng" : "\u9ad8\u9891\u6c49\u8bed";
+    return formatLearningBehaviorHskLevel(level, isVi);
+  }
+  if (moduleKey === "listening") {
+    const topic = getLearningBehaviorListeningTopic(row);
+    return isVi
+      ? (topic?.levelLabelVi || getListeningDashboardHeroTitle(level, true))
+      : (topic?.levelLabelZh || getListeningDashboardHeroTitle(level, false));
+  }
+  return level || "—";
+}
+
+function getLearningBehaviorTopicLabel(row = {}, isVi = state.lang === "vi") {
+  const moduleKey = String(row.module || "").toLowerCase();
+  if (moduleKey === "listening") {
+    const topic = getLearningBehaviorListeningTopic(row);
+    return isVi
+      ? (topic?.label_vi || topic?.label_zh || row.topicId || "—")
+      : (topic?.label_zh || topic?.label_vi || row.topicId || "—");
+  }
+  if (moduleKey === "writing" && String(row.level || "") === "daily") {
+    const theme = dailyThemes.find((item) => item.id === row.topicId);
+    return isVi ? (theme?.vi || row.topicId || "—") : (theme?.zh || theme?.vi || row.topicId || "—");
+  }
+  return "—";
+}
+
+function getLearningBehaviorPartLabel(questionId = "", module = "", isVi = state.lang === "vi") {
+  const value = String(questionId || "").trim();
+  const key = value.includes(":") ? value.split(":").pop() : value;
+  const normalized = String(key || "").toLowerCase();
+  if (String(module || "").toLowerCase() === "listening") {
+    const vi = { detail: "Chi ti\u1ebft b\u00e0i", repeat: "Luy\u1ec7n n\u00f3i", vocab: "T\u1eeb v\u1ef1ng" };
+    const zh = { detail: "\u8bfe\u7a0b\u8be6\u60c5", repeat: "\u8ddf\u8bfb\u7ec3\u4e60", vocab: "\u8bcd\u6c47" };
+    return (isVi ? vi : zh)[normalized] || value || "—";
+  }
+  const vi = { word: "T\u1eeb v\u1ef1ng", sentence: "C\u00e2u" };
+  const zh = { word: "\u751f\u8bcd", sentence: "\u53e5\u5b50" };
+  return (isVi ? vi : zh)[normalized] || value || "—";
+}
+
+function getLearningBehaviorContentTitle(row = {}, isVi = state.lang === "vi") {
+  const moduleKey = String(row.module || "").toLowerCase();
+  if (moduleKey === "writing") {
+    if (String(row.level || "") === "daily") {
+      const theme = dailyThemes.find((item) => item.id === row.topicId);
+      return isVi ? (theme?.vi || row.topicId || "—") : (theme?.zh || theme?.vi || row.topicId || "—");
+    }
+    const meta = getHskLessonMetaById(row.lessonId);
+    if (meta?.lesson) {
+      const no = meta.lesson.no || "";
+      const title = isVi ? (meta.lesson.titleVi || meta.lesson.title) : (meta.lesson.titleZh || meta.lesson.title);
+      return isVi ? `B\u00e0i ${no}: ${title}` : `\u7b2c${no}\u8bfe\uff1a${title}`;
+    }
+    return row.lessonId || "—";
+  }
+  if (moduleKey === "listening") {
+    const lesson = getLearningBehaviorListeningLesson(row);
+    const title = isVi ? lesson.titleVi : lesson.titleZh;
+    if (lesson.no > 0) return isVi ? `B\u00e0i ${lesson.no}: ${title}` : `\u7b2c${lesson.no}\u8bfe\uff1a${title}`;
+    return title || row.lessonId || "—";
+  }
+  return row.lessonId || row.topicId || row.level || "—";
+}
+
+function getLearningBehaviorContentLabel(row = {}, isVi = state.lang === "vi") {
+  const title = getLearningBehaviorContentTitle(row, isVi);
+  const part = getLearningBehaviorPartLabel(row.questionId, row.module, isVi);
+  if (!part || part === "—") return title || "—";
+  return `${title || "—"} · ${part}`;
+}
+
+function joinLearningBehaviorMetaLabels(labels = []) {
+  const safeLabels = labels
+    .map((label) => String(label || "").trim())
+    .filter((label) => label && label !== "—");
+  return safeLabels.length ? safeLabels.join(" · ") : "—";
+}
+
+const ADMIN_VIP_ANALYTICS_PAGE_SIZE = 10;
+
+function getAdminAnalyticsTablePagination(rows = [], currentPage = 1, pageSize = ADMIN_VIP_ANALYTICS_PAGE_SIZE) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const safePageSize = Math.max(1, Number(pageSize) || ADMIN_VIP_ANALYTICS_PAGE_SIZE);
+  const totalRows = safeRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / safePageSize));
+  const page = Math.min(Math.max(1, Number(currentPage) || 1), totalPages);
+  const startIndex = (page - 1) * safePageSize;
+  const endIndex = Math.min(startIndex + safePageSize, totalRows);
+  return {
+    pageRows: safeRows.slice(startIndex, endIndex),
+    totalRows,
+    totalPages,
+    currentPage: page,
+    startIndex,
+    endIndex,
+    pageSize: safePageSize,
+  };
+}
+
+function renderAdminAnalyticsPaginationButtonsHTML(kind, totalPages, currentPage) {
+  const pages = [];
+  if (totalPages <= 5) {
+    for (let page = 1; page <= totalPages; page += 1) pages.push(page);
+  } else {
+    pages.push(1);
+    const middleStart = Math.max(2, currentPage - 1);
+    const middleEnd = Math.min(totalPages - 1, currentPage + 1);
+    if (middleStart > 2) pages.push("ellipsis-start");
+    for (let page = middleStart; page <= middleEnd; page += 1) pages.push(page);
+    if (middleEnd < totalPages - 1) pages.push("ellipsis-end");
+    pages.push(totalPages);
+  }
+
+  return `
+    <button type="button" data-admin-analytics-vip-page-kind="${escapeAttr(kind)}" data-admin-analytics-vip-page="${Math.max(1, currentPage - 1)}" ${currentPage <= 1 ? "disabled" : ""}>‹</button>
+    ${pages.map((page) => typeof page === "number"
+    ? `<button type="button" class="${page === currentPage ? "active" : ""}" data-admin-analytics-vip-page-kind="${escapeAttr(kind)}" data-admin-analytics-vip-page="${page}">${page}</button>`
+    : `<span class="admin-ctv-ellipsis">…</span>`).join("")}
+    <button type="button" data-admin-analytics-vip-page-kind="${escapeAttr(kind)}" data-admin-analytics-vip-page="${Math.min(totalPages, currentPage + 1)}" ${currentPage >= totalPages ? "disabled" : ""}>›</button>
+  `;
+}
+
+function renderAdminAnalyticsPaginationHTML(kind, pagination, isVi = state.lang === "vi") {
+  if (!pagination || pagination.totalRows <= pagination.pageSize) return "";
+  return `
+    <footer class="admin-vip-pagination admin-analytics-pagination">
+      <span>${isVi ? "Hi\u1ec3n th\u1ecb" : "\u663e\u793a"} ${pagination.totalRows ? pagination.startIndex + 1 : 0} - ${pagination.endIndex} ${isVi ? "trong" : "/"} ${pagination.totalRows}</span>
+      <div class="admin-vip-pagination-actions">${renderAdminAnalyticsPaginationButtonsHTML(kind, pagination.totalPages, pagination.currentPage)}</div>
+    </footer>
+  `;
+}
+
+function getAdminVipEngagementTotals(rows = []) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const totalSeconds = safeRows.reduce((sum, row) => sum + (Number(row.totalSeconds) || 0), 0);
+  const sessions = safeRows.reduce((sum, row) => sum + (Number(row.sessions) || 0), 0);
+  return {
+    vipUsers: safeRows.reduce((sum, row) => sum + (Number(row.vipUsers) || 0), 0),
+    sessions,
+    activeSessions: safeRows.reduce((sum, row) => sum + (Number(row.activeSessions) || 0), 0),
+    totalSeconds,
+    avgSeconds: sessions > 0 ? Math.round(totalSeconds / sessions) : 0,
+  };
+}
+
+function compareAdminVipEngagementRows(a, b, direction = "low") {
+  const weight = direction === "high" ? -1 : 1;
+  const score =
+    (a.sessions - b.sessions) ||
+    (a.vipUsers - b.vipUsers) ||
+    (a.totalSeconds - b.totalSeconds) ||
+    (a.activeSessions - b.activeSessions);
+  if (score !== 0) return score * weight;
+  return String(a.scope || "").localeCompare(String(b.scope || ""), "vi") ||
+    String(a.detail || "").localeCompare(String(b.detail || ""), "vi");
+}
+
+function buildAdminVipEngagementRows(contentSummary = [], isVi = state.lang === "vi", direction = "low") {
+  const summaryRows = Array.isArray(contentSummary) ? contentSummary : [];
+  const rows = [];
+
+  HSK_LEVEL_IDS.forEach((levelId) => {
+    const matches = summaryRows.filter((row) =>
+      String(row.module || "").toLowerCase() === "writing" &&
+      String(row.level || "").toUpperCase() === levelId
+    );
+    rows.push({
+      key: `writing:${levelId}`,
+      module: "writing",
+      scope: formatLearningBehaviorHskLevel(levelId, isVi),
+      detail: isVi ? "To\u00e0n c\u1ea5p HSK" : "\u6574\u4e2a HSK \u7ea7\u522b",
+      ...getAdminVipEngagementTotals(matches),
+    });
+  });
+
+  listeningCatalogTopics.forEach((topic) => {
+    const matches = summaryRows.filter((row) =>
+      String(row.module || "").toLowerCase() === "listening" &&
+      String(row.topicId || row.topic_id || "") === String(topic.id || "")
+    );
+    const levelLabel = isVi
+      ? (topic.levelLabelVi || getListeningDashboardHeroTitle(topic.levelId, true) || "\u0110ang ph\u00e2n lo\u1ea1i")
+      : (topic.levelLabelZh || getListeningDashboardHeroTitle(topic.levelId, false) || "\u672a\u5206\u7c7b");
+    const topicLabel = isVi
+      ? (topic.label_vi || topic.label_zh || topic.id)
+      : (topic.label_zh || topic.label_vi || topic.id);
+    rows.push({
+      key: `listening:${topic.id}`,
+      module: "listening",
+      scope: levelLabel,
+      detail: topicLabel,
+      ...getAdminVipEngagementTotals(matches),
+    });
+  });
+
+  if (!listeningCatalogTopics.length) {
+    const fallbackListeningKeys = new Map();
+    summaryRows
+      .filter((row) => String(row.module || "").toLowerCase() === "listening")
+      .forEach((row) => {
+        const key = `${row.level || ""}:${row.topicId || ""}`;
+        if (!fallbackListeningKeys.has(key)) fallbackListeningKeys.set(key, []);
+        fallbackListeningKeys.get(key).push(row);
+      });
+    fallbackListeningKeys.forEach((matches, key) => {
+      const first = matches[0] || {};
+      rows.push({
+        key: `listening:${key}`,
+        module: "listening",
+        scope: getLearningBehaviorLevelLabel(first, isVi),
+        detail: getLearningBehaviorTopicLabel(first, isVi),
+        ...getAdminVipEngagementTotals(matches),
+      });
+    });
+  }
+
+  return rows.sort((a, b) => compareAdminVipEngagementRows(a, b, direction));
+}
+
+function buildAdminVipHighEngagementRows(contentSummary = [], isVi = state.lang === "vi") {
+  return buildAdminVipEngagementRows(contentSummary, isVi, "high");
+}
+
 function analyticsFormatChartDate(ymd, compact = true) {
   const match = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return ymd || "";
@@ -5237,52 +5709,143 @@ function renderAdminAnalyticsPanelHTML() {
     const dailyAttempts = data.dailyAttempts || [];
     const attemptsTotal = dailyAttempts.reduce((sum, point) => sum + (Number(point.value) || 0), 0);
     const learnersPeak = dailyLearners.reduce((max, point) => Math.max(max, Number(point.value) || 0), 0);
-    const sources = data.sources || [];
-    const maxSourceEvents = Math.max(1, ...sources.map((row) => Number(row.events) || 0));
-    const funnel = data.funnel || { registered: 0, learned: 0, popup: 0, vip: 0 };
-    const funnelMax = Math.max(1, funnel.registered, funnel.learned, funnel.popup, funnel.vip);
-    const topLessons = data.topLessons || [];
+    const vipBehavior = data.vipBehavior || {};
+    const vipSessions = Array.isArray(vipBehavior.recentSessions) ? vipBehavior.recentSessions : [];
+    const activeVipSessions = Number(vipBehavior.activeSessions || 0);
+    const totalVipStudySeconds = Number(vipBehavior.totalStudySeconds || 0);
+    const vipModuleSummary = Array.isArray(vipBehavior.moduleSummary) ? vipBehavior.moduleSummary : [];
+    const vipContentSummary = Array.isArray(vipBehavior.contentSummary) ? vipBehavior.contentSummary : [];
+    const vipUserSummary = Array.isArray(vipBehavior.userSummary) ? vipBehavior.userSummary : [];
+    const totalVipSessions = vipModuleSummary.reduce((sum, row) => sum + (Number(row.sessions) || 0), 0);
+    const activeVipUsers = vipUserSummary.filter((row) => row.isActive).length;
+    const vipSessionPagination = getAdminAnalyticsTablePagination(vipSessions, state.adminVipSessionPage);
+    const vipContentSummaryPagination = getAdminAnalyticsTablePagination(vipContentSummary, state.adminVipContentSummaryPage);
+    const vipHighEngagementRows = buildAdminVipHighEngagementRows(vipContentSummary, isVi);
+    const vipHighEngagementPagination = getAdminAnalyticsTablePagination(vipHighEngagementRows, state.adminVipHighEngagementPage);
+    state.adminVipSessionPage = vipSessionPagination.currentPage;
+    state.adminVipContentSummaryPage = vipContentSummaryPagination.currentPage;
+    state.adminVipHighEngagementPage = vipHighEngagementPagination.currentPage;
+    const vipSessionRows = vipSessionPagination.pageRows;
+    const vipContentSummaryRows = vipContentSummaryPagination.pageRows;
+    const vipHighEngagementPageRows = vipHighEngagementPagination.pageRows;
+    const vipSessionPaginationHTML = renderAdminAnalyticsPaginationHTML("sessions", vipSessionPagination, isVi);
+    const vipContentSummaryPaginationHTML = renderAdminAnalyticsPaginationHTML("content", vipContentSummaryPagination, isVi);
+    const vipHighEngagementPaginationHTML = renderAdminAnalyticsPaginationHTML("high-engagement", vipHighEngagementPagination, isVi);
 
-    const funnelStages = [
-      { key: "registered", label: isVi ? "Đăng ký" : "注册", value: funnel.registered },
-      { key: "learned", label: isVi ? "Học tập" : "学习", value: funnel.learned },
-      { key: "popup", label: isVi ? "Xem popup" : "查看弹窗", value: funnel.popup },
-      { key: "vip", label: isVi ? "Kích hoạt VIP" : "开通 VIP", value: funnel.vip },
-    ];
-
-    const sourcesHTML = sources.length
-      ? sources.map((row) => {
-        const label = getAnalyticsSourceLabel(row.source);
-        const width = Math.round(((Number(row.events) || 0) / maxSourceEvents) * 100);
+    const vipBehaviorRowsHTML = vipSessions.length
+      ? vipSessionRows.map((session, index) => {
+        const levelLabel = getLearningBehaviorLevelLabel(session, isVi);
+        const topicLabel = getLearningBehaviorTopicLabel(session, isVi);
+        const partLabel = getLearningBehaviorPartLabel(session.questionId, session.module, isVi);
+        const contentTitle = getLearningBehaviorContentTitle(session, isVi);
+        const contentMeta = joinLearningBehaviorMetaLabels([levelLabel, topicLabel, partLabel]);
         return `
-            <div class="admin-analytics-bar-row admin-analytics-source-${escapeAttr(String(row.source || "direct").toLowerCase())}">
-              <span>${escapeHtml(label)}</span>
-              <div class="admin-analytics-bar-track"><div class="admin-analytics-bar-fill" style="width:${width}%"></div></div>
-              <span>${formatAnalyticsNumber(row.users)} ${isVi ? "user" : "用户"}</span>
-            </div>`;
+          <tr>
+            <td><span class="rank">${vipSessionPagination.startIndex + index + 1}</span></td>
+            <td>
+              <strong>${escapeHtml(session.fullName || session.email || "\u2014")}</strong>
+              <small>${escapeHtml(session.email || "")}</small>
+            </td>
+            <td>${escapeHtml(session.vipPlanId || "VIP")}</td>
+            <td>${escapeHtml(getLearningBehaviorModuleLabel(session.module, isVi))}</td>
+            <td>
+              <strong>${escapeHtml(contentTitle)}</strong>
+              <small>${escapeHtml(contentMeta)}</small>
+            </td>
+            <td>${escapeHtml(formatDateTime(session.startedAt || session.lastSeenAt))}</td>
+            <td>${escapeHtml(formatDateTime(session.lastSeenAt))}</td>
+            <td>${escapeHtml(formatAnalyticsDurationSeconds(session.durationSeconds))}</td>
+            <td>${session.isActive ? (isVi ? "\u0110ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60") : (isVi ? "\u0110\u00e3 r\u1eddi" : "\u5df2\u79bb\u5f00")}</td>
+          </tr>`;
       }).join("")
-      : `<div class="admin-analytics-status">${isVi ? "Chưa có dữ liệu kênh nguồn." : "暂无来源数据。"}</div>`;
+      : `<tr><td colspan="9" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 phi\u00ean h\u1ecdc VIP trong kho\u1ea3ng ng\u00e0y n\u00e0y." : "\u6240\u9009\u8303\u56f4\u6682\u65e0 VIP \u5b66\u4e60\u4f1a\u8bdd\u3002"}</td></tr>`;
 
-    const topLessonsHTML = topLessons.length
-      ? topLessons.map((lesson, index) => `
+    const vipSummaryCardsHTML = [
+      { label: isVi ? "VIP \u0111ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60\u7684 VIP", value: formatAnalyticsNumber(activeVipSessions), hint: isVi ? "phi\u00ean tr\u1ef1c ti\u1ebfp" : "\u5b9e\u65f6\u5b66\u4e60\u4f1a\u8bdd" },
+      { label: isVi ? "T\u1ed5ng phi\u00ean VIP" : "VIP \u5b66\u4e60\u4f1a\u8bdd", value: formatAnalyticsNumber(totalVipSessions), hint: isVi ? "trong kho\u1ea3ng l\u1ecdc" : "\u6309\u7b5b\u9009\u8303\u56f4" },
+      { label: isVi ? "T\u1ed5ng th\u1eddi gian" : "\u603b\u5b66\u4e60\u65f6\u957f", value: formatAnalyticsDurationSeconds(totalVipStudySeconds), hint: isVi ? "th\u1eddi gian h\u1ecdc VIP" : "VIP \u5b66\u4e60\u65f6\u957f" },
+      { label: isVi ? "Ng\u01b0\u1eddi d\u00f9ng VIP ho\u1ea1t \u0111\u1ed9ng" : "\u6d3b\u8dc3 VIP \u7528\u6237", value: formatAnalyticsNumber(vipUserSummary.length), hint: activeVipUsers ? `${formatAnalyticsNumber(activeVipUsers)} ${isVi ? "\u0111ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60"}` : (isVi ? "theo kho\u1ea3ng l\u1ecdc" : "\u6309\u7b5b\u9009\u8303\u56f4") },
+    ].map((card) => `
+      <article class="admin-analytics-summary-card">
+        <span>${escapeHtml(card.label)}</span>
+        <strong>${escapeHtml(card.value)}</strong>
+        <small>${escapeHtml(card.hint)}</small>
+      </article>
+    `).join("");
+
+    const vipModuleSummaryHTML = vipModuleSummary.length
+      ? vipModuleSummary.map((row) => `
+          <tr>
+            <td>${escapeHtml(getLearningBehaviorModuleLabel(row.module, isVi))}</td>
+            <td>${formatAnalyticsNumber(row.vipUsers)}</td>
+            <td>${formatAnalyticsNumber(row.sessions)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.totalSeconds)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.avgSeconds)}</td>
+            <td>${formatAnalyticsNumber(row.activeSessions)}</td>
+          </tr>`).join("")
+      : `<tr><td colspan="6" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 t\u1ed5ng h\u1ee3p theo ph\u00e2n h\u1ec7." : "\u6682\u65e0\u6a21\u5757\u6c47\u603b\u3002"}</td></tr>`;
+
+    const vipContentSummaryHTML = vipContentSummary.length
+      ? vipContentSummaryRows.map((row, index) => {
+        const levelLabel = getLearningBehaviorLevelLabel(row, isVi);
+        const topicLabel = getLearningBehaviorTopicLabel(row, isVi);
+        const contentTitle = getLearningBehaviorContentTitle(row, isVi);
+        const partLabel = getLearningBehaviorPartLabel(row.questionId, row.module, isVi);
+        return `
+          <tr>
+            <td><span class="rank">${vipContentSummaryPagination.startIndex + index + 1}</span></td>
+            <td>${escapeHtml(getLearningBehaviorModuleLabel(row.module, isVi))}</td>
+            <td>
+              <strong>${escapeHtml(levelLabel)}</strong>
+              <small>${escapeHtml(topicLabel)}</small>
+            </td>
+            <td>
+              <strong>${escapeHtml(contentTitle)}</strong>
+              <small>${escapeHtml(partLabel)}</small>
+            </td>
+            <td>${formatAnalyticsNumber(row.vipUsers)}</td>
+            <td>${formatAnalyticsNumber(row.sessions)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.totalSeconds)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.avgSeconds)}</td>
+            <td>${formatAnalyticsNumber(row.activeSessions)}</td>
+          </tr>`;
+      }).join("")
+      : `<tr><td colspan="9" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 t\u1ed5ng h\u1ee3p chi ti\u1ebft theo b\u00e0i/ph\u1ea7n." : "\u6682\u65e0\u6309\u8bfe\u7a0b/\u90e8\u5206\u7684\u6c47\u603b\u3002"}</td></tr>`;
+
+    const vipHighEngagementHTML = vipHighEngagementRows.length
+      ? vipHighEngagementPageRows.map((row, index) => `
+          <tr>
+            <td><span class="rank">${vipHighEngagementPagination.startIndex + index + 1}</span></td>
+            <td>${escapeHtml(getLearningBehaviorModuleLabel(row.module, isVi))}</td>
+            <td>
+              <strong>${escapeHtml(row.scope || "\u2014")}</strong>
+              <small>${escapeHtml(row.detail || "\u2014")}</small>
+            </td>
+            <td>${formatAnalyticsNumber(row.sessions)}</td>
+            <td>${formatAnalyticsNumber(row.vipUsers)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.totalSeconds)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.avgSeconds)}</td>
+            <td>${formatAnalyticsNumber(row.activeSessions)}</td>
+          </tr>`).join("")
+      : `<tr><td colspan="8" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 catalog \u0111\u1ec3 so s\u00e1nh m\u1ee9c nhi\u1ec1u ng\u01b0\u1eddi v\u00e0o." : "\u6682\u65e0\u53ef\u6bd4\u8f83\u7684\u76ee\u5f55\u6570\u636e\u3002"}</td></tr>`;
+
+    const vipUserSummaryHTML = vipUserSummary.length
+      ? vipUserSummary.map((row, index) => `
           <tr>
             <td><span class="rank">${index + 1}</span></td>
-            <td>${escapeHtml(lesson.lessonId || "—")}</td>
-            <td>${escapeHtml(lesson.level || "—")}</td>
-            <td>${formatAnalyticsNumber(lesson.opens)}</td> 
+            <td>
+              <strong>${escapeHtml(row.fullName || row.email || "\u2014")}</strong>
+              <small>${escapeHtml(row.email || "")}</small>
+            </td>
+            <td>${escapeHtml(row.vipPlanId || "VIP")}</td>
+            <td>${formatAnalyticsNumber(row.sessions)}</td>
+            <td>${formatAnalyticsNumber(row.modules)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.totalSeconds)}</td>
+            <td>${formatAnalyticsDurationSeconds(row.avgSeconds)}</td>
+            <td>${escapeHtml(formatDateTime(row.lastSeenAt))}</td>
+            <td>${row.isActive ? (isVi ? "\u0110ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60") : (isVi ? "\u0110\u00e3 r\u1eddi" : "\u5df2\u79bb\u5f00")}</td>
           </tr>`).join("")
-      : `<tr><td colspan="5" class="admin-empty">${isVi ? "Chưa có lượt mở khóa học." : "暂无课程打开记录。"}</td></tr>`;
-
-    const funnelHTML = funnelStages.map((stage) => {
-      const width = Math.max(6, Math.round(((Number(stage.value) || 0) / funnelMax) * 100));
-      const rate = funnel.registered > 0 ? Math.round(((Number(stage.value) || 0) / funnel.registered) * 100) : 0;
-      return `
-        <div class="admin-analytics-funnel-row">
-          <span class="admin-analytics-funnel-label">${escapeHtml(stage.label)}</span>
-          <div class="admin-analytics-funnel-track"><div class="admin-analytics-funnel-fill" style="width:${width}%">${formatAnalyticsNumber(stage.value)}</div></div>
-          <span class="admin-analytics-funnel-meta">${rate}%</span>
-        </div>`;
-    }).join("");
+      : `<tr><td colspan="9" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 t\u1ed5ng h\u1ee3p theo ng\u01b0\u1eddi d\u00f9ng VIP." : "\u6682\u65e0 VIP \u7528\u6237\u6c47\u603b\u3002"}</td></tr>`;
 
     bodyHTML = `
       <div class="admin-analytics-grid">
@@ -5296,28 +5859,105 @@ function renderAdminAnalyticsPanelHTML() {
           <div class="admin-analytics-metric">${formatAnalyticsNumber(attemptsTotal)}</div>
           ${renderAnalyticsLineChart(dailyAttempts, "#059669", { unitLabel: isVi ? "lượt" : "次" })}
         </div>
-        <div class="admin-analytics-block">
-          <h3>${isVi ? "So sánh kênh nguồn" : "来源渠道对比"}</h3>
-          <div class="admin-analytics-bars">${sourcesHTML}</div>
-        </div>
-        <div class="admin-analytics-block">
-          <h3>${isVi ? "Phễu chuyển đổi" : "转化漏斗"}</h3>
-          <div class="admin-analytics-funnel">${funnelHTML}</div>
-          <p class="admin-analytics-funnel-note">${isVi ? "Đăng ký → Học tập → Popup → VIP. Phễu sẽ được nâng cấp sau." : "注册 → 学习 → 弹窗 → VIP。漏斗后续会升级。"}</p>
-        </div>
         <div class="admin-analytics-block admin-analytics-block--wide">
-          <h3>${isVi ? "Top 10 khóa học phổ biến" : "热门课程 Top 10"}</h3>
+          <h3>${isVi ? "Theo d\u00f5i h\u00e0nh vi h\u1ecdc t\u1eadp VIP" : "VIP \u5b66\u4e60\u884c\u4e3a\u8ddf\u8e2a"}</h3>
+          <p class="admin-analytics-funnel-note">
+            ${isVi
+              ? `${formatAnalyticsNumber(activeVipSessions)} VIP \u0111ang h\u1ecdc \u00b7 t\u1ed5ng ${escapeHtml(formatAnalyticsDurationSeconds(totalVipStudySeconds))} trong kho\u1ea3ng l\u1ecdc`
+              : `${formatAnalyticsNumber(activeVipSessions)} \u4e2a VIP \u6b63\u5728\u5b66\u4e60 \u00b7 \u603b\u8ba1 ${escapeHtml(formatAnalyticsDurationSeconds(totalVipStudySeconds))}`}
+          </p>
+          <div class="admin-analytics-summary-grid">${vipSummaryCardsHTML}</div>
+          <div class="admin-analytics-behavior-summaries">
+            <section>
+              <h4>${isVi ? "T\u1ed5ng h\u1ee3p theo ph\u00e2n h\u1ec7" : "\u6309\u6a21\u5757\u6c47\u603b"}</h4>
+              <table class="admin-analytics-table admin-analytics-table--compact">
+                <thead>
+                  <tr>
+                    <th>${isVi ? "Ph\u00e2n h\u1ec7" : "\u6a21\u5757"}</th>
+                    <th>${isVi ? "VIP" : "VIP"}</th>
+                    <th>${isVi ? "Phi\u00ean" : "\u4f1a\u8bdd"}</th>
+                    <th>${isVi ? "T\u1ed5ng" : "\u603b\u8ba1"}</th>
+                    <th>${isVi ? "TB" : "\u5e73\u5747"}</th>
+                    <th>${isVi ? "\u0110ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60"}</th>
+                  </tr>
+                </thead>
+                <tbody>${vipModuleSummaryHTML}</tbody>
+              </table>
+            </section>
+            <section>
+              <h4>${isVi ? "T\u1ed5ng h\u1ee3p theo ng\u01b0\u1eddi d\u00f9ng VIP" : "\u6309 VIP \u7528\u6237\u6c47\u603b"}</h4>
+              <table class="admin-analytics-table admin-analytics-table--compact">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>${isVi ? "Ng\u01b0\u1eddi d\u00f9ng" : "\u7528\u6237"}</th>
+                    <th>VIP</th>
+                    <th>${isVi ? "Phi\u00ean" : "\u4f1a\u8bdd"}</th>
+                    <th>${isVi ? "S\u1ed1 ph\u00e2n h\u1ec7" : "\u6a21\u5757\u6570"}</th>
+                    <th>${isVi ? "T\u1ed5ng" : "\u603b\u8ba1"}</th>
+                    <th>${isVi ? "TB" : "\u5e73\u5747"}</th>
+                    <th>${isVi ? "L\u1ea7n cu\u1ed1i" : "\u6700\u540e\u6d3b\u52a8"}</th>
+                    <th>${isVi ? "Tr\u1ea1ng th\u00e1i" : "\u72b6\u6001"}</th>
+                  </tr>
+                </thead>
+                <tbody>${vipUserSummaryHTML}</tbody>
+              </table>
+            </section>
+          </div>
+          <h4>${isVi ? "T\u1ed5ng h\u1ee3p chi ti\u1ebft theo b\u00e0i/ph\u1ea7n" : "\u6309\u8bfe\u7a0b/\u90e8\u5206\u6c47\u603b"}</h4>
+          <table class="admin-analytics-table admin-analytics-table--compact">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${isVi ? "Ph\u00e2n h\u1ec7" : "\u6a21\u5757"}</th>
+                <th>${isVi ? "C\u1ea5p / ch\u1ee7 \u0111\u1ec1" : "\u7ea7\u522b / \u4e3b\u9898"}</th>
+                <th>${isVi ? "B\u00e0i / ph\u1ea7n" : "\u8bfe\u7a0b / \u90e8\u5206"}</th>
+                <th>VIP</th>
+                <th>${isVi ? "Phi\u00ean" : "\u4f1a\u8bdd"}</th>
+                <th>${isVi ? "T\u1ed5ng" : "\u603b\u8ba1"}</th>
+                <th>${isVi ? "TB" : "\u5e73\u5747"}</th>
+                <th>${isVi ? "\u0110ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60"}</th>
+              </tr>
+            </thead>
+            <tbody>${vipContentSummaryHTML}</tbody>
+          </table>
+          ${vipContentSummaryPaginationHTML}
+          <h4>${isVi ? "C\u1ea5p / ch\u1ee7 \u0111\u1ec1 nhi\u1ec1u ng\u01b0\u1eddi v\u00e0o" : "\u8f83\u591a\u8bbf\u95ee\u7684\u7ea7\u522b / \u4e3b\u9898"}</h4>
+          <p class="admin-analytics-funnel-note">${isVi ? "D\u1ef1a tr\u00ean t\u1ed5ng h\u1ee3p chi ti\u1ebft trong kho\u1ea3ng ng\u00e0y \u0111ang l\u1ecdc; d\u00f2ng n\u00e0o c\u00e0ng nhi\u1ec1u phi\u00ean c\u00e0ng \u0111ang \u0111\u01b0\u1ee3c VIP quan t\u00e2m." : "\u57fa\u4e8e\u5f53\u524d\u7b5b\u9009\u8303\u56f4\u7684\u8be6\u7ec6\u6c47\u603b\uff0c\u4f1a\u8bdd\u8d8a\u591a\u4ee3\u8868 VIP \u8d8a\u5173\u6ce8\u3002"}</p>
+          <table class="admin-analytics-table admin-analytics-table--compact">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${isVi ? "Ph\u00e2n h\u1ec7" : "\u6a21\u5757"}</th>
+                <th>${isVi ? "C\u1ea5p / ch\u1ee7 \u0111\u1ec1" : "\u7ea7\u522b / \u4e3b\u9898"}</th>
+                <th>${isVi ? "Phi\u00ean" : "\u4f1a\u8bdd"}</th>
+                <th>VIP</th>
+                <th>${isVi ? "T\u1ed5ng" : "\u603b\u8ba1"}</th>
+                <th>${isVi ? "TB" : "\u5e73\u5747"}</th>
+                <th>${isVi ? "\u0110ang h\u1ecdc" : "\u6b63\u5728\u5b66\u4e60"}</th>
+              </tr>
+            </thead>
+            <tbody>${vipHighEngagementHTML}</tbody>
+          </table>
+          ${vipHighEngagementPaginationHTML}
+          <h4>${isVi ? "Chi ti\u1ebft phi\u00ean h\u1ecdc VIP" : "VIP \u5b66\u4e60\u4f1a\u8bdd\u660e\u7ec6"}</h4>
           <table class="admin-analytics-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th>${isVi ? "Khóa học" : "课程"}</th>
-                <th>${isVi ? "Cấp độ" : "级别"}</th>
-                <th>${isVi ? "Lượt mở" : "打开次数"}</th>
+                <th>${isVi ? "Ng\u01b0\u1eddi d\u00f9ng" : "\u7528\u6237"}</th>
+                <th>VIP</th>
+                <th>${isVi ? "Ph\u00e2n h\u1ec7" : "\u6a21\u5757"}</th>
+                <th>${isVi ? "B\u00e0i / ph\u1ea7n" : "\u8bfe\u7a0b / \u90e8\u5206"}</th>
+                <th>${isVi ? "B\u1eaft \u0111\u1ea7u" : "\u5f00\u59cb"}</th>
+                <th>${isVi ? "L\u1ea7n cu\u1ed1i" : "\u6700\u540e\u6d3b\u52a8"}</th>
+                <th>${isVi ? "Th\u1eddi gian" : "\u65f6\u957f"}</th>
+                <th>${isVi ? "Tr\u1ea1ng th\u00e1i" : "\u72b6\u6001"}</th>
               </tr>
             </thead>
-            <tbody>${topLessonsHTML}</tbody>
+            <tbody>${vipBehaviorRowsHTML}</tbody>
           </table>
+          ${vipSessionPaginationHTML}
         </div>
       </div>`;
   }
@@ -5351,6 +5991,9 @@ async function loadAdminAnalytics() {
     state.adminAnalyticsTo = analyticsToYmd(preset.to);
   }
 
+  state.adminVipContentSummaryPage = 1;
+  state.adminVipSessionPage = 1;
+  state.adminVipHighEngagementPage = 1;
   state.adminAnalyticsLoading = true;
   state.adminAnalyticsError = "";
   renderAdmin();
@@ -5358,6 +6001,7 @@ async function loadAdminAnalytics() {
     const params = new URLSearchParams({
       from: state.adminAnalyticsFrom,
       to: state.adminAnalyticsTo,
+      live: "1",
     });
     const data = await apiRequest(`/api/admin/analytics/overview?${params.toString()}`, {
       method: "GET",
@@ -5948,11 +6592,11 @@ function saveState() {
   localStorage.setItem("v2-listening-saved", JSON.stringify([...state.listeningSaved]));
   localStorage.setItem("v2-activities", JSON.stringify((state.activities || []).slice(0, 30)));
   if (state.user) localStorage.setItem(STUDENT_USER_STORAGE_KEY, JSON.stringify(state.user));
-  else localStorage.removeItem(STUDENT_USER_STORAGE_KEY);
+  else removeAuthStorageKey(STUDENT_USER_STORAGE_KEY);
   if (state.adminUser) localStorage.setItem(ADMIN_USER_STORAGE_KEY, JSON.stringify(state.adminUser));
-  else localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
-  localStorage.removeItem(STUDENT_TOKEN_STORAGE_KEY);
-  localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+  else removeAuthStorageKey(ADMIN_USER_STORAGE_KEY);
+  removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
+  removeAuthStorageKey(ADMIN_TOKEN_STORAGE_KEY);
   clearLegacyAuthStorage();
 }
 
@@ -6165,8 +6809,12 @@ function logoutCurrentUser() {
     showToast(backendDisabledMessage());
     return false;
   }
-  if (!state.user) return false;
+  if (!state.user && !state.adminUser) return false;
   state.user = null;
+  state.adminUser = null;
+  state.adminUsers = [];
+  state.adminStatus = "";
+  clearAllAuthStorage();
   saveState();
   renderChrome();
   if (state.screen === "account") {
@@ -6184,9 +6832,11 @@ function logoutCurrentUser() {
 
 function logoutAdminUser() {
   if (!state.adminUser) return false;
+  if (state.user?.id === state.adminUser.id) state.user = null;
   state.adminUser = null;
   state.adminUsers = [];
   state.adminStatus = "";
+  clearAllAuthStorage();
   saveState();
   renderChrome();
   renderAdmin();
@@ -6559,6 +7209,7 @@ function loadActiveAdminTabData() {
 function setScreen(name) {
   syncHomeTodayStudySession(name);
   state.screen = name;
+  syncLearningBehaviorSession(name);
   if (name === "course" || name === "listening" || name === "home") {
     void refreshContentLocksIfStale(8000, { rerender: true });
   }
@@ -10051,6 +10702,7 @@ function renderListening(options = {}) {
     });
     return;
   }
+  syncLearningBehaviorSession("listening");
   if (state.listeningView === "levels") {
     renderListeningLevelGateway(options);
     return;
@@ -13302,6 +13954,17 @@ function renderHomeDesktopLayoutHTML(isVi) {
     : escapeHtml(userInitial);
   const vipDisplay = getVipPlanDisplay(state.user, isVi);
   const accountTypeLabel = state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : vipDisplay.badge;
+  const hasActiveVip = isActivePremiumUser(state.user);
+  const homeDesktopProfileClass = [
+    "home-desktop-profile-card",
+    state.user ? (hasActiveVip ? "home-desktop-profile-card--vip" : "home-desktop-profile-card--regular") : "home-desktop-profile-card--login",
+  ].join(" ");
+  const homeDesktopProfileAttrs = state.user ? "" : "data-home-login";
+  const homeDesktopMemberKicker = isVi ? "Hạng thành viên" : "会员等级";
+  const homeDesktopMemberTitle = hasActiveVip ? "HUAMEI VIP" : accountTypeLabel;
+  const homeDesktopMemberStatus = hasActiveVip
+    ? (isVi ? "Đặc quyền đang hoạt động" : "权益生效中")
+    : vipDisplay.status;
   const vipMetaHTML = state.user ? `
     <small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.status)}</small>
     ${vipDisplay.expiry ? `<small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.expiry)}</small>` : ""}
@@ -13311,24 +13974,6 @@ function renderHomeDesktopLayoutHTML(isVi) {
   const studyLabel = studyHours > 0
     ? `${studyHours}h ${studyMins}m`
     : `${studyMins}m`;
-  const desktopProfileCardHTML = state.user
-    ? `
-        <div class="home-desktop-profile-card">
-          <div class="home-desktop-avatar">${avatarHTML}</div>
-          <div>
-            <p>${isVi ? "Xin chào!" : "你好！"}</p>
-            <strong>${escapeHtml(desktopProfileName)}</strong>
-            ${vipMetaHTML}
-          </div>
-          <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
-        </div>
-      `
-    : `
-        <div class="home-desktop-profile-card home-desktop-profile-card--login home-desktop-profile-card--guest" data-home-login>
-          <strong>${escapeHtml(desktopProfileName)}</strong>
-        </div>
-      `;
-
   return `
     <div class="home-desktop-layout">
       <div class="home-desktop-main">
@@ -13394,14 +14039,31 @@ function renderHomeDesktopLayoutHTML(isVi) {
       </div>
       
       <aside class="home-desktop-rail" aria-label="${isVi ? "Tiến độ học tập" : "学习进度"}">
-        <div class="home-desktop-profile-card${state.user ? "" : " home-desktop-profile-card--login"}" ${state.user ? "" : "data-home-login"}>
+        <div class="${homeDesktopProfileClass}" ${homeDesktopProfileAttrs}>
           <div class="home-desktop-avatar">${avatarHTML}</div>
-          <div>
+          <div class="home-desktop-profile-copy">
             <p>${isVi ? "Xin chào!" : "你好！"}</p>
             <strong>${escapeHtml(desktopProfileName)}</strong>
             ${vipMetaHTML}
           </div>
           <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
+          ${state.user ? `
+            <div class="home-desktop-membership-panel">
+              <span class="home-desktop-membership-kicker">${escapeHtml(homeDesktopMemberKicker)}</span>
+              <strong>${escapeHtml(homeDesktopMemberTitle)}</strong>
+              ${hasActiveVip ? `<small>${escapeHtml(homeDesktopMemberStatus)}</small>` : ""}
+              ${hasActiveVip && vipDisplay.expiry ? `<small class="home-desktop-membership-expiry">${escapeHtml(vipDisplay.expiry)}</small>` : ""}
+              <div class="home-desktop-membership-perks">
+                ${hasActiveVip ? `
+                  <span>${isVi ? "Không giới hạn" : "不限量"}</span>
+                  <span>${isVi ? "Nội dung độc quyền" : "专属内容"}</span>
+                ` : `
+                  <span>${isVi ? "Chưa mở VIP" : "未开通 VIP"}</span>
+                  <button class="home-desktop-membership-chip" type="button" data-home-profile-vip="upgrade">${isVi ? "Có thể nâng cấp ngay" : "可立即升级"}</button>
+                `}
+              </div>
+            </div>
+          ` : ""}
         </div>
 
         <div class="home-desktop-streak-card">
@@ -13856,11 +14518,10 @@ function renderHskLessonListHTML(options = {}) {
     return `
       <div class="hsk-lesson-card access-rule-${accessStatus} ${isCompleted ? "completed" : ""} ${isLocked ? "locked" : ""}" data-lesson="${lessonItem.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <div class="hsk-lesson-left">
-          <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${isLocked ? renderContentLockIconHTML("number") : lessonItem.no}</div>
+          <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${lessonItem.no}</div>
           <div class="hsk-lesson-info">
             <h4>
               <span>${isVi ? `Bài ${lessonItem.no}` : `第 ${lessonItem.no} 课`}</span>
-              ${isLocked ? accessStatusBadgeHTML(accessStatus) : ""}
             </h4>
             <p>${state.lang === "vi" ? (lessonItem.titleVi || lessonItem.title) : (lessonItem.titleZh || lessonItem.title)}</p>
           </div>
@@ -16221,6 +16882,16 @@ function bindEvents() {
       return;
     }
 
+    const homeProfileVipAction = event.target.closest("[data-home-profile-vip]");
+    if (homeProfileVipAction) {
+      if (homeProfileVipAction.dataset.homeProfileVip === "account") {
+        openAccountScreen();
+      } else {
+        showUpgradePlansModal();
+      }
+      return;
+    }
+
     const cancelAccountPanel = event.target.closest("#cancelAccountPanel");
     if (cancelAccountPanel && state.screen === "account") {
       renderAccount();
@@ -16577,6 +17248,9 @@ function bindEvents() {
       state.adminAnalyticsFrom = analyticsToYmd(range.from);
       state.adminAnalyticsTo = analyticsToYmd(range.to);
       state.adminAnalyticsPickerOpen = false;
+      state.adminVipContentSummaryPage = 1;
+      state.adminVipSessionPage = 1;
+      state.adminVipHighEngagementPage = 1;
       savePersistedRoute();
       loadAdminAnalytics();
       return;
@@ -16618,9 +17292,24 @@ function bindEvents() {
         state.adminAnalyticsFrom = state.adminAnalyticsDraftFrom;
         state.adminAnalyticsTo = state.adminAnalyticsDraftTo;
         state.adminAnalyticsPickerOpen = false;
+        state.adminVipContentSummaryPage = 1;
+        state.adminVipSessionPage = 1;
+        state.adminVipHighEngagementPage = 1;
         savePersistedRoute();
         loadAdminAnalytics();
       }
+      return;
+    }
+
+    const adminAnalyticsVipPageBtn = event.target.closest("[data-admin-analytics-vip-page]");
+    if (adminAnalyticsVipPageBtn && state.screen === "admin") {
+      if (adminAnalyticsVipPageBtn.disabled) return;
+      const kind = adminAnalyticsVipPageBtn.dataset.adminAnalyticsVipPageKind || "";
+      const page = Math.max(1, Number(adminAnalyticsVipPageBtn.dataset.adminAnalyticsVipPage || 1));
+      if (kind === "content") state.adminVipContentSummaryPage = page;
+      if (kind === "sessions") state.adminVipSessionPage = page;
+      if (kind === "high-engagement") state.adminVipHighEngagementPage = page;
+      renderAdmin();
       return;
     }
 
@@ -16869,6 +17558,7 @@ function bindEvents() {
         const topics = catalog.topics.map((topic) => ({
           topicId: topic.topicId,
           titleVi: topic.titleVi,
+          titleZh: topic.titleZh,
           sortOrder: topic.sortOrder,
           lockedForFree: state.adminListeningTopicLocks[topic.topicId] === true,
         }));
@@ -16876,6 +17566,7 @@ function bindEvents() {
           lessonId: lesson.lessonId,
           topicId: lesson.topicId,
           titleVi: lesson.titleVi,
+          titleZh: lesson.titleZh,
           sortOrder: lesson.sortOrder,
           lockedForFree: state.adminListeningLessonLocks[lesson.lessonId] === true,
         }));
@@ -18018,19 +18709,24 @@ function init() {
   bindEvents();
   window.addEventListener("beforeunload", () => {
     flushHomeTodayStudySession();
+    endLearningBehaviorSession();
     savePersistedRoute();
+    flushLearningEvents(true);
   });
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       flushHomeTodayStudySession();
+      endLearningBehaviorSession();
       savePersistedRoute();
       flushLearningEvents(true);
     } else {
       syncHomeTodayStudySession(state.screen);
+      syncLearningBehaviorSession(state.screen);
     }
   });
   window.addEventListener("pagehide", () => {
     flushHomeTodayStudySession();
+    endLearningBehaviorSession();
     flushLearningEvents(true);
   });
   renderChrome();

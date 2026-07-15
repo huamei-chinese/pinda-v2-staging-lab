@@ -484,9 +484,24 @@ function readStoredAdminUser() {
   return isAdminPortalRole(user?.role) ? user : null;
 }
 
+function removeAuthStorageKey(key) {
+  try { localStorage.removeItem(key); } catch { /* ignore storage errors */ }
+  try { sessionStorage.removeItem(key); } catch { /* ignore storage errors */ }
+}
+
 function clearLegacyAuthStorage() {
-  localStorage.removeItem("v2-user");
-  LEGACY_AUTH_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  removeAuthStorageKey("v2-user");
+  LEGACY_AUTH_STORAGE_KEYS.forEach(removeAuthStorageKey);
+}
+
+function clearAllAuthStorage() {
+  [
+    STUDENT_USER_STORAGE_KEY,
+    ADMIN_USER_STORAGE_KEY,
+    STUDENT_TOKEN_STORAGE_KEY,
+    ADMIN_TOKEN_STORAGE_KEY,
+  ].forEach(removeAuthStorageKey);
+  clearLegacyAuthStorage();
 }
 
 const state = {
@@ -1393,6 +1408,7 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
   const buttonLabel = isLocked ? lockedContentCtaText() : (isVi ? "Vào học" : "开始学习");
   const title = isVi ? config.titleVi : config.titleZh;
   const desc = isVi ? config.descVi : config.descZh;
+  const accessBadgeHTML = accessStatusBadgeHTML(accessStatus, { type: "daily-theme", theme, config });
   return `
       <article class="daily-theme-card daily-theme-card--featured daily-theme-card--${config.tone} access-rule-${accessStatus} ${isLocked ? "locked" : ""}" data-theme="${theme.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <img
@@ -1405,7 +1421,7 @@ function renderDailyFeaturedThemeCardHTML(theme, cardMeta, isLocked, countLabel,
         <div class="daily-theme-card-time-content">
           <div class="daily-theme-card-time-top">
             <span class="daily-theme-count-badge">${itemCount} ${countLabel}</span>
-            ${accessStatusBadgeHTML(accessStatus)}
+            ${accessBadgeHTML}
           </div>
           <div class="daily-theme-card-time-body">
             <div class="daily-theme-time-title-row">
@@ -2442,8 +2458,21 @@ function getDailyContentTypeAccessStatus(themeId, contentType) {
   return getDailyThemeAccessRule(themeId, contentType).status;
 }
 
-function accessStatusBadgeHTML(status) {
+function shouldShowPartialAccessBadge(context = {}) {
+  if (context.type !== "daily-theme") return true;
+  const theme = context.theme || {};
+  const config = context.config || {};
+  const id = String(theme.id || "").trim().toLowerCase();
+  const title = `${theme.vi || ""} ${theme.titleVi || ""} ${theme.lesson_title_vi || ""} ${config.titleVi || ""}`.toLowerCase();
+  return id === "housing"
+    || id === "renting_life"
+    || id === "renting"
+    || (title.includes("thuê nhà") && (title.includes("chuyển nhà") || title.includes("sinh hoạt")));
+}
+
+function accessStatusBadgeHTML(status, context = {}) {
   if (status === "partial") {
+    if (!shouldShowPartialAccessBadge(context)) return "";
     return `<span class="access-rule-badge access-rule-badge--partial">${state.lang === "vi" ? "Miễn phí một phần" : "部分免费"}</span>`;
   }
   if (status === "locked") {
@@ -3209,11 +3238,11 @@ function saveState() {
   localStorage.setItem("v2-listening-saved", JSON.stringify([...state.listeningSaved]));
   localStorage.setItem("v2-activities", JSON.stringify((state.activities || []).slice(0, 30)));
   if (state.user) localStorage.setItem(STUDENT_USER_STORAGE_KEY, JSON.stringify(state.user));
-  else localStorage.removeItem(STUDENT_USER_STORAGE_KEY);
+  else removeAuthStorageKey(STUDENT_USER_STORAGE_KEY);
   if (state.adminUser) localStorage.setItem(ADMIN_USER_STORAGE_KEY, JSON.stringify(state.adminUser));
-  else localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
-  localStorage.removeItem(STUDENT_TOKEN_STORAGE_KEY);
-  localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+  else removeAuthStorageKey(ADMIN_USER_STORAGE_KEY);
+  removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
+  removeAuthStorageKey(ADMIN_TOKEN_STORAGE_KEY);
   clearLegacyAuthStorage();
 }
 
@@ -3426,8 +3455,12 @@ function logoutCurrentUser() {
     showToast(backendDisabledMessage());
     return false;
   }
-  if (!state.user) return false;
+  if (!state.user && !state.adminUser) return false;
   state.user = null;
+  state.adminUser = null;
+  state.adminUsers = [];
+  state.adminStatus = "";
+  clearAllAuthStorage();
   saveState();
   renderChrome();
   if (state.screen === "account") {
@@ -3445,9 +3478,11 @@ function logoutCurrentUser() {
 
 function logoutAdminUser() {
   if (!state.adminUser) return false;
+  if (state.user?.id === state.adminUser.id) state.user = null;
   state.adminUser = null;
   state.adminUsers = [];
   state.adminStatus = "";
+  clearAllAuthStorage();
   saveState();
   renderChrome();
   renderAdmin();
@@ -8342,6 +8377,17 @@ function renderHomeDesktopLayoutHTML(isVi) {
     : escapeHtml(userInitial);
   const vipDisplay = getVipPlanDisplay(state.user, isVi);
   const accountTypeLabel = state.user?.role === "employee" ? (isVi ? "Nhân viên" : "员工") : vipDisplay.badge;
+  const hasActiveVip = isActivePremiumUser(state.user);
+  const homeDesktopProfileClass = [
+    "home-desktop-profile-card",
+    state.user ? (hasActiveVip ? "home-desktop-profile-card--vip" : "home-desktop-profile-card--regular") : "home-desktop-profile-card--login",
+  ].join(" ");
+  const homeDesktopProfileAttrs = state.user ? "" : "data-home-login";
+  const homeDesktopMemberKicker = isVi ? "Hạng thành viên" : "会员等级";
+  const homeDesktopMemberTitle = hasActiveVip ? "HUAMEI VIP" : accountTypeLabel;
+  const homeDesktopMemberStatus = hasActiveVip
+    ? (isVi ? "Đặc quyền đang hoạt động" : "权益生效中")
+    : vipDisplay.status;
   const vipMetaHTML = state.user ? `
     <small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.status)}</small>
     ${vipDisplay.expiry ? `<small class="home-desktop-vip-meta">${escapeHtml(vipDisplay.expiry)}</small>` : ""}
@@ -8351,24 +8397,6 @@ function renderHomeDesktopLayoutHTML(isVi) {
   const studyLabel = studyHours > 0
     ? `${studyHours}h ${studyMins}m`
     : `${studyMins}m`;
-  const desktopProfileCardHTML = state.user
-    ? `
-        <div class="home-desktop-profile-card">
-          <div class="home-desktop-avatar">${avatarHTML}</div>
-          <div>
-            <p>${isVi ? "Xin chào!" : "你好！"}</p>
-            <strong>${escapeHtml(desktopProfileName)}</strong>
-            ${vipMetaHTML}
-          </div>
-          <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
-        </div>
-      `
-    : `
-        <div class="home-desktop-profile-card home-desktop-profile-card--login home-desktop-profile-card--guest" data-home-login>
-          <strong>${escapeHtml(desktopProfileName)}</strong>
-        </div>
-      `;
-
   return `
     <div class="home-desktop-layout">
       <div class="home-desktop-main">
@@ -8403,14 +8431,31 @@ function renderHomeDesktopLayoutHTML(isVi) {
         </section>
       </div>
       <aside class="home-desktop-rail" aria-label="${isVi ? "Tiến độ học tập" : "学习进度"}">
-        <div class="home-desktop-profile-card${state.user ? "" : " home-desktop-profile-card--login"}" ${state.user ? "" : "data-home-login"}>
+        <div class="${homeDesktopProfileClass}" ${homeDesktopProfileAttrs}>
           <div class="home-desktop-avatar">${avatarHTML}</div>
-          <div>
+          <div class="home-desktop-profile-copy">
             <p>${isVi ? "Xin chào!" : "你好！"}</p>
             <strong>${escapeHtml(desktopProfileName)}</strong>
             ${vipMetaHTML}
           </div>
           <span class="home-desktop-level-badge">${escapeHtml(accountTypeLabel)}</span>
+          ${state.user ? `
+            <div class="home-desktop-membership-panel">
+              <span class="home-desktop-membership-kicker">${escapeHtml(homeDesktopMemberKicker)}</span>
+              <strong>${escapeHtml(homeDesktopMemberTitle)}</strong>
+              ${hasActiveVip ? `<small>${escapeHtml(homeDesktopMemberStatus)}</small>` : ""}
+              ${hasActiveVip && vipDisplay.expiry ? `<small class="home-desktop-membership-expiry">${escapeHtml(vipDisplay.expiry)}</small>` : ""}
+              <div class="home-desktop-membership-perks">
+                ${hasActiveVip ? `
+                  <span>${isVi ? "Không giới hạn" : "不限量"}</span>
+                  <span>${isVi ? "Nội dung độc quyền" : "专属内容"}</span>
+                ` : `
+                  <span>${isVi ? "Chưa mở VIP" : "未开通 VIP"}</span>
+                  <button class="home-desktop-membership-chip" type="button" data-home-profile-vip="upgrade">${isVi ? "Có thể nâng cấp ngay" : "可立即升级"}</button>
+                `}
+              </div>
+            </div>
+          ` : ""}
         </div>
 
         <div class="home-desktop-streak-card">
@@ -8790,11 +8835,10 @@ function renderHskLessonListHTML(options = {}) {
     return `
       <div class="hsk-lesson-card access-rule-${accessStatus} ${isCompleted ? "completed" : ""} ${isLocked ? "locked" : ""}" data-lesson="${lessonItem.id}" ${isLocked ? 'data-locked="true"' : ""}>
         <div class="hsk-lesson-left">
-          <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${isLocked ? renderContentLockIconHTML("number") : lessonItem.no}</div>
+          <div class="hsk-lesson-number${isLocked ? " hsk-lesson-number--locked" : ""}">${lessonItem.no}</div>
           <div class="hsk-lesson-info">
             <h4>
               <span>${isVi ? `Bài ${lessonItem.no}` : `第 ${lessonItem.no} 课`}</span>
-              ${isLocked ? accessStatusBadgeHTML(accessStatus) : ""}
             </h4>
             <p>${state.lang === "vi" ? (lessonItem.titleVi || lessonItem.title) : (lessonItem.titleZh || lessonItem.title)}</p>
           </div>
@@ -10677,6 +10721,16 @@ function bindEvents() {
 
     if (event.target.closest("[data-home-login]")) {
       showModal("login");
+      return;
+    }
+
+    const homeProfileVipAction = event.target.closest("[data-home-profile-vip]");
+    if (homeProfileVipAction) {
+      if (homeProfileVipAction.dataset.homeProfileVip === "account") {
+        openAccountScreen();
+      } else {
+        showUpgradePlansModal();
+      }
       return;
     }
 

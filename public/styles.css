@@ -20073,6 +20073,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-vip-pagination-actions button { min-width: 32px; height: 32px; border: 1px solid #dbe4f0; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-weight: 900; cursor: pointer; }
 .admin-vip-pagination-actions button.active { border-color: #0f766e; background: #0f766e; color: #fff; box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
 .admin-vip-pagination-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.admin-vip-pagination-actions .admin-ctv-ellipsis { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; color: #94a3b8; font-weight: 900; }
 .admin-vip-page-ellipsis { min-width: 18px; text-align: center; color: #94a3b8; font-weight: 900; }
 @media (max-width: 980px) { .admin-vip-head { flex-direction: column; } .admin-vip-summary, .admin-vip-layout { grid-template-columns: 1fr; } }
 .admin-content-panel { margin-top: 28px; }
@@ -20298,6 +20299,18 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-analytics-table th { text-align: left; color: #728197; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid #eef2f7; }
 .admin-analytics-table td { padding: 10px; border-bottom: 1px solid #f2f6fa; font-weight: 750; color: #334155; font-size: 14px; }
 .admin-analytics-table td .rank { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px; background: #ecfdf5; color: #047857; font-weight: 900; font-size: 12px; }
+.admin-analytics-table td strong { display: block; color: #0f172a; font-weight: 900; }
+.admin-analytics-table td small { display: block; margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 700; }
+.admin-analytics-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+.admin-analytics-summary-card { border: 1px solid #e6edf5; border-radius: 14px; padding: 12px 14px; background: linear-gradient(135deg, #f8fafc, #fff); }
+.admin-analytics-summary-card span { display: block; color: #728197; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+.admin-analytics-summary-card strong { display: block; margin-top: 5px; color: #0f172a; font-size: 20px; font-weight: 950; }
+.admin-analytics-summary-card small { display: block; margin-top: 2px; color: #94a3b8; font-size: 12px; font-weight: 750; }
+.admin-analytics-behavior-summaries { display: grid; grid-template-columns: minmax(280px, .85fr) minmax(420px, 1.15fr); gap: 14px; margin: 10px 0 18px; }
+.admin-analytics-behavior-summaries h4,
+.admin-analytics-block h4 { margin: 14px 0 6px; color: #0f172a; font-size: 14px; font-weight: 950; }
+.admin-analytics-table--compact th { font-size: 10px; padding: 7px 8px; }
+.admin-analytics-table--compact td { font-size: 12px; padding: 8px; }
 .admin-analytics-bars { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .admin-analytics-bar-row { display: grid; grid-template-columns: 110px 1fr 56px; gap: 12px; align-items: center; font-weight: 800; font-size: 13px; }
 .admin-analytics-bar-track { height: 12px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
@@ -20315,6 +20328,8 @@ body:has(#practiceScreen:not(.hidden)) {
 @media (max-width: 900px) {
   .admin-analytics-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-analytics-grid { grid-template-columns: 1fr; }
+  .admin-analytics-summary-grid,
+  .admin-analytics-behavior-summaries { grid-template-columns: 1fr; }
 }
 
 /* Learning analytics date-range picker */
@@ -20405,25 +20420,33 @@ body:has(#practiceScreen:not(.hidden)) {
 
 .hsk-lesson-card.locked,
 .hsk-lesson-screen .hsk-lesson-card.locked {
-  border-color: #d7e0ee;
+  border-color: rgba(251, 146, 60, 0.42);
   background:
-    radial-gradient(circle at 18px 18px, rgba(251, 146, 60, 0.14), transparent 24px),
-    linear-gradient(90deg, #fbfdff 0%, #ffffff 58%);
-  opacity: .96;
+    radial-gradient(circle at 42px 50%, rgba(251, 146, 60, 0.14), transparent 54px),
+    radial-gradient(circle at 92% 50%, rgba(251, 191, 36, 0.18), transparent 30%),
+    linear-gradient(100deg, #ffffff 0%, #fffaf4 60%, #fff7df 100%);
+  opacity: 1;
 }
 
 .hsk-lesson-card.locked:hover,
 .hsk-lesson-screen .hsk-lesson-card.locked:hover {
-  border-color: #f4b47a;
-  box-shadow: 0 10px 24px rgba(251, 146, 60, 0.12);
+  border-color: rgba(249, 115, 22, 0.58);
+  box-shadow: 0 14px 30px rgba(180, 83, 9, 0.14);
 }
 
 .hsk-lesson-card.locked .hsk-lesson-number,
 .hsk-lesson-number--locked {
-  background: transparent;
-  box-shadow: none;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.78), transparent 28%),
+    linear-gradient(145deg, #facc15 0%, #eab308 58%, #ca8a04 100%) !important;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 10px 24px rgba(202, 138, 4, 0.24),
+    0 0 0 8px rgba(251, 191, 36, 0.15),
+    inset 0 -8px 16px rgba(113, 63, 18, 0.14);
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .content-lock-icon {
@@ -49157,5 +49180,346 @@ body:has(#practiceScreen:not(.hidden)) {
 
   #listeningScreen:not(.hidden) .listening-detail-spa .listening-script-card {
     margin-top: 0 !important;
+  }
+}
+
+/* Home desktop profile: make regular and active VIP accounts visually distinct. */
+@media (min-width: 1281px) {
+  .screen-home .home-desktop-profile-card--regular,
+  .screen-home .home-desktop-profile-card--vip {
+    position: relative !important;
+    isolation: isolate !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: 0 !important;
+    padding: 18px !important;
+    border-radius: 26px !important;
+    overflow: hidden !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular {
+    border: 1px solid rgba(255, 255, 255, .84) !important;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, .92) 0%, rgba(248, 252, 243, .78) 58%, rgba(238, 244, 230, .72) 100%) !important;
+    box-shadow: 0 20px 54px rgba(15, 23, 42, .10), inset 0 1px 0 rgba(255, 255, 255, .9) !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip {
+    border: 1px solid rgba(255, 221, 141, .72) !important;
+    background:
+      radial-gradient(circle at 82% 18%, rgba(255, 236, 169, .42) 0 8%, transparent 24%),
+      radial-gradient(circle at 12% 8%, rgba(69, 255, 181, .26) 0 13%, transparent 32%),
+      linear-gradient(135deg, rgba(5, 77, 59, .98) 0%, rgba(2, 46, 40, .98) 54%, rgba(0, 91, 69, .96) 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 24px 62px rgba(1, 45, 34, .30), 0 0 0 1px rgba(255, 255, 255, .22) inset !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip::before {
+    content: "H";
+    position: absolute;
+    right: -18px;
+    top: -18px;
+    z-index: -1;
+    color: rgba(255, 255, 255, .08);
+    font-family: var(--font-display);
+    font-size: clamp(104px, 8vw, 136px);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .screen-home .home-desktop-profile-card--vip::after {
+    content: "";
+    position: absolute;
+    inset: auto -18% 18% 12%;
+    z-index: -1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(142, 255, 198, .95), rgba(255, 236, 164, .86), transparent);
+    box-shadow: 0 0 24px rgba(93, 255, 181, .72);
+    transform: rotate(-12deg);
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-avatar,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-avatar {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 50% !important;
+    font-size: 24px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-avatar {
+    border: 5px solid rgba(255, 255, 255, .8) !important;
+    background: linear-gradient(180deg, #e9eef6 0%, #cfd8e6 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, .32), 0 12px 22px rgba(15, 23, 42, .10) !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-avatar {
+    border: 4px solid rgba(255, 248, 215, .78) !important;
+    background: linear-gradient(180deg, #eef5ff 0%, #cad4e6 100%) !important;
+    color: #0f766e !important;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, .46), 0 12px 28px rgba(3, 105, 78, .35) !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy {
+    min-width: 0 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy p,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy p {
+    margin: 0 !important;
+    color: #0f766e !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy p {
+    color: #c9f9df !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy > strong,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy > strong {
+    max-width: 100% !important;
+    margin-top: 2px !important;
+    color: #0f172a !important;
+    font-family: var(--font-display);
+    font-size: clamp(17px, 1.1vw, 22px) !important;
+    line-height: 1.08 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy > strong {
+    color: #fff !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy .home-desktop-vip-meta,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy .home-desktop-vip-meta {
+    display: none !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-level-badge,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-level-badge {
+    align-self: start !important;
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-level-badge {
+    background: rgba(236, 253, 245, .92) !important;
+    color: #0f8b5f !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-level-badge {
+    background: linear-gradient(135deg, #fff1b8, #facc15) !important;
+    color: #064e3b !important;
+    box-shadow: 0 10px 20px rgba(250, 204, 21, .22) !important;
+  }
+
+  .screen-home .home-desktop-membership-panel {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+    margin-top: 4px !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-membership-panel {
+    background: rgba(255, 255, 255, .56) !important;
+    border: 1px solid rgba(16, 185, 129, .16) !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-panel {
+    width: calc(100% - 64px) !important;
+    padding: 14px 14px 16px !important;
+    background: rgba(1, 48, 39, .48) !important;
+    border: 1px solid rgba(252, 211, 77, .20) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+  }
+
+  .screen-home .home-desktop-membership-kicker {
+    display: block !important;
+    color: #0f766e !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: .08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-kicker {
+    color: #f8d68a !important;
+  }
+
+  .screen-home .home-desktop-membership-panel > strong {
+    display: block !important;
+    margin-top: 8px !important;
+    color: #0f5f49 !important;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2vw, 34px) !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-panel > strong {
+    color: #ffe3a0 !important;
+    text-shadow: 0 8px 22px rgba(0, 0, 0, .28) !important;
+  }
+
+  .screen-home .home-desktop-membership-panel small {
+    display: block !important;
+    margin-top: 6px !important;
+    color: #3f4c5c !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-panel small {
+    color: rgba(236, 253, 245, .9) !important;
+  }
+
+  .screen-home .home-desktop-membership-expiry {
+    font-size: 11px !important;
+    color: rgba(236, 253, 245, .72) !important;
+  }
+
+  .screen-home .home-desktop-membership-perks {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-top: 14px !important;
+  }
+
+  .screen-home .home-desktop-membership-perks span {
+    min-height: 28px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    color: #0f766e !important;
+    background: rgba(240, 253, 244, .9) !important;
+    border: 1px solid rgba(16, 185, 129, .16) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-perks span {
+    color: #fff7d6 !important;
+    background: rgba(255, 255, 255, .08) !important;
+    border-color: rgba(255, 236, 164, .22) !important;
+  }
+
+}
+
+/* Home desktop profile compact pass. */
+@media (min-width: 1281px) {
+  .screen-home .home-desktop-profile-card--regular,
+  .screen-home .home-desktop-profile-card--vip {
+    gap: 9px !important;
+    padding: 13px 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-avatar,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-avatar {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 19px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-avatar {
+    border-width: 4px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-avatar {
+    border-width: 3px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy p,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy p {
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-profile-copy > strong,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-profile-copy > strong {
+    font-size: clamp(14px, .86vw, 17px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .screen-home .home-desktop-profile-card--regular .home-desktop-level-badge,
+  .screen-home .home-desktop-profile-card--vip .home-desktop-level-badge {
+    min-height: 24px !important;
+    padding: 0 8px !important;
+    font-size: 10px !important;
+  }
+
+  .screen-home .home-desktop-membership-panel {
+    margin-top: 2px !important;
+    padding: 10px 11px !important;
+    border-radius: 15px !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-panel {
+    width: 100% !important;
+    padding: 10px 11px !important;
+  }
+
+  .screen-home .home-desktop-membership-kicker {
+    font-size: 9px !important;
+    letter-spacing: .07em !important;
+  }
+
+  .screen-home .home-desktop-membership-panel > strong {
+    margin-top: 5px !important;
+    font-size: clamp(16px, 1.15vw, 20px) !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-panel > strong {
+    font-size: clamp(18px, 1.28vw, 22px) !important;
+  }
+
+  .screen-home .home-desktop-membership-panel small {
+    margin-top: 4px !important;
+    font-size: 11px !important;
+  }
+
+  .screen-home .home-desktop-membership-perks {
+    gap: 6px !important;
+    margin-top: 9px !important;
+  }
+
+  .screen-home .home-desktop-membership-perks span,
+  .screen-home .home-desktop-membership-perks button {
+    min-height: 24px !important;
+    padding: 0 9px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #0f766e !important;
+    background: rgba(240, 253, 244, .92) !important;
+    border: 1px solid rgba(16, 185, 129, .18) !important;
+    font-family: var(--font-display) !important;
+    font-size: 10px !important;
+    font-weight: 850 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-home .home-desktop-membership-perks button {
+    cursor: pointer !important;
+    box-shadow: 0 8px 18px rgba(15, 118, 110, .10) !important;
+  }
+
+  .screen-home .home-desktop-membership-perks button:hover {
+    background: #dffbed !important;
+  }
+
+  .screen-home .home-desktop-profile-card--vip .home-desktop-membership-perks span {
+    font-size: 10px !important;
   }
 }

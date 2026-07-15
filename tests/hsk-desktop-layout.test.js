@@ -5,6 +5,7 @@ const test = require("node:test");
 
 const styles = fs.readFileSync(path.join(__dirname, "..", "public", "styles.css"), "utf8");
 const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
+const rootAppSource = fs.readFileSync(path.join(__dirname, "..", "app.js"), "utf8");
 
 test("desktop HSK level picker stays inside the course content viewport", () => {
   assert.match(styles, /\.app-desktop-shell--course\s+\.app-desktop-content,\s*\.app-desktop-shell--vocab\s+\.app-desktop-content\s*\{[^}]*overflow-x:\s*hidden/s);
@@ -20,6 +21,23 @@ test("writing course opens a path picker before HSK levels", () => {
   assert.match(appSource, /data-write-path="communication"/);
   assert.match(appSource, /state\.writeCourseView === "paths"[\s\S]*renderWritePathPickerHTML\(\)/);
   assert.match(appSource, /state\.writeCourseView = nextPath === "communication" \? "communication" : "hsk"/);
+});
+
+test("locked HSK lesson cards keep lesson numbers without VIP badges", () => {
+  for (const source of [appSource, rootAppSource]) {
+    assert.match(
+      source,
+      /<div class="hsk-lesson-number\$\{isLocked \? " hsk-lesson-number--locked" : ""\}">\$\{lessonItem\.no\}<\/div>/,
+    );
+    assert.doesNotMatch(source, /hsk-lesson-number\$\{isLocked[\s\S]{0,160}renderContentLockIconHTML\("number"\)/);
+    assert.doesNotMatch(source, /\$\{isLocked \? accessStatusBadgeHTML\(accessStatus\) : ""\}/);
+    assert.match(source, /data-lesson="\$\{lessonItem\.id\}" \$\{isLocked \? 'data-locked="true"' : ""\}/);
+  }
+
+  assert.match(styles, /\.hsk-lesson-card\.locked,[\s\S]*border-color:\s*rgba\(251,\s*146,\s*60,\s*0\.42\)/);
+  assert.match(styles, /\.hsk-lesson-number--locked\s*\{[\s\S]*linear-gradient\(145deg,\s*#facc15 0%,\s*#eab308 58%,\s*#ca8a04 100%\) !important/);
+  assert.match(styles, /\.hsk-lesson-number--locked\s*\{[\s\S]*0 10px 24px rgba\(202,\s*138,\s*4,\s*0\.24\)/);
+  assert.match(styles, /\.hsk-lesson-number--locked\s*\{[\s\S]*0 0 0 8px rgba\(251,\s*191,\s*36,\s*0\.15\)/);
 });
 
 test("writing HSK path card is a stacked direct level selector", () => {

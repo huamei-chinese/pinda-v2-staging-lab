@@ -10,7 +10,7 @@ test("frontend and admin sessions use separate HuaMei storage keys", () => {
   assert.match(appSource, /STUDENT_USER_STORAGE_KEY\s*=\s*"huamei_student_user"/);
   assert.match(appSource, /ADMIN_USER_STORAGE_KEY\s*=\s*"huamei_admin_user"/);
   assert.doesNotMatch(appSource, /user:\s*JSON\.parse\(localStorage\.getItem\("v2-user"\)/);
-  assert.match(appSource, /localStorage\.removeItem\("v2-user"\)/);
+  assert.match(appSource, /removeAuthStorageKey\("v2-user"\)/);
 });
 
 test("admin login mirrors portal account into client session state", () => {
@@ -33,4 +33,14 @@ test("student and admin logout paths are separated", () => {
   assert.match(appSource, /function logoutAdminUser\(\)/);
   assert.match(appSource, /state\.adminUser\s*=\s*null/);
   assert.match(appSource, /state\.user\s*=\s*null/);
+});
+
+test("frontend logout clears every persisted auth identity before reload", () => {
+  assert.match(appSource, /function clearAllAuthStorage\(\)/);
+  assert.match(appSource, /STUDENT_USER_STORAGE_KEY,[\s\S]*ADMIN_USER_STORAGE_KEY,[\s\S]*STUDENT_TOKEN_STORAGE_KEY,[\s\S]*ADMIN_TOKEN_STORAGE_KEY/);
+  assert.match(appSource, /function removeAuthStorageKey\(key\)[\s\S]*localStorage\.removeItem\(key\)[\s\S]*sessionStorage\.removeItem\(key\)/);
+  assert.match(
+    appSource,
+    /function logoutCurrentUser\(\)[\s\S]*state\.user\s*=\s*null;[\s\S]*state\.adminUser\s*=\s*null;[\s\S]*clearAllAuthStorage\(\);[\s\S]*saveState\(\);/,
+  );
 });

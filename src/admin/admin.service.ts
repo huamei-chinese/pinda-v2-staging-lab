@@ -1229,20 +1229,69 @@ export class AdminService {
 
   async getLearningAnalytics(
     headers: Record<string, string | string[] | undefined>,
-    options: { days?: number | string; from?: string; to?: string } = {},
+    options: { days?: number | string; from?: string; to?: string; live?: string } = {},
   ) {
     await this.assertAdmin(headers);
 
     const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
     const tz = AdminService.ANALYTICS_TZ;
     const withinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
+    const eventWithinRange = `e.created_at >= ($1::date AT TIME ZONE '${tz}') AND e.created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
     const params = [fromYmd, toYmd];
+    const vipSessionCte = `
+      WITH vip_users AS (
+        SELECT id, full_name, email, vip_plan_id, premium_until
+        FROM users
+        WHERE is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())
+      ),
+      session_starts AS (
+        SELECT e.*, u.full_name, u.email, u.vip_plan_id, u.premium_until,
+               LEAD(e.created_at) OVER (PARTITION BY e.user_id ORDER BY e.created_at) AS next_started_at
+        FROM learning_events e
+        JOIN vip_users u ON u.id = e.user_id
+        WHERE ${eventWithinRange}
+          AND e.event_type = 'study_session_started'
+      ),
+      session_rollup AS (
+        SELECT s.user_id,
+               s.full_name,
+               s.email,
+               s.vip_plan_id,
+               s.premium_until,
+               s.module,
+               s.level,
+               s.lesson_id,
+               s.topic_id,
+               s.question_id,
+               s.created_at AS started_at,
+               COALESCE(MAX(e.created_at), s.created_at) AS last_seen_at,
+               BOOL_OR(e.event_type = 'study_session_ended') AS has_ended,
+               COUNT(e.id)::int AS event_count
+        FROM session_starts s
+        LEFT JOIN learning_events e ON e.user_id = s.user_id
+         AND e.created_at >= s.created_at
+         AND e.created_at < COALESCE(s.next_started_at, (($2::date + 1) AT TIME ZONE '${tz}'))
+         AND e.event_type IN ('study_session_started', 'study_session_heartbeat', 'study_session_ended')
+         AND COALESCE(e.module, '') = COALESCE(s.module, '')
+         AND COALESCE(e.lesson_id, '') = COALESCE(s.lesson_id, '')
+         AND COALESCE(e.topic_id, '') = COALESCE(s.topic_id, '')
+         AND COALESCE(e.question_id, '') = COALESCE(s.question_id, '')
+        GROUP BY s.user_id, s.full_name, s.email, s.vip_plan_id, s.premium_until, s.module, s.level, s.lesson_id, s.topic_id, s.question_id, s.created_at, s.next_started_at
+      ),
+      final_sessions AS (
+        SELECT *,
+               (NOT has_ended AND last_seen_at >= NOW() - interval '90 seconds') AS is_active,
+               GREATEST(0, FLOOR(EXTRACT(EPOCH FROM ((CASE WHEN NOT has_ended AND last_seen_at >= NOW() - interval '90 seconds' THEN NOW() ELSE last_seen_at END) - started_at))))::int AS duration_seconds
+        FROM session_rollup
+      )
+    `;
     const cacheKey = this.analyticsCacheKey('learning', fromYmd, toYmd);
-    const cached = this.getAnalyticsCache<any>(cacheKey);
+    const bypassCache = String(options.live || '') === '1';
+    const cached = bypassCache ? null : this.getAnalyticsCache<any>(cacheKey);
     if (cached) return cached;
 
     try {
-      const [dailySummary, topLessons, sourceBreakdown] = await Promise.all([
+      const [dailySummary, topLessons, sourceBreakdown, vipBehaviorRows, vipModuleSummary, vipContentSummary, vipUserSummary] = await Promise.all([
         this.getAnalyticsDailySummary(fromYmd, toYmd),
         this.db.query(
           `SELECT lesson_id, level, COUNT(*) AS value, COUNT(DISTINCT user_id) AS learners
@@ -1256,6 +1305,65 @@ export class AdminService {
            FROM learning_events
            WHERE ${withinRange}
            GROUP BY 1 ORDER BY events DESC`,
+          params,
+        ),
+        this.db.query(
+          `${vipSessionCte}
+           SELECT *
+           FROM final_sessions
+           ORDER BY is_active DESC, last_seen_at DESC
+           LIMIT 500`,
+          params,
+        ),
+        this.db.query(
+          `${vipSessionCte}
+           SELECT COALESCE(NULLIF(module, ''), 'unknown') AS module,
+                  COUNT(*)::int AS sessions,
+                  COUNT(DISTINCT user_id)::int AS vip_users,
+                  COUNT(*) FILTER (WHERE is_active)::int AS active_sessions,
+                  COALESCE(SUM(duration_seconds), 0)::bigint AS total_seconds,
+                  COALESCE(ROUND(AVG(duration_seconds)), 0)::int AS avg_seconds
+           FROM final_sessions
+           GROUP BY 1
+           ORDER BY total_seconds DESC, sessions DESC, module ASC`,
+          params,
+        ),
+        this.db.query(
+          `${vipSessionCte}
+           SELECT COALESCE(NULLIF(module, ''), 'unknown') AS module,
+                  COALESCE(NULLIF(level, ''), '') AS level,
+                  COALESCE(NULLIF(topic_id, ''), '') AS topic_id,
+                  COALESCE(NULLIF(lesson_id, ''), '') AS lesson_id,
+                  COALESCE(NULLIF(question_id, ''), '') AS question_id,
+                  COUNT(*)::int AS sessions,
+                  COUNT(DISTINCT user_id)::int AS vip_users,
+                  COUNT(*) FILTER (WHERE is_active)::int AS active_sessions,
+                  COALESCE(SUM(duration_seconds), 0)::bigint AS total_seconds,
+                  COALESCE(ROUND(AVG(duration_seconds)), 0)::int AS avg_seconds,
+                  MAX(last_seen_at) AS last_seen_at
+           FROM final_sessions
+           GROUP BY 1, 2, 3, 4, 5
+           ORDER BY total_seconds DESC, sessions DESC, module ASC, level ASC, topic_id ASC, lesson_id ASC
+           LIMIT 500`,
+          params,
+        ),
+        this.db.query(
+          `${vipSessionCte}
+           SELECT user_id,
+                  MAX(full_name) AS full_name,
+                  MAX(email) AS email,
+                  MAX(vip_plan_id) AS vip_plan_id,
+                  COUNT(*)::int AS sessions,
+                  COUNT(DISTINCT COALESCE(NULLIF(module, ''), 'unknown'))::int AS modules,
+                  COUNT(*) FILTER (WHERE is_active)::int AS active_sessions,
+                  COALESCE(SUM(duration_seconds), 0)::bigint AS total_seconds,
+                  COALESCE(ROUND(AVG(duration_seconds)), 0)::int AS avg_seconds,
+                  MAX(last_seen_at) AS last_seen_at,
+                  BOOL_OR(is_active) AS is_active
+           FROM final_sessions
+           GROUP BY user_id
+           ORDER BY is_active DESC, total_seconds DESC, last_seen_at DESC
+           LIMIT 20`,
           params,
         ),
       ]);
@@ -1283,6 +1391,60 @@ export class AdminService {
           events: Number(row.events) || 0,
           users: Number(row.users) || 0,
         })),
+        vipBehavior: {
+          activeSessions: vipBehaviorRows.rows.filter((row) => row.is_active === true).length,
+          totalStudySeconds: vipModuleSummary.rows.reduce((sum, row) => sum + (Number(row.total_seconds) || 0), 0),
+          moduleSummary: vipModuleSummary.rows.map((row) => ({
+            module: row.module || '',
+            sessions: Number(row.sessions) || 0,
+            vipUsers: Number(row.vip_users) || 0,
+            activeSessions: Number(row.active_sessions) || 0,
+            totalSeconds: Number(row.total_seconds) || 0,
+            avgSeconds: Number(row.avg_seconds) || 0,
+          })),
+          contentSummary: vipContentSummary.rows.map((row) => ({
+            module: row.module || '',
+            level: row.level || '',
+            topicId: row.topic_id || '',
+            lessonId: row.lesson_id || '',
+            questionId: row.question_id || '',
+            sessions: Number(row.sessions) || 0,
+            vipUsers: Number(row.vip_users) || 0,
+            activeSessions: Number(row.active_sessions) || 0,
+            totalSeconds: Number(row.total_seconds) || 0,
+            avgSeconds: Number(row.avg_seconds) || 0,
+            lastSeenAt: row.last_seen_at,
+          })),
+          userSummary: vipUserSummary.rows.map((row) => ({
+            userId: row.user_id,
+            fullName: row.full_name || '',
+            email: row.email || '',
+            vipPlanId: row.vip_plan_id || 'VIP',
+            sessions: Number(row.sessions) || 0,
+            modules: Number(row.modules) || 0,
+            activeSessions: Number(row.active_sessions) || 0,
+            totalSeconds: Number(row.total_seconds) || 0,
+            avgSeconds: Number(row.avg_seconds) || 0,
+            lastSeenAt: row.last_seen_at,
+            isActive: row.is_active === true,
+          })),
+          recentSessions: vipBehaviorRows.rows.map((row) => ({
+            userId: row.user_id,
+            fullName: row.full_name || '',
+            email: row.email || '',
+            vipPlanId: row.vip_plan_id || 'VIP',
+            module: row.module || '',
+            level: row.level || '',
+            lessonId: row.lesson_id || '',
+            topicId: row.topic_id || '',
+            questionId: row.question_id || '',
+            startedAt: row.started_at,
+            lastSeenAt: row.last_seen_at,
+            isActive: row.is_active === true,
+            durationSeconds: Number(row.duration_seconds) || 0,
+            eventCount: Number(row.event_count) || 0,
+          })),
+        },
         vipModalOpens: this.sumAnalyticsRows(dailySummary.rows, 'vip_modal_opens'),
         funnel: {
           registered: this.sumAnalyticsRows(dailySummary.rows, 'registered_users'),
@@ -1291,7 +1453,7 @@ export class AdminService {
           vip: this.sumAnalyticsRows(dailySummary.rows, 'active_vip_users'),
         },
       };
-      return this.setAnalyticsCache(cacheKey, response);
+      return bypassCache ? response : this.setAnalyticsCache(cacheKey, response);
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lá»—i server.', HttpStatus.INTERNAL_SERVER_ERROR);

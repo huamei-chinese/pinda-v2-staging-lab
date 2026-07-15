@@ -33,7 +33,7 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=vip-3day-once-20260715/);
+  assert.match(indexHtmlSource, /app\.js\?v=analytics-remove-low-engagement-20260715/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
@@ -85,4 +85,13 @@ test("VIP upgrade modal paints before rendering plan cards", () => {
   assert.match(appSource, /document\.body\.appendChild\(modalDiv\);/);
   assert.match(appSource, /const scheduleAfterModalPaint = \(callback\) => \{[\s\S]*requestAnimationFrame\(\(\) => setTimeout\(callback, 0\)\);/);
   assert.match(appSource, /scheduleAfterModalPaint\(\(\) => \{[\s\S]*renderFallbackPlans\(\);[\s\S]*loadPaymentPlans\(\)/);
+});
+
+test("daily partial badge only remains on housing or moving theme cards", () => {
+  assert.match(appSource, /function shouldShowPartialAccessBadge\(context = \{\}\)/);
+  assert.match(appSource, /if \(context\.type !== "daily-theme"\) return true;/);
+  assert.match(appSource, /id === "housing"[\s\S]*id === "renting_life"[\s\S]*id === "renting"/);
+  assert.match(appSource, /title\.includes\("thuê nhà"\) && \(title\.includes\("chuyển nhà"\) \|\| title\.includes\("sinh hoạt"\)\)/);
+  assert.match(appSource, /accessStatusBadgeHTML\(accessStatus, \{ type: "daily-theme", theme, config \}\)/);
+  assert.match(appSource, /if \(!shouldShowPartialAccessBadge\(context\)\) return "";/);
 });

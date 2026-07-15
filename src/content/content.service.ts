@@ -30,6 +30,7 @@ export interface DailyThemeLockRow {
 export interface ListeningTopicLockRow {
   topicId: string;
   titleVi: string;
+  titleZh?: string;
   sortOrder: number;
   lockedForFree: boolean;
   updatedAt?: string;
@@ -39,6 +40,7 @@ export interface ListeningLessonLockRow {
   lessonId: string;
   topicId: string;
   titleVi: string;
+  titleZh?: string;
   sortOrder: number;
   lockedForFree: boolean;
   updatedAt?: string;
@@ -318,6 +320,7 @@ export class ContentService {
           topics.set(topicId, {
             topicId,
             titleVi: existingTopic?.titleVi || String(topic?.label_vi || topic?.label_zh || topicId).trim(),
+            titleZh: existingTopic?.titleZh || String(topic?.label_zh || topic?.label_vi || topicId).trim(),
             sortOrder: existingTopic?.sortOrder || topicOrder,
             lockedForFree: existingTopic?.lockedForFree === true,
             updatedAt: existingTopic?.updatedAt,
@@ -333,6 +336,7 @@ export class ContentService {
               lessonId,
               topicId,
               titleVi: existingLesson?.titleVi || String(lesson?.title_vi || lesson?.title_zh || lesson?.title || lessonId).trim(),
+              titleZh: existingLesson?.titleZh || String(lesson?.title_zh || lesson?.title_vi || lesson?.title || lessonId).trim(),
               sortOrder: existingLesson?.sortOrder || lessonOrder,
               lockedForFree: existingLesson?.lockedForFree === true,
               updatedAt: existingLesson?.updatedAt,
@@ -375,8 +379,9 @@ export class ContentService {
       const base = topics.get(topicId);
       topics.set(topicId, {
         topicId,
-        titleVi: row.title_vi || base?.titleVi || '',
-        sortOrder: Number(row.sort_order || base?.sortOrder || 0),
+        titleVi: base?.titleVi || row.title_vi || '',
+        titleZh: base?.titleZh || base?.titleVi || row.title_vi || '',
+        sortOrder: Number(base?.sortOrder || row.sort_order || 0),
         lockedForFree: row.locked_for_free === true,
         updatedAt: row.updated_at,
       });
@@ -389,8 +394,9 @@ export class ContentService {
       lessons.set(lessonId, {
         lessonId,
         topicId: row.topic_id || base?.topicId || '',
-        titleVi: row.title_vi || base?.titleVi || '',
-        sortOrder: Number(row.sort_order || base?.sortOrder || 0),
+        titleVi: base?.titleVi || row.title_vi || '',
+        titleZh: base?.titleZh || base?.titleVi || row.title_vi || '',
+        sortOrder: Number(base?.sortOrder || row.sort_order || 0),
         lockedForFree: row.locked_for_free === true,
         updatedAt: row.updated_at,
       });

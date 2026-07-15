@@ -7,6 +7,9 @@ const ALLOWED_EVENT_TYPES = new Set([
   'practice_completed',
   'paywall_shown',
   'vip_modal_opened',
+  'study_session_started',
+  'study_session_heartbeat',
+  'study_session_ended',
 ]);
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

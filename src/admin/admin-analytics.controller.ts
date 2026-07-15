@@ -10,8 +10,9 @@ export class AdminAnalyticsController {
     @Query('days') days: string,
     @Query('from') from: string,
     @Query('to') to: string,
+    @Query('live') live: string,
     @Headers() headers: Record<string, string | string[] | undefined>,
   ) {
-    return this.adminService.getLearningAnalytics(headers, { days, from, to });
+    return this.adminService.getLearningAnalytics(headers, { days, from, to, live });
   }
 }
