@@ -10,7 +10,7 @@ export interface PaymentPlan {
 }
 
 export const DEFAULT_PAYMENT_PLANS: PaymentPlan[] = [
-  { id: '7d', months: 7, durationUnit: 'days', amount: 29000, nameVi: 'Gói VIP 7 ngày', nameZh: '7天 VIP' },
+  { id: '3d', months: 3, durationUnit: 'days', amount: 29000, nameVi: 'Gói VIP 3 ngày', nameZh: '3天 VIP' },
   { id: '30d', months: 30, durationUnit: 'days', amount: 129000, nameVi: 'Gói VIP 1 tháng', nameZh: '1个月 VIP' },
   { id: '90d', months: 90, durationUnit: 'days', amount: 329000, nameVi: 'Gói VIP 3 tháng', nameZh: '3个月 VIP' },
   { id: '1m', months: 1, durationUnit: 'months', amount: 149000, nameVi: '1 Tháng', nameZh: '1 个月' },

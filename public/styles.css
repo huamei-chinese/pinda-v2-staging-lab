@@ -12703,6 +12703,11 @@ p {
   box-shadow: 0 18px 32px rgba(16, 185, 129, 0.11);
 }
 
+.upgrade-plan-card.used-once {
+  border-color: #fecdd3;
+  background: #fff9fb;
+}
+
 .upgrade-popular-badge {
   position: absolute;
   top: -13px;
@@ -12718,6 +12723,23 @@ p {
   font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.upgrade-one-time-badge {
+  position: absolute;
+  top: -13px;
+  right: 16px;
+  min-height: 22px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 10px 18px rgba(225, 29, 72, 0.18);
 }
 
 .upgrade-plan-kicker {
@@ -12812,10 +12834,16 @@ p {
   cursor: pointer;
 }
 
-.upgrade-plan-action.loading,
-.upgrade-plan-action:disabled {
+.upgrade-plan-action.loading {
   cursor: wait;
   opacity: 0.72;
+}
+
+.upgrade-plan-action:disabled:not(.loading) {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: #ffe4e6;
+  color: #be123c;
 }
 
 .upgrade-plan-card.popular .upgrade-plan-action {
@@ -12926,6 +12954,14 @@ p {
     background: #047857;
     color: #ffffff;
     font-size: 10px;
+  }
+
+  .upgrade-one-time-badge {
+    top: -10px;
+    right: 14px;
+    min-height: 20px;
+    padding: 0 10px;
+    font-size: 9px;
   }
 
   .upgrade-plan-kicker {
@@ -20065,16 +20101,36 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-content-table tr[data-admin-listening-topic-select] { cursor: pointer; }
 .admin-content-table tr[data-admin-listening-topic-select]:hover { background: #f8fafc; }
 .admin-content-topic-back { margin: 0 0 12px; border: 0; background: transparent; color: #047857; font-weight: 800; cursor: pointer; padding: 0; }
-.listening-content-locked { opacity: .62; filter: saturate(.65); cursor: not-allowed !important; }
+.listening-content-locked {
+  opacity: 1 !important;
+  filter: none !important;
+  cursor: not-allowed !important;
+  border-color: rgba(251, 146, 60, 0.46) !important;
+  background:
+    radial-gradient(circle at 96% 50%, rgba(251, 191, 36, 0.26), transparent 30%),
+    linear-gradient(110deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 237, 0.94) 62%, rgba(254, 243, 199, 0.88)) !important;
+  box-shadow:
+    0 18px 42px rgba(180, 83, 9, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
 .listening-content-locked strong::after { content: none; }
 .listening-content-locked .listening-topic-card-v2-arrow,
-.listening-content-locked .listening-lesson-arrow { font-size: 0; }
+.listening-content-locked .listening-lesson-arrow {
+  min-width: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+}
 .listening-content-locked .listening-topic-card-v2-arrow::after,
-.listening-content-locked .listening-lesson-arrow::after { content: "VIP"; display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 22px; padding: 0 8px; border: 1px solid #d7dee8; border-radius: 999px; background: #f4f7fb; color: #637084; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
-.listening-content-locked .listening-topic-card-v2-arrow::after,
-.listening-content-locked .listening-lesson-arrow::after { content: none; }
+.listening-content-locked .listening-lesson-arrow::after { content: none !important; display: none !important; }
+.listening-content-locked strong {
+  color: #6b4a22 !important;
+}
 .listening-vip-badge { display: inline-flex; align-items: center; width: fit-content; min-height: 21px; padding: 0 8px; border: 1px solid #d7dee8; border-radius: 999px; background: #f4f7fb; color: #637084; font-size: 11px; font-weight: 800; letter-spacing: .03em; }
-.listening-locked-flame { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #fff 0 42%, #ffe0bd 43% 67%, #ffd2a4 68% 100%); box-shadow: 0 0 0 5px rgba(255, 197, 132, .24); font-size: 24px; opacity: 1; filter: none; }
+.listening-locked-flame { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #fff 0 42%, #fed7aa 43% 67%, #f59e0b 68% 100%); box-shadow: 0 0 0 5px rgba(251, 146, 60, .24); font-size: 24px; opacity: 1; filter: none; }
 .listening-content-locked .listening-lesson-play { background: transparent !important; box-shadow: none !important; }
 .admin-content-hsk-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .admin-content-hsk-tab { border: 1px solid #dbe4f0; background: #fff; color: #334155; border-radius: 999px; padding: 8px 16px; font-weight: 800; font-size: 12px; cursor: pointer; }
@@ -35877,12 +35933,18 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 
   .app-desktop-shell .home-desktop-sidebar-panda {
+    display: block !important;
     margin: 10px auto 0 !important;
     width: 76% !important;
     height: 132px !important;
+    max-height: 132px !important;
     background-size: contain !important;
     background-position: center bottom !important;
     opacity: 0.95 !important;
+  }
+
+  .app-desktop-shell .home-desktop-sidebar-streak {
+    display: flex !important;
   }
 }
 
@@ -47573,6 +47635,69 @@ body:has(#practiceScreen:not(.hidden)) {
   .listening-gateway-level {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Desktop VIP locks: keep locked listening items warm without becoming harsh. */
+@media (min-width: 641px) {
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked,
+  #listeningScreen .app-desktop-shell--listening .listening-topic-card-v2.listening-content-locked,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row.listening-content-locked {
+    opacity: 1 !important;
+    filter: none !important;
+    border-color: rgba(251, 146, 60, 0.48) !important;
+    background:
+      radial-gradient(circle at 94% 50%, rgba(251, 191, 36, 0.24), transparent 30%),
+      radial-gradient(circle at 4% 50%, rgba(251, 146, 60, 0.12), transparent 26%),
+      linear-gradient(108deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 247, 237, 0.96) 56%, rgba(254, 243, 199, 0.76) 100%) !important;
+    box-shadow:
+      0 18px 42px rgba(180, 83, 9, 0.13),
+      0 0 0 1px rgba(255, 237, 213, 0.82) inset,
+      inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row.listening-content-locked::before {
+    background: linear-gradient(180deg, #fb923c, #f59e0b 58%, #fbbf24) !important;
+    opacity: 0.86 !important;
+    width: 5px !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked strong,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row.listening-content-locked strong {
+    color: #6b4a22 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-lesson-play,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-lessons-screen) .listening-lesson-row.listening-content-locked .listening-lesson-play.listening-lesson-number {
+    background:
+      radial-gradient(circle at 26% 18%, rgba(255, 255, 255, 0.58), transparent 30%),
+      linear-gradient(145deg, #fbbf24, #fb923c) !important;
+    box-shadow:
+      0 13px 26px rgba(234, 88, 12, 0.18),
+      0 0 0 9px rgba(251, 191, 36, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-lesson-wave i {
+    background: linear-gradient(180deg, #fb923c, #fbbf24) !important;
+    opacity: 0.58 !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-topic-card-v2-arrow,
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-lesson-arrow {
+    min-width: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: transparent !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-topic-card-v2-arrow::after,
+  #listeningScreen .app-desktop-shell--listening .listening-content-locked .listening-lesson-arrow::after {
+    content: none !important;
+    display: none !important;
   }
 }
 

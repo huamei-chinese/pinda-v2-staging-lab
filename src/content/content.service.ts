@@ -48,6 +48,8 @@ export interface ListeningLessonLockRow {
 export class ContentService {
   private readonly localRequire = createRequire(__filename);
   private staticHskCatalogCache: HskLessonLockRow[] | null = null;
+  private staticDailyThemeCatalogCache: DailyThemeLockRow[] | null = null;
+  private dailyThemeLegacyAliasCache: Map<string, string> | null = null;
   private staticListeningCatalogCache: { topics: ListeningTopicLockRow[]; lessons: ListeningLessonLockRow[] } | null = null;
 
   constructor(private readonly db: DatabaseService) {}
@@ -59,6 +61,18 @@ export class ContentService {
       if (a.lessonNo !== b.lessonNo) return a.lessonNo - b.lessonNo;
       return a.lessonId.localeCompare(b.lessonId);
     });
+  }
+
+  private resolveWordSentenceLimits(row: any) {
+    const legacyLimit = Math.max(0, Number(row.free_item_limit || 0));
+    const explicitWordLimit = Math.max(0, Number(row.free_word_limit || 0));
+    const explicitSentenceLimit = Math.max(0, Number(row.free_sentence_limit || 0));
+    const hasSpecificLimits = explicitWordLimit > 0 || explicitSentenceLimit > 0;
+    return {
+      freeItemLimit: legacyLimit,
+      freeWordLimit: hasSpecificLimits ? explicitWordLimit : legacyLimit,
+      freeSentenceLimit: hasSpecificLimits ? explicitSentenceLimit : legacyLimit,
+    };
   }
 
   private addStaticHskLesson(
@@ -145,21 +159,144 @@ export class ContentService {
       const lessonId = String(row.lesson_id || '').trim();
       if (!lessonId) continue;
       const base = merged.get(lessonId);
-      const freeItemLimit = Math.max(0, Number(row.free_item_limit || 0));
+      const limits = this.resolveWordSentenceLimits(row);
       merged.set(lessonId, {
         lessonId,
         level: row.level || base?.level || '',
         lessonNo: Number(row.lesson_no || base?.lessonNo || 0),
         titleVi: row.title_vi || base?.titleVi || '',
-        freeItemLimit,
-        freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
-        freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
+        ...limits,
         lockedForFree: row.locked_for_free === true,
         updatedAt: row.updated_at,
       });
     }
 
     return this.sortHskLocks([...merged.values()]);
+  }
+
+  private loadHighFrequencyTopicsFromPublicScript(fileName: string, seed: any[] = []): any[] {
+    const filePath = path.join(process.cwd(), 'public', fileName);
+    if (!fs.existsSync(filePath)) return [];
+
+    const previousTopics = (globalThis as any).highFrequencyTopics;
+    (globalThis as any).highFrequencyTopics = [...seed];
+    try {
+      delete this.localRequire.cache[this.localRequire.resolve(filePath)];
+      const exported = this.localRequire(filePath);
+      if (Array.isArray((globalThis as any).highFrequencyTopics)) {
+        return (globalThis as any).highFrequencyTopics;
+      }
+      if (Array.isArray(exported?.topics)) return exported.topics;
+      if (Array.isArray(exported)) return exported;
+      return [];
+    } catch {
+      return [];
+    } finally {
+      if (previousTopics === undefined) {
+        delete (globalThis as any).highFrequencyTopics;
+      } else {
+        (globalThis as any).highFrequencyTopics = previousTopics;
+      }
+    }
+  }
+
+  private dailyThemeTitle(theme: any): string {
+    return String(theme?.vi || theme?.lesson_title_vi || theme?.title_vi || theme?.title || theme?.zh || theme?.lesson_title_cn || '').trim();
+  }
+
+  private listStaticDailyThemeCatalog(): DailyThemeLockRow[] {
+    if (this.staticDailyThemeCatalogCache) return this.staticDailyThemeCatalogCache;
+
+    let themes = this.loadHighFrequencyTopicsFromPublicScript('lesson-high-frequency-v1-27-topics.js');
+    if (!themes.length) {
+      themes = this.loadHighFrequencyTopicsFromPublicScript('lesson-high-frequency-topics.js');
+      themes = this.loadHighFrequencyTopicsFromPublicScript('lesson-high-frequency-topic-unit.js', themes);
+    }
+
+    const catalog = new Map<string, DailyThemeLockRow>();
+    themes.forEach((theme, index) => {
+      const themeId = String(theme?.id || '').trim();
+      if (!themeId || catalog.has(themeId)) return;
+      catalog.set(themeId, {
+        themeId,
+        titleVi: this.dailyThemeTitle(theme),
+        sortOrder: index + 1,
+        freeItemLimit: 0,
+        freeWordLimit: 0,
+        freeSentenceLimit: 0,
+        lockedForFree: false,
+      });
+    });
+
+    this.staticDailyThemeCatalogCache = [...catalog.values()]
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.themeId.localeCompare(b.themeId));
+    return this.staticDailyThemeCatalogCache;
+  }
+
+  private getDailyThemeLegacyAliasMap(): Map<string, string> {
+    if (this.dailyThemeLegacyAliasCache) return this.dailyThemeLegacyAliasCache;
+
+    const aliasMap = new Map<string, string>();
+    const modern = this.listStaticDailyThemeCatalog();
+    const legacyThemes = this.loadHighFrequencyTopicsFromPublicScript('lesson-high-frequency-topics.js');
+    const modernByTitle = new Map(
+      modern.map((theme) => [this.normalizeComparableTitle(theme.titleVi), theme.themeId]),
+    );
+
+    legacyThemes.forEach((theme, index) => {
+      const legacyId = String(theme?.id || '').trim();
+      if (!legacyId || modern.some((item) => item.themeId === legacyId)) return;
+
+      const byTitle = modernByTitle.get(this.normalizeComparableTitle(this.dailyThemeTitle(theme)));
+      const byTopicUnitOrder = modern.find((item) => item.themeId === `hf-topic-unit-bai${String(index + 1).padStart(2, '0')}`);
+      const targetId = byTitle || byTopicUnitOrder?.themeId || '';
+      if (targetId) aliasMap.set(legacyId, targetId);
+    });
+
+    this.dailyThemeLegacyAliasCache = aliasMap;
+    return aliasMap;
+  }
+
+  private normalizeComparableTitle(value: string): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  private mergeDailyLocksWithStaticCatalog(rows: any[]): DailyThemeLockRow[] {
+    const staticCatalog = this.listStaticDailyThemeCatalog();
+    const merged = new Map<string, DailyThemeLockRow>();
+    const priorities = new Map<string, number>();
+    const aliases = this.getDailyThemeLegacyAliasMap();
+
+    for (const item of staticCatalog) {
+      merged.set(item.themeId, item);
+      priorities.set(item.themeId, 0);
+    }
+
+    for (const row of rows) {
+      const sourceId = String(row.theme_id || '').trim();
+      if (!sourceId) continue;
+      const targetId = merged.has(sourceId) ? sourceId : aliases.get(sourceId);
+      if (!targetId || !merged.has(targetId)) continue;
+
+      const priority = targetId === sourceId ? 2 : 1;
+      if ((priorities.get(targetId) || 0) > priority) continue;
+
+      const base = merged.get(targetId)!;
+      const limits = this.resolveWordSentenceLimits(row);
+      merged.set(targetId, {
+        ...base,
+        ...limits,
+        lockedForFree: row.locked_for_free === true,
+        updatedAt: row.updated_at,
+      });
+      priorities.set(targetId, priority);
+    }
+
+    return [...merged.values()].sort((a, b) => a.sortOrder - b.sortOrder || a.themeId.localeCompare(b.themeId));
   }
 
   private listStaticListeningLockCatalog(): { topics: ListeningTopicLockRow[]; lessons: ListeningLessonLockRow[] } {
@@ -333,9 +470,7 @@ export class ContentService {
     );
     return result.rows.map((row) => ({
       lessonId: row.lesson_id,
-      freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
-      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
-      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
+      ...this.resolveWordSentenceLimits(row),
       lockedForFree: row.locked_for_free === true,
     }));
   }
@@ -403,31 +538,24 @@ export class ContentService {
        FROM daily_theme_locks
        ORDER BY sort_order ASC, theme_id ASC`,
     );
-    return result.rows.map((row) => ({
-      themeId: row.theme_id,
-      titleVi: row.title_vi,
-      sortOrder: Number(row.sort_order),
-      freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
-      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
-      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
-      lockedForFree: row.locked_for_free,
-      updatedAt: row.updated_at,
-    }));
+    return this.mergeDailyLocksWithStaticCatalog(result.rows);
   }
 
   async listPublicDailyLocks(): Promise<Array<{ themeId: string; freeItemLimit: number; lockedForFree: boolean }>> {
     await this.ensureDailyThemeLocksSchema();
     const result = await this.db.query(
-      `SELECT theme_id, free_item_limit, locked_for_free
+      `SELECT theme_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free
        FROM daily_theme_locks
-       WHERE locked_for_free = TRUE OR free_item_limit > 0
+       WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0
        ORDER BY theme_id ASC`,
     );
-    return result.rows.map((row) => ({
-      themeId: row.theme_id,
-      freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
-      lockedForFree: row.locked_for_free === true,
-    }));
+    return this.mergeDailyLocksWithStaticCatalog(result.rows)
+      .filter((row) => row.lockedForFree || Number(row.freeItemLimit || row.freeWordLimit || row.freeSentenceLimit || 0) > 0)
+      .map((row) => ({
+        themeId: row.themeId,
+        freeItemLimit: Math.max(0, Number(row.freeItemLimit || row.freeSentenceLimit || row.freeWordLimit || 0)),
+        lockedForFree: row.lockedForFree === true,
+      }));
   }
 
   async listLockedDailyThemeIds(): Promise<string[]> {
@@ -499,10 +627,9 @@ export class ContentService {
       this.db.query(`SELECT topic_id, locked_for_free FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
       this.db.query(`SELECT lesson_id, topic_id, locked_for_free FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
     ]);
-    const limit = (value: unknown, fallback: unknown) => Math.max(0, Number(value || fallback || 0));
     return {
-      hskLessonLocks: hsk.rows.map((row) => ({ lessonId: row.lesson_id, lockedForFree: row.locked_for_free === true, freeWordLimit: limit(row.free_word_limit, row.free_item_limit), freeSentenceLimit: limit(row.free_sentence_limit, row.free_item_limit) })),
-      dailyThemeLocks: daily.rows.map((row) => ({ themeId: row.theme_id, lockedForFree: row.locked_for_free === true, freeWordLimit: limit(row.free_word_limit, row.free_item_limit), freeSentenceLimit: limit(row.free_sentence_limit, row.free_item_limit) })),
+      hskLessonLocks: hsk.rows.map((row) => ({ lessonId: row.lesson_id, lockedForFree: row.locked_for_free === true, freeWordLimit: this.resolveWordSentenceLimits(row).freeWordLimit, freeSentenceLimit: this.resolveWordSentenceLimits(row).freeSentenceLimit })),
+      dailyThemeLocks: this.mergeDailyLocksWithStaticCatalog(daily.rows).map((row) => ({ themeId: row.themeId, lockedForFree: row.lockedForFree === true, freeWordLimit: Math.max(0, Number(row.freeWordLimit || 0)), freeSentenceLimit: Math.max(0, Number(row.freeSentenceLimit || 0)) })),
       listeningTopicLocks: topics.rows.map((row) => ({ topicId: row.topic_id, lockedForFree: row.locked_for_free === true })),
       listeningLessonLocks: lessons.rows.map((row) => ({ lessonId: row.lesson_id, topicId: row.topic_id, lockedForFree: row.locked_for_free === true })),
     };

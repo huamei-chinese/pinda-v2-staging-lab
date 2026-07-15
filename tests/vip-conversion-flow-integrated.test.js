@@ -10,14 +10,14 @@ const { DEFAULT_PAYMENT_PLANS } = require("../src/payment/payment-plans");
 const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
 const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "utf8");
 
-test("MVP payment plans keep the approved 7d, 30d, and 90d prices", () => {
-  const sevenDay = DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === "7d");
+test("MVP payment plans keep the approved 3d, 30d, and 90d prices", () => {
+  const threeDay = DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === "3d");
   const thirtyDay = DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === "30d");
   const ninetyDay = DEFAULT_PAYMENT_PLANS.find((plan) => plan.id === "90d");
 
-  assert.equal(sevenDay.amount, 29000);
-  assert.equal(sevenDay.durationUnit, "days");
-  assert.equal(sevenDay.months, 7);
+  assert.equal(threeDay.amount, 29000);
+  assert.equal(threeDay.durationUnit, "days");
+  assert.equal(threeDay.months, 3);
   assert.equal(thirtyDay.amount, 129000);
   assert.equal(thirtyDay.durationUnit, "days");
   assert.equal(thirtyDay.months, 30);

@@ -740,6 +740,7 @@ const state = {
   contentLocksLoadingPromise: null,
   pendingUpgradePlanId: "",
   hskLessonFreeItemLimits: {},
+  hskLessonAccessRules: {},
   hskLockedLessonIds: new Set(),
   hskLevelCovers: {},
   dailyLockedThemeIds: new Set(),
@@ -2752,12 +2753,12 @@ function planDurationDays(plan) {
 
 const LOCAL_DEFAULT_PAYMENT_PLANS = [
   {
-    id: "7d",
-    months: 7,
+    id: "3d",
+    months: 3,
     durationUnit: "days",
     amount: 29000,
-    nameVi: "Gói VIP 7 ngày",
-    nameZh: "7天 VIP",
+    nameVi: "Gói VIP 3 ngày",
+    nameZh: "3天 VIP",
     sortOrder: 1,
     priceLabel: "29.000đ",
   },
@@ -2783,8 +2784,11 @@ const LOCAL_DEFAULT_PAYMENT_PLANS = [
   },
 ];
 
-function isSevenDayVipPlan(plan) {
-  return plan?.durationUnit === "days" && Number(plan.months) === 7 && Number(plan.amount) === 29000;
+function isThreeDayVipPlan(plan) {
+  const planId = String(plan?.id || "").trim().toLowerCase();
+  return plan?.durationUnit === "days"
+    && Number(plan.amount) === 29000
+    && (Number(plan.months) === 3 || planId === "3d" || planId === "7d");
 }
 
 function isOneMonthVipPlan(plan) {
@@ -2797,8 +2801,9 @@ function isThreeMonthVipPlan(plan) {
 
 function selectUpgradePlansForDisplay(apiPlans = []) {
   const plans = [...(apiPlans || []), ...LOCAL_DEFAULT_PAYMENT_PLANS];
-  const sevenDay = plans.find((plan) => plan.id === "7d" && isSevenDayVipPlan(plan))
-    || plans.find(isSevenDayVipPlan)
+  const threeDay = plans.find((plan) => plan.id === "3d" && isThreeDayVipPlan(plan))
+    || plans.find((plan) => plan.id === "7d" && isThreeDayVipPlan(plan))
+    || plans.find(isThreeDayVipPlan)
     || LOCAL_DEFAULT_PAYMENT_PLANS[0];
   const oneMonth = plans.find((plan) => plan.id === "30d" && isOneMonthVipPlan(plan))
     || plans.find(isOneMonthVipPlan)
@@ -2806,7 +2811,7 @@ function selectUpgradePlansForDisplay(apiPlans = []) {
   const threeMonth = plans.find((plan) => plan.id === "90d" && isThreeMonthVipPlan(plan))
     || plans.find(isThreeMonthVipPlan)
     || LOCAL_DEFAULT_PAYMENT_PLANS[2];
-  return [sevenDay, oneMonth, threeMonth];
+  return [threeDay, oneMonth, threeMonth];
 }
 
 function buildDisplayPlans(apiPlans, isVi) {
@@ -2824,11 +2829,12 @@ function buildDisplayPlans(apiPlans, isVi) {
 
   return sorted.map((plan, index) => {
     const isDayPlan = plan.durationUnit === "days";
-    const isSevenDayVip = isSevenDayVipPlan(plan);
+    const isThreeDayVip = isThreeDayVipPlan(plan);
     const isOneMonthVip = isOneMonthVipPlan(plan);
     const isThreeMonthVip = isThreeMonthVipPlan(plan);
+    const displayDayCount = isThreeDayVip ? 3 : Number(plan.months);
     const monthly = isDayPlan
-      ? Math.round(plan.amount / Math.max(1, plan.months / 30))
+      ? Math.round(plan.amount / Math.max(1, displayDayCount / 30))
       : Math.round(plan.amount / plan.months);
     const savings = !isDayPlan && monthPlans.length && plan.months === monthPlans[0].months
       ? 0
@@ -2845,8 +2851,8 @@ function buildDisplayPlans(apiPlans, isVi) {
       kickerVi = "Gói VIP 3 tháng";
       kickerZh = "3个月 VIP";
     } else if (isDayPlan) {
-      kickerVi = isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi;
-      kickerZh = isSevenDayVip ? "7天 VIP" : plan.nameZh;
+      kickerVi = isThreeDayVip ? "Gói VIP 3 ngày" : plan.nameVi;
+      kickerZh = isThreeDayVip ? "3天 VIP" : plan.nameZh;
     } else if (plan.months === monthPlans[0]?.months) {
       kickerVi = "Gói cơ bản";
       kickerZh = "基础套餐";
@@ -2859,24 +2865,24 @@ function buildDisplayPlans(apiPlans, isVi) {
     }
 
     const note = isDayPlan
-      ? (isOneMonthVip ? (isVi ? "/ 30 ngày" : "/ 30天") : (isVi ? `/ ${plan.months} ngày` : `/ ${plan.months}天`))
+      ? (isOneMonthVip ? (isVi ? "/ 30 ngày" : "/ 30天") : (isVi ? `/ ${displayDayCount} ngày` : `/ ${displayDayCount}天`))
       : plan.months === 1
         ? (isVi ? "/tháng" : "/月")
         : (isVi ? `Chỉ ~${Math.round(monthly / 1000)}k / tháng` : `仅 ~${Math.round(monthly / 1000)}k / 月`);
 
     return {
-      id: plan.id,
+      id: isThreeDayVip ? "3d" : plan.id,
       nameVi: kickerVi,
       nameZh: kickerZh,
-      durationVi: isThreeMonthVip ? "Gói VIP 3 tháng" : (isOneMonthVip ? "Gói VIP 1 tháng" : (isSevenDayVip ? "Gói VIP 7 ngày" : plan.nameVi)),
-      durationZh: isThreeMonthVip ? "3个月 VIP" : (isOneMonthVip ? "1个月 VIP" : (isSevenDayVip ? "7天 VIP" : plan.nameZh)),
-      price: isThreeMonthVip ? "329.000đ" : (isOneMonthVip ? "129.000đ" : (isSevenDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount)))),
+      durationVi: isThreeMonthVip ? "Gói VIP 3 tháng" : (isOneMonthVip ? "Gói VIP 1 tháng" : (isThreeDayVip ? "Gói VIP 3 ngày" : plan.nameVi)),
+      durationZh: isThreeMonthVip ? "3个月 VIP" : (isOneMonthVip ? "1个月 VIP" : (isThreeDayVip ? "3天 VIP" : plan.nameZh)),
+      price: isThreeMonthVip ? "329.000đ" : (isOneMonthVip ? "129.000đ" : (isThreeDayVip ? "29.000đ" : (plan.priceLabel || formatPlanPrice(plan.amount)))),
       note,
       discount: index === popularIndex && sorted.length > 1 ? (isVi ? "Phổ biến nhất" : "最受欢迎") : "",
       popular: index === popularIndex && sorted.length > 1,
-      isSevenDayVip,
+      isThreeDayVip,
       isOneMonthVip,
-      actionVi: isThreeMonthVip ? "Đăng ký gói 3 tháng" : (isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 7 ngày"),
+      actionVi: isThreeMonthVip ? "Đăng ký gói 3 tháng" : (isOneMonthVip ? "Đăng ký gói 1 tháng" : "Đăng ký gói 3 ngày"),
       actionZh: "开通 VIP",
     };
   });
@@ -3327,10 +3333,19 @@ function isActivePremiumUser(user) {
 
 function normalizeVipPlanId(user) {
   const planId = String(user?.vipPlanId || user?.vipPlan || user?.plan || "").trim().toLowerCase();
-  if (planId === "7d") return "7d";
+  if (planId === "3d" || planId === "7d") return "3d";
   if (planId === "30d") return "30d";
   if (planId === "90d" || planId === "3m") return "90d";
   return "";
+}
+
+function isIntroVipPlanId(planId) {
+  const id = String(planId || "").trim().toLowerCase();
+  return id === "3d" || id === "7d";
+}
+
+function hasUsedIntroVipPlan(user = state.user) {
+  return Boolean(user?.vipTrialUsed || isIntroVipPlanId(user?.vipPlanId || user?.vipPlan || user?.plan));
 }
 
 function formatVipDate(value) {
@@ -3368,8 +3383,8 @@ function getVipPlanDisplay(user, isVi = state.lang === "vi") {
   }
 
   const planId = normalizeVipPlanId(user);
-  const badge = planId === "7d"
-    ? (isVi ? "VIP 7 ngày" : "7天VIP")
+  const badge = planId === "3d"
+    ? (isVi ? "VIP 3 ngày" : "3天VIP")
     : planId === "30d"
       ? (isVi ? "VIP 30 ngày" : "30天VIP")
       : planId === "90d"
@@ -3438,6 +3453,15 @@ function getHskAccessRule(lessonId, contentType = "word") {
   const { level, lessonNo } = parseHskLessonAccessMeta(lessonId);
   const itemType = normalizeAccessItemType(contentType);
   if (!level || !lessonNo) return accessRule("locked", 0);
+  const configured = state.hskLessonAccessRules?.[lessonId];
+  if (configured) {
+    if (configured.lockedForFree === true) return accessRule("locked", 0);
+    const limit = itemType === "sentence"
+      ? Number(configured.freeSentenceLimit || 0)
+      : Number(configured.freeWordLimit || 0);
+    if (limit > 0) return accessRule("partial", Math.floor(limit));
+    return accessRule("open");
+  }
   if (state.hskLockedLessonIds.has(String(lessonId || ""))) return accessRule("locked", 0);
   const configuredFreeLimit = getHskLessonFreeItemLimit(lessonId);
   if (configuredFreeLimit !== null) return accessRule("partial", configuredFreeLimit);
@@ -3692,13 +3716,13 @@ function promptHskLessonLocked() {
 function promptUpgradeLocked() {
   const isVi = state.lang === "vi";
   trackEvent("paywall_shown", buildPracticeEventContext());
-  showToast(isVi ? "Nội dung này yêu cầu Gói VIP 7 ngày." : "此内容需要 7天 VIP。");
+  showToast(isVi ? "Nội dung này yêu cầu Gói VIP." : "此内容需要 VIP。");
   showUpgradePlansModal();
 }
 
 function lockedContentCtaText() {
   const isVi = state.lang === "vi";
-  return isVi ? "Gói VIP 7 ngày" : "7天 VIP";
+  return isVi ? "Gói VIP" : "VIP";
 }
 
 async function loadContentLocks() {
@@ -3707,6 +3731,7 @@ async function loadContentLocks() {
   state.contentLocksError = "";
   if (BACKEND_DISABLED) {
     state.hskLessonFreeItemLimits = {};
+    state.hskLessonAccessRules = {};
     state.hskLockedLessonIds = new Set();
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
@@ -3729,20 +3754,25 @@ async function loadContentLocks() {
     if (!Array.isArray(hskData.lessonLocks) || !Array.isArray(dailyData.themeLocks) || !Array.isArray(dailyData.lockedThemeIds)) {
       throw new Error("Invalid content lock response");
     }
-    const hskLimitEntries = [
-      ...(hskData.lessonLocks || []).map((item) => [
-        item.lessonId,
-        Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)),
-      ]),
-      ...(accessData.hskLessonLocks || []).map((item) => [
-        item.lessonId,
-        Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)),
-      ]),
-    ].filter(([lessonId, limit]) => lessonId && limit > 0);
+    const hskAccessItems = [...(hskData.lessonLocks || []), ...(accessData.hskLessonLocks || [])]
+      .filter((item) => item?.lessonId);
+    const hskLimitEntries = hskAccessItems.map((item) => [
+      item.lessonId,
+      Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)),
+    ]).filter(([lessonId, limit]) => lessonId && limit > 0);
     state.hskLessonFreeItemLimits = hskLimitEntries.reduce((limits, [lessonId, limit]) => {
       limits[lessonId] = Math.max(Number(limits[lessonId] || 0), Number(limit || 0));
       return limits;
     }, {});
+    state.hskLessonAccessRules = Object.fromEntries(
+      hskAccessItems
+        .filter((item) => item.lockedForFree === true || Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)) > 0)
+        .map((item) => [item.lessonId, {
+          lockedForFree: item.lockedForFree === true,
+          freeWordLimit: Math.max(0, Number(item.freeWordLimit || item.freeItemLimit || 0)),
+          freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || item.freeItemLimit || 0)),
+        }]),
+    );
     state.hskLevelCovers = Object.fromEntries(
       (coverData.covers || []).map((item) => [item.level, String(item.coverUrl || "").trim()]),
     );
@@ -3774,6 +3804,7 @@ async function loadContentLocks() {
     return true;
   } catch (error) {
     state.hskLessonFreeItemLimits = {};
+    state.hskLessonAccessRules = {};
     state.hskLockedLessonIds = new Set();
     state.hskLevelCovers = {};
     state.dailyLockedThemeIds = new Set();
@@ -3807,6 +3838,17 @@ async function refreshContentLocksIfStale(maxAgeMs = 10000, options = {}) {
     if (state.screen === "home") renderHome();
   }
   return ok;
+}
+
+function refreshContentLocksAfterFastVipPrompt() {
+  void refreshContentLocksIfStale(10000, { rerender: true });
+}
+
+function showFastVipPromptIfKnownLocked(isLocked, promptFn = promptUpgradeLocked) {
+  if (!areContentLocksTrusted() || !isLocked) return false;
+  promptFn();
+  refreshContentLocksAfterFastVipPrompt();
+  return true;
 }
 
 async function loadHskLessonLocks() {
@@ -3898,6 +3940,8 @@ function buildAdminContentLocksMap(locks = []) {
     map[item.lessonId] = {
       lockedForFree: item.lockedForFree === true,
       freeItemLimit: Math.max(0, Number(item.freeItemLimit || 0)),
+      freeWordLimit: Math.max(0, Number(item.freeWordLimit || item.freeItemLimit || 0)),
+      freeSentenceLimit: Math.max(0, Number(item.freeSentenceLimit || item.freeItemLimit || 0)),
     };
   });
   return map;
@@ -3909,13 +3953,17 @@ function parseAdminFreeItemLimit(value) {
 }
 
 function syncAdminHskContentLocksFromDOM(root = document) {
-  root.querySelectorAll("[data-admin-content-limit]").forEach((input) => {
+  root.querySelectorAll("[data-admin-content-limit], [data-admin-content-word-limit], [data-admin-content-sentence-limit]").forEach((input) => {
     if (!input.matches("input[type='number']")) return;
-    const lessonId = input.dataset.adminContentLimit;
+    const lessonId = input.dataset.adminContentLimit || input.dataset.adminContentWordLimit || input.dataset.adminContentSentenceLimit;
     if (!lessonId) return;
+    const prev = state.adminContentLocks[lessonId] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
     state.adminContentLocks[lessonId] = {
-      lockedForFree: state.adminContentLocks[lessonId]?.lockedForFree === true,
-      freeItemLimit: parseAdminFreeItemLimit(input.value),
+      ...prev,
+      freeItemLimit: input.dataset.adminContentLimit ? parseAdminFreeItemLimit(input.value) : prev.freeItemLimit,
+      freeWordLimit: input.dataset.adminContentWordLimit ? parseAdminFreeItemLimit(input.value) : prev.freeWordLimit,
+      freeSentenceLimit: input.dataset.adminContentSentenceLimit ? parseAdminFreeItemLimit(input.value) : prev.freeSentenceLimit,
+      lockedForFree: prev.lockedForFree === true,
     };
   });
   root.querySelectorAll("[data-admin-content-lock]").forEach((input) => {
@@ -3929,15 +3977,16 @@ function syncAdminHskContentLocksFromDOM(root = document) {
 }
 
 function syncAdminDailyContentLocksFromDOM(root = document) {
-  root.querySelectorAll("[data-admin-content-daily-lock], [data-admin-content-daily-limit], [data-admin-content-daily-sentence-limit]").forEach((input) => {
+  root.querySelectorAll("[data-admin-content-daily-lock], [data-admin-content-daily-limit], [data-admin-content-daily-word-limit], [data-admin-content-daily-sentence-limit]").forEach((input) => {
     if (!input.matches("input[type='number'], input[type='checkbox']")) return;
-    const themeId = input.dataset.adminContentDailyLock || input.dataset.adminContentDailyLimit || input.dataset.adminContentDailySentenceLimit;
+    const themeId = input.dataset.adminContentDailyLock || input.dataset.adminContentDailyLimit || input.dataset.adminContentDailyWordLimit || input.dataset.adminContentDailySentenceLimit;
     if (!themeId) return;
     const prev = state.adminContentDailyLocks[themeId] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
     state.adminContentDailyLocks[themeId] = {
       ...prev,
       lockedForFree: input.dataset.adminContentDailyLock ? input.checked === true : prev.lockedForFree === true,
       freeItemLimit: input.dataset.adminContentDailyLimit ? parseAdminFreeItemLimit(input.value) : prev.freeItemLimit,
+      freeWordLimit: input.dataset.adminContentDailyWordLimit ? parseAdminFreeItemLimit(input.value) : prev.freeWordLimit,
       freeSentenceLimit: input.dataset.adminContentDailySentenceLimit ? parseAdminFreeItemLimit(input.value) : prev.freeSentenceLimit,
     };
   });
@@ -3960,11 +4009,17 @@ function updateAdminDailyLockConfig(themeId, patch = {}) {
 }
 
 function updateAdminHskLockConfig(lessonId, patch = {}) {
-  const prev = state.adminContentLocks[lessonId] || { lockedForFree: false, freeItemLimit: 0 };
+  const prev = state.adminContentLocks[lessonId] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
   state.adminContentLocks[lessonId] = {
     lockedForFree: patch.lockedForFree !== undefined ? patch.lockedForFree === true : prev.lockedForFree === true,
     freeItemLimit: parseAdminFreeItemLimit(
       patch.freeItemLimit !== undefined ? patch.freeItemLimit : prev.freeItemLimit,
+    ),
+    freeWordLimit: parseAdminFreeItemLimit(
+      patch.freeWordLimit !== undefined ? patch.freeWordLimit : prev.freeWordLimit,
+    ),
+    freeSentenceLimit: parseAdminFreeItemLimit(
+      patch.freeSentenceLimit !== undefined ? patch.freeSentenceLimit : prev.freeSentenceLimit,
     ),
   };
 }
@@ -4055,6 +4110,7 @@ async function loadAdminContentLocks() {
   state.adminContentStatus = isVi ? "Đang tải cấu hình nội dung..." : "正在加载内容配置...";
   renderAdmin();
   try {
+    await ensureHighFrequencyTopicsLoaded({ silent: true });
     if (state.adminTab === "content") {
       await Promise.allSettled(HSK_LEVEL_IDS.map((level) => ensureHskLevelContent(level)));
     }
@@ -4140,9 +4196,10 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
       ${levelKey}
     </button>
   `).join("");
-  const lockedInLevel = lessons.filter((lesson) => locksMap[lesson.id]?.lockedForFree === true || Number(locksMap[lesson.id]?.freeItemLimit || 0) > 0).length;
+  const lockedInLevel = lessons.filter((lesson) => locksMap[lesson.id]?.lockedForFree === true || Math.max(Number(locksMap[lesson.id]?.freeItemLimit || 0), Number(locksMap[lesson.id]?.freeWordLimit || 0), Number(locksMap[lesson.id]?.freeSentenceLimit || 0)) > 0).length;
   const rows = lessons.map((lesson) => {
-    const freeItemLimit = Math.max(0, Number(locksMap[lesson.id]?.freeItemLimit || 0));
+    const freeWordLimit = Math.max(0, Number(locksMap[lesson.id]?.freeWordLimit || locksMap[lesson.id]?.freeItemLimit || 0));
+    const freeSentenceLimit = Math.max(0, Number(locksMap[lesson.id]?.freeSentenceLimit || locksMap[lesson.id]?.freeItemLimit || 0));
     const lockedForFree = locksMap[lesson.id]?.lockedForFree === true;
     return `
       <tr>
@@ -4154,14 +4211,27 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
             <input type="checkbox" data-admin-content-lock="${escapeAttr(lesson.id)}" ${lockedForFree ? "checked" : ""} />
             Khóa bài
           </label>
+        </td>
+        <td>
+          <input
+            class="admin-content-limit-input"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="${isVi ? "Miá»…n phÃ­ Ä‘áº¿n tá»«" : "å…è´¹åˆ°è¯"}"
+            data-admin-content-word-limit="${escapeAttr(lesson.id)}"
+            value="${freeWordLimit > 0 ? freeWordLimit : ""}"
+          />
+        </td>
+        <td>
           <input
             class="admin-content-limit-input"
             type="number"
             min="0"
             step="1"
             placeholder="${isVi ? "0 = không giới hạn" : "0 = 不限"}"
-            data-admin-content-limit="${escapeAttr(lesson.id)}"
-            value="${freeItemLimit > 0 ? freeItemLimit : ""}"
+            data-admin-content-sentence-limit="${escapeAttr(lesson.id)}"
+            value="${freeSentenceLimit > 0 ? freeSentenceLimit : ""}"
           />
         </td>
       </tr>
@@ -4180,16 +4250,18 @@ function renderAdminContentHskLocksSectionHTML(isVi) {
             <th>${isVi ? "Bài" : "课"}</th>
             <th>ID</th>
             <th>${isVi ? "Tiêu đề" : "标题"}</th>
-            <th>${isVi ? "Miễn phí đến câu" : "免费到第几题"}</th>
+            <th>${isVi ? "Khóa" : "锁定"}</th>
+            <th>${isVi ? "Miễn phí đến từ" : "免费到词"}</th>
+            <th>${isVi ? "Miễn phí đến câu" : "免费到句"}</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || `<tr><td colspan="4" class="admin-empty">${isVi ? "Không có bài học." : "暂无课程。"}</td></tr>`}
+          ${rows || `<tr><td colspan="6" class="admin-empty">${isVi ? "Không có bài học." : "暂无课程。"}</td></tr>`}
         </tbody>
       </table>
     </div>
     <div class="admin-content-actions">
-      <button id="adminLockAllContentBtn" type="button">${isVi ? "Giới hạn tất cả đến câu 8" : "本等级全部限到第 8 题"}</button>
+      <button id="adminLockAllContentBtn" type="button">${isVi ? "Giới hạn tất cả đến từ/câu 8" : "本等级全部限到第 8 项"}</button>
       <button id="adminUnlockAllContentBtn" type="button">${isVi ? "Bỏ giới hạn cấp này" : "取消本等级限制"}</button>
     </div>
   `;
@@ -4213,9 +4285,10 @@ function renderAdminContentHskSectionHTML(isVi) {
 
 function renderAdminContentDailySectionHTML(isVi) {
   const locksMap = state.adminContentDailyLocks || {};
-  const lockedCount = dailyThemes.filter((theme) => locksMap[theme.id]?.lockedForFree === true || Number(locksMap[theme.id]?.freeSentenceLimit || locksMap[theme.id]?.freeItemLimit || 0) > 0).length;
+  const lockedCount = dailyThemes.filter((theme) => locksMap[theme.id]?.lockedForFree === true || Math.max(Number(locksMap[theme.id]?.freeWordLimit || 0), Number(locksMap[theme.id]?.freeSentenceLimit || 0), Number(locksMap[theme.id]?.freeItemLimit || 0)) > 0).length;
   const rows = dailyThemes.map((theme, index) => {
     const lockConfig = locksMap[theme.id] || { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 };
+    const freeWordLimit = Math.max(0, Number(lockConfig.freeWordLimit || lockConfig.freeItemLimit || 0));
     const freeSentenceLimit = Math.max(0, Number(lockConfig.freeSentenceLimit || lockConfig.freeItemLimit || 0));
     const locked = lockConfig.lockedForFree === true;
     const cardMeta = getDailyThemeCardMeta(theme);
@@ -4230,6 +4303,17 @@ function renderAdminContentDailySectionHTML(isVi) {
           </label>
         </td>
         <td>${escapeAttr(isVi ? cardMeta.title : (theme.zh || cardMeta.title))}</td>
+        <td>
+          <input
+            class="admin-content-limit-input"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="${isVi ? "Tá»«" : "è¯"}"
+            value="${freeWordLimit > 0 ? freeWordLimit : ""}"
+            data-admin-content-daily-word-limit="${escapeAttr(theme.id)}"
+          />
+        </td>
         <td>
           <input
             class="admin-content-limit-input"
@@ -4257,11 +4341,12 @@ function renderAdminContentDailySectionHTML(isVi) {
             <th>ID</th>
             <th>${isVi ? "Khóa chủ đề" : "锁定主题"}</th>
             <th>${isVi ? "Chủ đề" : "主题"}</th>
-            <th>${isVi ? "Miễn phí đến câu" : "免费到第几题"}</th>
+            <th>${isVi ? "Miễn phí đến từ" : "免费到词"}</th>
+            <th>${isVi ? "Miễn phí đến câu" : "免费到句"}</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || `<tr><td colspan="5" class="admin-empty">${isVi ? "Không có chủ đề." : "暂无主题。"}</td></tr>`}
+          ${rows || `<tr><td colspan="6" class="admin-empty">${isVi ? "Không có chủ đề." : "暂无主题。"}</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -5406,7 +5491,7 @@ function formatAdminVipDate(value) {
 
 function getAdminVipPlanLabel(planId, fallback = "") {
   const id = String(planId || "").toLowerCase();
-  if (id === "7d") return state.lang === "vi" ? "VIP 7 ngày" : "7天 VIP";
+  if (id === "3d" || id === "7d") return state.lang === "vi" ? "VIP 3 ngày" : "3天 VIP";
   if (id === "30d") return state.lang === "vi" ? "VIP 30 ngày" : "30天 VIP";
   if (id === "90d" || id === "3m") return state.lang === "vi" ? "VIP 3 tháng" : "90天 VIP";
   return fallback || planId || "VIP";
@@ -5421,7 +5506,8 @@ function getAdminVipUserPlanMetric(user, planId) {
     };
   }
   const plans = user.plans || {};
-  const plan = plans[planId] || {};
+  const normalizedPlanId = planId === "7d" ? "3d" : planId;
+  const plan = plans[normalizedPlanId] || (normalizedPlanId === "3d" ? plans["7d"] : null) || {};
   return {
     activations: Number(plan.activations || 0),
     revenue: Number(plan.revenue || 0),
@@ -5472,13 +5558,24 @@ function renderAdminVipPanelHTML() {
   ensureAdminVipRange();
   const isVi = state.lang === "vi";
   const data = state.adminVip || {};
-  const selectedPlan = state.adminVipPlanFilter || "all";
+  const selectedPlan = state.adminVipPlanFilter === "7d" ? "3d" : (state.adminVipPlanFilter || "all");
   const planBreakdown = Array.isArray(data.planBreakdown) ? data.planBreakdown : [];
-  const planIds = Array.from(new Set(["7d", "30d", "90d", ...planBreakdown.map((plan) => String(plan.planId || "").toLowerCase()).filter(Boolean)]));
+  const planBreakdownById = new Map();
+  planBreakdown.forEach((plan) => {
+    const id = String(plan.planId || "").toLowerCase();
+    const normalizedId = id === "7d" ? "3d" : id;
+    if (!normalizedId) return;
+    const current = planBreakdownById.get(normalizedId) || { planId: normalizedId, planName: "", activations: 0, revenue: 0 };
+    current.planName = current.planName || plan.planName || "";
+    current.activations += Number(plan.activations || 0);
+    current.revenue += Number(plan.revenue || 0);
+    planBreakdownById.set(normalizedId, current);
+  });
+  const planIds = Array.from(new Set(["3d", "30d", "90d", ...planBreakdownById.keys()]));
   const planTabs = [
     { id: "all", label: isVi ? "Tất cả" : "全部", activations: data.vipActivations || 0, revenue: data.revenue || 0 },
     ...planIds.map((planId) => {
-      const plan = planBreakdown.find((item) => String(item.planId || "").toLowerCase() === planId) || {};
+      const plan = planBreakdownById.get(planId) || {};
       return {
         id: planId,
         label: getAdminVipPlanLabel(planId, plan.planName),
@@ -6210,6 +6307,7 @@ async function openDailyTopicFromHome(themeId, options = {}) {
   }
   const theme = dailyThemes.find((item) => item.id === themeId);
   if (!theme) return;
+  if (showFastVipPromptIfKnownLocked(isDailyThemeLockedForUser(theme.id))) return;
   await refreshContentLocksIfStale(0, { force: true });
   if (isDailyThemeLockedForUser(theme.id)) {
     promptUpgradeLocked();
@@ -6873,10 +6971,11 @@ function getAdminUserPlan(user) {
   return "FREE";
 }
 
-const ADMIN_USER_PLAN_FILTER_VALUES = new Set(["all", "7d", "30d", "90d"]);
+const ADMIN_USER_PLAN_FILTER_VALUES = new Set(["all", "3d", "30d", "90d"]);
 
 function normalizeAdminUserPlanFilter(value) {
   const normalized = String(value || "all").trim().toLowerCase();
+  if (normalized === "7d") return "3d";
   return ADMIN_USER_PLAN_FILTER_VALUES.has(normalized) ? normalized : "all";
 }
 
@@ -6925,7 +7024,7 @@ function getAdminUserVipPlanFilterValue(user) {
 }
 
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
-  if (plan === "7d") return isVi ? "VIP 7 ngày" : "VIP 7d";
+  if (plan === "3d") return isVi ? "VIP 3 ngày" : "VIP 3d";
   if (plan === "30d") return isVi ? "VIP 30 ngày" : "VIP 30d";
   if (plan === "90d") return isVi ? "VIP 3 tháng" : "VIP 90d";
   if (plan === "PREMIUM") return "VIP";
@@ -6980,7 +7079,7 @@ function confirmAdminVipUpgrade(userId, durationDays) {
     ? (isVi ? "VIP 3 tháng" : "90天 VIP")
     : durationDays === 30
       ? (isVi ? "VIP 30 ngày" : "30天 VIP")
-      : (isVi ? "VIP 7 ngày" : "7天 VIP");
+      : (isVi ? "VIP 3 ngày" : "3天 VIP");
   const target = user?.email || user?.fullName || userId;
   const currentExpiry = user?.premiumUntil ? formatAdminDate(user.premiumUntil) : "";
   const existingVipNote = hasPremium
@@ -7151,7 +7250,7 @@ function buildAdminUserRowsHTML(users, isVi) {
         <td>
           <div class="admin-row-actions">
             ${canManageVip ? `
-            <button class="admin-vip-user" type="button" data-vip-days="7" aria-label="VIP 7 days">VIP 7d</button>
+            <button class="admin-vip-user" type="button" data-vip-days="3" aria-label="VIP 3 days">VIP 3d</button>
             <button class="admin-vip-user" type="button" data-vip-days="30" aria-label="VIP 30 days">VIP 30d</button>
             <button class="admin-vip-user" type="button" data-vip-days="90" aria-label="VIP 90 days">VIP 90d</button>
             <input class="admin-vip-expiry-input" type="date" value="${escapeAttr(expiryInputValue)}" aria-label="${isVi ? "Ngày hết hạn VIP" : "VIP 到期日期"}" />
@@ -7400,7 +7499,7 @@ function renderAdmin() {
             </select>
             <select id="adminUserPlanFilter" class="admin-filter-select" aria-label="${isVi ? "Lọc theo gói" : "按套餐筛选"}">
               <option value="all" ${planFilter === "all" ? "selected" : ""}>${isVi ? "Tất cả" : "全部"}</option>
-              <option value="7d" ${planFilter === "7d" ? "selected" : ""}>${isVi ? "VIP 7 ngày" : "7天 VIP"}</option>
+              <option value="3d" ${planFilter === "3d" ? "selected" : ""}>${isVi ? "VIP 3 ngày" : "3天 VIP"}</option>
               <option value="30d" ${planFilter === "30d" ? "selected" : ""}>${isVi ? "VIP 30 ngày" : "30天 VIP"}</option>
               <option value="90d" ${planFilter === "90d" ? "selected" : ""}>${isVi ? "VIP 3 tháng" : "90天 VIP"}</option>
             </select>
@@ -8546,7 +8645,7 @@ function showUpgradePlansModal() {
       <button class="upgrade-plans-close" id="closeUpgradePlansModal" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
       <div class="upgrade-plans-heading">
         <span class="upgrade-mobile-pill">VIP</span>
-        <h2>${isVi ? "Nâng cấp Gói VIP" : "7天 VIP"}</h2>
+        <h2>${isVi ? "Nâng cấp Gói VIP" : "VIP 套餐"}</h2>
         <h3>${isVi ? "Nâng cấp Gói VIP" : "VIP 套餐"}</h3>
         <p>${isVi ? "Chọn gói VIP phù hợp. Nếu chưa đăng nhập, hệ thống sẽ yêu cầu đăng nhập trước khi thanh toán." : "选择适合的 VIP 套餐。未登录时，点击开通后会先进入登录/注册流程。"}</p>
       </div>
@@ -8586,9 +8685,13 @@ function showUpgradePlansModal() {
   const bindPlanSelection = (plans) => {
     const selectPlan = (planId, planTarget) => {
       if (!planId) return;
+      if (isIntroVipPlanId(planId) && hasUsedIntroVipPlan()) {
+        showToast(isVi ? "Gói VIP 3 ngày chỉ mua được một lần cho mỗi tài khoản." : "3天 VIP 每个账号只能购买一次。");
+        return;
+      }
       setUpgradePlanButtonLoading(planTarget, true);
       closeModal();
-      showTransferInfoModal(planId);
+      showTransferInfoModal(isIntroVipPlanId(planId) ? "3d" : planId);
     };
     modalDiv.addEventListener("click", (event) => {
       const planTarget = event.target.closest("[data-upgrade-plan], [data-upgrade-plan-card]");
@@ -8609,8 +8712,15 @@ function showUpgradePlansModal() {
     if (!grid) return;
     grid.classList.toggle("upgrade-plans-grid--single", plans.length === 1);
     modalDiv.querySelector(".upgrade-mobile-benefits")?.remove();
-    grid.innerHTML = plans.map((plan) => `
-      <article class="upgrade-plan-card ${plan.popular ? "popular" : ""}" data-upgrade-plan-card="${escapeAttr(plan.id)}" role="button" tabindex="0">
+    grid.innerHTML = plans.map((plan) => {
+      const introPlanUsed = isIntroVipPlanId(plan.id) && hasUsedIntroVipPlan();
+      const cardClasses = ["upgrade-plan-card", plan.popular ? "popular" : "", introPlanUsed ? "used-once" : ""].filter(Boolean).join(" ");
+      const actionText = introPlanUsed
+        ? (isVi ? "Đã mua một lần" : "已购买一次")
+        : (isVi ? plan.actionVi : plan.actionZh);
+      return `
+      <article class="${cardClasses}" data-upgrade-plan-card="${escapeAttr(plan.id)}" role="${introPlanUsed ? "group" : "button"}" tabindex="${introPlanUsed ? "-1" : "0"}" aria-disabled="${introPlanUsed ? "true" : "false"}">
+        ${introPlanUsed ? `<div class="upgrade-one-time-badge">${isVi ? "Chỉ mua được một lần" : "仅可购买一次"}</div>` : ""}
         ${plan.discount ? `<div class="upgrade-popular-badge">${escapeAttr(plan.discount)}</div>` : ""}
         <div class="upgrade-plan-kicker">${escapeAttr(isVi ? plan.nameVi : plan.nameZh)}</div>
         <h3>${escapeAttr(isVi ? plan.durationVi : plan.durationZh)}</h3>
@@ -8629,15 +8739,16 @@ function showUpgradePlansModal() {
             </li>
           `).join("")}
         </ul>
-        <button class="upgrade-plan-action" type="button" data-upgrade-plan="${escapeAttr(plan.id)}">
-          ${escapeAttr(isVi ? plan.actionVi : plan.actionZh)}
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <button class="upgrade-plan-action" type="button" data-upgrade-plan="${escapeAttr(plan.id)}" ${introPlanUsed ? "disabled" : ""}>
+          ${escapeAttr(actionText)}
+          ${introPlanUsed ? "" : `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14" />
             <path d="M13 6l6 6-6 6" />
-          </svg>
+          </svg>`}
         </button>
       </article>
-    `).join("");
+    `;
+    }).join("");
 
     const mobileBenefits = document.createElement("section");
     mobileBenefits.className = "upgrade-mobile-benefits";
@@ -8663,40 +8774,55 @@ function showUpgradePlansModal() {
   };
 
   bindPlanSelection();
-  renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
+  const renderFallbackPlans = () => renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
+  const scheduleAfterModalPaint = (callback) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => setTimeout(callback, 0));
+    } else {
+      setTimeout(callback, 0);
+    }
+  };
 
-  loadPaymentPlans()
-    .then((apiPlans) => {
-      const plans = buildDisplayPlans(selectUpgradePlansForDisplay(apiPlans), isVi);
-      if (!plans.length) {
-        const grid = modalDiv.querySelector(".upgrade-plans-grid");
-        if (grid) {
-          renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
+  scheduleAfterModalPaint(() => {
+    if (!document.body.contains(modalDiv)) return;
+    renderFallbackPlans();
+
+    loadPaymentPlans()
+      .then((apiPlans) => {
+        const plans = buildDisplayPlans(selectUpgradePlansForDisplay(apiPlans), isVi);
+        if (!plans.length) {
+          const grid = modalDiv.querySelector(".upgrade-plans-grid");
+          if (grid) renderFallbackPlans();
+          return;
         }
-        return;
-      }
-      renderPlans(plans);
-    })
-    .catch((error) => {
-      console.warn("Payment plans API failed; using local defaults.", error);
-      renderPlans(buildDisplayPlans(selectUpgradePlansForDisplay([]), isVi));
-    });
+        renderPlans(plans);
+      })
+      .catch((error) => {
+        console.warn("Payment plans API failed; using local defaults.", error);
+        renderFallbackPlans();
+      });
+  });
 }
 
 async function showTransferInfoModal(planId) {
   const isVi = state.lang === "vi";
+  planId = isIntroVipPlanId(planId) ? "3d" : planId;
   if (state.activePaymentOrderPlanId) return;
   const existing = document.getElementById("transferInfoModal");
   if (existing) existing.remove();
 
   if (!state.user) {
     state.pendingUpgradePlanId = planId || "";
-    showToast(isVi ? "Vui lòng đăng nhập để đăng ký Gói VIP 7 ngày" : "请先登录以开通 7天 VIP");
+    showToast(isVi ? "Vui lòng đăng nhập để đăng ký Gói VIP" : "请先登录以开通 VIP");
     showModal("login");
     return;
   }
   if (!planId) {
     showToast(isVi ? "Gói thanh toán không hợp lệ" : "套餐无效");
+    return;
+  }
+  if (isIntroVipPlanId(planId) && hasUsedIntroVipPlan()) {
+    showToast(isVi ? "Gói VIP 3 ngày chỉ mua được một lần cho mỗi tài khoản." : "3天 VIP 每个账号只能购买一次。");
     return;
   }
   state.activePaymentOrderPlanId = planId;
@@ -8798,8 +8924,8 @@ async function showTransferInfoModal(planId) {
   const transferCode = order.transferCode;
   const amount = order.amountLabel;
   const normalizedPlanId = String(order.planId || planId || "").toLowerCase();
-  const activationPlanLabel = normalizedPlanId === "7d"
-    ? (isVi ? "7 ngày" : "7天")
+  const activationPlanLabel = isIntroVipPlanId(normalizedPlanId)
+    ? (isVi ? "3 ngày" : "3天")
     : normalizedPlanId === "90d"
       ? (isVi ? "3 tháng" : "90天")
       : (isVi ? "30 ngày" : "30天");
@@ -8961,6 +9087,10 @@ async function showTransferInfoModal(planId) {
         state.user.premiumUntil = statusData.premium.premiumUntil;
         state.user.vipExpiresAt = statusData.premium.premiumUntil;
         state.user.vipPlanId = statusData.order?.planId || order.planId || state.user.vipPlanId || null;
+        if (isIntroVipPlanId(state.user.vipPlanId)) {
+          state.user.vipPlanId = "3d";
+          state.user.vipTrialUsed = true;
+        }
         state.user.vipRemainingDays = calculateVipRemainingDays(state.user.vipExpiresAt);
         saveState();
         await refreshCurrentUserStatus(true);
@@ -15768,6 +15898,7 @@ function bindEvents() {
         event.preventDefault();
 
         const topicId = listeningTopicListBtn.dataset.listeningTopicId || getListeningTopicByEpisodeId(listeningTopicListBtn.dataset.listeningTopicList)?.id || "";
+        if (showFastVipPromptIfKnownLocked(isListeningContentLocked(topicId), showListeningLockedMessage)) return;
         await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId)) {
           showListeningLockedMessage();
@@ -15790,6 +15921,7 @@ function bindEvents() {
         event.preventDefault();
         const lessonId = listeningTopicOpenBtn.dataset.listeningTopicOpen;
         const topicId = getListeningTopicByEpisodeId(lessonId)?.id || "";
+        if (showFastVipPromptIfKnownLocked(isListeningContentLocked(topicId, lessonId), showListeningLockedMessage)) return;
         await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId, lessonId)) {
           showListeningLockedMessage();
@@ -15816,6 +15948,7 @@ function bindEvents() {
         event.preventDefault();
         const lessonId = listeningOpenBtn.dataset.listeningOpen;
         const topicId = getListeningTopicByEpisodeId(lessonId)?.id || "";
+        if (showFastVipPromptIfKnownLocked(isListeningContentLocked(topicId, lessonId), showListeningLockedMessage)) return;
         await refreshContentLocksIfStale(0, { force: true });
         if (isListeningContentLocked(topicId, lessonId)) {
           showListeningLockedMessage();
@@ -16700,12 +16833,12 @@ function bindEvents() {
     if (adminLockAllContentBtn) {
       if ((state.adminContentModule || "hsk") === "daily") {
         dailyThemes.forEach((theme) => {
-          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 8, freeSentenceLimit: 8 });
+          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 8, freeWordLimit: 8, freeSentenceLimit: 8 });
         });
       } else {
         const level = state.adminContentLevel || "HSK2";
         (hskLevels[level] || []).forEach((lesson) => {
-          updateAdminHskLockConfig(lesson.id, { freeItemLimit: 8 });
+          updateAdminHskLockConfig(lesson.id, { freeItemLimit: 8, freeWordLimit: 8, freeSentenceLimit: 8 });
         });
       }
       renderAdmin();
@@ -16716,12 +16849,12 @@ function bindEvents() {
     if (adminUnlockAllContentBtn) {
       if ((state.adminContentModule || "hsk") === "daily") {
         dailyThemes.forEach((theme) => {
-          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 0, freeSentenceLimit: 0 });
+          updateAdminDailyLockConfig(theme.id, { freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 });
         });
       } else {
         const level = state.adminContentLevel || "HSK2";
         (hskLevels[level] || []).forEach((lesson) => {
-          updateAdminHskLockConfig(lesson.id, { lockedForFree: false, freeItemLimit: 0 });
+          updateAdminHskLockConfig(lesson.id, { lockedForFree: false, freeItemLimit: 0, freeWordLimit: 0, freeSentenceLimit: 0 });
         });
       }
       renderAdmin();
@@ -16769,21 +16902,26 @@ function bindEvents() {
       syncAdminHskContentLocksFromDOM();
       syncAdminDailyContentLocksFromDOM();
       const lessons = getHskLessonsCatalog().map((lesson) => {
-        const freeItemLimit = parseAdminFreeItemLimit(state.adminContentLocks[lesson.lessonId]?.freeItemLimit);
+        const hskConfig = state.adminContentLocks[lesson.lessonId] || {};
+        const freeWordLimit = parseAdminFreeItemLimit(hskConfig.freeWordLimit || hskConfig.freeItemLimit);
+        const freeSentenceLimit = parseAdminFreeItemLimit(hskConfig.freeSentenceLimit || hskConfig.freeItemLimit);
         return {
           ...lesson,
-          lockedForFree: state.adminContentLocks[lesson.lessonId]?.lockedForFree === true,
-          freeItemLimit,
+          lockedForFree: hskConfig.lockedForFree === true,
+          freeItemLimit: Math.max(freeWordLimit, freeSentenceLimit),
+          freeWordLimit,
+          freeSentenceLimit,
         };
       });
       const themes = getDailyThemesCatalog().map((theme) => {
         const dailyConfig = state.adminContentDailyLocks[theme.themeId] || {};
+        const freeWordLimit = parseAdminFreeItemLimit(dailyConfig.freeWordLimit || dailyConfig.freeItemLimit);
         const freeSentenceLimit = parseAdminFreeItemLimit(dailyConfig.freeSentenceLimit || dailyConfig.freeItemLimit);
         return {
           ...theme,
           lockedForFree: dailyConfig.lockedForFree === true,
-          freeItemLimit: freeSentenceLimit,
-          freeWordLimit: parseAdminFreeItemLimit(dailyConfig.freeWordLimit),
+          freeItemLimit: Math.max(freeWordLimit, freeSentenceLimit),
+          freeWordLimit,
           freeSentenceLimit,
         };
       });
@@ -17229,6 +17367,7 @@ function bindEvents() {
     const writeCommunicationThemeBtn = event.target.closest(".write-communication-screen [data-theme]");
     if (writeCommunicationThemeBtn) {
       const themeId = writeCommunicationThemeBtn.dataset.theme;
+      if (showFastVipPromptIfKnownLocked(isDailyThemeLockedForUser(themeId))) return;
       await refreshContentLocksIfStale(0, { force: true });
       if (isDailyThemeLockedForUser(themeId)) {
         promptUpgradeLocked();
@@ -17282,6 +17421,7 @@ function bindEvents() {
     if (hskContentTypeBtn) {
       const nextContentType = hskContentTypeBtn.dataset.hskContentType;
       if (state.hskPendingLessonId) {
+        if (showFastVipPromptIfKnownLocked(getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked", promptHskLessonLocked)) return;
         await refreshContentLocksIfStale(0, { force: true });
         if (getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked") {
           promptHskLessonLocked();
@@ -17302,6 +17442,7 @@ function bindEvents() {
     const lessonBtn = event.target.closest("[data-lesson]");
     if (lessonBtn) {
       const lessonId = lessonBtn.dataset.lesson;
+      if (showFastVipPromptIfKnownLocked(isHskLessonLockedForUser(lessonId), promptHskLessonLocked)) return;
       await refreshContentLocksIfStale(0, { force: true });
       if (isHskLessonLockedForUser(lessonId)) {
         promptHskLessonLocked();
@@ -17315,6 +17456,7 @@ function bindEvents() {
     const themeBtn = event.target.closest("[data-theme]");
     if (themeBtn) {
       const themeId = themeBtn.dataset.theme;
+      if (showFastVipPromptIfKnownLocked(isDailyThemeLockedForUser(themeId))) return;
       await refreshContentLocksIfStale(0, { force: true });
       if (isDailyThemeLockedForUser(themeId)) {
         promptUpgradeLocked();
@@ -17401,6 +17543,7 @@ function bindEvents() {
     // Redesigned HSK course click handlers
     const hskContinueBtn = event.target.closest("#hskContinueBtn");
     if (hskContinueBtn) {
+      if (showFastVipPromptIfKnownLocked(hskLevels[state.level].some((lesson) => isHskLessonLockedForUser(lesson.id)) && !hskLevels[state.level].some((lesson) => canAccessHskLesson(lesson.id)), promptHskLessonLocked)) return;
       await refreshContentLocksIfStale(0, { force: true });
       const incompleteLesson = hskLevels[state.level].find((lesson) => !state.completed.has(lesson.id) && canAccessHskLesson(lesson.id))
         || hskLevels[state.level].find((lesson) => canAccessHskLesson(lesson.id));
@@ -17430,6 +17573,7 @@ function bindEvents() {
     // Redesigned daily themes click handlers
     const dailyStartBtn = event.target.closest("#dailyStartBtn");
     if (dailyStartBtn) {
+      if (showFastVipPromptIfKnownLocked(dailyThemes.some((theme) => isDailyThemeLockedForUser(theme.id)) && !dailyThemes.some((theme) => canAccessDailyTheme(theme.id)))) return;
       await refreshContentLocksIfStale(0, { force: true });
       const firstTheme = dailyThemes.find((theme) => !state.completed.has(theme.id) && canAccessDailyTheme(theme.id))
         || dailyThemes.find((theme) => canAccessDailyTheme(theme.id));
@@ -17650,6 +17794,16 @@ function bindEvents() {
         freeItemLimit: event.target.value,
       });
     }
+    if (event.target.matches?.("[data-admin-content-word-limit]")) {
+      updateAdminHskLockConfig(event.target.dataset.adminContentWordLimit, {
+        freeWordLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-sentence-limit]")) {
+      updateAdminHskLockConfig(event.target.dataset.adminContentSentenceLimit, {
+        freeSentenceLimit: event.target.value,
+      });
+    }
     if (event.target.matches?.("[data-admin-content-lock]")) {
       updateAdminHskLockConfig(event.target.dataset.adminContentLock, {
         lockedForFree: event.target.checked,
@@ -17658,6 +17812,11 @@ function bindEvents() {
     if (event.target.matches?.("[data-admin-content-daily-limit]")) {
       updateAdminDailyLockConfig(event.target.dataset.adminContentDailyLimit, {
         freeItemLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-daily-word-limit]")) {
+      updateAdminDailyLockConfig(event.target.dataset.adminContentDailyWordLimit, {
+        freeWordLimit: event.target.value,
       });
     }
     if (event.target.matches?.("[data-admin-content-daily-sentence-limit]")) {
@@ -17706,9 +17865,24 @@ function bindEvents() {
         freeItemLimit: event.target.value,
       });
     }
+    if (event.target.matches?.("[data-admin-content-word-limit]")) {
+      updateAdminHskLockConfig(event.target.dataset.adminContentWordLimit, {
+        freeWordLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-sentence-limit]")) {
+      updateAdminHskLockConfig(event.target.dataset.adminContentSentenceLimit, {
+        freeSentenceLimit: event.target.value,
+      });
+    }
     if (event.target.matches?.("[data-admin-content-daily-limit]")) {
       updateAdminDailyLockConfig(event.target.dataset.adminContentDailyLimit, {
         freeItemLimit: event.target.value,
+      });
+    }
+    if (event.target.matches?.("[data-admin-content-daily-word-limit]")) {
+      updateAdminDailyLockConfig(event.target.dataset.adminContentDailyWordLimit, {
+        freeWordLimit: event.target.value,
       });
     }
     if (event.target.matches?.("[data-admin-hsk-cover-file]")) {

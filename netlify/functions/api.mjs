@@ -3,6 +3,7 @@ import net from "node:net";
 import tls from "node:tls";
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import pg from "pg";
 
 const { Pool } = pg;
@@ -26,7 +27,7 @@ function applyPlanDuration(base, plan) {
 }
 
 const DEFAULT_PAYMENT_PLANS = [
-  { id: "7d", months: 7, durationUnit: "days", amount: 29000, nameVi: "Gói VIP 7 ngày", nameZh: "7天 VIP" },
+  { id: "3d", months: 3, durationUnit: "days", amount: 29000, nameVi: "Gói VIP 3 ngày", nameZh: "3天 VIP" },
   { id: "30d", months: 30, durationUnit: "days", amount: 129000, nameVi: "Gói VIP 1 tháng", nameZh: "1个月 VIP" },
   { id: "90d", months: 90, durationUnit: "days", amount: 329000, nameVi: "Gói VIP 3 tháng", nameZh: "3个月 VIP" },
 ];
@@ -830,6 +831,7 @@ async function ensureSchema() {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;");
@@ -886,10 +888,68 @@ async function ensureSchema() {
       await db.query(
         `INSERT INTO payment_plans (id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7)
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (id) DO UPDATE SET
+           months = EXCLUDED.months,
+           duration_unit = EXCLUDED.duration_unit,
+           amount = EXCLUDED.amount,
+           name_vi = EXCLUDED.name_vi,
+           name_zh = EXCLUDED.name_zh,
+           is_active = EXCLUDED.is_active,
+           sort_order = EXCLUDED.sort_order,
+           updated_at = NOW()`,
         [plan.id, plan.months, plan.durationUnit, plan.amount, plan.nameVi, plan.nameZh, index + 1],
       );
     }
+    await db.query(`
+      UPDATE payment_plans
+      SET is_active = FALSE,
+          updated_at = NOW()
+      WHERE id = '7d';
+    `);
+    await db.query(`
+      UPDATE users
+      SET vip_trial_used = TRUE,
+          vip_plan_id = CASE WHEN lower(coalesce(vip_plan_id, '')) = '7d' THEN '3d' ELSE vip_plan_id END,
+          updated_at = NOW()
+      WHERE EXISTS (
+        SELECT 1
+        FROM payment_orders
+        WHERE payment_orders.user_id = users.id
+          AND payment_orders.status = 'paid'
+          AND lower(payment_orders.plan_id) IN ('3d', '7d')
+      );
+    `);
+    await db.query(`
+      WITH first_trial AS (
+        SELECT DISTINCT ON (user_id)
+               user_id,
+               paid_at
+        FROM payment_orders
+        WHERE status = 'paid'
+          AND paid_at IS NOT NULL
+          AND lower(plan_id) IN ('3d', '7d')
+        ORDER BY user_id, paid_at ASC
+      )
+      UPDATE users
+      SET premium_until = first_trial.paid_at + interval '3 days',
+          updated_at = NOW()
+      FROM first_trial
+      WHERE users.id = first_trial.user_id
+        AND lower(coalesce(users.vip_plan_id, '')) IN ('3d', '7d')
+        AND users.premium_until IS NOT NULL
+        AND users.premium_until > first_trial.paid_at + interval '3 days';
+    `);
+    await db.query(`
+      UPDATE users
+      SET vip_plan_id = '3d',
+          updated_at = NOW()
+      WHERE lower(coalesce(vip_plan_id, '')) = '7d';
+    `);
+    await db.query(`
+      UPDATE payment_orders
+      SET plan_id = '3d'
+      WHERE lower(plan_id) = '7d';
+    `);
     await db.query(`
       CREATE TABLE IF NOT EXISTS hsk_lesson_locks (
         lesson_id TEXT PRIMARY KEY,
@@ -1016,6 +1076,7 @@ function publicUser(row) {
     vipPlanId,
     vipPlanName: vipPlanName(vipPlanId, "vi"),
     vipPlanNameZh: vipPlanName(vipPlanId, "zh"),
+    vipTrialUsed: Boolean(row.vip_trial_used),
     vipStatus: isPremium ? "active" : "inactive",
     vipExpiresAt: row.premium_until || null,
     vipRemainingDays: isPremium ? vipRemainingDays(premiumUntil) : 0,
@@ -1038,14 +1099,14 @@ function vipRemainingDays(premiumUntil) {
 
 function normalizeVipPlanId(planId) {
   const normalized = String(planId || "").trim().toLowerCase();
-  if (normalized === "7d") return "7d";
+  if (normalized === "3d" || normalized === "7d") return "3d";
   if (normalized === "30d") return "30d";
   if (normalized === "90d" || normalized === "3m") return "90d";
   return normalized || null;
 }
 
 function vipPlanName(planId, lang) {
-  if (planId === "7d") return lang === "zh" ? "7天VIP" : "VIP 7 ngày";
+  if (planId === "3d") return lang === "zh" ? "3天VIP" : "VIP 3 ngày";
   if (planId === "30d") return lang === "zh" ? "30天VIP" : "VIP 30 ngày";
   if (planId === "90d") return lang === "zh" ? "90天VIP" : "VIP 3 tháng";
   return null;
@@ -1053,6 +1114,7 @@ function vipPlanName(planId, lang) {
 
 function normalizePaymentPlanId(planId) {
   const normalized = String(planId || "").trim().toLowerCase();
+  if (normalized === "7d") return "3d";
   if (normalized === "1m") return "30d";
   if (normalized === "3m") return "90d";
   return normalized;
@@ -1334,7 +1396,7 @@ async function register(body) {
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, ref, src)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, hashPassword(password), ref, src],
     );
     return json({ user: publicUser(result.rows[0]) });
@@ -1356,7 +1418,7 @@ async function login(body) {
   const updated = await query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [user.id],
   );
   return json({ user: publicUser(updated.rows[0]) });
@@ -1406,7 +1468,7 @@ async function updateOwnProfile(req, id, body) {
            email_verification_expires_at = CASE WHEN email = $2 THEN email_verification_expires_at ELSE NULL END,
            updated_at = NOW()
        WHERE id = $6
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [fullName, email, currentLevel, avatarUrl || null, dailyReminderEnabled, id],
     );
     if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1427,7 +1489,7 @@ async function updateOwnAvatar(req, id, body) {
     `UPDATE users
      SET avatar_url = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [avatarUrl, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1474,7 +1536,7 @@ async function updateOwnReminderSettings(req, id, body) {
     `UPDATE users
      SET daily_reminder_enabled = $1, updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [enabled, id],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
@@ -1583,7 +1645,7 @@ async function confirmEmailVerificationCode(req, id, body) {
          email_verification_expires_at = NULL,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [id],
   );
   return json({ ok: true, user: publicUser(updated.rows[0]) });
@@ -1611,7 +1673,7 @@ async function listUsers(req) {
   await assertAdminOrStaff(req);
   await recalculateCtvVipCounts();
   const result = await query(
-    `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+    `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
      FROM users
      ORDER BY created_at DESC`,
   );
@@ -1628,9 +1690,10 @@ function calculatePremiumUntil(plan, durationDays) {
 
 function vipPlanIdFromDuration(planId, durationDays) {
   const normalized = String(planId || "").trim().toLowerCase();
-  if (normalized === "7d" || normalized === "30d" || normalized === "90d") return normalized;
+  if (normalized === "3d" || normalized === "7d") return "3d";
+  if (normalized === "30d" || normalized === "90d") return normalized;
   if (normalized === "3m") return "90d";
-  if (durationDays === 7) return "7d";
+  if (durationDays === 3 || durationDays === 7) return "3d";
   if (durationDays === 30) return "30d";
   if (durationDays === 90) return "90d";
   return null;
@@ -1658,10 +1721,10 @@ async function createUser(req, body) {
 
   try {
     const result = await query(
-      `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil, vipPlanId],
+      `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id, vip_trial_used)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password), role, isActive, currentLevel, isPremium, premiumUntil, vipPlanId, vipPlanId === "3d"],
     );
     return json({ user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -1745,9 +1808,13 @@ async function updateUser(req, id, body) {
            WHEN $7::boolean OR $11::boolean THEN COALESCE($9, vip_plan_id)
            ELSE vip_plan_id
          END,
+         vip_trial_used = CASE
+           WHEN ($7::boolean OR $11::boolean) AND lower(coalesce($9, '')) IN ('3d', '7d') THEN TRUE
+           ELSE vip_trial_used
+         END,
          updated_at = NOW()
      WHERE id = $6
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [
       fullName,
       email,
@@ -1800,7 +1867,7 @@ async function updateUserRole(req, id, body) {
          ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
          updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [nextRole, id, roleChangeRef.shouldSetRef, roleChangeRef.ref],
   );
   return json({ user: publicUser(result.rows[0]) });
@@ -1833,7 +1900,7 @@ async function updateUserRef(req, id, body) {
      SET ref = $1,
          updated_at = NOW()
      WHERE id = $2
-     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
     [ref, id],
   );
   return json({ user: publicUser(result.rows[0]) });
@@ -2102,16 +2169,25 @@ async function deleteAdminPlan(req, id) {
   return json({ ok: true });
 }
 
-function mapHskLessonLock(row) {
+function resolveWordSentenceLimits(row) {
   const legacyLimit = Math.max(0, Number(row.free_item_limit || 0));
+  const explicitWordLimit = Math.max(0, Number(row.free_word_limit || 0));
+  const explicitSentenceLimit = Math.max(0, Number(row.free_sentence_limit || 0));
+  const hasSpecificLimits = explicitWordLimit > 0 || explicitSentenceLimit > 0;
+  return {
+    freeItemLimit: legacyLimit,
+    freeWordLimit: hasSpecificLimits ? explicitWordLimit : legacyLimit,
+    freeSentenceLimit: hasSpecificLimits ? explicitSentenceLimit : legacyLimit,
+  };
+}
+
+function mapHskLessonLock(row) {
   return {
     lessonId: row.lesson_id,
     level: row.level,
     lessonNo: Number(row.lesson_no),
     titleVi: row.title_vi,
-    freeItemLimit: legacyLimit,
-    freeWordLimit: Math.max(0, Number(row.free_word_limit || legacyLimit)),
-    freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || legacyLimit)),
+    ...resolveWordSentenceLimits(row),
     lockedForFree: row.locked_for_free,
     updatedAt: row.updated_at,
   };
@@ -2127,9 +2203,7 @@ async function getPublicHskLocks() {
   return json({
     lessonLocks: result.rows.map((row) => ({
       lessonId: row.lesson_id,
-      freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
-      freeWordLimit: Math.max(0, Number(row.free_word_limit || row.free_item_limit || 0)),
-      freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || row.free_item_limit || 0)),
+      ...resolveWordSentenceLimits(row),
       lockedForFree: row.locked_for_free === true,
     })),
   });
@@ -2260,14 +2334,11 @@ async function saveAdminHskLevelCovers(req, body) {
 }
 
 function mapDailyThemeLock(row) {
-  const legacyLimit = Math.max(0, Number(row.free_item_limit || 0));
   return {
     themeId: row.theme_id,
     titleVi: row.title_vi,
     sortOrder: Number(row.sort_order),
-    freeItemLimit: legacyLimit,
-    freeWordLimit: Math.max(0, Number(row.free_word_limit || legacyLimit)),
-    freeSentenceLimit: Math.max(0, Number(row.free_sentence_limit || legacyLimit)),
+    ...resolveWordSentenceLimits(row),
     lockedForFree: row.locked_for_free,
     updatedAt: row.updated_at,
   };
@@ -2275,20 +2346,32 @@ function mapDailyThemeLock(row) {
 
 async function getPublicDailyLocks() {
   const result = await query(
-    `SELECT theme_id, free_item_limit, locked_for_free
+    `SELECT theme_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free
      FROM daily_theme_locks
-     WHERE locked_for_free = TRUE OR free_item_limit > 0
+     WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0
      ORDER BY theme_id ASC`,
   );
   const themeLocks = result.rows.map((row) => ({
     themeId: row.theme_id,
-    freeItemLimit: Math.max(0, Number(row.free_item_limit || 0)),
+    ...resolveWordSentenceLimits(row),
     lockedForFree: row.locked_for_free === true,
   }));
-  const lockedThemeIds = themeLocks
+  const mergedThemeLocks = mergeDailyLocksWithStaticCatalog(themeLocks.map((row) => ({
+    theme_id: row.themeId,
+    free_item_limit: row.freeItemLimit,
+    free_word_limit: row.freeWordLimit,
+    free_sentence_limit: row.freeSentenceLimit,
+    locked_for_free: row.lockedForFree,
+  }))).filter((item) => item.lockedForFree || Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0) > 0)
+    .map((item) => ({
+      themeId: item.themeId,
+      freeItemLimit: Math.max(0, Number(item.freeItemLimit || item.freeSentenceLimit || item.freeWordLimit || 0)),
+      lockedForFree: item.lockedForFree === true,
+    }));
+  const lockedThemeIds = mergedThemeLocks
     .filter((item) => item.lockedForFree && Number(item.freeItemLimit || 0) <= 0)
     .map((item) => item.themeId);
-  return json({ lockedThemeIds, themeLocks });
+  return json({ lockedThemeIds, themeLocks: mergedThemeLocks });
 }
 
 async function getPublicLearningAccessRules() {
@@ -2298,19 +2381,18 @@ async function getPublicLearningAccessRules() {
     query(`SELECT topic_id, locked_for_free FROM listening_topic_locks ORDER BY sort_order ASC, topic_id ASC`),
     query(`SELECT lesson_id, topic_id, locked_for_free FROM listening_lesson_locks ORDER BY sort_order ASC, lesson_id ASC`),
   ]);
-  const normalizeLimit = (primary, legacy) => Math.max(0, Number(primary || legacy || 0));
   return json({
     hskLessonLocks: hskResult.rows.map((row) => ({
       lessonId: row.lesson_id,
       lockedForFree: row.locked_for_free === true,
-      freeWordLimit: normalizeLimit(row.free_word_limit, row.free_item_limit),
-      freeSentenceLimit: normalizeLimit(row.free_sentence_limit, row.free_item_limit),
+      freeWordLimit: resolveWordSentenceLimits(row).freeWordLimit,
+      freeSentenceLimit: resolveWordSentenceLimits(row).freeSentenceLimit,
     })),
-    dailyThemeLocks: dailyResult.rows.map((row) => ({
-      themeId: row.theme_id,
-      lockedForFree: row.locked_for_free === true,
-      freeWordLimit: normalizeLimit(row.free_word_limit, row.free_item_limit),
-      freeSentenceLimit: normalizeLimit(row.free_sentence_limit, row.free_item_limit),
+    dailyThemeLocks: mergeDailyLocksWithStaticCatalog(dailyResult.rows).map((row) => ({
+      themeId: row.themeId,
+      lockedForFree: row.lockedForFree === true,
+      freeWordLimit: Math.max(0, Number(row.freeWordLimit || 0)),
+      freeSentenceLimit: Math.max(0, Number(row.freeSentenceLimit || 0)),
     })),
     listeningTopicLocks: topicResult.rows.map((row) => ({
       topicId: row.topic_id,
@@ -2423,6 +2505,123 @@ function mergeListeningLocksWithStaticCatalog(topicRows = [], lessonRows = []) {
   };
 }
 
+let staticDailyThemeCatalogCache = null;
+let dailyThemeLegacyAliasCache = null;
+
+function normalizeComparableTitle(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function dailyThemeTitle(theme) {
+  return String(theme?.vi || theme?.lesson_title_vi || theme?.title_vi || theme?.title || theme?.zh || theme?.lesson_title_cn || "").trim();
+}
+
+function loadHighFrequencyTopicsFromPublicScript(fileName, seed = []) {
+  const filePath = path.join(process.cwd(), "public", fileName);
+  if (!fs.existsSync(filePath)) return [];
+
+  try {
+    const context = {
+      highFrequencyTopics: [...seed],
+      console,
+    };
+    context.globalThis = context;
+    vm.createContext(context);
+    vm.runInContext(fs.readFileSync(filePath, "utf8"), context, { filename: filePath });
+    return Array.isArray(context.highFrequencyTopics) ? context.highFrequencyTopics : [];
+  } catch {
+    return [];
+  }
+}
+
+function listStaticDailyThemeCatalog() {
+  if (staticDailyThemeCatalogCache) return staticDailyThemeCatalogCache;
+
+  let themes = loadHighFrequencyTopicsFromPublicScript("lesson-high-frequency-v1-27-topics.js");
+  if (!themes.length) {
+    themes = loadHighFrequencyTopicsFromPublicScript("lesson-high-frequency-topics.js");
+    themes = loadHighFrequencyTopicsFromPublicScript("lesson-high-frequency-topic-unit.js", themes);
+  }
+
+  const catalog = new Map();
+  themes.forEach((theme, index) => {
+    const themeId = String(theme?.id || "").trim();
+    if (!themeId || catalog.has(themeId)) return;
+    catalog.set(themeId, {
+      themeId,
+      titleVi: dailyThemeTitle(theme),
+      sortOrder: index + 1,
+      freeItemLimit: 0,
+      freeWordLimit: 0,
+      freeSentenceLimit: 0,
+      lockedForFree: false,
+    });
+  });
+
+  staticDailyThemeCatalogCache = [...catalog.values()]
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.themeId.localeCompare(b.themeId));
+  return staticDailyThemeCatalogCache;
+}
+
+function getDailyThemeLegacyAliasMap() {
+  if (dailyThemeLegacyAliasCache) return dailyThemeLegacyAliasCache;
+
+  const aliasMap = new Map();
+  const modern = listStaticDailyThemeCatalog();
+  const legacyThemes = loadHighFrequencyTopicsFromPublicScript("lesson-high-frequency-topics.js");
+  const modernByTitle = new Map(modern.map((theme) => [normalizeComparableTitle(theme.titleVi), theme.themeId]));
+
+  legacyThemes.forEach((theme, index) => {
+    const legacyId = String(theme?.id || "").trim();
+    if (!legacyId || modern.some((item) => item.themeId === legacyId)) return;
+    const byTitle = modernByTitle.get(normalizeComparableTitle(dailyThemeTitle(theme)));
+    const byTopicUnitOrder = modern.find((item) => item.themeId === `hf-topic-unit-bai${String(index + 1).padStart(2, "0")}`);
+    const targetId = byTitle || byTopicUnitOrder?.themeId || "";
+    if (targetId) aliasMap.set(legacyId, targetId);
+  });
+
+  dailyThemeLegacyAliasCache = aliasMap;
+  return aliasMap;
+}
+
+function mergeDailyLocksWithStaticCatalog(rows = []) {
+  const staticCatalog = listStaticDailyThemeCatalog();
+  const merged = new Map();
+  const priorities = new Map();
+  const aliases = getDailyThemeLegacyAliasMap();
+
+  for (const item of staticCatalog) {
+    merged.set(item.themeId, item);
+    priorities.set(item.themeId, 0);
+  }
+
+  for (const row of rows) {
+    const sourceId = String(row.theme_id || "").trim();
+    if (!sourceId) continue;
+    const targetId = merged.has(sourceId) ? sourceId : aliases.get(sourceId);
+    if (!targetId || !merged.has(targetId)) continue;
+
+    const priority = targetId === sourceId ? 2 : 1;
+    if ((priorities.get(targetId) || 0) > priority) continue;
+
+    const base = merged.get(targetId);
+    const limits = resolveWordSentenceLimits(row);
+    merged.set(targetId, {
+      ...base,
+      ...limits,
+      lockedForFree: row.locked_for_free === true,
+      updatedAt: row.updated_at,
+    });
+    priorities.set(targetId, priority);
+  }
+
+  return [...merged.values()].sort((a, b) => a.sortOrder - b.sortOrder || a.themeId.localeCompare(b.themeId));
+}
+
 async function listAdminListeningLocks(req) {
   await assertAdmin(req);
   const [topics, lessons] = await Promise.all([
@@ -2477,7 +2676,7 @@ async function listAdminDailyLocks(req) {
      FROM daily_theme_locks
      ORDER BY sort_order ASC, theme_id ASC`,
   );
-  return json({ locks: result.rows.map(mapDailyThemeLock) });
+  return json({ locks: mergeDailyLocksWithStaticCatalog(result.rows) });
 }
 
 async function saveAdminDailyLocks(req, body) {
@@ -2524,7 +2723,7 @@ async function saveAdminDailyLocks(req, body) {
      FROM daily_theme_locks
      ORDER BY sort_order ASC, theme_id ASC`,
   );
-  return json({ locks: result.rows.map(mapDailyThemeLock) });
+  return json({ locks: mergeDailyLocksWithStaticCatalog(result.rows) });
 }
 
 function buildQrImageUrl(account, bank, amount, description) {
@@ -2536,6 +2735,25 @@ function buildQrImageUrl(account, bank, amount, description) {
     template: "compact",
   });
   return `https://qr.sepay.vn/img?${params.toString()}`;
+}
+
+function isIntroVipPlanId(planId) {
+  const id = String(planId || "").trim().toLowerCase();
+  return id === "3d" || id === "7d";
+}
+
+async function hasUsedIntroVipPlan(userId, dbQuery = query, excludeOrderId = null) {
+  const result = await dbQuery(
+    `SELECT 1
+     FROM payment_orders
+     WHERE user_id = $1
+       AND status = 'paid'
+       AND lower(plan_id) IN ('3d', '7d')
+       AND ($2::uuid IS NULL OR id <> $2::uuid)
+     LIMIT 1`,
+    [userId, excludeOrderId],
+  );
+  return Boolean(result.rows[0]);
 }
 
 async function createOrder(body) {
@@ -2550,11 +2768,14 @@ async function createOrder(body) {
     throw apiError({ error: "Chưa cấu hình tài khoản ngân hàng SePay trên server." }, 503);
   }
 
-  const userResult = await query("SELECT id, email, is_active FROM users WHERE id = $1", [userId]);
+  const userResult = await query("SELECT id, email, is_active, vip_trial_used FROM users WHERE id = $1", [userId]);
   const user = userResult.rows[0];
   if (!user) throw apiError({ error: "Không tìm thấy tài khoản." }, 404);
   if (String(user.email).toLowerCase() !== email) throw apiError({ error: "Thông tin tài khoản không khớp." }, 403);
   if (!user.is_active) throw apiError({ error: "Tài khoản đã bị khóa." }, 403);
+  if (isIntroVipPlanId(plan.id) && (user.vip_trial_used || await hasUsedIntroVipPlan(userId))) {
+    throw apiError({ error: "Gói VIP 3 ngày chỉ mua được một lần cho mỗi tài khoản." }, 409);
+  }
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const transferCode = `${config.paymentPrefix}${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -2703,14 +2924,38 @@ async function activateOrder(order, sepayId, paidAt = new Date()) {
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");
-    const userResult = await client.query("SELECT premium_until FROM users WHERE id = $1 FOR UPDATE", [order.user_id]);
-    const now = new Date();
-    const currentEnd = userResult.rows[0]?.premium_until ? new Date(userResult.rows[0].premium_until) : null;
-    const premiumUntil = applyPlanDuration(currentEnd && currentEnd > now ? currentEnd : now, plan);
+    const orderResult = await client.query("SELECT * FROM payment_orders WHERE id = $1 FOR UPDATE", [order.id]);
+    const lockedOrder = orderResult.rows[0];
+    if (!lockedOrder || lockedOrder.status !== "pending") {
+      await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = COALESCE($2, order_id) WHERE sepay_id = $1", [sepayId, order.id]);
+      await client.query("COMMIT");
+      return;
+    }
+    const userResult = await client.query("SELECT premium_until, vip_trial_used FROM users WHERE id = $1 FOR UPDATE", [lockedOrder.user_id]);
+    const user = userResult.rows[0];
+    const isIntroVipPlan = isIntroVipPlanId(plan.id);
     const paidAtIso = Number.isNaN(paidAt.getTime()) ? new Date().toISOString() : paidAt.toISOString();
-    await client.query("UPDATE payment_orders SET status = 'paid', paid_at = $2 WHERE id = $1 AND status = 'pending'", [order.id, paidAtIso]);
-    await client.query("UPDATE users SET is_premium = TRUE, premium_until = $2, vip_plan_id = $3, updated_at = NOW() WHERE id = $1", [order.user_id, premiumUntil.toISOString(), order.plan_id]);
-    await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, order.id]);
+    if (isIntroVipPlan && (user?.vip_trial_used || await hasUsedIntroVipPlan(lockedOrder.user_id, client.query.bind(client), lockedOrder.id))) {
+      await client.query("UPDATE payment_orders SET status = 'duplicate', paid_at = $2 WHERE id = $1 AND status = 'pending'", [lockedOrder.id, paidAtIso]);
+      await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
+      await client.query("COMMIT");
+      return;
+    }
+    const now = new Date();
+    const currentEnd = user?.premium_until ? new Date(user.premium_until) : null;
+    const premiumUntil = applyPlanDuration(currentEnd && currentEnd > now ? currentEnd : now, plan);
+    await client.query("UPDATE payment_orders SET status = 'paid', paid_at = $2, plan_id = $3 WHERE id = $1 AND status = 'pending'", [lockedOrder.id, paidAtIso, plan.id]);
+    await client.query(
+      `UPDATE users
+       SET is_premium = TRUE,
+           premium_until = $2,
+           vip_plan_id = $3,
+           vip_trial_used = CASE WHEN $4::boolean THEN TRUE ELSE vip_trial_used END,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [lockedOrder.user_id, premiumUntil.toISOString(), plan.id, isIntroVipPlan],
+    );
+    await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

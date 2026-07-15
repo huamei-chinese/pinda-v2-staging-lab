@@ -33,7 +33,7 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=admin-staff-permissions-20260715/);
+  assert.match(indexHtmlSource, /app\.js\?v=vip-3day-once-20260715/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
@@ -71,8 +71,18 @@ test("client content-lock API calls bypass browser cache", () => {
 
 test("client refreshes locks before opening locked-sensitive content", () => {
   assert.match(appSource, /async function refreshContentLocksIfStale/);
+  assert.match(appSource, /function showFastVipPromptIfKnownLocked\(isLocked, promptFn = promptUpgradeLocked\)/);
+  assert.match(appSource, /if \(showFastVipPromptIfKnownLocked\(isHskLessonLockedForUser\(lessonId\), promptHskLessonLocked\)\) return;\s*await refreshContentLocksIfStale\(0, \{ force: true \}\);/);
+  assert.match(appSource, /if \(showFastVipPromptIfKnownLocked\(isDailyThemeLockedForUser\(themeId\)\)\) return;\s*await refreshContentLocksIfStale\(0, \{ force: true \}\);/);
+  assert.match(appSource, /if \(showFastVipPromptIfKnownLocked\(isListeningContentLocked\(topicId, lessonId\), showListeningLockedMessage\)\) return;\s*await refreshContentLocksIfStale\(0, \{ force: true \}\);/);
   assert.match(appSource, /await refreshContentLocksIfStale\(0, \{ force: true \}\);\s*if \(isHskLessonLockedForUser\(lessonId\)\)/);
   assert.match(appSource, /await refreshContentLocksIfStale\(0, \{ force: true \}\);\s*if \(isDailyThemeLockedForUser\(themeId\)\)/);
   assert.match(appSource, /await refreshContentLocksIfStale\(0, \{ force: true \}\);\s*if \(isListeningContentLocked\(topicId, lessonId\)\)/);
   assert.match(appSource, /accessData\.hskLessonLocks/);
+});
+
+test("VIP upgrade modal paints before rendering plan cards", () => {
+  assert.match(appSource, /document\.body\.appendChild\(modalDiv\);/);
+  assert.match(appSource, /const scheduleAfterModalPaint = \(callback\) => \{[\s\S]*requestAnimationFrame\(\(\) => setTimeout\(callback, 0\)\);/);
+  assert.match(appSource, /scheduleAfterModalPaint\(\(\) => \{[\s\S]*renderFallbackPlans\(\);[\s\S]*loadPaymentPlans\(\)/);
 });

@@ -96,22 +96,23 @@ test("Netlify SePay activation persists the selected VIP plan id", () => {
   assert.match(netlifyApiSource, /function parseSepayTransactionDate\(value\)/);
   assert.match(netlifyApiSource, /parseSepayTransactionDate\(payload\.transactionDate\)/);
   assert.match(netlifyApiSource, /paid_at = \$2/);
-  assert.match(netlifyApiSource, /\{ id: "7d", months: 7, durationUnit: "days", amount: 29000/);
+  assert.match(netlifyApiSource, /\{ id: "3d", months: 3, durationUnit: "days", amount: 29000/);
   assert.match(netlifyApiSource, /\{ id: "30d", months: 30, durationUnit: "days", amount: 129000/);
   assert.match(netlifyApiSource, /\{ id: "90d", months: 90, durationUnit: "days", amount: 329000/);
   assert.match(netlifyApiSource, /INSERT INTO payment_plans \(id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order\)/);
   assert.match(netlifyApiSource, /const vipPlanId = isPremium \? normalizeVipPlanId\(row\.vip_plan_id\) : null/);
   assert.match(netlifyApiSource, /vipPlanId,/);
+  assert.match(netlifyApiSource, /vipTrialUsed: Boolean\(row\.vip_trial_used\)/);
   assert.match(netlifyApiSource, /vipRemainingDays: isPremium \? vipRemainingDays\(premiumUntil\) : 0/);
   assert.match(netlifyApiSource, /async function getCurrentUserStatus\(req, id\)/);
   assert.match(netlifyApiSource, /ownStatusMatch && req\.method === "GET"[\s\S]*getCurrentUserStatus/);
   assert.match(
     netlifyApiSource,
-    /UPDATE users SET is_premium = TRUE, premium_until = \$2, vip_plan_id = \$3, updated_at = NOW\(\) WHERE id = \$1/,
+    /UPDATE users[\s\S]*vip_trial_used = CASE WHEN \$4::boolean THEN TRUE ELSE vip_trial_used END/,
   );
   assert.match(
     netlifyApiSource,
-    /\[order\.user_id, premiumUntil\.toISOString\(\), order\.plan_id\]/,
+    /\[lockedOrder\.user_id, premiumUntil\.toISOString\(\), plan\.id, isIntroVipPlan\]/,
   );
 });
 

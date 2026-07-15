@@ -14,12 +14,12 @@ const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "
 const packageJson = require("../package.json");
 const railwayJson = require("../railway.json");
 
-test("public payment plans expose only the approved 7d, 30d, and 90d plans", async () => {
+test("public payment plans expose only the approved 3d, 30d, and 90d plans", async () => {
   const db = {
     async query() {
       return {
         rows: [
-          { id: "7d", months: 7, duration_unit: "days", amount: 29000, name_vi: "Gói VIP 7 ngày", name_zh: "7天 VIP", sort_order: 1 },
+          { id: "3d", months: 3, duration_unit: "days", amount: 29000, name_vi: "Gói VIP 3 ngày", name_zh: "3天 VIP", sort_order: 1 },
           { id: "30d", months: 30, duration_unit: "days", amount: 129000, name_vi: "Gói VIP 1 tháng", name_zh: "1个月 VIP", sort_order: 2 },
           { id: "90d", months: 90, duration_unit: "days", amount: 329000, name_vi: "Gói VIP 3 tháng", name_zh: "3个月 VIP", sort_order: 3 },
           { id: "1m", months: 1, duration_unit: "months", amount: 29000, name_vi: "1 Tháng", name_zh: "1 个月", sort_order: 3 },
@@ -31,8 +31,9 @@ test("public payment plans expose only the approved 7d, 30d, and 90d plans", asy
 
   const plans = await service.listActivePlans();
 
-  assert.deepEqual(plans.map((plan) => plan.id), ["7d", "30d", "90d"]);
+  assert.deepEqual(plans.map((plan) => plan.id), ["3d", "30d", "90d"]);
   assert.equal(plans[0].amount, 29000);
+  assert.equal(plans[0].months, 3);
   assert.equal(plans[1].amount, 129000);
   assert.equal(plans[2].amount, 329000);
 });

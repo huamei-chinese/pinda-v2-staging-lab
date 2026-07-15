@@ -73,6 +73,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         is_premium BOOLEAN NOT NULL DEFAULT FALSE,
         premium_until TIMESTAMPTZ,
         vip_plan_id TEXT,
+        vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
@@ -100,6 +101,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE;
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
@@ -144,6 +148,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         is_premium BOOLEAN NOT NULL DEFAULT FALSE,
         premium_until TIMESTAMPTZ,
         vip_plan_id TEXT,
+        vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
@@ -174,6 +179,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE;
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
@@ -252,13 +260,71 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       INSERT INTO payment_plans (id, months, duration_unit, amount, name_vi, name_zh, is_active, sort_order)
       VALUES
-        ('7d', 7, 'days', 29000, 'Gói VIP 7 ngày', '7天 VIP', TRUE, 1),
+        ('3d', 3, 'days', 29000, 'Gói VIP 3 ngày', '3天 VIP', TRUE, 1),
         ('30d', 30, 'days', 129000, 'Gói VIP 1 tháng', '1个月 VIP', TRUE, 2),
         ('90d', 90, 'days', 329000, 'Gói VIP 3 tháng', '3个月 VIP', TRUE, 3),
         ('1m', 1, 'months', 149000, '1 Tháng', '1 个月', TRUE, 4),
         ('3m', 3, 'months', 399000, '3 Tháng', '3 个月', TRUE, 5),
         ('6m', 6, 'months', 699000, '6 Tháng', '6 个月', TRUE, 6)
-      ON CONFLICT (id) DO NOTHING;
+      ON CONFLICT (id) DO UPDATE SET
+        months = EXCLUDED.months,
+        duration_unit = EXCLUDED.duration_unit,
+        amount = EXCLUDED.amount,
+        name_vi = EXCLUDED.name_vi,
+        name_zh = EXCLUDED.name_zh,
+        is_active = EXCLUDED.is_active,
+        sort_order = EXCLUDED.sort_order,
+        updated_at = NOW();
+    `);
+    await this.pool.query(`
+      UPDATE payment_plans
+      SET is_active = FALSE,
+          updated_at = NOW()
+      WHERE id = '7d';
+    `);
+    await this.pool.query(`
+      UPDATE users
+      SET vip_trial_used = TRUE,
+          vip_plan_id = CASE WHEN lower(coalesce(vip_plan_id, '')) = '7d' THEN '3d' ELSE vip_plan_id END,
+          updated_at = NOW()
+      WHERE EXISTS (
+        SELECT 1
+        FROM payment_orders
+        WHERE payment_orders.user_id = users.id
+          AND payment_orders.status = 'paid'
+          AND lower(payment_orders.plan_id) IN ('3d', '7d')
+      );
+    `);
+    await this.pool.query(`
+      WITH first_trial AS (
+        SELECT DISTINCT ON (user_id)
+               user_id,
+               paid_at
+        FROM payment_orders
+        WHERE status = 'paid'
+          AND paid_at IS NOT NULL
+          AND lower(plan_id) IN ('3d', '7d')
+        ORDER BY user_id, paid_at ASC
+      )
+      UPDATE users
+      SET premium_until = first_trial.paid_at + interval '3 days',
+          updated_at = NOW()
+      FROM first_trial
+      WHERE users.id = first_trial.user_id
+        AND lower(coalesce(users.vip_plan_id, '')) IN ('3d', '7d')
+        AND users.premium_until IS NOT NULL
+        AND users.premium_until > first_trial.paid_at + interval '3 days';
+    `);
+    await this.pool.query(`
+      UPDATE users
+      SET vip_plan_id = '3d',
+          updated_at = NOW()
+      WHERE lower(coalesce(vip_plan_id, '')) = '7d';
+    `);
+    await this.pool.query(`
+      UPDATE payment_orders
+      SET plan_id = '3d'
+      WHERE lower(plan_id) = '7d';
     `);
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS hsk_lesson_locks (

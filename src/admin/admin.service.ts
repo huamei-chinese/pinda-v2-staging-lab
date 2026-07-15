@@ -115,8 +115,9 @@ export class AdminService {
       plan,
       vip: Number(row.vip || 0),
       vipPlanId,
-      vipPlanName: vipPlanId === '7d' ? 'VIP 7 ngày' : vipPlanId === '30d' ? 'VIP 30 ngày' : vipPlanId === '90d' ? 'VIP 3 tháng' : null,
-      vipPlanNameZh: vipPlanId === '7d' ? '7天VIP' : vipPlanId === '30d' ? '30天VIP' : vipPlanId === '90d' ? '90天VIP' : null,
+      vipPlanName: vipPlanId === '3d' ? 'VIP 3 ngày' : vipPlanId === '30d' ? 'VIP 30 ngày' : vipPlanId === '90d' ? 'VIP 3 tháng' : null,
+      vipPlanNameZh: vipPlanId === '3d' ? '3天VIP' : vipPlanId === '30d' ? '30天VIP' : vipPlanId === '90d' ? '90天VIP' : null,
+      vipTrialUsed: Boolean(row.vip_trial_used),
       premiumUntil: row.premium_until,
       dailyReminderEnabled: row.daily_reminder_enabled !== false,
       registeredAt: row.created_at,
@@ -187,9 +188,10 @@ export class AdminService {
     return Math.min(100, Math.max(1, Math.floor(Number(raw || 9)) || 9));
   }
 
-  private normalizeAdminUsersPlanFilter(value: string | string[] | undefined): 'all' | '7d' | '30d' | '90d' {
+  private normalizeAdminUsersPlanFilter(value: string | string[] | undefined): 'all' | '3d' | '30d' | '90d' {
     const raw = String(Array.isArray(value) ? value[0] : value || 'all').trim().toLowerCase();
-    if (raw === '7d' || raw === '30d') return raw;
+    if (raw === '3d' || raw === '7d') return '3d';
+    if (raw === '30d') return raw;
     if (raw === '90d' || raw === '3m') return '90d';
     return 'all';
   }
@@ -243,7 +245,7 @@ export class AdminService {
         filters.push(`is_premium = TRUE`);
         filters.push(`(premium_until IS NULL OR premium_until > NOW())`);
         filters.push(`CASE
-          WHEN lower(coalesce(vip_plan_id, '')) = '7d' THEN '7d'
+          WHEN lower(coalesce(vip_plan_id, '')) IN ('3d', '7d') THEN '3d'
           WHEN lower(coalesce(vip_plan_id, '')) = '30d' THEN '30d'
           WHEN lower(coalesce(vip_plan_id, '')) IN ('90d', '3m') THEN '90d'
           ELSE ''
@@ -283,7 +285,7 @@ export class AdminService {
         const offset = (page - 1) * pageSize;
         const pageParams = [...filterParams, pageSize, offset];
         const result = await this.db.query(
-          `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+          `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
            FROM users
            ${whereSql}
            ORDER BY created_at DESC
@@ -304,7 +306,7 @@ export class AdminService {
       }
 
       const result = await this.db.query(
-        `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+        `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
          FROM users
          ${whereSql}
          ORDER BY created_at DESC`,
@@ -359,9 +361,10 @@ export class AdminService {
 
   private vipPlanIdFromDuration(planId: string | null | undefined, durationDays: number): string | null {
     const normalized = String(planId || '').trim().toLowerCase();
-    if (normalized === '7d' || normalized === '30d' || normalized === '90d') return normalized;
+    if (normalized === '3d' || normalized === '7d') return '3d';
+    if (normalized === '30d' || normalized === '90d') return normalized;
     if (normalized === '3m') return '90d';
-    if (durationDays === 7) return '7d';
+    if (durationDays === 3 || durationDays === 7) return '3d';
     if (durationDays === 30) return '30d';
     if (durationDays === 90) return '90d';
     return null;
@@ -413,9 +416,9 @@ export class AdminService {
 
     try {
       const result = await this.db.query(
-        `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+        `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id, vip_trial_used)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
         [
           fullName,
           email,
@@ -426,6 +429,7 @@ export class AdminService {
           isPremium,
           premiumUntil,
           vipPlanId,
+          vipPlanId === '3d',
         ],
       );
       return { user: this.publicUser(result.rows[0]) };
@@ -535,9 +539,13 @@ export class AdminService {
                WHEN $7::boolean OR $11::boolean THEN COALESCE($9, vip_plan_id)
                ELSE vip_plan_id
              END,
+             vip_trial_used = CASE
+               WHEN ($7::boolean OR $11::boolean) AND lower(coalesce($9, '')) IN ('3d', '7d') THEN TRUE
+               ELSE vip_trial_used
+             END,
              updated_at = NOW()
          WHERE id = $6
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
         [
           fullName,
           email,
@@ -607,7 +615,7 @@ export class AdminService {
            ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
       [nextRole, id, roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
     return { user: this.publicUser(result.rows[0]) };
@@ -659,7 +667,7 @@ export class AdminService {
        SET ref = $1,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
       [ref, id],
     );
     return { user: this.publicUser(result.rows[0]) };

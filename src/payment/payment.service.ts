@@ -62,6 +62,25 @@ export class PaymentService {
     return `https://qr.sepay.vn/img?${params.toString()}`;
   }
 
+  private isIntroVipPlanId(planId: string | null | undefined): boolean {
+    const id = String(planId || '').trim().toLowerCase();
+    return id === '3d' || id === '7d';
+  }
+
+  private async hasUsedIntroVipPlan(userId: string, db: { query: Function } = this.db, excludeOrderId?: string): Promise<boolean> {
+    const result = await db.query(
+      `SELECT 1
+       FROM payment_orders
+       WHERE user_id = $1
+         AND status = 'paid'
+         AND lower(plan_id) IN ('3d', '7d')
+         AND ($2::uuid IS NULL OR id <> $2::uuid)
+       LIMIT 1`,
+      [userId, excludeOrderId || null],
+    );
+    return Boolean(result.rows[0]);
+  }
+
   async createOrder(userId: string, email: string, planId: string) {
     const plan = await this.paymentPlansService.getPlan(planId);
     if (!plan) {
@@ -77,7 +96,7 @@ export class PaymentService {
     }
 
     const userResult = await this.db.query(
-      'SELECT id, email, is_active FROM users WHERE id = $1',
+      'SELECT id, email, is_active, vip_trial_used FROM users WHERE id = $1',
       [userId],
     );
     const user = userResult.rows[0];
@@ -89,6 +108,12 @@ export class PaymentService {
     }
     if (!user.is_active) {
       throw new HttpException({ error: 'Tài khoản đã bị khóa.' }, HttpStatus.FORBIDDEN);
+    }
+    if (this.isIntroVipPlanId(plan.id) && (user.vip_trial_used || await this.hasUsedIntroVipPlan(userId))) {
+      throw new HttpException(
+        { error: 'Gói VIP 3 ngày chỉ mua được một lần cho mỗi tài khoản.' },
+        HttpStatus.CONFLICT,
+      );
     }
 
     let transferCode = '';
@@ -340,10 +365,27 @@ export class PaymentService {
       }
 
       const userResult = await client.query(
-        'SELECT premium_until FROM users WHERE id = $1 FOR UPDATE',
+        'SELECT premium_until, vip_trial_used FROM users WHERE id = $1 FOR UPDATE',
         [lockedOrder.user_id],
       );
       const user = userResult.rows[0];
+      const isIntroVipPlan = this.isIntroVipPlanId(plan.id);
+      if (isIntroVipPlan && (user?.vip_trial_used || await this.hasUsedIntroVipPlan(lockedOrder.user_id, client, lockedOrder.id))) {
+        await client.query(
+          `UPDATE payment_orders
+           SET status = 'duplicate', paid_at = $2
+           WHERE id = $1 AND status = 'pending'`,
+          [lockedOrder.id, Number.isNaN(paidAt.getTime()) ? new Date().toISOString() : paidAt.toISOString()],
+        );
+        await client.query(
+          `UPDATE sepay_webhook_events
+           SET processed = TRUE, order_id = COALESCE($2, order_id)
+           WHERE sepay_id = $1`,
+          [sepayId, lockedOrder.id],
+        );
+        await client.query('COMMIT');
+        return;
+      }
       const now = new Date();
       const currentEnd = user?.premium_until ? new Date(user.premium_until) : null;
       const base = currentEnd && currentEnd > now ? currentEnd : now;
@@ -369,9 +411,13 @@ export class PaymentService {
 
       await client.query(
         `UPDATE users
-         SET is_premium = TRUE, premium_until = $2, vip_plan_id = $3, updated_at = NOW()
+         SET is_premium = TRUE,
+             premium_until = $2,
+             vip_plan_id = $3,
+             vip_trial_used = CASE WHEN $4::boolean THEN TRUE ELSE vip_trial_used END,
+             updated_at = NOW()
          WHERE id = $1`,
-        [lockedOrder.user_id, premiumUntil.toISOString(), lockedOrder.plan_id],
+        [lockedOrder.user_id, premiumUntil.toISOString(), plan.id, isIntroVipPlan],
       );
 
       await client.query(
