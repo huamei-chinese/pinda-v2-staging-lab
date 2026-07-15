@@ -12,6 +12,7 @@ import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-loc
 
 const NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, proxy-revalidate';
 const LONG_LIVED_STATIC_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+const SHORT_LIVED_RUNTIME_CACHE_CONTROL = 'public, max-age=0, must-revalidate';
 
 function setNoStoreHeaders(res: any) {
   res.setHeader('Cache-Control', NO_STORE_CACHE_CONTROL);
@@ -21,6 +22,10 @@ function setNoStoreHeaders(res: any) {
 
 function setLongLivedStaticHeaders(res: any) {
   res.setHeader('Cache-Control', LONG_LIVED_STATIC_CACHE_CONTROL);
+}
+
+function setShortLivedRuntimeHeaders(res: any) {
+  res.setHeader('Cache-Control', SHORT_LIVED_RUNTIME_CACHE_CONTROL);
 }
 
 @Module({
@@ -33,6 +38,11 @@ function setLongLivedStaticHeaders(res: any) {
           const fileName = path.basename(filePath).toLowerCase();
           if (fileName === 'asset-config.js' || /\.html$/i.test(filePath)) {
             setNoStoreHeaders(res);
+            return;
+          }
+
+          if (['app.js', 'styles.css', 'subscriptions.js', 'admin-v2.js'].includes(fileName)) {
+            setShortLivedRuntimeHeaders(res);
             return;
           }
 

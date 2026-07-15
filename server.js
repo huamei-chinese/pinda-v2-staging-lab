@@ -129,6 +129,56 @@ function normalizeReferralRef(ref) {
   return normalized || null;
 }
 
+function isPartnerRole(role) {
+  return ["sales", "ctv", "staff"].includes(normalizePublicRole(role));
+}
+
+function getPartnerReferralSeed(user) {
+  const emailLocal = String(user?.email || "").split("@")[0];
+  return normalizeReferralRef(emailLocal) || normalizeReferralRef(user?.full_name) || "ctv";
+}
+
+async function findPartnerReferralOwner(ref, userId) {
+  if (!ref) return null;
+  const duplicate = await pool.query(
+    `SELECT id, full_name, email
+     FROM users
+     WHERE lower(btrim(ref)) = $1
+       AND id <> $2
+       AND role IN ('ctv', 'staff', 'employee', 'sales', 'koc')
+     LIMIT 1`,
+    [ref, userId],
+  );
+  return duplicate.rows[0] || null;
+}
+
+async function getUniquePartnerReferralRef(user) {
+  const seed = getPartnerReferralSeed(user);
+  for (let index = 0; index < 100; index += 1) {
+    const suffix = index === 0 ? "" : String(index + 1);
+    const base = seed.slice(0, Math.max(1, 64 - suffix.length));
+    const candidate = `${base}${suffix}`;
+    const owner = await findPartnerReferralOwner(candidate, user.id);
+    if (!owner) return candidate;
+  }
+  throw new Error("Cannot create a unique referral code for this user.");
+}
+
+async function getReferralRefForRoleChange(currentUser, nextRole) {
+  const nextIsPartner = isPartnerRole(nextRole);
+  const currentIsPartner = isPartnerRole(currentUser?.role);
+  if (!nextIsPartner) return { shouldSetRef: false, ref: null };
+
+  const currentRef = normalizeReferralRef(currentUser?.ref);
+  const shouldGenerateOwnRef = !currentIsPartner || !currentRef || Boolean(await findPartnerReferralOwner(currentRef, currentUser.id));
+  if (!shouldGenerateOwnRef) return { shouldSetRef: false, ref: currentRef };
+
+  return {
+    shouldSetRef: true,
+    ref: await getUniquePartnerReferralRef(currentUser),
+  };
+}
+
 function normalizeSource(source) {
   const normalized = String(source || "")
     .trim()
@@ -975,7 +1025,7 @@ async function handleAdminUsers(req, res, url) {
       return;
     }
     const current = await pool.query(
-      `SELECT id, role
+      `SELECT id, full_name, email, role, ref
        FROM users
        WHERE id = $1`,
       [roleMatch[1]],
@@ -994,12 +1044,15 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 403, { error: "Cannot modify admin accounts." });
       return;
     }
+    const roleChangeRef = await getReferralRefForRoleChange(currentUser, nextRole);
     const result = await pool.query(
       `UPDATE users
-       SET role = $1, updated_at = NOW()
+       SET role = $1,
+           ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
+           updated_at = NOW()
        WHERE id = $2
        RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
-      [nextRole, roleMatch[1]],
+      [nextRole, roleMatch[1], roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
     sendJson(res, 200, { user: publicUser(result.rows[0]) });
     return;
@@ -1029,6 +1082,11 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 400, { error: "Chỉ tài khoản CTV mới được tạo link ref." });
       return;
     }
+    const duplicate = await findPartnerReferralOwner(ref, refMatch[1]);
+    if (duplicate) {
+      sendJson(res, 409, { error: "Ma ref nay dang duoc dung boi CTV/nhan vien khac." });
+      return;
+    }
     const result = await pool.query(
       `UPDATE users
        SET ref = $1, updated_at = NOW()
@@ -1052,6 +1110,18 @@ async function handleAdminUsers(req, res, url) {
     const email = String(body.email || "").trim().toLowerCase();
     const role = normalizeEditableRole(body.role);
     const isActive = body.isActive === true;
+    const roleCurrent = await pool.query(
+      `SELECT id, full_name, email, role, ref
+       FROM users
+       WHERE id = $1`,
+      [idMatch[1]],
+    );
+    const roleCurrentUser = roleCurrent.rows[0];
+    if (!roleCurrentUser) {
+      sendJson(res, 404, { error: "Khong tim thay user." });
+      return;
+    }
+    const roleCurrentRole = normalizePublicRole(roleCurrentUser.role);
 
     if (!fullName || !email) {
       sendJson(res, 400, { error: "Tên và email không được để trống." });
@@ -1080,12 +1150,19 @@ async function handleAdminUsers(req, res, url) {
       }
     }
 
+    const roleToSave = roleCurrentRole === "admin" ? roleCurrentUser.role : role;
+    const roleChangeRef = await getReferralRefForRoleChange(roleCurrentUser, roleToSave);
     const result = await pool.query(
       `UPDATE users
-       SET full_name = $1, email = $2, role = $3, is_active = $4, updated_at = NOW()
+       SET full_name = $1,
+           email = $2,
+           role = $3,
+           ref = CASE WHEN $6::boolean THEN $7 ELSE ref END,
+           is_active = $4,
+           updated_at = NOW()
        WHERE id = $5
        RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
-      [fullName, email, role, isActive, idMatch[1]],
+      [fullName, email, roleToSave, isActive, idMatch[1], roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
     if (!result.rows[0]) {
       sendJson(res, 404, { error: "Không tìm thấy user." });

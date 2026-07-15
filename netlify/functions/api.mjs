@@ -1091,6 +1091,56 @@ function normalizeReferralRef(ref) {
   return normalized || null;
 }
 
+function isPartnerRole(role) {
+  return ["sales", "ctv", "staff"].includes(normalizePublicRole(role));
+}
+
+function getPartnerReferralSeed(user) {
+  const emailLocal = String(user?.email || "").split("@")[0];
+  return normalizeReferralRef(emailLocal) || normalizeReferralRef(user?.full_name) || "ctv";
+}
+
+async function findPartnerReferralOwner(ref, userId) {
+  if (!ref) return null;
+  const duplicate = await query(
+    `SELECT id, full_name, email
+     FROM users
+     WHERE lower(btrim(ref)) = $1
+       AND id <> $2
+       AND role IN ('ctv', 'staff', 'employee', 'sales', 'koc')
+     LIMIT 1`,
+    [ref, userId],
+  );
+  return duplicate.rows[0] || null;
+}
+
+async function getUniquePartnerReferralRef(user) {
+  const seed = getPartnerReferralSeed(user);
+  for (let index = 0; index < 100; index += 1) {
+    const suffix = index === 0 ? "" : String(index + 1);
+    const base = seed.slice(0, Math.max(1, 64 - suffix.length));
+    const candidate = `${base}${suffix}`;
+    const owner = await findPartnerReferralOwner(candidate, user.id);
+    if (!owner) return candidate;
+  }
+  throw apiError("Khong the tao ma ref rieng khong trung cho tai khoan nay.", 409);
+}
+
+async function getReferralRefForRoleChange(currentUser, nextRole) {
+  const nextIsPartner = isPartnerRole(nextRole);
+  const currentIsPartner = isPartnerRole(currentUser?.role);
+  if (!nextIsPartner) return { shouldSetRef: false, ref: null };
+
+  const currentRef = normalizeReferralRef(currentUser?.ref);
+  const shouldGenerateOwnRef = !currentIsPartner || !currentRef || Boolean(await findPartnerReferralOwner(currentRef, currentUser.id));
+  if (!shouldGenerateOwnRef) return { shouldSetRef: false, ref: currentRef };
+
+  return {
+    shouldSetRef: true,
+    ref: await getUniquePartnerReferralRef(currentUser),
+  };
+}
+
 function normalizeSource(source) {
   const normalized = String(source || "")
     .trim()
@@ -1645,6 +1695,15 @@ async function updateUser(req, id, body) {
     if (premiumUntilDate.getTime() <= Date.now()) throw apiError("VIP expiry date must be in the future.", 400);
   }
   if (!fullName || !email) throw apiError("Tên và email không được để trống.", 400);
+  const roleCurrent = await query(
+    `SELECT id, full_name, email, role, ref
+     FROM users
+     WHERE id = $1`,
+    [id],
+  );
+  const roleCurrentUser = roleCurrent.rows[0];
+  if (!roleCurrentUser) throw apiError("Khong tim thay user.", 404);
+  const roleCurrentRole = normalizePublicRole(roleCurrentUser.role);
   if (requester.role === "staff") {
     const current = await query(
       `SELECT id, role
@@ -1660,11 +1719,14 @@ async function updateUser(req, id, body) {
       throw apiError("Staff cannot change their own role from this endpoint.", 403);
     }
   }
+  const roleToSave = roleCurrentRole === "admin" ? roleCurrentUser.role : role;
+  const roleChangeRef = await getReferralRefForRoleChange(roleCurrentUser, roleToSave);
   const result = await query(
     `UPDATE users
      SET full_name = $1,
          email = $2,
          role = $3,
+         ref = CASE WHEN $13::boolean THEN $14 ELSE ref END,
          is_active = $4,
          current_level = $5,
          is_premium = CASE
@@ -1699,6 +1761,8 @@ async function updateUser(req, id, body) {
       shouldCancelPremium,
       shouldSetPremiumUntil,
       premiumUntilDate?.toISOString() || null,
+      roleChangeRef.shouldSetRef,
+      roleChangeRef.ref,
     ],
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy user.", 404);
@@ -1715,7 +1779,7 @@ async function updateUserRole(req, id, body) {
     throw apiError("Role must be user, sales, ctv, content or staff.", 400);
   }
   const current = await query(
-    `SELECT id, role
+    `SELECT id, full_name, email, role, ref
      FROM users
      WHERE id = $1`,
     [id],
@@ -1729,12 +1793,15 @@ async function updateUserRole(req, id, body) {
   if (currentRole === "admin") {
     throw apiError("Cannot modify admin accounts.", 403);
   }
+  const roleChangeRef = await getReferralRefForRoleChange(currentUser, nextRole);
   const result = await query(
     `UPDATE users
-     SET role = $1, updated_at = NOW()
+     SET role = $1,
+         ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
+         updated_at = NOW()
      WHERE id = $2
      RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-    [nextRole, id],
+    [nextRole, id, roleChangeRef.shouldSetRef, roleChangeRef.ref],
   );
   return json({ user: publicUser(result.rows[0]) });
 }
@@ -1753,6 +1820,10 @@ async function updateUserRef(req, id, body) {
   const currentUser = current.rows[0];
   if (!currentUser) throw apiError("Không tìm thấy user.", 404);
   const currentRole = normalizePublicRole(currentUser.role);
+  const duplicate = await findPartnerReferralOwner(ref, id);
+  if (duplicate) {
+    throw apiError("Ma ref nay dang duoc dung boi CTV/nhan vien khac.", 409);
+  }
   if (!["ctv", "sales"].includes(currentRole)) {
     throw apiError("Chỉ tài khoản CTV mới được tạo link ref.", 400);
   }

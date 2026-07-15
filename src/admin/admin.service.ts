@@ -34,6 +34,63 @@ export class AdminService {
     return ['user', 'sales', 'koc', 'ctv', 'content', 'staff', 'employee', 'content_manager'].includes(normalized);
   }
 
+  private isPartnerRole(role: string | null | undefined): boolean {
+    return ['sales', 'ctv', 'staff'].includes(this.normalizeRole(role));
+  }
+
+  private async findPartnerReferralOwner(ref: string | null, userId: string) {
+    if (!ref) return null;
+    const duplicate = await this.db.query(
+      `SELECT id, full_name, email
+       FROM users
+       WHERE lower(btrim(ref)) = $1
+         AND id <> $2
+         AND role IN ('ctv', 'staff', 'employee', 'sales', 'koc')
+       LIMIT 1`,
+      [ref, userId],
+    );
+    return duplicate.rows[0] || null;
+  }
+
+  private getPartnerReferralSeed(user: { full_name?: string | null; email?: string | null }) {
+    const emailLocal = String(user.email || '').split('@')[0];
+    return (
+      this.authService.normalizeReferralRef(emailLocal) ||
+      this.authService.normalizeReferralRef(user.full_name) ||
+      'ctv'
+    );
+  }
+
+  private async getUniquePartnerReferralRef(user: { id: string; full_name?: string | null; email?: string | null }) {
+    const seed = this.getPartnerReferralSeed(user);
+    for (let index = 0; index < 100; index += 1) {
+      const suffix = index === 0 ? '' : String(index + 1);
+      const base = seed.slice(0, Math.max(1, 64 - suffix.length));
+      const candidate = `${base}${suffix}`;
+      const owner = await this.findPartnerReferralOwner(candidate, user.id);
+      if (!owner) return candidate;
+    }
+    throw new HttpException('Không thể tạo mã ref riêng không trùng cho tài khoản này.', HttpStatus.CONFLICT);
+  }
+
+  private async getReferralRefForRoleChange(
+    currentUser: { id: string; full_name?: string | null; email?: string | null; role?: string | null; ref?: string | null },
+    nextRole: string,
+  ) {
+    const nextIsPartner = this.isPartnerRole(nextRole);
+    const currentIsPartner = this.isPartnerRole(currentUser.role);
+    if (!nextIsPartner) return { shouldSetRef: false, ref: null };
+
+    const currentRef = this.authService.normalizeReferralRef(currentUser.ref);
+    const shouldGenerateOwnRef = !currentIsPartner || !currentRef || Boolean(await this.findPartnerReferralOwner(currentRef, currentUser.id));
+    if (!shouldGenerateOwnRef) return { shouldSetRef: false, ref: currentRef };
+
+    return {
+      shouldSetRef: true,
+      ref: await this.getUniquePartnerReferralRef(currentUser),
+    };
+  }
+
   publicUser(row: any) {
     const premiumUntil = row.premium_until ? new Date(row.premium_until) : null;
     const isPremium = Boolean(
@@ -434,7 +491,7 @@ export class AdminService {
 
     try {
       const current = await this.db.query(
-        `SELECT id, full_name, email, role, is_active, current_level
+        `SELECT id, full_name, email, role, ref, is_active, current_level
          FROM users
          WHERE id = $1`,
         [id],
@@ -453,11 +510,13 @@ export class AdminService {
         }
       }
       const roleToSave = currentRole === 'admin' ? currentUser.role : requestedRole;
+      const roleChangeRef = await this.getReferralRefForRoleChange(currentUser, roleToSave);
       const result = await this.db.query(
         `UPDATE users
          SET full_name = $1,
              email = $2,
              role = $3,
+             ref = CASE WHEN $13::boolean THEN $14 ELSE ref END,
              is_active = $4,
              current_level = $5,
              is_premium = CASE
@@ -492,6 +551,8 @@ export class AdminService {
           shouldCancelPremium,
           shouldSetPremiumUntil,
           premiumUntilDate?.toISOString() || null,
+          roleChangeRef.shouldSetRef,
+          roleChangeRef.ref,
         ],
       );
       if (!result.rows[0]) {
@@ -526,7 +587,7 @@ export class AdminService {
     }
 
     const current = await this.db.query(
-      `SELECT id, role
+      `SELECT id, full_name, email, role, ref
        FROM users
        WHERE id = $1`,
       [id],
@@ -539,13 +600,15 @@ export class AdminService {
     if (currentRole === 'admin') {
       throw new HttpException('Cannot modify admin accounts.', HttpStatus.FORBIDDEN);
     }
+    const roleChangeRef = await this.getReferralRefForRoleChange(currentUser, nextRole);
     const result = await this.db.query(
       `UPDATE users
        SET role = $1,
+           ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
            updated_at = NOW()
        WHERE id = $2
        RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, daily_reminder_enabled, created_at, updated_at, last_login_at`,
-      [nextRole, id],
+      [nextRole, id, roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
     return { user: this.publicUser(result.rows[0]) };
   }

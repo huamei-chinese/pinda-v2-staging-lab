@@ -33,7 +33,7 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=admin-vip-calendar-20260714/);
+  assert.match(indexHtmlSource, /app\.js\?v=admin-staff-permissions-20260715/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
@@ -54,7 +54,9 @@ test("Railway custom domains cache static assets while keeping HTML and runtime 
   assert.match(appModuleSource, /serveStaticOptions/);
   assert.match(appModuleSource, /NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, proxy-revalidate'/);
   assert.match(appModuleSource, /LONG_LIVED_STATIC_CACHE_CONTROL = 'public, max-age=31536000, immutable'/);
+  assert.match(appModuleSource, /SHORT_LIVED_RUNTIME_CACHE_CONTROL = 'public, max-age=0, must-revalidate'/);
   assert.match(appModuleSource, /fileName === 'asset-config\.js'/);
+  assert.match(appModuleSource, /\['app\.js', 'styles\.css', 'subscriptions\.js', 'admin-v2\.js'\]\.includes\(fileName\)/);
   assert.match(appModuleSource, /\\\.html\$\/i\.test\(filePath\)/);
   assert.match(appModuleSource, /\(\?:js\|css\|json\|png\|jpe\?g\|webp\|svg\|mp3\|wav\|ogg\|ttf\|woff2\?\)/);
 });

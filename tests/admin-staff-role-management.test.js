@@ -36,8 +36,8 @@ test("admin can set a normal user to content role in the database", async () => 
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
-      if (sql.includes("SELECT id, role")) {
-        return { rows: [{ id: "user-1", role: "user" }] };
+      if (sql.includes("SELECT id, full_name, email, role, ref")) {
+        return { rows: [{ id: "user-1", full_name: "Staff One", email: "staff@example.com", role: "user", ref: "" }] };
       }
       if (sql.includes("UPDATE users")) {
         return {
@@ -75,7 +75,7 @@ test("staff can assign full non-admin user roles", async () => {
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "staff", is_active: true }] };
       }
-      if (sql.includes("SELECT id, role")) {
+      if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return { rows: [{ id: "user-1", role: "user" }] };
       }
       if (sql.includes("UPDATE users")) {
@@ -118,7 +118,7 @@ test("admin role update accepts staff but rejects admin role assignment", async 
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
-      if (sql.includes("SELECT id, role")) {
+      if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return { rows: [{ id: "user-1", role: "user" }] };
       }
       if (sql.includes("UPDATE users")) {
@@ -149,6 +149,60 @@ test("admin role update accepts staff but rejects admin role assignment", async 
     () => service.updateUserRole("user-1", { role: "admin" }, { "x-admin-user-id": "admin-1" }),
     (error) => error instanceof HttpException && error.getStatus() === 400,
   );
+});
+
+test("promoting a referred user to ctv assigns a fresh partner referral code", async () => {
+  const calls = [];
+  const db = {
+    async query(sql, params) {
+      calls.push({ sql, params });
+      if (sql.includes("SELECT role, ref, is_active FROM users")) {
+        return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (sql.includes("SELECT id, full_name, email, role, ref")) {
+        return {
+          rows: [{
+            id: "user-1",
+            full_name: "kiet",
+            email: "kle995301@gmail.com",
+            role: "user",
+            ref: "kamini",
+          }],
+        };
+      }
+      if (sql.includes("lower(btrim(ref))")) {
+        if (params[0] === "kamini") {
+          return { rows: [{ id: "staff-1", full_name: "Kamini", email: "kamini01@gmail.com" }] };
+        }
+        return { rows: [] };
+      }
+      if (sql.includes("UPDATE users")) {
+        return {
+          rows: [{
+            id: "user-1",
+            full_name: "kiet",
+            email: "kle995301@gmail.com",
+            role: params[0],
+            ref: params[3],
+            is_active: true,
+            current_level: "HSK2",
+            is_premium: false,
+            premium_until: null,
+            vip_plan_id: null,
+            daily_reminder_enabled: true,
+          }],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+  const service = createAdminServiceWithDb(db);
+
+  const result = await service.updateUserRole("user-1", { role: "ctv" }, { "x-admin-user-id": "admin-1" });
+
+  const updateCall = calls.find((call) => call.sql.includes("UPDATE users"));
+  assert.deepEqual(updateCall.params, ["ctv", "user-1", true, "kle995301"]);
+  assert.equal(result.user.ref, "kle995301");
 });
 
 test("admin cannot assign the same referral code to two ctv accounts", async () => {
