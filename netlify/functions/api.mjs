@@ -31,6 +31,8 @@ const DEFAULT_PAYMENT_PLANS = [
   { id: "90d", months: 90, durationUnit: "days", amount: 329000, nameVi: "Gói VIP 3 tháng", nameZh: "3个月 VIP" },
 ];
 
+const SEEDED_STAFF_EMAILS = ["kamini01@gmail.com", "theanh.tuyendung3332@gmail.com"];
+
 function env(name) {
   return globalThis.Netlify?.env?.get(name) || process.env[name] || "";
 }
@@ -770,6 +772,21 @@ async function query(text, params) {
 
 async function ensureSafeSchemaMigrations(db) {
   await db.query("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
+  await seedStaffAccounts(db);
+}
+
+async function seedStaffAccounts(db) {
+  const table = await db.query("SELECT to_regclass('public.users') AS table_name;");
+  if (!table.rows[0]?.table_name) return;
+  await db.query(
+    `UPDATE users
+     SET role = 'staff',
+         updated_at = NOW()
+     WHERE lower(email) = ANY($1::text[])
+       AND role <> 'admin'
+       AND role <> 'staff'`,
+    [SEEDED_STAFF_EMAILS],
+  );
 }
 
 async function ensureSchema() {
@@ -821,6 +838,7 @@ async function ensureSchema() {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;");
+    await seedStaffAccounts(db);
     await db.query(`
       CREATE TABLE IF NOT EXISTS payment_orders (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1047,15 +1065,16 @@ function defaultPaymentPlan(planId) {
 function normalizePublicRole(role) {
   const normalized = String(role || "").trim().toLowerCase();
   if (normalized === "admin") return "admin";
-  if (normalized === "sales") return "sales";
-  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "sales" || normalized === "koc") return "sales";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  if (normalized === "ctv") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
 }
 
 function normalizeEditableRole(role) {
   const normalized = normalizePublicRole(role);
-  return ["user", "sales", "ctv", "content"].includes(normalized) ? normalized : "user";
+  return ["user", "sales", "ctv", "content", "staff"].includes(normalized) ? normalized : "user";
 }
 
 function isEditableRoleValue(role) {
@@ -1222,14 +1241,33 @@ async function uploadAvatarToCloudinary(userId, avatarDataUrl) {
   return data.secure_url;
 }
 
-async function assertAdmin(req) {
+async function getAdminRequester(req) {
   const userId = req.headers.get("x-admin-user-id");
+  if (!userId) return null;
   if (!userId) throw apiError("Vui lòng đăng nhập bằng tài khoản admin.", 401);
   const result = await query("SELECT role, is_active FROM users WHERE id = $1", [userId]);
   const user = result.rows[0];
+  if (user?.is_active !== true) return null;
+  return { id: userId, role: normalizePublicRole(user.role) };
   if (user?.role !== "admin" || user?.is_active !== true) {
     throw apiError("Vui lòng đăng nhập bằng tài khoản admin.", 401);
   }
+}
+
+async function assertAdmin(req) {
+  const requester = await getAdminRequester(req);
+  if (!requester || requester.role !== "admin") {
+    throw apiError("Vui lÃ²ng Ä‘Äƒng nháº­p báº±ng tÃ i khoáº£n admin.", 401);
+  }
+  return requester;
+}
+
+async function assertAdminOrStaff(req) {
+  const requester = await getAdminRequester(req);
+  if (!requester || !["admin", "staff"].includes(requester.role)) {
+    throw apiError("Vui lÃ²ng Ä‘Äƒng nháº­p báº±ng tÃ i khoáº£n admin.", 401);
+  }
+  return requester;
 }
 
 async function register(body) {
@@ -1502,7 +1540,7 @@ async function confirmEmailVerificationCode(req, id, body) {
 }
 
 async function recalculateCtvVipCounts() {
-  await query(`UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee')`);
+  await query(`UPDATE users SET vip = 0 WHERE role IN ('ctv', 'sales', 'koc')`);
   await query(
     `UPDATE users c
      SET vip = sub.cnt
@@ -1515,12 +1553,12 @@ async function recalculateCtvVipCounts() {
        GROUP BY lower(btrim(u.ref))
      ) sub
      WHERE lower(btrim(c.ref)) = sub.ref
-       AND c.role IN ('ctv', 'staff', 'employee')`,
+       AND c.role IN ('ctv', 'sales', 'koc')`,
   );
 }
 
 async function listUsers(req) {
-  await assertAdmin(req);
+  await assertAdminOrStaff(req);
   await recalculateCtvVipCounts();
   const result = await query(
     `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
@@ -1549,7 +1587,7 @@ function vipPlanIdFromDuration(planId, durationDays) {
 }
 
 async function createUser(req, body) {
-  await assertAdmin(req);
+  await assertAdminOrStaff(req);
   const fullName = String(body.fullName || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
@@ -1583,7 +1621,7 @@ async function createUser(req, body) {
 }
 
 async function updateUser(req, id, body) {
-  await assertAdmin(req);
+  const requester = await assertAdminOrStaff(req);
   const fullName = String(body.fullName || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const role = normalizeEditableRole(body.role);
@@ -1607,6 +1645,21 @@ async function updateUser(req, id, body) {
     if (premiumUntilDate.getTime() <= Date.now()) throw apiError("VIP expiry date must be in the future.", 400);
   }
   if (!fullName || !email) throw apiError("Tên và email không được để trống.", 400);
+  if (requester.role === "staff") {
+    const current = await query(
+      `SELECT id, role
+       FROM users
+       WHERE id = $1`,
+      [id],
+    );
+    const currentUser = current.rows[0];
+    if (!currentUser) throw apiError("KhÃ´ng tÃ¬m tháº¥y user.", 404);
+    const currentRole = normalizePublicRole(currentUser.role);
+    if (currentRole === "admin") throw apiError("Staff cannot modify admin accounts.", 403);
+    if (String(requester.id) === String(id) && role !== currentRole) {
+      throw apiError("Staff cannot change their own role from this endpoint.", 403);
+    }
+  }
   const result = await query(
     `UPDATE users
      SET full_name = $1,
@@ -1653,11 +1706,14 @@ async function updateUser(req, id, body) {
 }
 
 async function updateUserRole(req, id, body) {
-  await assertAdmin(req);
+  const requester = await assertAdminOrStaff(req);
   if (!isEditableRoleValue(body.role)) {
-    throw apiError("Role must be user, sales, ctv or content.", 400);
+    throw apiError("Role must be user, sales, ctv, content or staff.", 400);
   }
   const nextRole = normalizeEditableRole(body.role);
+  if (!["user", "sales", "ctv", "content", "staff"].includes(nextRole)) {
+    throw apiError("Role must be user, sales, ctv, content or staff.", 400);
+  }
   const current = await query(
     `SELECT id, role
      FROM users
@@ -1666,10 +1722,13 @@ async function updateUserRole(req, id, body) {
   );
   const currentUser = current.rows[0];
   if (!currentUser) throw apiError("Khong tim thay user.", 404);
-  if (normalizePublicRole(currentUser.role) === "admin") {
+  const currentRole = normalizePublicRole(currentUser.role);
+  if (currentUser.id === requester.id) {
+    throw apiError("You cannot change your own role.", 403);
+  }
+  if (currentRole === "admin") {
     throw apiError("Cannot modify admin accounts.", 403);
   }
-
   const result = await query(
     `UPDATE users
      SET role = $1, updated_at = NOW()
@@ -1681,7 +1740,7 @@ async function updateUserRole(req, id, body) {
 }
 
 async function updateUserRef(req, id, body) {
-  await assertAdmin(req);
+  const requester = await assertAdminOrStaff(req);
   const ref = normalizeReferralRef(body.ref);
   if (!ref) throw apiError("Mã ref không hợp lệ.", 400);
 
@@ -1693,7 +1752,8 @@ async function updateUserRef(req, id, body) {
   );
   const currentUser = current.rows[0];
   if (!currentUser) throw apiError("Không tìm thấy user.", 404);
-  if (normalizePublicRole(currentUser.role) !== "ctv") {
+  const currentRole = normalizePublicRole(currentUser.role);
+  if (!["ctv", "sales"].includes(currentRole)) {
     throw apiError("Chỉ tài khoản CTV mới được tạo link ref.", 400);
   }
 
@@ -1709,7 +1769,21 @@ async function updateUserRef(req, id, body) {
 }
 
 async function deleteUser(req, id) {
-  await assertAdmin(req);
+  const requester = await assertAdminOrStaff(req);
+  if (requester.role === "staff") {
+    if (String(requester.id) === String(id)) throw apiError("Staff cannot delete their own account.", 403);
+    const current = await query(
+      `SELECT id, role
+       FROM users
+       WHERE id = $1`,
+      [id],
+    );
+    const currentUser = current.rows[0];
+    if (!currentUser) throw apiError("KhÃ´ng tÃ¬m tháº¥y user.", 404);
+    if (normalizePublicRole(currentUser.role) === "admin") {
+      throw apiError("Staff cannot delete admin accounts.", 403);
+    }
+  }
   const result = await query("DELETE FROM users WHERE id = $1", [id]);
   if (result.rowCount === 0) throw apiError("Không tìm thấy user.", 404);
   return json({ ok: true });
@@ -2678,6 +2752,30 @@ async function recordLearningEvents(req, body) {
 
 const ANALYTICS_TZ = "Asia/Ho_Chi_Minh";
 const ANALYTICS_MAX_SPAN_DAYS = 1000;
+const ANALYTICS_CACHE_TTL_MS = 2 * 60 * 1000;
+const analyticsResponseCache = new Map();
+
+function analyticsCacheKey(kind, fromYmd, toYmd) {
+  return `${kind}:${fromYmd}:${toYmd}`;
+}
+
+function getAnalyticsCache(key) {
+  const cached = analyticsResponseCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    analyticsResponseCache.delete(key);
+    return null;
+  }
+  return cached.value;
+}
+
+function setAnalyticsCache(key, value) {
+  analyticsResponseCache.set(key, {
+    expiresAt: Date.now() + ANALYTICS_CACHE_TTL_MS,
+    value,
+  });
+  return value;
+}
 
 function analyticsToYmd(date) {
   const year = date.getFullYear();
@@ -2766,6 +2864,9 @@ function buildLearningDailySeries(rows, fromYmd, toYmd) {
 async function getLearningAnalytics(req, searchParams) {
   await assertAdmin(req);
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(searchParams);
+  const cacheKey = analyticsCacheKey("learning", fromYmd, toYmd);
+  const cached = getAnalyticsCache(cacheKey);
+  if (cached) return json(cached);
   const withinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
   const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
   const params = [fromYmd, toYmd];
@@ -2833,7 +2934,7 @@ async function getLearningAnalytics(req, searchParams) {
 
   const num = (result) => Number(result.rows[0]?.value || 0);
 
-  return json({
+  const response = {
     meta: { days, from: fromYmd, to: toYmd },
     dailyLearners: buildLearningDailySeries(dailyLearners.rows, fromYmd, toYmd),
     dailyAttempts: buildLearningDailySeries(dailyAttempts.rows, fromYmd, toYmd),
@@ -2855,12 +2956,16 @@ async function getLearningAnalytics(req, searchParams) {
       popup: num(popupCount),
       vip: num(vipCount),
     },
-  });
+  };
+  return json(setAnalyticsCache(cacheKey, response));
 }
 
 async function getVipManagement(req, searchParams) {
   await assertAdmin(req);
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(searchParams);
+  const cacheKey = analyticsCacheKey("vip", fromYmd, toYmd);
+  const cached = getAnalyticsCache(cacheKey);
+  if (cached) return json(cached);
   const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
@@ -2955,7 +3060,7 @@ async function getVipManagement(req, searchParams) {
     };
   }
 
-  return json({
+  const response = {
     meta: { days, from: fromYmd, to: toYmd },
     vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
     registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
@@ -2969,7 +3074,8 @@ async function getVipManagement(req, searchParams) {
       revenue: Number(row.revenue || 0),
     })),
     users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
-  });
+  };
+  return json(setAnalyticsCache(cacheKey, response));
 }
 
 async function route(req) {

@@ -4,6 +4,7 @@ import { Pool, QueryResult } from 'pg';
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pool: Pool | null = null;
+  private readonly seededStaffEmails = ['kamini01@gmail.com', 'theanh.tuyendung3332@gmail.com'];
 
   async onModuleInit() {
     const databaseUrl = process.env.DATABASE_URL;
@@ -124,6 +125,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
     `);
+    await this.seedStaffAccounts();
   }
 
   private async ensureSchema() {
@@ -197,6 +199,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
     `);
+    await this.seedStaffAccounts();
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS payment_orders (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -358,5 +361,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);
     `);
+  }
+
+  private async seedStaffAccounts() {
+    if (!this.pool) return;
+    await this.pool.query(
+      `UPDATE users
+       SET role = 'staff',
+           updated_at = NOW()
+       WHERE lower(email) = ANY($1::text[])
+         AND role <> 'admin'
+         AND role <> 'staff'`,
+      [this.seededStaffEmails],
+    );
   }
 }

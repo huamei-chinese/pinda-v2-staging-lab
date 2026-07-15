@@ -43,6 +43,7 @@ const pool = databaseUrl
       ssl: { rejectUnauthorized: false },
     })
   : null;
+const SEEDED_STAFF_EMAILS = ["kamini01@gmail.com", "theanh.tuyendung3332@gmail.com"];
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -103,14 +104,15 @@ function normalizePublicRole(role) {
   const normalized = String(role || "").trim().toLowerCase();
   if (normalized === "admin") return "admin";
   if (normalized === "sales" || normalized === "koc") return "sales";
-  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  if (normalized === "ctv") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
 }
 
 function normalizeEditableRole(role) {
   const normalized = normalizePublicRole(role);
-  return ["user", "sales", "ctv", "content"].includes(normalized) ? normalized : "user";
+  return ["user", "sales", "ctv", "content", "staff"].includes(normalized) ? normalized : "user";
 }
 
 function isEditableRoleValue(role) {
@@ -138,6 +140,30 @@ function normalizeSource(source) {
 
 const ANALYTICS_TZ = "Asia/Ho_Chi_Minh";
 const ANALYTICS_MAX_SPAN_DAYS = 1000;
+const ANALYTICS_CACHE_TTL_MS = 2 * 60 * 1000;
+const analyticsResponseCache = new Map();
+
+function analyticsCacheKey(kind, fromYmd, toYmd) {
+  return `${kind}:${fromYmd}:${toYmd}`;
+}
+
+function getAnalyticsCache(key) {
+  const cached = analyticsResponseCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    analyticsResponseCache.delete(key);
+    return null;
+  }
+  return cached.value;
+}
+
+function setAnalyticsCache(key, value) {
+  analyticsResponseCache.set(key, {
+    expiresAt: Date.now() + ANALYTICS_CACHE_TTL_MS,
+    value,
+  });
+  return value;
+}
 
 function analyticsToYmd(date) {
   const year = date.getFullYear();
@@ -780,7 +806,31 @@ async function isAdminRequest(req) {
 
   const result = await pool.query("SELECT role, is_active FROM users WHERE id = $1", [userId]);
   const user = result.rows[0];
-  return user?.role === "admin" && user?.is_active === true;
+  return normalizePublicRole(user?.role) === "admin" && user?.is_active === true;
+}
+
+async function getAdminRequester(req) {
+  const adminUserId = req.headers["x-admin-user-id"];
+  const userId = Array.isArray(adminUserId) ? adminUserId[0] : adminUserId;
+  if (!userId || !pool) return null;
+
+  const result = await pool.query("SELECT role, is_active FROM users WHERE id = $1", [userId]);
+  const user = result.rows[0];
+  if (!user?.is_active) return null;
+  return { id: userId, role: normalizePublicRole(user.role) };
+}
+
+async function seedStaffAccounts() {
+  if (!pool) return;
+  await pool.query(
+    `UPDATE users
+     SET role = 'staff',
+         updated_at = NOW()
+     WHERE lower(email) = ANY($1::text[])
+       AND role <> 'admin'
+       AND role <> 'staff'`,
+    [SEEDED_STAFF_EMAILS],
+  );
 }
 
 async function ensureSchema() {
@@ -809,6 +859,7 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
+  await seedStaffAccounts();
   await pool.query(`
     CREATE TABLE IF NOT EXISTS learning_events (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -895,7 +946,8 @@ async function handleLogin(req, res) {
 
 async function handleAdminUsers(req, res, url) {
   if (!requireDatabase(res)) return;
-  if (!(await isAdminRequest(req))) {
+  const requester = await getAdminRequester(req);
+  if (!requester || !["admin", "staff"].includes(requester.role)) {
     sendJson(res, 401, { error: "Vui lòng đăng nhập bằng tài khoản admin." });
     return;
   }
@@ -914,10 +966,14 @@ async function handleAdminUsers(req, res, url) {
   if (roleMatch && req.method === "PATCH") {
     const body = await readBody(req);
     if (!isEditableRoleValue(body.role)) {
-      sendJson(res, 400, { error: "Role must be user, sales, ctv or content." });
+      sendJson(res, 400, { error: "Role must be user, sales, ctv, content or staff." });
       return;
     }
     const nextRole = normalizeEditableRole(body.role);
+    if (!["user", "sales", "ctv", "content", "staff"].includes(nextRole)) {
+      sendJson(res, 400, { error: "Role must be user, sales, ctv, content or staff." });
+      return;
+    }
     const current = await pool.query(
       `SELECT id, role
        FROM users
@@ -929,11 +985,15 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 404, { error: "Khong tim thay user." });
       return;
     }
-    if (normalizePublicRole(currentUser.role) === "admin") {
+    const currentRole = normalizePublicRole(currentUser.role);
+    if (currentUser.id === requester.id) {
+      sendJson(res, 403, { error: "You cannot change your own role." });
+      return;
+    }
+    if (currentRole === "admin") {
       sendJson(res, 403, { error: "Cannot modify admin accounts." });
       return;
     }
-
     const result = await pool.query(
       `UPDATE users
        SET role = $1, updated_at = NOW()
@@ -964,7 +1024,8 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 404, { error: "Không tìm thấy user." });
       return;
     }
-    if (!["ctv", "sales"].includes(normalizePublicRole(currentUser.role))) {
+    const currentRole = normalizePublicRole(currentUser.role);
+    if (!["ctv", "sales"].includes(currentRole)) {
       sendJson(res, 400, { error: "Chỉ tài khoản CTV mới được tạo link ref." });
       return;
     }
@@ -996,6 +1057,28 @@ async function handleAdminUsers(req, res, url) {
       sendJson(res, 400, { error: "Tên và email không được để trống." });
       return;
     }
+    if (requester.role === "staff") {
+      const current = await pool.query(
+        `SELECT id, role
+         FROM users
+         WHERE id = $1`,
+        [idMatch[1]],
+      );
+      const currentUser = current.rows[0];
+      if (!currentUser) {
+        sendJson(res, 404, { error: "KhÃ´ng tÃ¬m tháº¥y user." });
+        return;
+      }
+      const currentRole = normalizePublicRole(currentUser.role);
+      if (currentRole === "admin") {
+        sendJson(res, 403, { error: "Staff cannot modify admin accounts." });
+        return;
+      }
+      if (String(requester.id) === String(idMatch[1]) && role !== currentRole) {
+        sendJson(res, 403, { error: "Staff cannot change their own role from this endpoint." });
+        return;
+      }
+    }
 
     const result = await pool.query(
       `UPDATE users
@@ -1013,6 +1096,27 @@ async function handleAdminUsers(req, res, url) {
   }
 
   if (req.method === "DELETE") {
+    if (requester.role === "staff") {
+      if (String(requester.id) === String(idMatch[1])) {
+        sendJson(res, 403, { error: "Staff cannot delete their own account." });
+        return;
+      }
+      const current = await pool.query(
+        `SELECT id, role
+         FROM users
+         WHERE id = $1`,
+        [idMatch[1]],
+      );
+      const currentUser = current.rows[0];
+      if (!currentUser) {
+        sendJson(res, 404, { error: "KhÃ´ng tÃ¬m tháº¥y user." });
+        return;
+      }
+      if (normalizePublicRole(currentUser.role) === "admin") {
+        sendJson(res, 403, { error: "Staff cannot delete admin accounts." });
+        return;
+      }
+    }
     await pool.query("DELETE FROM users WHERE id = $1", [idMatch[1]]);
     sendJson(res, 200, { ok: true });
     return;
@@ -1029,6 +1133,12 @@ async function handleAdminAnalyticsOverview(req, res, url) {
   }
 
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(url.searchParams);
+  const cacheKey = analyticsCacheKey("learning", fromYmd, toYmd);
+  const cached = getAnalyticsCache(cacheKey);
+  if (cached) {
+    sendJson(res, 200, cached);
+    return;
+  }
   const withinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
   const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
   const params = [fromYmd, toYmd];
@@ -1098,7 +1208,7 @@ async function handleAdminAnalyticsOverview(req, res, url) {
   ]);
   const num = (result) => Number(result.rows[0]?.value || 0);
 
-  sendJson(res, 200, {
+  const response = {
     meta: { days, from: fromYmd, to: toYmd },
     dailyLearners: buildDailySeries(dailyLearners.rows, fromYmd, toYmd),
     dailyAttempts: buildDailySeries(dailyAttempts.rows, fromYmd, toYmd),
@@ -1120,7 +1230,8 @@ async function handleAdminAnalyticsOverview(req, res, url) {
       popup: num(popupCount),
       vip: num(vipCount),
     },
-  });
+  };
+  sendJson(res, 200, setAnalyticsCache(cacheKey, response));
 }
 
 async function handleAdminVipOverview(req, res, url) {
@@ -1131,6 +1242,12 @@ async function handleAdminVipOverview(req, res, url) {
   }
 
   const { fromYmd, toYmd, days } = resolveAnalyticsRange(url.searchParams);
+  const cacheKey = analyticsCacheKey("vip", fromYmd, toYmd);
+  const cached = getAnalyticsCache(cacheKey);
+  if (cached) {
+    sendJson(res, 200, cached);
+    return;
+  }
   const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
@@ -1225,7 +1342,7 @@ async function handleAdminVipOverview(req, res, url) {
     };
   }
 
-  sendJson(res, 200, {
+  const response = {
     meta: { days, from: fromYmd, to: toYmd },
     vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
     registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
@@ -1239,7 +1356,8 @@ async function handleAdminVipOverview(req, res, url) {
       revenue: Number(row.revenue || 0),
     })),
     users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
-  });
+  };
+  sendJson(res, 200, setAnalyticsCache(cacheKey, response));
 }
 
 function serveStatic(req, res, url) {

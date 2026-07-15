@@ -19495,8 +19495,6 @@ body:has(#practiceScreen:not(.hidden)) {
 
 .admin-console--staff #adminSubscriptionsTabBtn,
 .admin-console--staff #adminContentTabBtn,
-.admin-console--staff #adminCreateAccountBtn,
-.admin-console--staff .admin-delete-user,
 .admin-user-role-admin .admin-delete-user {
   display: none !important;
 }
@@ -19977,7 +19975,7 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-main--customers .admin-users-panel,
 .admin-main--customers .admin-user-covers-panel,
 .admin-main--customers .admin-subscriptions-panel { display: none; }
-.admin-console--staff .admin-sidebar nav button:not(#adminCustomersTabBtn) { opacity: .42; cursor: not-allowed; pointer-events: none; }
+.admin-console--staff .admin-sidebar nav button:not(#adminUsersTabBtn):not(#adminCtvTabBtn) { opacity: .42; cursor: not-allowed; pointer-events: none; }
 .admin-customers-panel { margin-top: 28px; }
 .admin-customers-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
 .admin-customers-header h2 { margin: 0 0 6px; color: #0f172a; font-size: 28px; }

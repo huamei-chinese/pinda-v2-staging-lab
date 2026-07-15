@@ -17,14 +17,15 @@ export class AdminService {
     const normalized = String(role || '').trim().toLowerCase();
     if (normalized === 'admin') return 'admin';
     if (normalized === 'sales' || normalized === 'koc') return 'sales';
-    if (normalized === 'ctv' || normalized === 'staff' || normalized === 'employee') return 'ctv';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
+    if (normalized === 'ctv') return 'ctv';
     if (normalized === 'content' || normalized === 'content_manager') return 'content';
     return 'user';
   }
 
-  private normalizeEditableRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' {
+  private normalizeEditableRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'staff' {
     const normalized = this.normalizeRole(role);
-    if (normalized === 'sales' || normalized === 'ctv' || normalized === 'content') return normalized;
+    if (normalized === 'sales' || normalized === 'ctv' || normalized === 'content' || normalized === 'staff') return normalized;
     return 'user';
   }
 
@@ -97,6 +98,14 @@ export class AdminService {
 
   private async assertAdminOrStaff(headers: Record<string, string | string[] | undefined>) {
     const requester = await this.getAdminRequester(headers);
+    if (!requester || !['admin', 'staff'].includes(requester.role)) {
+      throw new HttpException('Vui lòng đăng nhập bằng tài khoản admin.', HttpStatus.UNAUTHORIZED);
+    }
+    return requester;
+  }
+
+  private async assertAdminUserListAccess(headers: Record<string, string | string[] | undefined>) {
+    const requester = await this.getAdminRequester(headers);
     if (!requester || !['admin', 'staff', 'sales', 'ctv', 'content'].includes(requester.role)) {
       throw new HttpException('Vui lòng đăng nhập bằng tài khoản admin.', HttpStatus.UNAUTHORIZED);
     }
@@ -136,7 +145,7 @@ export class AdminService {
     headers: Record<string, string | string[] | undefined>,
     query: Record<string, string | string[] | undefined> = {},
   ) {
-    const requester = await this.assertAdminOrStaff(headers);
+    const requester = await this.assertAdminUserListAccess(headers);
 
     try {
       await this.recalculateCtvVipCounts();
@@ -264,7 +273,7 @@ export class AdminService {
 
   private async recalculateCtvVipCounts() {
     await this.db.query(
-      `UPDATE users SET vip = 0 WHERE role IN ('ctv', 'staff', 'employee', 'sales', 'koc')`,
+      `UPDATE users SET vip = 0 WHERE role IN ('ctv', 'sales', 'koc')`,
     );
     await this.db.query(
       `UPDATE users c
@@ -279,7 +288,7 @@ export class AdminService {
          GROUP BY lower(btrim(u.ref))
        ) sub
        WHERE lower(btrim(c.ref)) = sub.ref
-         AND c.role IN ('ctv', 'staff', 'employee', 'sales', 'koc')`,
+         AND c.role IN ('ctv', 'sales', 'koc')`,
     );
   }
 
@@ -314,7 +323,7 @@ export class AdminService {
     },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    await this.assertAdminOrStaff(headers);
 
     const fullName = String(body.fullName || '').trim();
     const email = String(body.email || '').trim().toLowerCase();
@@ -439,14 +448,8 @@ export class AdminService {
         if (currentRole === 'admin') {
           throw new HttpException('Staff cannot modify admin accounts.', HttpStatus.FORBIDDEN);
         }
-        if (
-          requestedRole !== currentRole ||
-          fullName !== String(currentUser.full_name || '').trim() ||
-          email !== String(currentUser.email || '').trim().toLowerCase() ||
-          currentLevel !== String(currentUser.current_level || 'HSK2').trim().toUpperCase() ||
-          isActive !== (currentUser.is_active === true)
-        ) {
-          throw new HttpException('Staff can only update VIP status.', HttpStatus.FORBIDDEN);
+        if (String(requester.id) === String(id) && requestedRole !== currentRole) {
+          throw new HttpException('Staff cannot change their own role from this endpoint.', HttpStatus.FORBIDDEN);
         }
       }
       const roleToSave = currentRole === 'admin' ? currentUser.role : requestedRole;
@@ -507,19 +510,19 @@ export class AdminService {
     headers: Record<string, string | string[] | undefined>,
   ) {
     const requester = await this.getAdminRequester(headers);
-    if (requester?.role !== 'admin') {
+    if (!requester || !['admin', 'staff'].includes(requester.role)) {
       throw new HttpException('Only admin can manage user roles.', requester ? HttpStatus.FORBIDDEN : HttpStatus.UNAUTHORIZED);
     }
     if (!this.isEditableRoleValue(body.role)) {
-      throw new HttpException('Role must be user, sales, ctv or content.', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Role must be user, sales, ctv, content or staff.', HttpStatus.BAD_REQUEST);
     }
     const nextRole = this.normalizeEditableRole(body.role);
 
-    if (!['user', 'sales', 'ctv', 'content'].includes(nextRole)) {
-      throw new HttpException('Role must be user, sales, ctv or content.', HttpStatus.BAD_REQUEST);
+    if (!['user', 'sales', 'ctv', 'content', 'staff'].includes(nextRole)) {
+      throw new HttpException('Role must be user, sales, ctv, content or staff.', HttpStatus.BAD_REQUEST);
     }
     if (String(requester.id) === String(id)) {
-      throw new HttpException('Cannot change your own admin role.', HttpStatus.FORBIDDEN);
+      throw new HttpException('Cannot change your own role.', HttpStatus.FORBIDDEN);
     }
 
     const current = await this.db.query(
@@ -532,10 +535,10 @@ export class AdminService {
     if (!currentUser) {
       throw new HttpException('Kh么ng t矛m th岷 user.', HttpStatus.NOT_FOUND);
     }
-    if (this.normalizeRole(currentUser.role) === 'admin') {
+    const currentRole = this.normalizeRole(currentUser.role);
+    if (currentRole === 'admin') {
       throw new HttpException('Cannot modify admin accounts.', HttpStatus.FORBIDDEN);
     }
-
     const result = await this.db.query(
       `UPDATE users
        SET role = $1,
@@ -552,7 +555,7 @@ export class AdminService {
     body: { ref?: string },
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    const requester = await this.assertAdminOrStaff(headers);
     const ref = this.authService.normalizeReferralRef(body.ref);
     if (!ref) {
       throw new HttpException('Mã ref không hợp lệ.', HttpStatus.BAD_REQUEST);
@@ -568,10 +571,10 @@ export class AdminService {
     if (!currentUser) {
       throw new HttpException('Không tìm thấy user.', HttpStatus.NOT_FOUND);
     }
-    if (!['ctv', 'sales'].includes(this.normalizeRole(currentUser.role))) {
+    const currentRole = this.normalizeRole(currentUser.role);
+    if (!['ctv', 'sales'].includes(currentRole)) {
       throw new HttpException('Chỉ tài khoản CTV mới được tạo link ref.', HttpStatus.BAD_REQUEST);
     }
-
     const duplicate = await this.db.query(
       `SELECT id, full_name, email
        FROM users
@@ -603,15 +606,34 @@ export class AdminService {
     id: string,
     headers: Record<string, string | string[] | undefined>,
   ) {
-    await this.assertAdmin(headers);
+    const requester = await this.assertAdminOrStaff(headers);
 
     try {
+      if (requester.role === 'staff') {
+        if (String(requester.id) === String(id)) {
+          throw new HttpException('Staff cannot delete their own account.', HttpStatus.FORBIDDEN);
+        }
+        const current = await this.db.query(
+          `SELECT id, role
+           FROM users
+           WHERE id = $1`,
+          [id],
+        );
+        const currentUser = current.rows[0];
+        if (!currentUser) {
+          throw new HttpException('KhÃ´ng tÃ¬m tháº¥y user.', HttpStatus.NOT_FOUND);
+        }
+        if (this.normalizeRole(currentUser.role) === 'admin') {
+          throw new HttpException('Staff cannot delete admin accounts.', HttpStatus.FORBIDDEN);
+        }
+      }
       const result = await this.db.query('DELETE FROM users WHERE id = $1', [id]);
       if (result.rowCount === 0) {
         throw new HttpException('Không tìm thấy user.', HttpStatus.NOT_FOUND);
       }
       return { ok: true };
     } catch (error: any) {
+      if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -754,6 +776,186 @@ export class AdminService {
 
   private static readonly ANALYTICS_TZ = 'Asia/Ho_Chi_Minh';
   private static readonly ANALYTICS_MAX_SPAN_DAYS = 1000;
+  private static readonly ANALYTICS_CACHE_TTL_MS = 2 * 60 * 1000;
+  private readonly analyticsResponseCache = new Map<string, { expiresAt: number; value: any }>();
+
+  private analyticsCacheKey(kind: string, fromYmd: string, toYmd: string): string {
+    return `${kind}:${fromYmd}:${toYmd}`;
+  }
+
+  private getAnalyticsCache<T>(key: string): T | null {
+    const cached = this.analyticsResponseCache.get(key);
+    if (!cached) return null;
+    if (cached.expiresAt <= Date.now()) {
+      this.analyticsResponseCache.delete(key);
+      return null;
+    }
+    return cached.value as T;
+  }
+
+  private setAnalyticsCache<T>(key: string, value: T): T {
+    this.analyticsResponseCache.set(key, {
+      expiresAt: Date.now() + AdminService.ANALYTICS_CACHE_TTL_MS,
+      value,
+    });
+    return value;
+  }
+
+  private async ensureAnalyticsDailySummary(fromYmd: string, toYmd: string): Promise<void> {
+    await this.db.query(`
+      CREATE TABLE IF NOT EXISTS analytics_daily_summary (
+        day DATE PRIMARY KEY,
+        daily_learners INTEGER NOT NULL DEFAULT 0,
+        daily_attempts INTEGER NOT NULL DEFAULT 0,
+        vip_modal_opens INTEGER NOT NULL DEFAULT 0,
+        registered_users INTEGER NOT NULL DEFAULT 0,
+        active_learners INTEGER NOT NULL DEFAULT 0,
+        popup_users INTEGER NOT NULL DEFAULT 0,
+        active_vip_users INTEGER NOT NULL DEFAULT 0,
+        vip_revenue BIGINT NOT NULL DEFAULT 0,
+        vip_activations INTEGER NOT NULL DEFAULT 0,
+        refreshed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    const stale = await this.db.query(
+      `
+      SELECT calendar.day::date AS day
+      FROM generate_series($1::date, $2::date, interval '1 day') AS calendar(day)
+      LEFT JOIN analytics_daily_summary summary ON summary.day = calendar.day::date
+      WHERE summary.day IS NULL
+         OR summary.refreshed_at < NOW() - interval '1 hour'
+         OR (calendar.day::date >= (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date
+             AND summary.refreshed_at < NOW() - interval '2 minutes')
+      ORDER BY calendar.day
+      `,
+      [fromYmd, toYmd],
+    );
+    if (!stale.rows.length) return;
+
+    const refreshFrom = stale.rows[0].day;
+    const refreshTo = stale.rows[stale.rows.length - 1].day;
+    const tz = AdminService.ANALYTICS_TZ;
+
+    await this.db.query(
+      `
+      WITH days AS (
+        SELECT day::date
+        FROM generate_series($1::date, $2::date, interval '1 day') AS day
+      ),
+      learning AS (
+        SELECT (created_at AT TIME ZONE '${tz}')::date AS day,
+               COUNT(DISTINCT user_id) FILTER (
+                 WHERE event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
+               )::int AS daily_learners,
+               COUNT(*) FILTER (WHERE event_type = 'practice_completed')::int AS daily_attempts,
+               COUNT(*) FILTER (WHERE event_type = 'vip_modal_opened')::int AS vip_modal_opens,
+               COUNT(DISTINCT user_id) FILTER (
+                 WHERE event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
+               )::int AS active_learners,
+               COUNT(DISTINCT user_id) FILTER (
+                 WHERE event_type IN ('paywall_shown', 'vip_modal_opened') AND user_id IS NOT NULL
+               )::int AS popup_users
+        FROM learning_events
+        WHERE created_at >= ($1::date::timestamp AT TIME ZONE '${tz}')
+          AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')
+        GROUP BY 1
+      ),
+      registrations AS (
+        SELECT (created_at AT TIME ZONE '${tz}')::date AS day,
+               COUNT(*)::int AS registered_users,
+               COUNT(*) FILTER (
+                 WHERE is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())
+               )::int AS active_vip_users
+        FROM users
+        WHERE created_at >= ($1::date::timestamp AT TIME ZONE '${tz}')
+          AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')
+        GROUP BY 1
+      ),
+      paid AS (
+        SELECT (o.paid_at AT TIME ZONE '${tz}')::date AS day,
+               COUNT(*)::int AS vip_activations,
+               COALESCE(SUM(o.amount), 0)::bigint AS vip_revenue
+        FROM payment_orders o
+        JOIN users u ON u.id = o.user_id
+        WHERE o.status = 'paid'
+          AND o.paid_at IS NOT NULL
+          AND o.amount IN (29000, 129000, 329000)
+          AND LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'
+          AND o.paid_at >= ($1::date::timestamp AT TIME ZONE '${tz}')
+          AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')
+        GROUP BY 1
+      )
+      INSERT INTO analytics_daily_summary (
+        day,
+        daily_learners,
+        daily_attempts,
+        vip_modal_opens,
+        registered_users,
+        active_learners,
+        popup_users,
+        active_vip_users,
+        vip_revenue,
+        vip_activations,
+        refreshed_at
+      )
+      SELECT days.day,
+             COALESCE(learning.daily_learners, 0),
+             COALESCE(learning.daily_attempts, 0),
+             COALESCE(learning.vip_modal_opens, 0),
+             COALESCE(registrations.registered_users, 0),
+             COALESCE(learning.active_learners, 0),
+             COALESCE(learning.popup_users, 0),
+             COALESCE(registrations.active_vip_users, 0),
+             COALESCE(paid.vip_revenue, 0),
+             COALESCE(paid.vip_activations, 0),
+             NOW()
+      FROM days
+      LEFT JOIN learning ON learning.day = days.day
+      LEFT JOIN registrations ON registrations.day = days.day
+      LEFT JOIN paid ON paid.day = days.day
+      ON CONFLICT (day) DO UPDATE SET
+        daily_learners = EXCLUDED.daily_learners,
+        daily_attempts = EXCLUDED.daily_attempts,
+        vip_modal_opens = EXCLUDED.vip_modal_opens,
+        registered_users = EXCLUDED.registered_users,
+        active_learners = EXCLUDED.active_learners,
+        popup_users = EXCLUDED.popup_users,
+        active_vip_users = EXCLUDED.active_vip_users,
+        vip_revenue = EXCLUDED.vip_revenue,
+        vip_activations = EXCLUDED.vip_activations,
+        refreshed_at = NOW()
+      `,
+      [refreshFrom, refreshTo],
+    );
+  }
+
+  private async getAnalyticsDailySummary(fromYmd: string, toYmd: string) {
+    await this.ensureAnalyticsDailySummary(fromYmd, toYmd);
+    return this.db.query(
+      `
+      SELECT to_char(day, 'YYYY-MM-DD') AS day,
+             daily_learners,
+             daily_attempts,
+             vip_modal_opens,
+             registered_users,
+             active_learners,
+             popup_users,
+             active_vip_users,
+             vip_revenue,
+             vip_activations
+      FROM analytics_daily_summary
+      WHERE day BETWEEN $1::date AND $2::date
+      ORDER BY day
+      `,
+      [fromYmd, toYmd],
+    );
+  }
+
+  private sumAnalyticsRows(rows: any[], key: string): number {
+    return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
+  }
+
 
   private toYmd(date: Date): string {
     const year = date.getFullYear();
@@ -853,38 +1055,17 @@ export class AdminService {
 
     const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
     const tz = AdminService.ANALYTICS_TZ;
-    const eventWithinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
     const paidWithinRange = `o.paid_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND o.paid_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
-    const paidDayBucket = `to_char(date_trunc('day', o.paid_at AT TIME ZONE '${tz}'), 'YYYY-MM-DD')`;
     const validVipPaymentFilter = `o.amount IN (29000, 129000, 329000)`;
     const realVipUserFilter = `LOWER(COALESCE(u.email, '')) NOT LIKE 'test%@%'`;
     const params = [fromYmd, toYmd];
+    const cacheKey = this.analyticsCacheKey('vip', fromYmd, toYmd);
+    const cached = this.getAnalyticsCache<any>(cacheKey);
+    if (cached) return cached;
 
     try {
-      const [vipModalOpens, registeredUsers, paidTotals, dailyRevenue, planBreakdown, userPlanRows] = await Promise.all([
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM learning_events WHERE ${eventWithinRange} AND event_type = 'vip_modal_opened'`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM users WHERE ${eventWithinRange}`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*)::int AS activations, COALESCE(SUM(o.amount), 0)::bigint AS revenue
-           FROM payment_orders o
-           JOIN users u ON u.id = o.user_id
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}`,
-          params,
-        ),
-        this.db.query(
-          `SELECT ${paidDayBucket} AS day, COALESCE(SUM(o.amount), 0)::bigint AS value
-           FROM payment_orders o
-           JOIN users u ON u.id = o.user_id
-           WHERE o.status = 'paid' AND o.paid_at IS NOT NULL AND ${validVipPaymentFilter} AND ${realVipUserFilter} AND ${paidWithinRange}
-           GROUP BY 1 ORDER BY 1`,
-          params,
-        ),
+      const [dailySummary, planBreakdown, userPlanRows] = await Promise.all([
+        this.getAnalyticsDailySummary(fromYmd, toYmd),
         this.db.query(
           `SELECT o.plan_id, COALESCE(p.name_vi, o.plan_id) AS plan_name,
                   COUNT(*)::int AS activations,
@@ -948,13 +1129,17 @@ export class AdminService {
         };
       }
 
-      return {
+      const response = {
         meta: { days, from: fromYmd, to: toYmd },
-        vipModalOpens: Number(vipModalOpens.rows[0]?.value || 0),
-        registeredUsers: Number(registeredUsers.rows[0]?.value || 0),
-        vipActivations: Number(paidTotals.rows[0]?.activations || 0),
-        revenue: Number(paidTotals.rows[0]?.revenue || 0),
-        dailyRevenue: this.buildDailySeries(dailyRevenue.rows, fromYmd, toYmd),
+        vipModalOpens: this.sumAnalyticsRows(dailySummary.rows, 'vip_modal_opens'),
+        registeredUsers: this.sumAnalyticsRows(dailySummary.rows, 'registered_users'),
+        vipActivations: this.sumAnalyticsRows(dailySummary.rows, 'vip_activations'),
+        revenue: this.sumAnalyticsRows(dailySummary.rows, 'vip_revenue'),
+        dailyRevenue: this.buildDailySeries(
+          dailySummary.rows.map((row) => ({ day: row.day, value: row.vip_revenue })),
+          fromYmd,
+          toYmd,
+        ),
         planBreakdown: planBreakdown.rows.map((row) => ({
           planId: row.plan_id || '',
           planName: row.plan_name || row.plan_id || '',
@@ -963,9 +1148,11 @@ export class AdminService {
         })),
         users: Array.from(usersById.values()).sort((a, b) => b.totalRevenue - a.totalRevenue || b.totalActivations - a.totalActivations),
       };
+      return this.setAnalyticsCache(cacheKey, response);
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(error.message || 'Lá»—i server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -977,37 +1164,15 @@ export class AdminService {
 
     const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
     const tz = AdminService.ANALYTICS_TZ;
-    // Range boundaries and daily buckets are aligned to Ho Chi Minh calendar days.
     const withinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
-    const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${tz}'), 'YYYY-MM-DD')`;
     const params = [fromYmd, toYmd];
+    const cacheKey = this.analyticsCacheKey('learning', fromYmd, toYmd);
+    const cached = this.getAnalyticsCache<any>(cacheKey);
+    if (cached) return cached;
 
     try {
-      const [
-        dailyLearners,
-        dailyAttempts,
-        topLessons,
-        sourceBreakdown,
-        vipModalOpens,
-        registeredCount,
-        learnersCount,
-        popupCount,
-        vipCount,
-      ] = await Promise.all([
-        this.db.query(
-          `SELECT ${dayBucket} AS day, COUNT(DISTINCT user_id) AS value
-           FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL
-           GROUP BY 1 ORDER BY 1`,
-          params,
-        ),
-        this.db.query(
-          `SELECT ${dayBucket} AS day, COUNT(*) AS value
-           FROM learning_events
-           WHERE ${withinRange} AND event_type = 'practice_completed'
-           GROUP BY 1 ORDER BY 1`,
-          params,
-        ),
+      const [dailySummary, topLessons, sourceBreakdown] = await Promise.all([
+        this.getAnalyticsDailySummary(fromYmd, toYmd),
         this.db.query(
           `SELECT lesson_id, level, COUNT(*) AS value, COUNT(DISTINCT user_id) AS learners
            FROM learning_events
@@ -1022,37 +1187,20 @@ export class AdminService {
            GROUP BY 1 ORDER BY events DESC`,
           params,
         ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM learning_events WHERE ${withinRange} AND event_type = 'vip_modal_opened'`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM users WHERE ${withinRange}`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('lesson_opened', 'question_answered', 'practice_completed') AND user_id IS NOT NULL`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(DISTINCT user_id) AS value FROM learning_events
-           WHERE ${withinRange} AND event_type IN ('paywall_shown', 'vip_modal_opened') AND user_id IS NOT NULL`,
-          params,
-        ),
-        this.db.query(
-          `SELECT COUNT(*) AS value FROM users
-           WHERE ${withinRange} AND is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW())`,
-          params,
-        ),
       ]);
 
-      const num = (result: any) => Number(result.rows[0]?.value || 0);
-
-      return {
+      const response = {
         meta: { days, from: fromYmd, to: toYmd },
-        dailyLearners: this.buildDailySeries(dailyLearners.rows, fromYmd, toYmd),
-        dailyAttempts: this.buildDailySeries(dailyAttempts.rows, fromYmd, toYmd),
+        dailyLearners: this.buildDailySeries(
+          dailySummary.rows.map((row) => ({ day: row.day, value: row.daily_learners })),
+          fromYmd,
+          toYmd,
+        ),
+        dailyAttempts: this.buildDailySeries(
+          dailySummary.rows.map((row) => ({ day: row.day, value: row.daily_attempts })),
+          fromYmd,
+          toYmd,
+        ),
         topLessons: topLessons.rows.map((row) => ({
           lessonId: row.lesson_id,
           level: row.level || '',
@@ -1064,17 +1212,18 @@ export class AdminService {
           events: Number(row.events) || 0,
           users: Number(row.users) || 0,
         })),
-        vipModalOpens: num(vipModalOpens),
+        vipModalOpens: this.sumAnalyticsRows(dailySummary.rows, 'vip_modal_opens'),
         funnel: {
-          registered: num(registeredCount),
-          learned: num(learnersCount),
-          popup: num(popupCount),
-          vip: num(vipCount),
+          registered: this.sumAnalyticsRows(dailySummary.rows, 'registered_users'),
+          learned: this.sumAnalyticsRows(dailySummary.rows, 'active_learners'),
+          popup: this.sumAnalyticsRows(dailySummary.rows, 'popup_users'),
+          vip: this.sumAnalyticsRows(dailySummary.rows, 'active_vip_users'),
         },
       };
+      return this.setAnalyticsCache(cacheKey, response);
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
-      throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(error.message || 'Lá»—i server.', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

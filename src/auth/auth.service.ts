@@ -14,11 +14,12 @@ export class AuthService {
     return normalized || null;
   }
 
-  private normalizeRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'admin' {
+  private normalizeRole(role: string | null | undefined): 'user' | 'sales' | 'ctv' | 'content' | 'staff' | 'admin' {
     const normalized = String(role || '').trim().toLowerCase();
     if (normalized === 'admin') return 'admin';
     if (normalized === 'sales' || normalized === 'koc') return 'sales';
-    if (normalized === 'ctv' || normalized === 'staff' || normalized === 'employee') return 'ctv';
+    if (normalized === 'staff' || normalized === 'employee') return 'staff';
+    if (normalized === 'ctv') return 'ctv';
     if (normalized === 'content' || normalized === 'content_manager') return 'content';
     return 'user';
   }

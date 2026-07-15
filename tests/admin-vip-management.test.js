@@ -43,7 +43,7 @@ test("VIP management UI loads revenue activation registration and paginated user
   assert.match(stylesSource, /\.admin-vip-pagination/);
 });
 
-test("admin VIP backend aggregates paid orders popup opens and all historical user registrations", () => {
+test("admin VIP backend uses daily summary table for dashboard totals", () => {
   assert.match(adminServiceSource, /async getVipManagement/);
   assert.match(adminServiceSource, /normalizeAnalyticsDateInput\(options\.from\)/);
   assert.match(adminServiceSource, /\^\(\\d\{1,2\}\)\[\.\/-\]\(\\d\{1,2\}\)\[\.\/-\]\(\\d\{4\}\)\$/);
@@ -54,8 +54,12 @@ test("admin VIP backend aggregates paid orders popup opens and all historical us
   assert.match(adminServiceSource, /LOWER\(COALESCE\(u\.email, ''\)\) NOT LIKE 'test%@%'/);
   assert.match(adminServiceSource, /COALESCE\(SUM\(o\.amount\), 0\)::bigint AS revenue/);
   assert.match(adminServiceSource, /event_type = 'vip_modal_opened'/);
-  assert.match(adminServiceSource, /SELECT COUNT\(\*\) AS value FROM users WHERE \$\{eventWithinRange\}/);
-  assert.match(adminServiceSource, /registeredUsers: Number\(registeredUsers\.rows\[0\]\?\.value \|\| 0\)/);
+  assert.match(adminServiceSource, /CREATE TABLE IF NOT EXISTS analytics_daily_summary/);
+  assert.match(adminServiceSource, /private async ensureAnalyticsDailySummary/);
+  assert.match(adminServiceSource, /private async getAnalyticsDailySummary/);
+  assert.match(adminServiceSource, /registeredUsers: this\.sumAnalyticsRows\(dailySummary\.rows, 'registered_users'\)/);
+  assert.match(adminServiceSource, /vipActivations: this\.sumAnalyticsRows\(dailySummary\.rows, 'vip_activations'\)/);
+  assert.match(adminServiceSource, /revenue: this\.sumAnalyticsRows\(dailySummary\.rows, 'vip_revenue'\)/);
   assert.doesNotMatch(adminServiceSource, /LIMIT 400/);
   assert.match(adminVipControllerSource, /@Controller\('api\/admin\/vip'\)/);
   assert.match(adminModuleSource, /AdminVipController/);
@@ -86,4 +90,26 @@ test("Netlify admin user updates persist VIP plan ids including 90d", () => {
   assert.match(netlifyApiSource, /if \(durationDays === 90\) return "90d"/);
   assert.match(netlifyApiSource, /INSERT INTO users \(full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id\)/);
   assert.match(netlifyApiSource, /vip_plan_id = CASE[\s\S]*COALESCE\(\$9, vip_plan_id\)/);
+});
+
+
+test("dashboard analytics endpoints use short-lived response caches", () => {
+  assert.match(adminServiceSource, /ANALYTICS_CACHE_TTL_MS = 2 \* 60 \* 1000/);
+  assert.match(adminServiceSource, /analyticsCacheKey\('vip', fromYmd, toYmd\)/);
+  assert.match(adminServiceSource, /analyticsCacheKey\('learning', fromYmd, toYmd\)/);
+  assert.match(adminServiceSource, /return this\.setAnalyticsCache\(cacheKey, response\)/);
+  assert.match(serverSource, /const analyticsResponseCache = new Map\(\)/);
+  assert.match(serverSource, /setAnalyticsCache\(cacheKey, response\)/);
+  assert.match(netlifyApiSource, /const analyticsResponseCache = new Map\(\)/);
+  assert.match(netlifyApiSource, /return json\(setAnalyticsCache\(cacheKey, response\)\)/);
+});
+
+
+test("admin learning analytics uses daily summary table for chart and funnel totals", () => {
+  assert.match(adminServiceSource, /dailyLearners: this\.buildDailySeries\(\s*dailySummary\.rows\.map\(\(row\) => \(\{ day: row\.day, value: row\.daily_learners \}\)\)/s);
+  assert.match(adminServiceSource, /dailyAttempts: this\.buildDailySeries\(\s*dailySummary\.rows\.map\(\(row\) => \(\{ day: row\.day, value: row\.daily_attempts \}\)\)/s);
+  assert.match(adminServiceSource, /registered: this\.sumAnalyticsRows\(dailySummary\.rows, 'registered_users'\)/);
+  assert.match(adminServiceSource, /learned: this\.sumAnalyticsRows\(dailySummary\.rows, 'active_learners'\)/);
+  assert.match(adminServiceSource, /popup: this\.sumAnalyticsRows\(dailySummary\.rows, 'popup_users'\)/);
+  assert.match(adminServiceSource, /vip: this\.sumAnalyticsRows\(dailySummary\.rows, 'active_vip_users'\)/);
 });

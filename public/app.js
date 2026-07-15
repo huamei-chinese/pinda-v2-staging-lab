@@ -642,13 +642,14 @@ function readStoredJson(key) {
   }
 }
 
-const ADMIN_PORTAL_ROLE_KEYS = ["admin", "sales", "ctv", "content"];
+const ADMIN_PORTAL_ROLE_KEYS = ["admin", "staff", "sales", "ctv", "content"];
 
 function normalizeAdminPortalRole(role) {
   const normalized = String(role || "").trim().toLowerCase();
   if (normalized === "admin") return "admin";
   if (normalized === "sales" || normalized === "koc") return "sales";
-  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  if (normalized === "ctv") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
 }
@@ -4336,7 +4337,7 @@ function renderAdminContentPanelHTML() {
 }
 
 function isAdminCtvUser(user) {
-  return String(user?.role || "").trim().toLowerCase() === "ctv";
+  return ["ctv", "sales"].includes(normalizeAdminRole(user?.role));
 }
 
 function normalizeAdminCtvRef(value) {
@@ -6000,6 +6001,7 @@ function getAdminPortalRole(user = state.adminUser) {
 function getAllowedAdminTabsForRole(role) {
   const normalized = normalizeAdminPortalRole(role);
   if (normalized === "admin") return ["users", "vip", "subscriptions", "content", "collaborators", "analytics"];
+  if (normalized === "staff") return ["users", "collaborators"];
   if (normalized === "sales" || normalized === "ctv") return ["customers"];
   if (normalized === "content") return ["content"];
   return [];
@@ -6027,8 +6029,7 @@ function isAdminUser() {
 }
 
 function isStaffAdminUser() {
-  const role = getAdminPortalRole();
-  return role !== "admin" && isAdminPortalRole(role);
+  return getAdminPortalRole() === "staff";
 }
 
 function isKocAdminUser() {
@@ -6937,7 +6938,8 @@ function normalizeAdminRole(role) {
   const normalized = String(role || "").toLowerCase();
   if (normalized === "admin") return "admin";
   if (normalized === "sales" || normalized === "koc") return "sales";
-  if (normalized === "ctv" || normalized === "staff" || normalized === "employee") return "ctv";
+  if (normalized === "staff" || normalized === "employee") return "staff";
+  if (normalized === "ctv") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
 }
@@ -6945,16 +6947,22 @@ function normalizeAdminRole(role) {
 function getAdminRoleLabel(role, isVi = state.lang === "vi") {
   const normalized = normalizeAdminRole(role);
   if (normalized === "admin") return isVi ? "Quản trị viên cao nhất" : "超级管理员";
+  if (normalized === "staff") return "Staff";
   if (normalized === "sales") return "KOC";
   if (normalized === "ctv") return "CTV";
   if (normalized === "content") return "Content";
   return isVi ? "Thường" : "普通用户";
 }
 
-const ADMIN_EDITABLE_ROLES = ["user", "sales", "ctv", "content"];
+const ADMIN_EDITABLE_ROLES = ["user", "sales", "ctv", "content", "staff"];
+const STAFF_EDITABLE_ROLES = ADMIN_EDITABLE_ROLES;
 
-function renderAdminRoleOptionsHTML(currentRole, isVi = state.lang === "vi") {
-  return ADMIN_EDITABLE_ROLES.map((role) => {
+function getAdminAssignableRoles() {
+  return isAdminUser() ? ADMIN_EDITABLE_ROLES : STAFF_EDITABLE_ROLES;
+}
+
+function renderAdminRoleOptionsHTML(currentRole, isVi = state.lang === "vi", roles = getAdminAssignableRoles()) {
+  return roles.map((role) => {
     const label = getAdminRoleLabel(role, isVi);
     return `<option value="${role}" ${role === currentRole ? "selected" : ""}>${escapeAttr(label)}</option>`;
   }).join("");
@@ -7105,9 +7113,14 @@ function buildAdminUserRowsHTML(users, isVi) {
     const role = normalizeAdminRole(user.role);
     const registeredAt = getAdminUserRegistrationTimestamp(user);
     const registeredLabel = formatAdminRegistrationDate(registeredAt, isVi);
-    const canChangeStaffRole = isAdminUser() && role !== "admin";
+    const canChangeStaffRole = role !== "admin" && (
+      isAdminUser() ||
+      (getAdminPortalRole() === "staff" && STAFF_EDITABLE_ROLES.includes(role))
+    );
+    const assignableRoles = isAdminUser() ? ADMIN_EDITABLE_ROLES : STAFF_EDITABLE_ROLES;
+    const canManageVip = (isAdminUser() || isStaffAdminUser()) && role !== "admin";
     const staffRoleButton = canChangeStaffRole
-      ? `<select class="admin-role-select" aria-label="${isVi ? "Vai trò" : "角色"}">${renderAdminRoleOptionsHTML(role, isVi)}</select><button class="admin-role-user" type="button">${isVi ? "Lưu vai trò" : "保存角色"}</button>`
+      ? `<select class="admin-role-select" aria-label="${isVi ? "Vai trò" : "角色"}">${renderAdminRoleOptionsHTML(role, isVi, assignableRoles)}</select><button class="admin-role-user" type="button">${isVi ? "Lưu vai trò" : "保存角色"}</button>`
       : "";
     return `
       <tr class="admin-user-role-${role}" data-user-id="${escapeAttr(user.id)}" data-registered-at="${escapeAttr(registeredAt)}">
@@ -7137,6 +7150,7 @@ function buildAdminUserRowsHTML(users, isVi) {
         </td>
         <td>
           <div class="admin-row-actions">
+            ${canManageVip ? `
             <button class="admin-vip-user" type="button" data-vip-days="7" aria-label="VIP 7 days">VIP 7d</button>
             <button class="admin-vip-user" type="button" data-vip-days="30" aria-label="VIP 30 days">VIP 30d</button>
             <button class="admin-vip-user" type="button" data-vip-days="90" aria-label="VIP 90 days">VIP 90d</button>
@@ -7146,6 +7160,7 @@ function buildAdminUserRowsHTML(users, isVi) {
             <button class="admin-delete-user" type="button" aria-label="${isVi ? "Xóa" : "删除"}">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
             </button>
+            ` : ""}
           </div>
           <div class="admin-row-role-actions">
             ${staffRoleButton}
@@ -16967,7 +16982,8 @@ function bindEvents() {
 
     const adminRoleUser = event.target.closest(".admin-role-user");
     if (adminRoleUser) {
-      if (!isAdminUser()) {
+      const assignableRoles = getAdminAssignableRoles();
+      if (!isAdminUser() && getAdminPortalRole() !== "staff") {
         showToast(state.lang === "vi" ? "Bạn không có quyền quản lý nhân viên." : "你没有员工权限管理权限。");
         return;
       }
@@ -16975,7 +16991,7 @@ function bindEvents() {
       const userId = row.dataset.userId;
       const roleSelect = row.querySelector(".admin-role-select");
       const nextRole = normalizeAdminRole(roleSelect?.value || row.querySelector('[data-field="role"]')?.value || "user");
-      if (!ADMIN_EDITABLE_ROLES.includes(nextRole)) {
+      if (!assignableRoles.includes(nextRole)) {
         showToast(state.lang === "vi" ? "Vai trò không hợp lệ." : "角色无效。");
         return;
       }
@@ -17004,7 +17020,7 @@ function bindEvents() {
 
     const adminDeleteUser = event.target.closest(".admin-delete-user");
     if (adminDeleteUser) {
-      if (!isAdminUser()) return;
+      if (!isAdminUser() && !isStaffAdminUser()) return;
       const row = adminDeleteUser.closest("[data-user-id]");
       showAdminDeleteUserConfirm(row);
       return;
