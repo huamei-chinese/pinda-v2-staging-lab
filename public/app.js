@@ -6354,8 +6354,9 @@ function renderAdminAnalyticsPanelHTML() {
     const data = state.adminAnalytics;
     const dailyLearners = data.dailyLearners || [];
     const dailyAttempts = data.dailyAttempts || [];
+    const learnersTotal = dailyLearners.reduce((sum, point) => sum + (Number(point.value) || 0), 0);
     const attemptsTotal = dailyAttempts.reduce((sum, point) => sum + (Number(point.value) || 0), 0);
-    const learnersPeak = dailyLearners.reduce((max, point) => Math.max(max, Number(point.value) || 0), 0);
+    const analyticsKpiHint = isVi ? "trong kho\u1ea3ng l\u1ecdc" : "\u6309\u7b5b\u9009\u8303\u56f4";
     const vipBehavior = data.vipBehavior || {};
     const vipSessions = Array.isArray(vipBehavior.recentSessions) ? vipBehavior.recentSessions : [];
     const activeVipSessions = Number(vipBehavior.activeSessions || 0);
@@ -6500,15 +6501,15 @@ function renderAdminAnalyticsPanelHTML() {
 
     bodyHTML = `
       <div class="admin-analytics-grid">
-        <div class="admin-analytics-chart">
-          <h3>${isVi ? "Xu hướng người học mỗi ngày" : "每日学习人数趋势"}</h3>
-          <div class="admin-analytics-metric">${formatAnalyticsNumber(learnersPeak)}</div>
-          ${renderAnalyticsLineChart(dailyLearners, "#0ea5e9", { unitLabel: isVi ? "người" : "用户" })}
+        <div class="admin-analytics-kpi-card">
+          <h3>${isVi ? "L\u01b0\u1ee3t ng\u01b0\u1eddi h\u1ecdc" : "\u5b66\u4e60\u4eba\u6b21"}</h3>
+          <strong>${formatAnalyticsNumber(learnersTotal)}</strong>
+          <small>${analyticsKpiHint}</small>
         </div>
-        <div class="admin-analytics-chart">
-          <h3>${isVi ? "Xu hướng lượt làm bài mỗi ngày" : "每日答题次数趋势"}</h3>
-          <div class="admin-analytics-metric">${formatAnalyticsNumber(attemptsTotal)}</div>
-          ${renderAnalyticsLineChart(dailyAttempts, "#059669", { unitLabel: isVi ? "lượt" : "次" })}
+        <div class="admin-analytics-kpi-card">
+          <h3>${isVi ? "L\u01b0\u1ee3t l\u00e0m b\u00e0i" : "\u7b54\u9898\u6b21\u6570"}</h3>
+          <strong>${formatAnalyticsNumber(attemptsTotal)}</strong>
+          <small>${analyticsKpiHint}</small>
         </div>
         <div class="admin-analytics-block admin-analytics-block--wide">
           <h3>${isVi ? "Theo d\u00f5i h\u00e0nh vi h\u1ecdc t\u1eadp VIP" : "VIP \u5b66\u4e60\u884c\u4e3a\u8ddf\u8e2a"}</h3>
@@ -14667,8 +14668,6 @@ function renderHomeDesktopLayoutHTML(isVi) {
       </div>
       
       <aside class="home-desktop-rail" aria-label="${isVi ? "Tiến độ học tập" : "学习进度"}">
-        ${renderHomeCoinLeaderboardTriggerHTML(isVi)}
-
         <div class="${homeDesktopProfileClass}" ${homeDesktopProfileAttrs}>
           <div class="home-desktop-avatar">${avatarHTML}</div>
           <div class="home-desktop-profile-copy">

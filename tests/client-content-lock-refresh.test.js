@@ -33,7 +33,7 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=staff-ctv-ref-refresh-20260716/);
+  assert.match(indexHtmlSource, /app\.js\?v=analytics-kpi-cards-20260716/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);

@@ -48,5 +48,5 @@ test("compact repeat lesson has an iPad tablet responsive breakpoint", () => {
     styles,
     /@media \(min-width:\s*701px\) and \(max-width:\s*1024px\) \{[\s\S]*\.listening-repeat-feed-active-content[\s\S]*width:\s*min\(100%,\s*660px\) !important;[\s\S]*\.listening-repeat-card-actions--triad[\s\S]*width:\s*min\(100%,\s*380px\) !important;/,
   );
-  assert.match(indexHtml, /styles\.css\?v=analytics-remove-low-engagement-20260715/);
+  assert.match(indexHtml, /styles\.css\?v=analytics-kpi-cards-20260716/);
 });

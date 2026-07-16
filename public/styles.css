@@ -21300,6 +21300,10 @@ body:has(#practiceScreen:not(.hidden)) {
 .admin-analytics-chart, .admin-analytics-block { background: #fff; border: 1px solid #e6edf5; border-radius: 16px; padding: 18px 20px; }
 .admin-analytics-chart h3, .admin-analytics-block h3 { margin: 0 0 4px; font-size: 16px; font-weight: 900; color: #0f172a; }
 .admin-analytics-chart .admin-analytics-metric { font-size: 28px; font-weight: 950; color: #047857; }
+.admin-analytics-kpi-card { min-height: 116px; background: #fff; border: 1px solid #e6edf5; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; justify-content: center; }
+.admin-analytics-kpi-card h3 { margin: 0 0 10px; font-size: 16px; font-weight: 900; color: #0f172a; }
+.admin-analytics-kpi-card strong { display: block; color: #047857; font-size: 34px; line-height: 1; font-weight: 950; }
+.admin-analytics-kpi-card small { display: block; margin-top: 8px; color: #94a3b8; font-size: 12px; font-weight: 800; }
 .admin-analytics-chart svg { width: 100%; height: 160px; display: block; margin-top: 8px; }
 .admin-analytics-chart .chart-line { fill: none; stroke-width: 2.5; }
 .admin-analytics-chart .chart-area { opacity: .12; }
@@ -51935,14 +51939,16 @@ body:has(#practiceScreen:not(.hidden)) {
 }
 
 .home-desktop-nav-item.home-desktop-rank-label {
-  color: #0f766e !important;
-  background: rgba(236, 253, 245, 0.76) !important;
-  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  color: #475569 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
 }
 
 .home-desktop-nav-item.home-desktop-rank-label:hover {
-  color: #065f46 !important;
-  background: rgba(209, 250, 229, 0.9) !important;
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .screen-home .home-coin-leaderboard-trigger {

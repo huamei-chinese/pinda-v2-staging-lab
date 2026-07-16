@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const test = require("node:test");
 
 const appSource = fs.readFileSync("public/app.js", "utf8");
+const stylesSource = fs.readFileSync("public/styles.css", "utf8");
 const adminServiceSource = fs.readFileSync("src/admin/admin.service.ts", "utf8");
 const netlifyApiSource = fs.readFileSync("netlify/functions/api.mjs", "utf8");
 const eventsServiceSource = fs.readFileSync("src/events/events.service.ts", "utf8");
@@ -48,6 +49,16 @@ test("admin analytics renders VIP behavior instead of the old top-course table",
   assert.match(appSource, /getLearningBehaviorPartLabel/);
   assert.doesNotMatch(vipBehaviorBlock, /VIP active|live sessions|in range|Total time|VIP study time|Active VIP users|by range|No VIP learning sessions|No module summary|No VIP user summary|theo range|user VIP|realtime/);
   assert.doesNotMatch(appSource, /<tbody>\$\{topLessonsHTML\}<\/tbody>/);
+});
+
+test("admin learning analytics top metrics render as static KPI cards", () => {
+  assert.match(appSource, /admin-analytics-kpi-card/);
+  assert.match(appSource, /const learnersTotal = dailyLearners\.reduce/);
+  assert.match(appSource, /formatAnalyticsNumber\(learnersTotal\)/);
+  assert.match(appSource, /formatAnalyticsNumber\(attemptsTotal\)/);
+  assert.doesNotMatch(appSource, /renderAnalyticsLineChart\(dailyLearners/);
+  assert.doesNotMatch(appSource, /renderAnalyticsLineChart\(dailyAttempts/);
+  assert.match(stylesSource, /\.admin-analytics-kpi-card/);
 });
 
 test("backend analytics exposes active VIP learning sessions", () => {
