@@ -50805,6 +50805,25 @@ body:has(#practiceScreen:not(.hidden)) {
   background: linear-gradient(135deg, #10b981, #059669) !important;
 }
 
+.screen-home .home-coin-hunt-tasks li.is-claimable {
+  border-color: rgba(245, 158, 11, 0.42) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 251, 235, 0.96), rgba(236, 253, 245, 0.92)) !important;
+  box-shadow:
+    0 10px 22px rgba(245, 158, 11, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.screen-home .home-coin-hunt-tasks li.is-claimed {
+  border-color: rgba(20, 184, 166, 0.34) !important;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.95), rgba(240, 253, 250, 0.86)) !important;
+}
+
+.screen-home .home-coin-hunt-tasks li.is-claimed .home-coin-hunt-task-meta b {
+  color: #047857 !important;
+}
+
 .screen-home .home-coin-hunt-cta {
   width: 100% !important;
   min-height: 42px !important;
@@ -54921,6 +54940,16 @@ body:has(#practiceScreen:not(.hidden)) {
   #homeCoinHuntSheet .home-coin-hunt-task-meta b {
     color: #08756d !important;
     font-size: 15px !important;
+  }
+
+  #homeCoinHuntSheet .home-coin-hunt-tasks li.is-claimable {
+    border-color: rgba(245, 158, 11, .46) !important;
+    background:
+      linear-gradient(135deg, rgba(255, 251, 235, .98), rgba(240, 253, 250, .92)) !important;
+  }
+
+  #homeCoinHuntSheet .home-coin-hunt-tasks li.is-claimed .home-coin-hunt-task-meta b {
+    color: #047857 !important;
   }
 
   #homeCoinHuntSheet .home-coin-hunt-cta {

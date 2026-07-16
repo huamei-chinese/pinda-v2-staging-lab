@@ -8,6 +8,7 @@ import { PaymentModule } from './payment/payment.module';
 import { ContentModule } from './content/content.module';
 import { ListeningModule } from './listening/listening.module';
 import { EventsModule } from './events/events.module';
+import { CoinsModule } from './coins/coins.module';
 import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-local-preview.module';
 
 const NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, proxy-revalidate';
@@ -59,6 +60,7 @@ function setShortLivedRuntimeHeaders(res: any) {
     ContentModule,
     ListeningModule,
     EventsModule,
+    CoinsModule,
     AdminV2LocalPreviewModule,
   ],
 })

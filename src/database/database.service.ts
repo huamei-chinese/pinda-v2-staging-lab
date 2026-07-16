@@ -129,6 +129,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
     `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS coin_transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        source TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_unique_claim
+      ON coin_transactions(user_id, source, period_key);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_user_created
+      ON coin_transactions(user_id, created_at DESC);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_created
+      ON coin_transactions(created_at DESC);
+    `);
     await this.seedStaffAccounts();
   }
 
@@ -426,6 +449,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS coin_transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        source TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_unique_claim
+      ON coin_transactions(user_id, source, period_key);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_user_created
+      ON coin_transactions(user_id, created_at DESC);
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_created
+      ON coin_transactions(created_at DESC);
     `);
   }
 

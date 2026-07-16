@@ -33,6 +33,17 @@ const DEFAULT_PAYMENT_PLANS = [
 ];
 
 const SEEDED_STAFF_EMAILS = ["kamini01@gmail.com", "theanh.tuyendung3332@gmail.com"];
+const HOME_COIN_TASK_REWARDS = {
+  vocab: 10,
+  listening: 15,
+  write: 15,
+};
+const HOME_COIN_TASK_REQUIREMENTS = {
+  vocab: { progressKey: "savedVocabCount", minimum: 20 },
+  listening: { progressKey: "listenSeconds", minimum: 30 * 60 },
+  write: { progressKey: "writeSeconds", minimum: 30 * 60 },
+};
+const HOME_COIN_TIME_ZONE = "Asia/Ho_Chi_Minh";
 
 function env(name) {
   return globalThis.Netlify?.env?.get(name) || process.env[name] || "";
@@ -771,8 +782,36 @@ async function query(text, params) {
   return getPool().query(text, params);
 }
 
+async function ensureCoinTransactionSchema(db) {
+  await db.query("CREATE EXTENSION IF NOT EXISTS pgcrypto;");
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS coin_transactions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source TEXT NOT NULL,
+      period_key TEXT NOT NULL,
+      amount INTEGER NOT NULL CHECK (amount > 0),
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await db.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_unique_claim
+    ON coin_transactions(user_id, source, period_key);
+  `);
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_coin_transactions_user_created
+    ON coin_transactions(user_id, created_at DESC);
+  `);
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_coin_transactions_created
+    ON coin_transactions(created_at DESC);
+  `);
+}
+
 async function ensureSafeSchemaMigrations(db) {
   await db.query("ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
+  await ensureCoinTransactionSchema(db);
   await seedStaffAccounts(db);
 }
 
@@ -1039,6 +1078,29 @@ async function ensureSchema() {
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_lesson ON learning_events(lesson_id);`);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_source ON learning_events(source);`);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);`);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS coin_transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        source TEXT NOT NULL,
+        period_key TEXT NOT NULL,
+        amount INTEGER NOT NULL CHECK (amount > 0),
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await db.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_unique_claim
+      ON coin_transactions(user_id, source, period_key);
+    `);
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_user_created
+      ON coin_transactions(user_id, created_at DESC);
+    `);
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_coin_transactions_created
+      ON coin_transactions(created_at DESC);
+    `);
   })();
   return schemaReady;
 }
@@ -1132,6 +1194,68 @@ function normalizePublicRole(role) {
   if (normalized === "ctv") return "ctv";
   if (normalized === "content" || normalized === "content_manager") return "content";
   return "user";
+}
+
+function normalizeUuid(value) {
+  const normalized = String(value || "").trim();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized)
+    ? normalized
+    : "";
+}
+
+function getVietnamDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: HOME_COIN_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+}
+
+function normalizeCoinSource(source) {
+  const normalized = String(source || "").trim().toLowerCase().replace(/^daily[-_:]/, "");
+  return Object.prototype.hasOwnProperty.call(HOME_COIN_TASK_REWARDS, normalized) ? normalized : "";
+}
+
+function isCoinClaimProgressEligible(source, progress = {}) {
+  const requirement = HOME_COIN_TASK_REQUIREMENTS[source];
+  if (!requirement) return false;
+  return Number(progress?.[requirement.progressKey] || 0) >= requirement.minimum;
+}
+
+function normalizeCoinPeriod(period) {
+  return String(period || "").trim().toLowerCase() === "month" ? "month" : "week";
+}
+
+function coinPeriodSql(period) {
+  return period === "month"
+    ? `date_trunc('month', timezone('${HOME_COIN_TIME_ZONE}', now())) AT TIME ZONE '${HOME_COIN_TIME_ZONE}'`
+    : `date_trunc('week', timezone('${HOME_COIN_TIME_ZONE}', now())) AT TIME ZONE '${HOME_COIN_TIME_ZONE}'`;
+}
+
+function coinWalletFromRows(rows = []) {
+  const getAmount = (period) => Number(rows.find((row) => row.period === period)?.amount || 0);
+  return {
+    coins: getAmount("total"),
+    weeklyCoins: getAmount("week"),
+    monthlyCoins: getAmount("month"),
+  };
+}
+
+function publicCoinEntry(row) {
+  const displayName = row.full_name || row.email || "HuaMei learner";
+  return {
+    userId: row.user_id,
+    displayName,
+    avatarInitial: String(displayName || "H").trim().charAt(0).toUpperCase() || "H",
+    avatarUrl: row.avatar_url || "",
+    score: Number(row.score || 0),
+    coins: Number(row.total_coins || row.score || 0),
+    rank: Number(row.rank || 0),
+    updatedAt: row.last_awarded_at || null,
+  };
 }
 
 function normalizeEditableRole(role) {
@@ -1380,6 +1504,172 @@ async function assertAdminOrStaff(req) {
     throw apiError("Vui lÃ²ng Ä‘Äƒng nháº­p báº±ng tÃ i khoáº£n admin.", 401);
   }
   return requester;
+}
+
+async function getCoinRequester(req) {
+  const userId = normalizeUuid(req.headers.get("x-user-id"));
+  if (!userId) return null;
+  const result = await query(
+    "SELECT id, full_name, email, avatar_url, is_active FROM users WHERE id = $1",
+    [userId],
+  );
+  const user = result.rows[0];
+  return user?.is_active === true ? user : null;
+}
+
+async function getCoinWallet(userId) {
+  const result = await query(
+    `SELECT period, COALESCE(SUM(amount), 0)::int AS amount
+     FROM (
+       SELECT 'total' AS period, amount
+       FROM coin_transactions
+       WHERE user_id = $1
+       UNION ALL
+       SELECT 'week' AS period, amount
+       FROM coin_transactions
+       WHERE user_id = $1
+         AND created_at >= ${coinPeriodSql("week")}
+       UNION ALL
+       SELECT 'month' AS period, amount
+       FROM coin_transactions
+       WHERE user_id = $1
+         AND created_at >= ${coinPeriodSql("month")}
+     ) scoped
+     GROUP BY period`,
+    [userId],
+  );
+  return coinWalletFromRows(result.rows);
+}
+
+async function getTodayCoinClaims(userId) {
+  const periodKey = `daily:${getVietnamDateKey()}`;
+  const result = await query(
+    `SELECT source, amount, created_at
+     FROM coin_transactions
+     WHERE user_id = $1
+       AND period_key = $2
+       AND source = ANY($3::text[])
+     ORDER BY created_at ASC`,
+    [userId, periodKey, Object.keys(HOME_COIN_TASK_REWARDS)],
+  );
+  return {
+    periodKey,
+    claimedSources: result.rows.map((row) => row.source),
+    claims: result.rows.map((row) => ({
+      source: row.source,
+      amount: Number(row.amount || 0),
+      createdAt: row.created_at,
+    })),
+  };
+}
+
+async function getCoinSummary(req) {
+  const requester = await getCoinRequester(req);
+  if (!requester) throw apiError("Vui long dang nhap de dung xu HuaMei.", 401);
+  const wallet = await getCoinWallet(requester.id);
+  const today = await getTodayCoinClaims(requester.id);
+  return json({
+    wallet,
+    today,
+    rewards: HOME_COIN_TASK_REWARDS,
+    user: {
+      id: requester.id,
+      fullName: requester.full_name,
+      email: requester.email,
+      avatarUrl: requester.avatar_url || "",
+    },
+    generatedAt: new Date().toISOString(),
+  });
+}
+
+async function claimHomeCoin(req, body) {
+  const requester = await getCoinRequester(req);
+  if (!requester) throw apiError("Vui long dang nhap de nhan xu.", 401);
+  const source = normalizeCoinSource(body.source || body.taskId);
+  if (!source) throw apiError("Nhiem vu nhan xu khong hop le.", 400);
+  if (!isCoinClaimProgressEligible(source, body.progress)) throw apiError("Nhiem vu chua du dieu kien nhan xu.", 400);
+  const amount = HOME_COIN_TASK_REWARDS[source];
+  const periodKey = `daily:${getVietnamDateKey()}`;
+  const metadata = {
+    claimedFrom: "home_coin_hunt",
+    clientProgress: body.progress && typeof body.progress === "object" ? body.progress : null,
+  };
+  const inserted = await query(
+    `INSERT INTO coin_transactions (user_id, source, period_key, amount, metadata)
+     VALUES ($1, $2, $3, $4, $5::jsonb)
+     ON CONFLICT (user_id, source, period_key) DO NOTHING
+     RETURNING id, source, period_key, amount, created_at`,
+    [requester.id, source, periodKey, amount, JSON.stringify(metadata)],
+  );
+  const wallet = await getCoinWallet(requester.id);
+  const today = await getTodayCoinClaims(requester.id);
+  return json({
+    claimed: inserted.rowCount > 0,
+    transaction: inserted.rows[0] ? {
+      id: inserted.rows[0].id,
+      source: inserted.rows[0].source,
+      periodKey: inserted.rows[0].period_key,
+      amount: Number(inserted.rows[0].amount || 0),
+      createdAt: inserted.rows[0].created_at,
+    } : null,
+    wallet,
+    today,
+    generatedAt: new Date().toISOString(),
+  });
+}
+
+async function getCoinLeaderboard(req, searchParams) {
+  const requester = await getCoinRequester(req);
+  const currentUserId = requester?.id || null;
+  const period = normalizeCoinPeriod(searchParams.get("period"));
+  const limit = Math.max(1, Math.min(50, Number(searchParams.get("limit") || 10) || 10));
+  const scopedStartSql = coinPeriodSql(period);
+  const result = await query(
+    `WITH period_scores AS (
+       SELECT user_id,
+              COALESCE(SUM(amount), 0)::int AS score,
+              MAX(created_at) AS last_awarded_at
+       FROM coin_transactions
+       WHERE created_at >= ${scopedStartSql}
+       GROUP BY user_id
+     ),
+     total_scores AS (
+       SELECT user_id, COALESCE(SUM(amount), 0)::int AS total_coins
+       FROM coin_transactions
+       GROUP BY user_id
+     ),
+     ranked AS (
+       SELECT u.id AS user_id,
+              u.full_name,
+              u.email,
+              u.avatar_url,
+              COALESCE(ps.score, 0)::int AS score,
+              COALESCE(ts.total_coins, 0)::int AS total_coins,
+              ps.last_awarded_at,
+              ROW_NUMBER() OVER (
+                ORDER BY COALESCE(ps.score, 0) DESC,
+                         ps.last_awarded_at ASC NULLS LAST,
+                         lower(u.full_name) ASC
+              ) AS rank
+       FROM users u
+       LEFT JOIN period_scores ps ON ps.user_id = u.id
+       LEFT JOIN total_scores ts ON ts.user_id = u.id
+       WHERE u.is_active = TRUE
+         AND (COALESCE(ps.score, 0) > 0 OR u.id = $1::uuid)
+     )
+     SELECT *
+     FROM ranked
+     WHERE rank <= $2 OR user_id = $1::uuid
+     ORDER BY rank ASC`,
+    [currentUserId, limit],
+  );
+  const entries = result.rows.map(publicCoinEntry);
+  return json({
+    period,
+    entries: entries.filter((entry) => entry.rank <= limit),
+    current: currentUserId ? entries.find((entry) => entry.userId === currentUserId) || null : null,
+    generatedAt: new Date().toISOString(),
+  });
 }
 
 async function register(body) {
@@ -3575,6 +3865,9 @@ async function route(req) {
   if (req.method === "POST" && path === "/api/events") return recordLearningEvents(req, body);
   if (req.method === "GET" && path === "/api/admin/analytics/overview") return getLearningAnalytics(req, url.searchParams);
   if (req.method === "GET" && path === "/api/admin/vip/overview") return getVipManagement(req, url.searchParams);
+  if (req.method === "GET" && path === "/api/coins/summary") return getCoinSummary(req);
+  if (req.method === "POST" && path === "/api/coins/claim") return claimHomeCoin(req, body);
+  if (req.method === "GET" && path === "/api/coins/leaderboard") return getCoinLeaderboard(req, url.searchParams);
 
   if (req.method === "POST" && path === "/api/register") return register(body);
   if (req.method === "POST" && path === "/api/login") return login(body);

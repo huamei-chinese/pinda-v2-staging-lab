@@ -623,6 +623,7 @@ const HOME_TODAY_COIN_REWARDS = {
   listening: 15,
   write: 15,
 };
+const HOME_COIN_REALTIME_REFRESH_MS = 10000;
 const HOME_WEEKLY_MISSION_TARGETS = {
   streakDays: 3,
   savedVocab: 50,
@@ -869,6 +870,19 @@ const screens = {
 let adminUserSearchTimer = null;
 const t = (key) => i18n[state.lang][key] || i18n.vi[key] || key;
 let homeTodayStudySession = { area: "", startedAt: Date.now() };
+let homeCoinRemoteState = {
+  userId: state.user?.id || "",
+  loaded: false,
+  loading: false,
+  claiming: false,
+  claimCheckTimer: null,
+  pollTimer: null,
+  claimInFlight: new Set(),
+  wallet: null,
+  today: null,
+  leaderboardByPeriod: {},
+  lastFetchAt: 0,
+};
 const MOBILE_PAGE_TRANSITION_CLASS = "mobile-page-transition-enter";
 const mobilePageTransitionTimers = new WeakMap();
 
@@ -1033,6 +1047,7 @@ function addHomeTodayStudySeconds(area, seconds) {
   if (area === "listening") progress.listenSeconds += seconds;
   if (area === "write") progress.writeSeconds += seconds;
   saveHomeTodayStudyState(progress);
+  scheduleHomeCoinClaimCheck();
 }
 
 function flushHomeTodayStudySession(now = Date.now()) {
@@ -1145,6 +1160,243 @@ function readHomeCoinWallet() {
   }
 }
 
+function ensureHomeCoinRemoteUserScope() {
+  const nextUserId = state.user?.id || "";
+  if (homeCoinRemoteState.userId === nextUserId) return;
+  if (homeCoinRemoteState.claimCheckTimer) {
+    clearTimeout(homeCoinRemoteState.claimCheckTimer);
+  }
+  homeCoinRemoteState = {
+    ...homeCoinRemoteState,
+    userId: nextUserId,
+    loaded: false,
+    loading: false,
+    claiming: false,
+    claimCheckTimer: null,
+    claimInFlight: new Set(),
+    wallet: null,
+    today: null,
+    leaderboardByPeriod: {},
+    lastFetchAt: 0,
+  };
+}
+
+function canUseRemoteHomeCoins() {
+  ensureHomeCoinRemoteUserScope();
+  return !BACKEND_DISABLED && Boolean(state.user?.id);
+}
+
+function getHomeCoinAuthHeaders() {
+  return state.user?.id ? { "X-User-Id": state.user.id } : {};
+}
+
+function normalizeHomeCoinWallet(wallet) {
+  return {
+    coins: Math.max(0, Math.floor(Number(wallet?.coins || 0))),
+    weeklyCoins: Math.max(0, Math.floor(Number(wallet?.weeklyCoins || wallet?.coins || 0))),
+    monthlyCoins: Math.max(0, Math.floor(Number(wallet?.monthlyCoins || wallet?.coins || 0))),
+    updatedAt: Date.now(),
+  };
+}
+
+function syncHomeCoinWalletToLocal(wallet) {
+  const profile = getHomeCoinWalletProfile();
+  const normalized = normalizeHomeCoinWallet(wallet);
+  try {
+    localStorage.setItem(getHomeCoinWalletKey(), JSON.stringify({
+      identity: profile.identity,
+      displayName: profile.displayName,
+      avatarInitial: profile.avatarInitial,
+      ...normalized,
+    }));
+  } catch {
+    // Local storage is only a UI fallback; server state remains the source of truth.
+  }
+}
+
+function applyHomeCoinSummary(data = {}) {
+  ensureHomeCoinRemoteUserScope();
+  if (data.wallet) {
+    homeCoinRemoteState.wallet = normalizeHomeCoinWallet(data.wallet);
+    syncHomeCoinWalletToLocal(homeCoinRemoteState.wallet);
+  }
+  if (data.today) {
+    homeCoinRemoteState.today = {
+      periodKey: data.today.periodKey || "",
+      claimedSources: Array.isArray(data.today.claimedSources) ? data.today.claimedSources.map(String) : [],
+      claims: Array.isArray(data.today.claims) ? data.today.claims : [],
+    };
+  }
+  homeCoinRemoteState.loaded = true;
+  homeCoinRemoteState.lastFetchAt = Date.now();
+}
+
+function isHomeCoinSourceClaimed(source) {
+  ensureHomeCoinRemoteUserScope();
+  return Array.isArray(homeCoinRemoteState.today?.claimedSources)
+    && homeCoinRemoteState.today.claimedSources.includes(String(source || ""));
+}
+
+function normalizeHomeCoinRemoteEntry(entry, fallbackRank = 0) {
+  const displayName = entry?.displayName || entry?.fullName || entry?.email || formatHomeCoinIdentityName(entry?.userId || "");
+  const identity = String(entry?.userId || entry?.identity || `${fallbackRank}-${displayName}`).trim();
+  const score = Math.max(0, Math.floor(Number(entry?.score || 0)));
+  const coins = Math.max(0, Math.floor(Number(entry?.coins ?? score)));
+  const rank = Math.max(0, Math.floor(Number(entry?.rank || fallbackRank)));
+  return {
+    identity,
+    userId: entry?.userId || identity,
+    displayName,
+    avatarInitial: String(entry?.avatarInitial || displayName || "H").trim().charAt(0).toUpperCase() || "H",
+    avatarUrl: entry?.avatarUrl || "",
+    score,
+    coins,
+    rank,
+    updatedAt: Date.parse(entry?.updatedAt || "") || 0,
+    isCurrent: identity === state.user?.id || entry?.userId === state.user?.id,
+    isFake: false,
+  };
+}
+
+function applyHomeCoinLeaderboard(period, data = {}) {
+  ensureHomeCoinRemoteUserScope();
+  const safePeriod = period === "month" ? "month" : "week";
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  homeCoinRemoteState.leaderboardByPeriod[safePeriod] = {
+    period: safePeriod,
+    entries: entries.map((entry, index) => normalizeHomeCoinRemoteEntry(entry, index + 1)),
+    current: data.current ? normalizeHomeCoinRemoteEntry(data.current, Number(data.current.rank || 0)) : null,
+    generatedAt: data.generatedAt || new Date().toISOString(),
+  };
+  homeCoinRemoteState.lastFetchAt = Date.now();
+}
+
+async function loadHomeCoinSummary(options = {}) {
+  if (!canUseRemoteHomeCoins()) return null;
+  if (homeCoinRemoteState.loading && !options.force) return null;
+  homeCoinRemoteState.loading = true;
+  try {
+    const data = await apiRequest("/api/coins/summary", {
+      headers: getHomeCoinAuthHeaders(),
+      cache: "no-store",
+    });
+    applyHomeCoinSummary(data);
+    return data;
+  } catch (error) {
+    if (!options.silent) console.warn("Home coin summary failed:", error);
+    return null;
+  } finally {
+    homeCoinRemoteState.loading = false;
+  }
+}
+
+async function loadHomeCoinLeaderboard(period = getHomeCoinLeaderboardPeriod(), options = {}) {
+  if (!canUseRemoteHomeCoins()) return null;
+  const safePeriod = period === "month" ? "month" : "week";
+  try {
+    const data = await apiRequest(`/api/coins/leaderboard?period=${safePeriod}&limit=10`, {
+      headers: getHomeCoinAuthHeaders(),
+      cache: "no-store",
+    });
+    applyHomeCoinLeaderboard(safePeriod, data);
+    if (!options.skipRefresh) refreshHomeCoinLeaderboardViews();
+    return data;
+  } catch (error) {
+    if (!options.silent) console.warn("Home coin leaderboard failed:", error);
+    return null;
+  }
+}
+
+async function claimHomeCoinTask(task, progress) {
+  if (!canUseRemoteHomeCoins() || !task?.id || !task.done || isHomeCoinSourceClaimed(task.id)) return null;
+  if (homeCoinRemoteState.claimInFlight.has(task.id)) return null;
+  homeCoinRemoteState.claimInFlight.add(task.id);
+  try {
+    const data = await apiRequest("/api/coins/claim", {
+      method: "POST",
+      headers: getHomeCoinAuthHeaders(),
+      cache: "no-store",
+      body: JSON.stringify({
+        source: task.id,
+        progress: {
+          savedVocabCount: progress.savedVocabCount,
+          listenSeconds: progress.listenSeconds,
+          writeSeconds: progress.writeSeconds,
+          completedCount: progress.completedCount,
+        },
+      }),
+    });
+    applyHomeCoinSummary(data);
+    return data;
+  } catch (error) {
+    console.warn("Home coin claim failed:", error);
+    return null;
+  } finally {
+    homeCoinRemoteState.claimInFlight.delete(task.id);
+  }
+}
+
+async function claimReadyHomeCoinTasks(options = {}) {
+  if (!canUseRemoteHomeCoins() || homeCoinRemoteState.claiming) return 0;
+  homeCoinRemoteState.claiming = true;
+  let claimedTotal = 0;
+  try {
+    if (!homeCoinRemoteState.loaded) {
+      await loadHomeCoinSummary({ silent: true });
+    }
+    const progress = getHomeTodayStudyProgress();
+    const data = getHomeCoinHuntData();
+    const readyTasks = data.tasks.filter((task) => task.done && !task.claimed);
+    for (const task of readyTasks) {
+      const result = await claimHomeCoinTask(task, progress);
+      if (result?.claimed) claimedTotal += Number(result.transaction?.amount || task.reward || 0);
+    }
+    if (claimedTotal > 0) {
+      await loadHomeCoinLeaderboard(getHomeCoinLeaderboardPeriod(), { silent: true, skipRefresh: true });
+      refreshHomeCoinLeaderboardViews();
+      if (!options.silent) {
+        showToast(state.lang === "vi" ? `Da nhan ${claimedTotal} xu.` : `Claimed ${claimedTotal} coins.`);
+      }
+    }
+  } finally {
+    homeCoinRemoteState.claiming = false;
+  }
+  return claimedTotal;
+}
+
+function scheduleHomeCoinClaimCheck() {
+  if (!canUseRemoteHomeCoins()) return;
+  if (homeCoinRemoteState.claimCheckTimer) {
+    clearTimeout(homeCoinRemoteState.claimCheckTimer);
+  }
+  homeCoinRemoteState.claimCheckTimer = window.setTimeout(() => {
+    homeCoinRemoteState.claimCheckTimer = null;
+    claimReadyHomeCoinTasks({ silent: true }).catch((error) => {
+      console.warn("Home coin claim check failed:", error);
+    });
+  }, 700);
+}
+
+async function refreshHomeCoinBackendState(options = {}) {
+  if (!canUseRemoteHomeCoins()) return;
+  await loadHomeCoinSummary({ silent: true });
+  if (options.claimReady) {
+    await claimReadyHomeCoinTasks({ silent: true });
+  }
+  await loadHomeCoinLeaderboard(getHomeCoinLeaderboardPeriod(), { silent: true });
+  refreshHomeCoinLeaderboardViews();
+}
+
+function startHomeCoinRealtimePolling() {
+  if (homeCoinRemoteState.pollTimer) return;
+  homeCoinRemoteState.pollTimer = window.setInterval(() => {
+    if (document.visibilityState === "hidden" || !canUseRemoteHomeCoins()) return;
+    refreshHomeCoinBackendState({ claimReady: true }).catch((error) => {
+      console.warn("Home coin realtime refresh failed:", error);
+    });
+  }, HOME_COIN_REALTIME_REFRESH_MS);
+}
+
 function getHomeCoinHuntData(isVi = state.lang === "vi") {
   const progress = getHomeTodayStudyProgress();
   const wallet = readHomeCoinWallet();
@@ -1182,12 +1434,19 @@ function getHomeCoinHuntData(isVi = state.lang === "vi") {
       reward: HOME_TODAY_COIN_REWARDS.write,
       ratio: Math.min(1, progress.writeSeconds / HOME_TODAY_TIME_TARGET_SECONDS),
     },
-  ];
+  ].map((task) => {
+    const claimed = isHomeCoinSourceClaimed(task.id);
+    return {
+      ...task,
+      claimed,
+      claimable: task.done && !claimed,
+    };
+  });
   const totalReward = tasks.reduce((sum, task) => sum + task.reward, 0);
   const unlockedReward = tasks.filter((task) => task.done).reduce((sum, task) => sum + task.reward, 0);
   return {
     ...progress,
-    walletCoins: wallet.coins,
+    walletCoins: Number(homeCoinRemoteState.wallet?.coins ?? wallet.coins),
     tasks,
     totalReward,
     unlockedReward,
@@ -1250,6 +1509,9 @@ function getHomeCoinLeaderboardPeriod() {
 function setHomeCoinLeaderboardPeriod(period) {
   state.homeLeaderboardPeriod = period === "month" ? "month" : "week";
   localStorage.setItem("v2-home-leaderboard-period", state.homeLeaderboardPeriod);
+  loadHomeCoinLeaderboard(state.homeLeaderboardPeriod, { silent: true }).catch((error) => {
+    console.warn("Home coin period refresh failed:", error);
+  });
 }
 
 function formatHomeCoinIdentityName(identity, isVi = state.lang === "vi") {
@@ -1266,6 +1528,32 @@ function formatHomeCoinIdentityName(identity, isVi = state.lang === "vi") {
 }
 
 function collectHomeCoinLeaderboardEntries(period = getHomeCoinLeaderboardPeriod()) {
+  ensureHomeCoinRemoteUserScope();
+  const safePeriod = period === "month" ? "month" : "week";
+  const remoteBoard = homeCoinRemoteState.leaderboardByPeriod[safePeriod];
+  if (remoteBoard && (remoteBoard.entries?.length || remoteBoard.current)) {
+    const remoteEntries = new Map();
+    const addRemoteEntry = (entry, index = 0) => {
+      if (!entry) return;
+      const normalized = normalizeHomeCoinRemoteEntry(entry, entry.rank || index + 1);
+      const existing = remoteEntries.get(normalized.identity);
+      if (!existing || normalized.isCurrent || normalized.rank < existing.rank) {
+        remoteEntries.set(normalized.identity, normalized);
+      }
+    };
+    remoteBoard.entries.forEach(addRemoteEntry);
+    addRemoteEntry(remoteBoard.current, remoteBoard.entries.length);
+    return Array.from(remoteEntries.values())
+      .sort((a, b) => (
+        (a.rank || 9999) - (b.rank || 9999)
+        || (b.score - a.score)
+        || a.displayName.localeCompare(b.displayName)
+      ))
+      .map((entry, index) => ({
+        ...entry,
+        rank: entry.rank || index + 1,
+      }));
+  }
   const currentWallet = readHomeCoinWallet();
   const currentIdentity = getHomeCoinWalletIdentity();
   const scoreKey = period === "month" ? "monthlyCoins" : "weeklyCoins";
@@ -1513,7 +1801,11 @@ function renderHomeCoinHuntCardHTML(isVi, options = {}) {
 
       <ul class="home-coin-hunt-tasks">
         ${data.tasks.map((task) => `
-          <li class="${task.done ? "is-done" : ""}">
+          <li class="${[
+            task.done ? "is-done" : "",
+            task.claimed ? "is-claimed" : "",
+            task.claimable ? "is-claimable" : "",
+          ].filter(Boolean).join(" ")}">
             <span class="home-coin-hunt-task-icon" aria-hidden="true">${homeCoinTaskIconHTML(task.icon)}</span>
             <span class="home-coin-hunt-task-copy">
               <strong>${escapeHtml(task.label)}</strong>
@@ -1521,7 +1813,7 @@ function renderHomeCoinHuntCardHTML(isVi, options = {}) {
             </span>
             <span class="home-coin-hunt-task-meta">
               <em>${escapeHtml(task.value)}</em>
-              <b>+${task.reward} ${isVi ? "xu" : "金币"}</b>
+              <b>${task.claimed ? (isVi ? "Da nhan" : "Claimed") : `+${task.reward} ${isVi ? "xu" : "金币"}`}</b>
             </span>
           </li>
         `).join("")}
@@ -1626,6 +1918,9 @@ function showHomeCoinHuntPanel() {
   document.body.appendChild(sheet);
   document.body.classList.add("home-coin-hunt-sheet-open");
   requestAnimationFrame(() => sheet.classList.add("is-open"));
+  refreshHomeCoinBackendState({ claimReady: true }).catch((error) => {
+    console.warn("Home coin hunt refresh failed:", error);
+  });
 }
 
 function closeHomeLeaderboardPanel(options = {}) {
@@ -1671,6 +1966,9 @@ function showHomeLeaderboardPanel() {
   document.body.appendChild(sheet);
   document.body.classList.add("home-coin-hunt-sheet-open");
   requestAnimationFrame(() => sheet.classList.add("is-open"));
+  refreshHomeCoinBackendState({ claimReady: true }).catch((error) => {
+    console.warn("Home leaderboard refresh failed:", error);
+  });
 }
 
 function refreshHomeCoinLeaderboardViews() {
@@ -1679,9 +1977,22 @@ function refreshHomeCoinLeaderboardViews() {
     const currentCard = root?.querySelector?.(".home-coin-leaderboard-card");
     if (currentCard) currentCard.outerHTML = renderHomeCoinLeaderboardCardHTML(isVi, { sheet: true });
   };
+  const rerenderCoinHuntCard = (root) => {
+    const currentCard = root?.querySelector?.(".home-coin-hunt-card");
+    if (!currentCard) return;
+    currentCard.outerHTML = renderHomeCoinHuntCardHTML(isVi, {
+      sheet: currentCard.classList.contains("home-coin-hunt-card--sheet"),
+    });
+  };
+  const rerenderLeaderboardTrigger = (root) => {
+    const trigger = root?.querySelector?.(".home-coin-leaderboard-trigger");
+    if (trigger) trigger.outerHTML = renderHomeCoinLeaderboardTriggerHTML(isVi);
+  };
+  rerenderCoinHuntCard(screens.home);
+  rerenderLeaderboardTrigger(screens.home);
+  rerenderCoinHuntCard($("#homeCoinHuntSheet"));
   rerenderLeaderboardCard($("#homeCoinHuntSheet"));
   rerenderLeaderboardCard($("#homeLeaderboardSheet"));
-  if (state.screen === "home") renderHome();
 }
 
 function makeSentences(episodeId, rows = []) {
@@ -3590,7 +3901,8 @@ async function apiRequest(path, options = {}) {
 
   const shouldBypassCache = /^\/api\/(?:content|admin\/content)\//.test(path)
     || /^\/api\/users\/[^/]+\/status(?:\?|$)/.test(path)
-    || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path);
+    || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path)
+    || /^\/api\/coins(?:\/|\?|$)/.test(path);
   const response = await fetch(path, {
     cache: shouldBypassCache ? "no-store" : options.cache,
     ...options,
@@ -7252,6 +7564,7 @@ function saveState() {
   removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
   removeAuthStorageKey(ADMIN_TOKEN_STORAGE_KEY);
   clearLegacyAuthStorage();
+  scheduleHomeCoinClaimCheck();
 }
 
 function activityUserKey() {
@@ -19676,6 +19989,7 @@ function init() {
       refreshHomeCoinLeaderboardViews();
     }
   });
+  startHomeCoinRealtimePolling();
   renderChrome();
   if (window.location.pathname === "/admin") {
     restorePersistedAdminRouteState();
@@ -19692,6 +20006,9 @@ function init() {
       }
     }
   }
+  refreshHomeCoinBackendState({ claimReady: true }).catch((error) => {
+    console.warn("Home coin startup refresh failed:", error);
+  });
   warmStartupDataAfterFirstPaint();
   
 }
