@@ -614,6 +614,7 @@ const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
 const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
 const HOME_TODAY_STUDY_STORAGE_KEY = "v2-home-today-study";
 const HOME_COIN_WALLET_STORAGE_PREFIX = "v2-home-coin-wallet";
+const HOME_COIN_DAILY_COMPLETE_NOTICE_PREFIX = "v2-home-coin-daily-complete-notice";
 const HOME_QUICK_HSK_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-last-lesson";
 const HOME_QUICK_HSK_SENTENCE_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-sentence-last-lesson";
 const HOME_TODAY_TIME_TARGET_SECONDS = 30 * 60;
@@ -623,6 +624,14 @@ const HOME_TODAY_COIN_REWARDS = {
   listening: 15,
   write: 15,
 };
+const HOME_DAILY_EXP_REWARD = 10;
+const HOME_DAILY_EXP_MAX = 30;
+const HOME_DAILY_EXP_STEP_SECONDS = 10 * 60;
+const HOME_DAILY_EXP_SOURCES = [
+  { id: "exp_10", tier: 1, reward: HOME_DAILY_EXP_REWARD },
+  { id: "exp_20", tier: 2, reward: HOME_DAILY_EXP_REWARD },
+  { id: "exp_30", tier: 3, reward: HOME_DAILY_EXP_REWARD },
+];
 const HOME_COIN_REALTIME_REFRESH_MS = 10000;
 const HOME_WEEKLY_MISSION_TARGETS = {
   streakDays: 3,
@@ -1133,8 +1142,14 @@ function readHomeCoinWallet() {
     displayName: profile.displayName,
     avatarInitial: profile.avatarInitial,
     coins: 0,
+    exp: 0,
+    score: 0,
     weeklyCoins: 0,
     monthlyCoins: 0,
+    weeklyExp: 0,
+    monthlyExp: 0,
+    weeklyScore: 0,
+    monthlyScore: 0,
     updatedAt: Date.now(),
   };
   try {
@@ -1144,13 +1159,24 @@ function readHomeCoinWallet() {
       return fallback;
     }
     const coins = Math.max(0, Math.floor(Number(stored.coins || 0)));
+    const exp = Math.max(0, Math.floor(Number(stored.exp || 0)));
+    const weeklyCoins = Math.max(0, Math.floor(Number(stored.weeklyCoins ?? coins)));
+    const monthlyCoins = Math.max(0, Math.floor(Number(stored.monthlyCoins ?? coins)));
+    const weeklyExp = Math.max(0, Math.floor(Number(stored.weeklyExp ?? 0)));
+    const monthlyExp = Math.max(0, Math.floor(Number(stored.monthlyExp ?? 0)));
     const wallet = {
       identity: profile.identity,
       displayName: profile.displayName,
       avatarInitial: profile.avatarInitial,
       coins,
-      weeklyCoins: Math.max(0, Math.floor(Number(stored.weeklyCoins ?? coins))),
-      monthlyCoins: Math.max(0, Math.floor(Number(stored.monthlyCoins ?? coins))),
+      exp,
+      score: Math.max(0, Math.floor(Number(stored.score ?? (coins + exp)))),
+      weeklyCoins,
+      monthlyCoins,
+      weeklyExp,
+      monthlyExp,
+      weeklyScore: Math.max(0, Math.floor(Number(stored.weeklyScore ?? (weeklyCoins + weeklyExp)))),
+      monthlyScore: Math.max(0, Math.floor(Number(stored.monthlyScore ?? (monthlyCoins + monthlyExp)))),
       updatedAt: Number(stored.updatedAt || 0) || Date.now(),
     };
     localStorage.setItem(key, JSON.stringify(wallet));
@@ -1191,10 +1217,22 @@ function getHomeCoinAuthHeaders() {
 }
 
 function normalizeHomeCoinWallet(wallet) {
+  const coins = Math.max(0, Math.floor(Number(wallet?.coins || 0)));
+  const exp = Math.max(0, Math.floor(Number(wallet?.exp || 0)));
+  const weeklyCoins = Math.max(0, Math.floor(Number(wallet?.weeklyCoins ?? coins)));
+  const monthlyCoins = Math.max(0, Math.floor(Number(wallet?.monthlyCoins ?? coins)));
+  const weeklyExp = Math.max(0, Math.floor(Number(wallet?.weeklyExp ?? 0)));
+  const monthlyExp = Math.max(0, Math.floor(Number(wallet?.monthlyExp ?? 0)));
   return {
-    coins: Math.max(0, Math.floor(Number(wallet?.coins || 0))),
-    weeklyCoins: Math.max(0, Math.floor(Number(wallet?.weeklyCoins || wallet?.coins || 0))),
-    monthlyCoins: Math.max(0, Math.floor(Number(wallet?.monthlyCoins || wallet?.coins || 0))),
+    coins,
+    exp,
+    score: Math.max(0, Math.floor(Number(wallet?.score ?? (coins + exp)))),
+    weeklyCoins,
+    monthlyCoins,
+    weeklyExp,
+    monthlyExp,
+    weeklyScore: Math.max(0, Math.floor(Number(wallet?.weeklyScore ?? (weeklyCoins + weeklyExp)))),
+    monthlyScore: Math.max(0, Math.floor(Number(wallet?.monthlyScore ?? (monthlyCoins + monthlyExp)))),
     updatedAt: Date.now(),
   };
 }
@@ -1237,11 +1275,69 @@ function isHomeCoinSourceClaimed(source) {
     && homeCoinRemoteState.today.claimedSources.includes(String(source || ""));
 }
 
+function getHomeDailyExpBonusData(progress = getHomeTodayStudyProgress()) {
+  const dailyCoinTasksDone = progress.savedVocabCount >= HOME_TODAY_VOCAB_TARGET
+    && progress.listenSeconds >= HOME_TODAY_TIME_TARGET_SECONDS
+    && progress.writeSeconds >= HOME_TODAY_TIME_TARGET_SECONDS;
+  const extraStudySeconds = dailyCoinTasksDone
+    ? Math.max(0, Math.floor(progress.listenSeconds + progress.writeSeconds - (HOME_TODAY_TIME_TARGET_SECONDS * 2)))
+    : 0;
+  const tasks = HOME_DAILY_EXP_SOURCES.map((item) => {
+    const requiredSeconds = item.tier * HOME_DAILY_EXP_STEP_SECONDS;
+    const claimed = isHomeCoinSourceClaimed(item.id);
+    const done = dailyCoinTasksDone && extraStudySeconds >= requiredSeconds;
+    return {
+      ...item,
+      icon: "badge",
+      label: `+${item.reward} EXP`,
+      hint: state.lang === "vi"
+        ? "EXP này sẽ củng cố BXH của bạn đó"
+        : "EXP 会增强你的排行榜分数",
+      value: `${Math.min(Math.floor(extraStudySeconds / 60), item.tier * 10)}/${item.tier * 10} ${state.lang === "vi" ? "phút" : "分钟"}`,
+      done,
+      claimed,
+      claimable: done && !claimed,
+      progressSeconds: extraStudySeconds,
+      requiredSeconds,
+    };
+  });
+  return {
+    dailyCoinTasksDone,
+    extraStudySeconds,
+    tasks,
+    claimedExp: tasks.filter((task) => task.claimed).reduce((sum, task) => sum + task.reward, 0),
+    maxExp: HOME_DAILY_EXP_MAX,
+  };
+}
+
+function getHomeDailyCompleteNoticeKey(dateKey = getVietnamTodayKey()) {
+  return `${HOME_COIN_DAILY_COMPLETE_NOTICE_PREFIX}:${getHomeCoinWalletIdentity()}:${dateKey}`;
+}
+
+function maybeShowHomeDailyCoinCompleteNotice(progress = getHomeTodayStudyProgress(), options = {}) {
+  const expBonus = getHomeDailyExpBonusData(progress);
+  if (!expBonus.dailyCoinTasksDone) return false;
+  const key = getHomeDailyCompleteNoticeKey(progress.dateKey || getVietnamTodayKey());
+  try {
+    if (localStorage.getItem(key) === "1") return false;
+    localStorage.setItem(key, "1");
+  } catch {
+    // If storage is unavailable, showing once per runtime is still better than blocking the flow.
+  }
+  window.setTimeout(() => {
+    showToast(state.lang === "vi"
+      ? "Bạn đã hoàn thành đủ nhiệm vụ hôm nay rồi tiếp tục học thêm để nhận thêm EXP để củng cố BXH nhé"
+      : "Daily tasks completed. Keep studying to earn extra EXP and strengthen your rank!");
+  }, Math.max(0, Number(options.delay || 0)));
+  return true;
+}
+
 function normalizeHomeCoinRemoteEntry(entry, fallbackRank = 0) {
   const displayName = entry?.displayName || entry?.fullName || entry?.email || formatHomeCoinIdentityName(entry?.userId || "");
   const identity = String(entry?.userId || entry?.identity || `${fallbackRank}-${displayName}`).trim();
   const score = Math.max(0, Math.floor(Number(entry?.score || 0)));
   const coins = Math.max(0, Math.floor(Number(entry?.coins ?? score)));
+  const exp = Math.max(0, Math.floor(Number(entry?.exp || 0)));
   const rank = Math.max(0, Math.floor(Number(entry?.rank || fallbackRank)));
   return {
     identity,
@@ -1251,6 +1347,7 @@ function normalizeHomeCoinRemoteEntry(entry, fallbackRank = 0) {
     avatarUrl: entry?.avatarUrl || "",
     score,
     coins,
+    exp,
     rank,
     updatedAt: Date.parse(entry?.updatedAt || "") || 0,
     isCurrent: identity === state.user?.id || entry?.userId === state.user?.id,
@@ -1312,6 +1409,7 @@ async function claimHomeCoinTask(task, progress) {
   if (homeCoinRemoteState.claimInFlight.has(task.id)) return null;
   homeCoinRemoteState.claimInFlight.add(task.id);
   try {
+    const expBonus = getHomeDailyExpBonusData(progress);
     const data = await apiRequest("/api/coins/claim", {
       method: "POST",
       headers: getHomeCoinAuthHeaders(),
@@ -1323,6 +1421,7 @@ async function claimHomeCoinTask(task, progress) {
           listenSeconds: progress.listenSeconds,
           writeSeconds: progress.writeSeconds,
           completedCount: progress.completedCount,
+          extraStudySeconds: expBonus.extraStudySeconds,
         },
       }),
     });
@@ -1339,29 +1438,58 @@ async function claimHomeCoinTask(task, progress) {
 async function claimReadyHomeCoinTasks(options = {}) {
   if (!canUseRemoteHomeCoins() || homeCoinRemoteState.claiming) return 0;
   homeCoinRemoteState.claiming = true;
-  let claimedTotal = 0;
+  let claimedCoins = 0;
+  let claimedExp = 0;
+  const claimedExpItems = [];
   try {
     if (!homeCoinRemoteState.loaded) {
       await loadHomeCoinSummary({ silent: true });
     }
     const progress = getHomeTodayStudyProgress();
     const data = getHomeCoinHuntData();
-    const readyTasks = data.tasks.filter((task) => task.done && !task.claimed);
+    const expBonus = getHomeDailyExpBonusData(progress);
+    const readyTasks = [
+      ...data.tasks.filter((task) => task.done && !task.claimed),
+      ...expBonus.tasks.filter((task) => task.done && !task.claimed),
+    ];
     for (const task of readyTasks) {
       const result = await claimHomeCoinTask(task, progress);
-      if (result?.claimed) claimedTotal += Number(result.transaction?.amount || task.reward || 0);
+      if (result?.claimed) {
+        const amount = Number(result.transaction?.amount || task.reward || 0);
+        const isExpReward = String(task.id || "").startsWith("exp_") || result.transaction?.rewardType === "exp";
+        if (isExpReward) {
+          claimedExp += amount;
+          claimedExpItems.push(amount);
+        } else {
+          claimedCoins += amount;
+        }
+      }
     }
-    if (claimedTotal > 0) {
+    const showedDailyCompleteNotice = maybeShowHomeDailyCoinCompleteNotice(progress, {
+      delay: (!options.silent && claimedCoins > 0) ? 900 : 0,
+    });
+    if (claimedCoins > 0 || claimedExp > 0) {
       await loadHomeCoinLeaderboard(getHomeCoinLeaderboardPeriod(), { silent: true, skipRefresh: true });
       refreshHomeCoinLeaderboardViews();
       if (!options.silent) {
-        showToast(state.lang === "vi" ? `Da nhan ${claimedTotal} xu.` : `Claimed ${claimedTotal} coins.`);
+        if (claimedCoins > 0) {
+          showToast(state.lang === "vi" ? `Đã nhận ${claimedCoins} xu.` : `Claimed ${claimedCoins} coins.`);
+        }
       }
+      const expToastBaseDelay = ((!options.silent && claimedCoins > 0) ? 900 : 0)
+        + (showedDailyCompleteNotice ? 1300 : 0);
+      claimedExpItems.forEach((amount, index) => {
+        window.setTimeout(() => {
+          showToast(state.lang === "vi"
+            ? `+${amount} EXP. Cố lên nhé EXP này sẽ củng cố BXH của bạn đó, cố lên !!!`
+            : `+${amount} EXP. Keep going, this EXP strengthens your rank!`);
+        }, expToastBaseDelay + (index * 900));
+      });
     }
   } finally {
     homeCoinRemoteState.claiming = false;
   }
-  return claimedTotal;
+  return claimedCoins + claimedExp;
 }
 
 function scheduleHomeCoinClaimCheck() {
@@ -1400,6 +1528,7 @@ function startHomeCoinRealtimePolling() {
 function getHomeCoinHuntData(isVi = state.lang === "vi") {
   const progress = getHomeTodayStudyProgress();
   const wallet = readHomeCoinWallet();
+  const expBonus = getHomeDailyExpBonusData(progress);
   const vocabCount = Math.min(progress.savedVocabCount, HOME_TODAY_VOCAB_TARGET);
   const listenMinutes = formatHomeTodayMinuteValue(progress.listenSeconds);
   const writeMinutes = formatHomeTodayMinuteValue(progress.writeSeconds);
@@ -1447,6 +1576,9 @@ function getHomeCoinHuntData(isVi = state.lang === "vi") {
   return {
     ...progress,
     walletCoins: Number(homeCoinRemoteState.wallet?.coins ?? wallet.coins),
+    walletExp: Number(homeCoinRemoteState.wallet?.exp ?? wallet.exp ?? 0),
+    walletScore: Number(homeCoinRemoteState.wallet?.score ?? wallet.score ?? 0),
+    expBonus,
     tasks,
     totalReward,
     unlockedReward,
@@ -1556,15 +1688,18 @@ function collectHomeCoinLeaderboardEntries(period = getHomeCoinLeaderboardPeriod
   }
   const currentWallet = readHomeCoinWallet();
   const currentIdentity = getHomeCoinWalletIdentity();
-  const scoreKey = period === "month" ? "monthlyCoins" : "weeklyCoins";
+  const scoreKey = period === "month" ? "monthlyScore" : "weeklyScore";
+  const coinKey = period === "month" ? "monthlyCoins" : "weeklyCoins";
+  const expKey = period === "month" ? "monthlyExp" : "weeklyExp";
   const prefix = `${HOME_COIN_WALLET_STORAGE_PREFIX}:`;
   const entries = new Map();
 
   const addWallet = (wallet, identity = currentIdentity) => {
     if (!wallet || typeof wallet !== "object") return;
     const walletIdentity = String(wallet.identity || identity || "guest");
-    const coins = Math.max(0, Math.floor(Number(wallet.coins || 0)));
-    const score = Math.max(0, Math.floor(Number(wallet[scoreKey] ?? coins)));
+    const coins = Math.max(0, Math.floor(Number(wallet[coinKey] ?? wallet.coins ?? 0)));
+    const exp = Math.max(0, Math.floor(Number(wallet[expKey] ?? wallet.exp ?? 0)));
+    const score = Math.max(0, Math.floor(Number(wallet[scoreKey] ?? (coins + exp))));
     const displayName = wallet.displayName || formatHomeCoinIdentityName(walletIdentity);
     const avatarInitial = String(wallet.avatarInitial || displayName || "H").trim().charAt(0).toUpperCase() || "H";
     const existing = entries.get(walletIdentity);
@@ -1574,6 +1709,7 @@ function collectHomeCoinLeaderboardEntries(period = getHomeCoinLeaderboardPeriod
       avatarInitial,
       score,
       coins,
+      exp,
       updatedAt: Number(wallet.updatedAt || 0) || 0,
       isCurrent: walletIdentity === currentIdentity,
       isFake: Boolean(wallet.isFake),
@@ -1601,6 +1737,11 @@ function collectHomeCoinLeaderboardEntries(period = getHomeCoinLeaderboardPeriod
       coins: item.monthlyCoins,
       weeklyCoins: item.weeklyCoins,
       monthlyCoins: item.monthlyCoins,
+      exp: 0,
+      weeklyExp: 0,
+      monthlyExp: 0,
+      weeklyScore: item.weeklyCoins,
+      monthlyScore: item.monthlyCoins,
       updatedAt: 0,
       isFake: true,
     }, `fake-${item.id}`);
@@ -1629,15 +1770,15 @@ function getHomeCoinLeaderboardData(isVi = state.lang === "vi", period = getHome
       ? (isVi ? "Tháng này" : "本月")
       : (isVi ? "Tuần này" : "本周"),
     scoreLabel: safePeriod === "month"
-      ? (isVi ? "xu tháng" : "月金币")
-      : (isVi ? "xu tuần" : "周金币"),
+      ? (isVi ? "điểm tháng" : "月积分")
+      : (isVi ? "điểm tuần" : "周积分"),
   };
 }
 
 function renderHomeCoinLeaderboardCardHTML(isVi, options = {}) {
   const period = options.period || getHomeCoinLeaderboardPeriod();
   const data = getHomeCoinLeaderboardData(isVi, period);
-  const scoreUnit = isVi ? "xu" : "金币";
+  const scoreUnit = isVi ? "\u0111i\u1ec3m" : "\u79ef\u5206";
   const topEntries = data.entries.slice(0, 3);
   const cardClass = [
     "home-desktop-calendar-card",
@@ -1660,7 +1801,7 @@ function renderHomeCoinLeaderboardCardHTML(isVi, options = {}) {
     : `#${targetRank}`;
   const chaseTitle = currentRank <= 1
     ? (isVi ? "Bạn đang dẫn đầu" : "你正在领先")
-    : (isVi ? `Cần ${neededScore} ${scoreUnit} để vào ${targetLabel}` : `还差 ${neededScore} 金币进入 ${targetLabel}`);
+    : (isVi ? `C\u1ea7n ${neededScore} ${scoreUnit} \u0111\u1ec3 v\u00e0o ${targetLabel}` : `\u8fd8\u5dee ${neededScore} ${scoreUnit}\u8fdb\u5165 ${targetLabel}`);
   const chaseHint = currentRank <= 1
     ? (isVi ? "Giữ nhịp học hôm nay để không bị bắt kịp." : "今天继续学习，保持领先。")
     : (isVi ? `Vượt ${targetEntry?.displayName || "đối thủ gần nhất"} là lên sóng bảng tuần.` : `超过 ${targetEntry?.displayName || "前一名"} 就能上榜。`);
@@ -1724,14 +1865,14 @@ function renderHomeCoinLeaderboardCardHTML(isVi, options = {}) {
               <strong>${escapeHtml(entry.displayName)}</strong>
               <small>${entry.isCurrent ? (isVi ? "Bạn" : "你") : (isVi ? "Thành viên" : "会员")}</small>
             </span>
-            <b>${entry.score}<small>${isVi ? "xu" : "金币"}</small></b>
+            <b>${entry.score}<small>${scoreUnit}</small></b>
             <span class="home-coin-leaderboard-trend" aria-hidden="true">${entry.rank % 3 === 0 ? "↘" : "↗"}</span>
           </li>
         `).join("")}
       </ol>
 
       <p class="home-coin-leaderboard-foot">
-        ${isVi ? `Bạn đang hạng #${currentRank} với ${currentScore} ${data.scoreLabel}.` : `当前排名 #${currentRank}，${currentScore} ${data.scoreLabel}。`}
+        ${isVi ? `B\u1ea1n \u0111ang h\u1ea1ng #${currentRank} v\u1edbi ${currentScore} ${data.scoreLabel}.` : `\u5f53\u524d\u6392\u540d #${currentRank}\uff0c${currentScore} ${data.scoreLabel}\u3002`}
       </p>
     </section>
   `;
@@ -1748,7 +1889,7 @@ function renderHomeCoinLeaderboardTriggerHTML(isVi) {
       <span class="home-coin-leaderboard-trigger-copy">
         <small>${isVi ? "Bảng xếp hạng" : "排行榜"}</small>
         <strong>${isVi ? "Top săn xu" : "金币排行"}</strong>
-        <em>${isVi ? `Bạn #${currentRank} • ${currentScore} xu` : `你 #${currentRank} • ${currentScore} 金币`}</em>
+        <em>${isVi ? `B\u1ea1n #${currentRank} \u2022 ${currentScore} \u0111i\u1ec3m` : `\u4f60 #${currentRank} \u2022 ${currentScore} \u79ef\u5206`}</em>
       </span>
       <span class="home-coin-leaderboard-trigger-meta">
         <b>${topScore}</b>
@@ -1758,9 +1899,49 @@ function renderHomeCoinLeaderboardTriggerHTML(isVi) {
   `;
 }
 
+function getCompleteLeaderboardChaseHTML(isVi = state.lang === "vi") {
+  const data = getHomeCoinLeaderboardData(isVi, "week");
+  const current = data.current || {};
+  const currentRank = Math.max(1, Number(current.rank || 1));
+  const currentScore = Math.max(0, Math.floor(Number(current.score || 0)));
+  const targetRank = currentRank > 10 ? 10 : Math.max(1, currentRank - 1);
+  const targetEntry = data.entries.find((entry) => entry.rank === targetRank)
+    || data.entries[Math.min(data.entries.length - 1, Math.max(0, targetRank - 1))]
+    || current;
+  const targetScore = Math.max(0, Math.floor(Number(targetEntry?.score || 0)));
+  const neededScore = currentRank <= 1 ? 0 : Math.max(0, targetScore - currentScore);
+  const targetLabel = currentRank > 10
+    ? (isVi ? "Top 10" : "前十")
+    : `#${targetRank}`;
+  const goalTitle = currentRank <= 1
+    ? (isVi ? "Bạn đang dẫn đầu BXH tuần" : "你正在领跑周榜")
+    : (isVi ? `C\u1ea7n ${neededScore} \u0111i\u1ec3m \u0111\u1ec3 v\u00e0o ${targetLabel}` : `\u8fd8\u5dee ${neededScore} \u79ef\u5206\u8fdb\u5165 ${targetLabel}`);
+  const goalHint = currentRank <= 1
+    ? (isVi ? "Giữ phong độ thêm chút nữa là không ai bắt kịp." : "再稳住一点，继续保持领先。")
+    : (isVi ? `Vượt ${targetEntry?.displayName || "đối thủ gần nhất"} là lên sóng bảng tuần.` : `超过 ${targetEntry?.displayName || "前一名"} 就能上榜。`);
+  const avatarInitial = current.avatarInitial || getHomeCoinWalletProfile().avatarInitial || "H";
+  return `
+    <div class="complete-rank-card" aria-label="${isVi ? "BXH hiện tại của bạn" : "你的当前排名"}">
+      <span class="complete-rank-avatar" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+      <div class="complete-rank-self">
+        <strong>${isVi ? `Bạn đang #${currentRank}` : `你当前 #${currentRank}`}</strong>
+        <small>${currentScore} ${isVi ? "\u0111i\u1ec3m tu\u1ea7n" : "\u5468\u79ef\u5206"}</small>
+      </div>
+      <div class="complete-rank-goal">
+        <strong>${escapeHtml(goalTitle)}</strong>
+        <small>${escapeHtml(goalHint)}</small>
+      </div>
+    </div>
+    <p class="complete-rank-encourage">${isVi ? "Cố lên 1 tí nữa là nhận được xu và kinh nghiệm rồi!!!" : "再加把劲，就能拿金币和经验啦！！！"}</p>
+  `;
+}
+
 function homeCoinTaskIconHTML(name) {
   if (name === "book") {
     return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H7a3 3 0 0 0-3 3V5.5z"/><path d="M4 18a3 3 0 0 1 3-3h13"/></svg>`;
+  }
+  if (name === "badge") {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.35 4.75 5.25.76-3.8 3.7.9 5.23L12 14.96l-4.7 2.48.9-5.23-3.8-3.7 5.25-.76L12 3z"/><path d="M9 21h6"/></svg>`;
   }
   if (name === "listening") {
     return desktopNavIcon("listening");
@@ -1770,6 +1951,11 @@ function homeCoinTaskIconHTML(name) {
 
 function renderHomeCoinHuntCardHTML(isVi, options = {}) {
   const data = getHomeCoinHuntData(isVi);
+  const leaderboardData = getHomeCoinLeaderboardData(isVi);
+  const currentRank = Math.max(1, Math.floor(Number(leaderboardData.current?.rank || 1)));
+  const currentScore = Math.max(0, Math.floor(Number(leaderboardData.current?.score || 0)));
+  const rankLabel = isVi ? `Bạn #${currentRank}` : `You #${currentRank}`;
+  const rankMeta = `${currentScore} ${leaderboardData.scoreLabel}`;
   const cardClass = [
     "home-desktop-calendar-card",
     "home-coin-hunt-card",
@@ -1783,7 +1969,13 @@ function renderHomeCoinHuntCardHTML(isVi, options = {}) {
           <span>${isVi ? "Rương nhiệm vụ" : "任务宝箱"}</span>
           <h3>${isVi ? "Săn xu hôm nay" : "今日赚金币"}</h3>
         </div>
-        <time datetime="${escapeAttr(getVietnamTodayKey())}">${escapeHtml(data.dateLabel)}</time>
+        <div class="home-coin-hunt-head-side">
+          <time datetime="${escapeAttr(getVietnamTodayKey())}">${escapeHtml(data.dateLabel)}</time>
+          <em class="home-coin-hunt-rank-pill">
+            <strong>${escapeHtml(rankLabel)}</strong>
+            <small>${escapeHtml(rankMeta)}</small>
+          </em>
+        </div>
       </header>
 
       <div class="home-coin-hunt-balance">
@@ -1813,7 +2005,7 @@ function renderHomeCoinHuntCardHTML(isVi, options = {}) {
             </span>
             <span class="home-coin-hunt-task-meta">
               <em>${escapeHtml(task.value)}</em>
-              <b>${task.claimed ? (isVi ? "Da nhan" : "Claimed") : `+${task.reward} ${isVi ? "xu" : "金币"}`}</b>
+              <b>${task.claimed ? (isVi ? "Đã nhận" : "Claimed") : `+${task.reward} ${isVi ? "xu" : "金币"}`}</b>
             </span>
           </li>
         `).join("")}
@@ -5601,6 +5793,7 @@ function getAdminCtvRows() {
         email: user.email || "",
         phone: user.phone || user.phoneNumber || user.mobile || "",
         ref: normalizeAdminCtvRef(user.ref || user.referralRef),
+        partnerCode: normalizeAdminCtvPartnerCode(user.partnerCode || user.partner_code),
         commission: Number(user.commission || user.totalCommission || user.commissionTotal || 0),
         status: user.isActive === false ? "paused" : "active",
         verified: user.emailVerified === true || user.isVerified === true,
@@ -5612,6 +5805,14 @@ function getAdminCtvRows() {
       const vipCount = stats.vip;
       const sourceBreakdown = stats.sourceBreakdown;
       return { ...row, ref, referrals, vipCount, sourceBreakdown };
+    })
+    .sort((a, b) => {
+      const aCode = Number(a.partnerCode || 0);
+      const bCode = Number(b.partnerCode || 0);
+      if (aCode && bCode && aCode !== bCode) return aCode - bCode;
+      if (aCode && !bCode) return -1;
+      if (!aCode && bCode) return 1;
+      return String(a.name || a.email).localeCompare(String(b.name || b.email), "vi");
     });
 }
 
@@ -5676,6 +5877,11 @@ function getAdminCtvGeneratedRef(ctv) {
   return normalizeAdminCtvRef(getAdminCtvSlug(ctv));
 }
 
+function normalizeAdminCtvPartnerCode(value) {
+  const normalized = String(value || "").trim().replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 12);
+  return normalized || "";
+}
+
 const ADMIN_CTV_LINK_SOURCES = [
   { id: "", label: "Không gắn nguồn" },
   { id: "tiktok", label: "TikTok" },
@@ -5684,15 +5890,31 @@ const ADMIN_CTV_LINK_SOURCES = [
   { id: "ctv_livestream", label: "CTV Livestream" },
 ];
 
+const ADMIN_CTV_SOURCE_PREFIX = {
+  facebook: "F",
+  tiktok: "T",
+  koc: "K",
+  ctv_livestream: "L",
+};
+
+function getAdminCtvFixedCode(ctv) {
+  return normalizeAdminCtvPartnerCode(ctv?.partnerCode || ctv?.partner_code) || getAdminCtvGeneratedRef(ctv);
+}
+
+function getAdminCtvShortReferralCode(ctv) {
+  const code = getAdminCtvFixedCode(ctv);
+  const source = String(state.adminCtvLinkSource || "").trim().toLowerCase();
+  const prefix = ADMIN_CTV_SOURCE_PREFIX[source] || "";
+  return `${prefix}${code}`;
+}
+
 function getAdminCtvLink(ctv) {
   const origin = typeof window !== "undefined" && window.location?.origin
     ? window.location.origin
     : "https://example.com";
-  const code = getAdminCtvGeneratedRef(ctv);
-  const source = String(state.adminCtvLinkSource || "").trim().toLowerCase();
+  const code = getAdminCtvShortReferralCode(ctv);
   const url = new URL("/", origin);
   url.searchParams.set("r", code);
-  if (source) url.searchParams.set("src", source);
   return url.toString();
 }
 
@@ -7548,6 +7770,62 @@ function showToast(message) {
       toast.remove();
     });
   }, 2200);
+}
+
+function getPracticeCorrectPraiseMessage() {
+  const itemNow = currentItem();
+  const stage = learningContentBucket(itemNow);
+  const isSentence = stage === "sentence";
+  const unitLabel = isSentence ? "câu" : "phần";
+  if (state.lang !== "vi") {
+    const messages = [
+      "答对啦，太棒了！",
+      "很好，这一句很稳！",
+      "漂亮，继续保持这个节奏！",
+      "答得很准，离排行榜更近啦！",
+    ];
+    return messages[state.index % messages.length];
+  }
+  const messages = [
+    `Đúng ${unitLabel} này rồi nè, đỉnh quá!`,
+    `Tuyệt ghê, ${unitLabel} này bạn gõ mượt lắm đó!`,
+    "Chuẩn rồi nha, cứ bình tĩnh vậy là lên tay rất nhanh!",
+    "Làm đúng rồi đó, giữ nhịp này là leo BXH ngon luôn!",
+    `Xịn quá, thêm một ${unitLabel} nữa về đích rồi!`,
+  ];
+  return messages[state.index % messages.length];
+}
+
+function showPracticePraiseCelebration(message) {
+  const existing = document.getElementById("practicePraiseCelebration");
+  if (existing) existing.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "practicePraiseCelebration";
+  overlay.className = "practice-praise-celebration";
+  const sparks = Array.from({ length: 24 }, (_, index) => {
+    const angle = Math.round((360 / 24) * index);
+    const distance = 78 + ((index % 4) * 18);
+    const delay = (index % 6) * 0.04;
+    return `<span style="--angle:${angle}deg; --distance:${distance}px; --delay:${delay}s"></span>`;
+  }).join("");
+  overlay.innerHTML = `
+    <div class="practice-praise-fireworks" aria-hidden="true">${sparks}</div>
+    <div class="practice-praise-card" role="status" aria-live="polite">
+      <span class="practice-praise-mascot" aria-hidden="true">
+        <span class="practice-praise-face"><i></i></span>
+        <span class="practice-praise-ribbon">${state.lang === "vi" ? "Cố lên!" : "加油!"}</span>
+      </span>
+      <strong>${escapeHtml(message)}</strong>
+      <small>${state.lang === "vi" ? "Làm thêm câu nữa nha, mình đang vào nhịp rất tốt rồi." : "再来一句，节奏已经很好啦。"}</small>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add("show"));
+  window.setTimeout(() => {
+    overlay.classList.remove("show");
+    overlay.classList.add("hide");
+    window.setTimeout(() => overlay.remove(), 420);
+  }, 2600);
 }
 
 function saveState() {
@@ -10759,6 +11037,18 @@ function showQuitModal() {
   modalDiv.id = "quitModal";
   modalDiv.className = "quit-modal-overlay";
   const isVi = state.lang === "vi";
+  const collection = currentCollection();
+  const totalItems = Math.max(1, collection?.items?.length || 1);
+  const currentPosition = Math.max(1, Math.min(totalItems, state.index + 1));
+  const isNearRewardExit = currentPosition >= 5;
+  const quitTitle = isNearRewardExit
+    ? (isVi ? "Người đẹp ơi, đừng rời đi!" : "漂亮同学，先别离开！")
+    : (isVi ? "Khoan, đừng đi!" : "等一下，别走！");
+  const quitSubtitle = isNearRewardExit
+    ? (isVi
+      ? "Chỉ còn vài câu nữa thôi là được nhận xu và kinh nghiệm để leo BXH rồi đó !!!"
+      : "再坚持几句就能拿金币和经验，冲排行榜啦！！！")
+    : (isVi ? "Chỉ còn 2 phút thôi! Bạn có chắc chắn muốn thoát không?" : "只需再学习2分钟！你确定要退出吗？");
   let modalClosed = false;
 
   modalDiv.innerHTML = `
@@ -10766,54 +11056,23 @@ function showQuitModal() {
       <button class="quit-modal-close" id="closeQuitModal" type="button">&times;</button>
       
       <div class="quit-modal-illustration">
-        <svg viewBox="0 0 160 160" width="120" height="120">
-          <!-- Antlers -->
-          <path d="M50 45 C45 35 48 20 40 15 C38 12 33 15 35 20 C37 25 42 32 46 40" stroke="#8b5a2b" stroke-width="4" stroke-linecap="round" fill="none" />
-          <path d="M42 27 C35 25 32 18 28 20 C25 22 28 28 35 30" stroke="#8b5a2b" stroke-width="3" stroke-linecap="round" fill="none" />
-          
-          <path d="M110 45 C115 35 112 20 120 15 C122 12 127 15 125 20 C123 25 118 32 114 40" stroke="#8b5a2b" stroke-width="4" stroke-linecap="round" fill="none" />
-          <path d="M118 27 C125 25 128 18 132 20 C135 22 132 28 125 30" stroke="#8b5a2b" stroke-width="3" stroke-linecap="round" fill="none" />
-          
-          <!-- Ears -->
-          <path d="M38 52 C20 50 25 62 36 60 Z" fill="#ffb03a" stroke="#8b5a2b" stroke-width="2" />
-          <path d="M122 52 C140 50 135 62 124 60 Z" fill="#ffb03a" stroke="#8b5a2b" stroke-width="2" />
-          
-          <!-- Head / Face -->
-          <path d="M45 60 C45 105 55 120 80 120 C105 120 115 105 115 60 C115 45 105 45 80 45 C55 45 45 45 45 60 Z" fill="#ffb03a" stroke="#8b5a2b" stroke-width="3" />
-          
-          <!-- White belly/snout area -->
-          <ellipse cx="80" cy="108" rx="25" ry="12" fill="#ffffff" />
-          
-          <!-- Nose -->
-          <ellipse cx="80" cy="95" rx="5" ry="3.5" fill="#1e293b" />
-          
-          <!-- Glasses Rim -->
-          <circle cx="62" cy="72" r="18" fill="none" stroke="#000000" stroke-width="4" />
-          <circle cx="98" cy="72" r="18" fill="none" stroke="#000000" stroke-width="4" />
-          <!-- Glasses Bridge -->
-          <path d="M76 72 L84 72" stroke="#000000" stroke-width="4" />
-          
-          <!-- Sad Eyes inside glasses -->
-          <!-- Left Eye -->
-          <path d="M58 70 C60 67 64 67 66 70" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none" />
-          <circle cx="62" cy="76" r="2.5" fill="#1e293b" />
-          
-          <!-- Right Eye -->
-          <path d="M94 70 C96 67 100 67 102 70" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none" />
-          <circle cx="98" cy="76" r="2.5" fill="#1e293b" />
-          
-          <!-- Tears (Blue) -->
-          <!-- Left tear -->
-          <path d="M62 78 C58 88 56 102 62 108 C64 102 64 88 62 78" fill="#38bdf8" opacity="0.85" />
-          <path d="M60 84 C56 94 54 102 58 106 C60 102 60 94 60 84" fill="#38bdf8" opacity="0.6" />
-          <!-- Right tear -->
-          <path d="M98 78 C102 88 104 102 98 108 C96 102 96 88 98 78" fill="#38bdf8" opacity="0.85" />
-          <path d="M100 84 C104 94 106 102 102 106 C100 102 100 94 100 84" fill="#38bdf8" opacity="0.6" />
-        </svg>
+        <div class="quit-sad-mascot" aria-hidden="true">
+          <span class="quit-sad-shadow"></span>
+          <span class="quit-sad-face">
+            <i class="quit-sad-ear quit-sad-ear--left"></i>
+            <i class="quit-sad-ear quit-sad-ear--right"></i>
+            <i class="quit-sad-eye quit-sad-eye--left"></i>
+            <i class="quit-sad-eye quit-sad-eye--right"></i>
+            <i class="quit-sad-mouth"></i>
+            <i class="quit-sad-tear quit-sad-tear--left"></i>
+            <i class="quit-sad-tear quit-sad-tear--right"></i>
+          </span>
+          <span class="quit-sad-bubble">${isVi ? "Ở lại thêm chút nha..." : "再陪我一下吧..."}</span>
+        </div>
       </div>
       
-      <h2>${isVi ? "Khoan, đừng đi!" : "等一下，别走！"}</h2>
-      <p class="quit-modal-sub">${isVi ? "Chỉ còn 2 phút thôi! Bạn có chắc chắn muốn thoát không?" : "只需再学习2分钟！你确定要退出吗？"}</p>
+      <h2>${escapeHtml(quitTitle)}</h2>
+      <p class="quit-modal-sub">${escapeHtml(quitSubtitle)}</p>
       
       <div class="quit-modal-buttons">
         <button id="btnKeepLearning" class="btn-keep-learning" type="button">${isVi ? "HỌC TIẾP" : "继续学习"}</button>
@@ -12525,7 +12784,8 @@ let listeningRealtimeCommitTimer = null;
 let listeningRepeatSilenceAudioContext = null;
 let listeningRepeatSilenceSource = null;
 let listeningRepeatSilenceFrame = 0;
-const LISTENING_REPEAT_END_PADDING_SECONDS = 0;
+const LISTENING_REPEAT_END_PADDING_SECONDS = 0.45;
+const LISTENING_REPEAT_STOP_TIMER_GRACE_MS = 250;
 const LISTENING_REALTIME_FINAL_WAIT_MS = 900;
 const LISTENING_REPEAT_SILENCE_AUTO_STOP_MS = 3000;
 const LISTENING_REPEAT_SILENCE_RMS_THRESHOLD = 0.012;
@@ -13542,6 +13802,10 @@ function speakListeningSentence(index = state.listeningSentenceIndex) {
 function getListeningRepeatSentenceAudioBounds(sentence = {}, audio = null) {
   const startTime = Math.max(0, Number(sentence.start || 0));
   const fallbackDuration = Math.max(1, String(sentence.chinese || "").length * 0.35);
+  const endPadding = Math.max(
+    LISTENING_REPEAT_END_PADDING_SECONDS,
+    Math.min(0.85, String(sentence.chinese || "").length * 0.025),
+  );
   if (sentence.audioSrc) {
     const duration = Number(audio?.duration);
     const audioDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
@@ -13555,8 +13819,8 @@ function getListeningRepeatSentenceAudioBounds(sentence = {}, audio = null) {
   const duration = Number(audio?.duration);
   const audioDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
   const stopTime = audioDuration === null
-    ? rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS
-    : Math.min(audioDuration, rawEndTime + LISTENING_REPEAT_END_PADDING_SECONDS);
+    ? rawEndTime + endPadding
+    : Math.min(audioDuration, rawEndTime + endPadding);
   return { startTime, endTime: rawEndTime, stopTime };
 }
 
@@ -13593,7 +13857,10 @@ function toggleListeningRepeatSentencePlayback() {
         if ((audio.currentTime || 0) < startTime || (audio.currentTime || 0) >= stopTime) {
           audio.currentTime = startTime;
         }
-        const remainingMs = Math.max(400, ((stopTime - (audio.currentTime || startTime)) / getListeningPlaybackRate()) * 1000);
+        const remainingMs = Math.max(
+          400,
+          ((stopTime - (audio.currentTime || startTime)) / getListeningPlaybackRate()) * 1000 + LISTENING_REPEAT_STOP_TIMER_GRACE_MS,
+        );
         if (listeningRepeatAudioStopTimer) window.clearTimeout(listeningRepeatAudioStopTimer);
         listeningRepeatAudioStopTimer = window.setTimeout(() => {
           if (listeningRepeatSpeechToken !== resumeToken) return;
@@ -13671,7 +13938,7 @@ function toggleListeningRepeatSentencePlayback() {
         audio.pause();
         audio.currentTime = startTime;
         resetRepeatAudioUi();
-      }, Math.max(600, ((stopTime - startTime) / playbackRate) * 1000));
+      }, Math.max(600, ((stopTime - startTime) / playbackRate) * 1000 + LISTENING_REPEAT_STOP_TIMER_GRACE_MS));
     }
     audio.play().catch(() => {
       if (listeningRepeatSpeechToken !== speechToken) return;
@@ -14922,7 +15189,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
         <header class="home-desktop-topbar">
           <div>
             <h1>${isVi ? "Học Trung - HuaMei" : "学习中文 - 华美"}</h1>
-            <p>${isVi ? "Học đúng – Nhớ lâu" : "学得准 – 记得稳"}</p>
+            <p>${isVi ? "Làm chủ tiếng Trung từng bước" : "一步步掌握中文"}</p>
           </div>
           <button type="button" class="home-desktop-lang-btn" id="homeDesktopTopbarLanguageBtn" aria-label="${isVi ? "Đổi ngôn ngữ" : "切换语言"}">
             <span class="${isVi ? "active" : ""}">VI</span>
@@ -17015,7 +17282,7 @@ function submitAnswer(value) {
     state.solved = itemNow.words.map(() => true);
     state.slotProgress = itemNow.words.map((word) => slotPinyinLength(word));
     state.activeInput = "";
-    finishItem({ autoAdvance: true });
+    finishItem({ autoAdvance: true, praise: true });
     return;
   }
   if (match?.kind === "partial" && match.count > 0) {
@@ -17042,7 +17309,7 @@ function submitAnswer(value) {
         feedbackNode.className = "feedback good";
       }
     } else {
-      finishItem({ autoAdvance: true });
+      finishItem({ autoAdvance: true, praise: true });
     }
     return;
   }
@@ -17086,6 +17353,7 @@ function canSubmitCurrentAnswer(value) {
 
 function finishItem(options = {}) {
   const collection = currentCollection();
+  const praiseMessage = options.praise ? getPracticeCorrectPraiseMessage() : "";
   state.complete = true;
   trackEvent("question_answered", {
     ...buildPracticeEventContext(),
@@ -17104,6 +17372,7 @@ function finishItem(options = {}) {
   renderPractice();
   burst();
   playTone("success");
+  if (praiseMessage) showPracticePraiseCelebration(praiseMessage);
   if (options.autoAdvance) {
     schedulePracticeSpeak(360);
   }
@@ -17132,6 +17401,7 @@ function nextItem() {
     saveState();
     renderComplete();
     setScreen("complete");
+    playTone("celebration");
     return;
   }
   if (state.module === "hsk") {
@@ -17170,9 +17440,12 @@ function renderCompleteExperience(collection, isVocab, totalItems, practiceDurat
   const remainingToMilestone = Math.max(0, nextMilestone - completedLessons);
   const milestonePercent = Math.round((milestoneProgress / milestoneSize) * 100);
   const completionBadge = options.completionBadge || (isVi ? "Mục luyện đã chinh phục" : "练习已攻克");
+  const completeTitle = options.completeTitle || (isVi
+    ? "Chúc mừng bạn thật là tài giỏi đó"
+    : "恭喜你，真的很厉害");
   const leadText = options.leadText || (isVi
-    ? "Bạn vừa hoàn tất một phiên luyện gõ rõ ràng, gọn và có tiến bộ."
-    : "你刚完成了一次清晰、稳定、有进步的打字练习。");
+    ? "Bạn đã hơn 30% người dùng hiện tại rồi đó cố gắng hơn nữa là leo được BXH rồi !"
+    : "你已经超过当前 30% 的用户了，再努力一点就能冲上排行榜！");
   const momentumTitle = remainingToMilestone === 0
     ? (isVi ? `Chạm mốc ${completedLessons} bài` : `已达 ${completedLessons} 课里程碑`)
     : (isVi ? `${milestoneProgress}/${milestoneSize} bước tới mốc ${nextMilestone} bài` : `${milestoneProgress}/${milestoneSize} 步迈向 ${nextMilestone} 课`);
@@ -17188,8 +17461,6 @@ function renderCompleteExperience(collection, isVocab, totalItems, practiceDurat
   const statLabel = options.statLabel || t("itemCount");
   const statDetail = options.statDetail || (isVi ? "đã gõ xong" : "已完成");
   const focusDetail = options.focusDetail || (isVi ? "tập trung" : "专注练习");
-  const railLeft = options.railLeft || "pin yin";
-  const railRight = options.railRight || "拼音";
   const secondaryLabel = options.secondaryLabel || (isVocab ? (isVi ? "Về bộ từ" : "返回生词本") : t("backHome"));
   const showPrimary = options.showPrimary ?? !isVocab;
   const primaryLabel = options.primaryLabel || t("nextLesson");
@@ -17210,7 +17481,17 @@ function renderCompleteExperience(collection, isVocab, totalItems, practiceDurat
         <span class="complete-burst complete-burst--left"></span>
         <span class="trophy">
           <span class="trophy-ring"></span>
-          <span class="trophy-check">✓</span>
+          <span class="trophy-cup" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="42" height="42" fill="none" aria-hidden="true">
+              <path d="M18 11h28v9c0 11-5.8 20-14 20s-14-9-14-20v-9Z" fill="#facc15" stroke="#92400e" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M18 16H9v5c0 7.2 4.8 12 11 12" stroke="#92400e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M46 16h9v5c0 7.2-4.8 12-11 12" stroke="#92400e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M32 40v8" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+              <path d="M22 53h20" stroke="#92400e" stroke-width="4" stroke-linecap="round"/>
+              <path d="M25 48h14" stroke="#92400e" stroke-width="3" stroke-linecap="round"/>
+              <path d="m32 17 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8 2.5-5Z" fill="#fff7ed"/>
+            </svg>
+          </span>
           <span class="trophy-sparkles">✦✦</span>
         </span>
         <span class="complete-burst complete-burst--right"></span>
@@ -17220,15 +17501,8 @@ function renderCompleteExperience(collection, isVocab, totalItems, practiceDurat
         <span>${completionBadge}</span>
         <strong>+1</strong>
       </div>
-      <h1 id="completeTitle">${t("completeTitle")}</h1>
+      <h1 id="completeTitle">${escapeHtml(completeTitle)}</h1>
       <p class="complete-lead">${leadText}</p>
-      <div class="complete-type-rail" aria-hidden="true">
-        <span>${railLeft}</span>
-        <i></i>
-        <span>${railRight}</span>
-        <b>✓</b>
-      </div>
-      <div class="complete-lesson-name">${escapeHtml(collection.title || "")}</div>
       <div class="complete-stats">
         <span class="complete-stat-card">
           <small>${statLabel}</small>
@@ -17246,14 +17520,7 @@ function renderCompleteExperience(collection, isVocab, totalItems, practiceDurat
           <em>${isVi ? "bài đã hoàn thành" : "课已完成"}</em>
         </span>
       </div>
-      <div class="complete-momentum" style="--complete-progress:${milestonePercent}%">
-        <div>
-          <span>${isVi ? "Đà học hiện tại" : "当前学习节奏"}</span>
-          <strong>${momentumTitle}</strong>
-        </div>
-        <div class="complete-momentum-bar" aria-hidden="true"><i></i></div>
-        <p>${momentumCopy}</p>
-      </div>
+      ${getCompleteLeaderboardChaseHTML(isVi)}
       <div class="complete-actions">
         <button class="secondary" data-complete="home" type="button">${secondaryLabel}</button>
         ${showPrimary ? `<button class="primary" data-complete="next" type="button">${primaryLabel} <span aria-hidden="true">→</span></button>` : ""}
@@ -17338,8 +17605,6 @@ function renderListeningComplete(source = state.listeningCompletionSource || "au
     duration,
     {
       ...copy,
-      railLeft: "ting li",
-      railRight: "听力",
       secondaryLabel: state.lang === "vi" ? "Về luyện nghe" : "返回听力",
       primaryLabel: state.lang === "vi" ? "Bài nghe tiếp theo" : "下一课听力",
       showPrimary: true,
@@ -17385,7 +17650,7 @@ function finishListeningLesson(source = "audio", detail = {}) {
   saveState();
   renderListeningComplete(source);
   setScreen("complete");
-  playTone("success");
+  playTone("celebration");
 }
 
 function isListeningEpisodeLockedForUser(episodeId = "") {
@@ -17477,6 +17742,7 @@ function getFallbackTonePattern(kind) {
     "record-stop": { frequencies: [880, 620], waveform: "sine", volume: 0.026, duration: 0.085, step: 0.075, attack: 0.006 },
     correct: { frequencies: [880, 1320], waveform: "sine", volume: 0.018, duration: 0.052, step: 0.048, attack: 0.004 },
     success: { frequencies: [784, 988, 1318], waveform: "sine", volume: 0.018, duration: 0.052, step: 0.046, attack: 0.004 },
+    celebration: { frequencies: [392, 523, 659, 784, 1046, 1318, 1568, 2093], waveform: "sine", volume: 0.035, duration: 0.13, step: 0.065, attack: 0.006 },
     error: { frequencies: [260, 196], waveform: "triangle", volume: 0.018, duration: 0.07, step: 0.058, attack: 0.004 },
     key: { frequencies: [1250], waveform: "square", volume: 0.012, duration: 0.038, step: 0.034, attack: 0.004 },
   };

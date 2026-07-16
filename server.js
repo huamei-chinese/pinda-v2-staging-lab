@@ -49,6 +49,13 @@ const HOME_COIN_TASK_REWARDS = {
   listening: 15,
   write: 15,
 };
+const HOME_DAILY_EXP_REWARDS = {
+  exp_10: 10,
+  exp_20: 10,
+  exp_30: 10,
+};
+const HOME_DAILY_EXP_SOURCES = Object.keys(HOME_DAILY_EXP_REWARDS);
+const HOME_DAILY_EXP_STEP_SECONDS = 10 * 60;
 const HOME_COIN_TASK_REQUIREMENTS = {
   vocab: { progressKey: "savedVocabCount", minimum: 20 },
   listening: { progressKey: "listenSeconds", minimum: 30 * 60 },
@@ -102,6 +109,7 @@ function publicUser(row) {
     email: row.email,
     role: normalizePublicRole(row.role),
     ref: row.ref || "",
+    partnerCode: row.partner_code || "",
     src: row.src || "",
     isActive: row.is_active,
     registeredAt: row.created_at,
@@ -145,14 +153,40 @@ function getVietnamDateKey(date = new Date()) {
 }
 
 function normalizeCoinSource(source) {
-  const normalized = String(source || "").trim().toLowerCase().replace(/^daily[-_:]/, "");
-  return Object.prototype.hasOwnProperty.call(HOME_COIN_TASK_REWARDS, normalized) ? normalized : "";
+  const normalized = String(source || "").trim().toLowerCase().replace(/^daily[-_:]/, "").replace(/-/g, "_");
+  if (Object.prototype.hasOwnProperty.call(HOME_COIN_TASK_REWARDS, normalized)) return normalized;
+  if (Object.prototype.hasOwnProperty.call(HOME_DAILY_EXP_REWARDS, normalized)) return normalized;
+  return "";
+}
+
+function isDailyExpSource(source) {
+  return Object.prototype.hasOwnProperty.call(HOME_DAILY_EXP_REWARDS, source);
+}
+
+function areDailyCoinTasksComplete(progress = {}) {
+  return Object.keys(HOME_COIN_TASK_REQUIREMENTS).every((source) => {
+    const requirement = HOME_COIN_TASK_REQUIREMENTS[source];
+    return Number(progress?.[requirement.progressKey] || 0) >= requirement.minimum;
+  });
+}
+
+function getExtraStudySeconds(progress = {}) {
+  const fallback = Number(progress?.listenSeconds || 0) + Number(progress?.writeSeconds || 0) - (2 * 30 * 60);
+  return Math.max(0, Math.floor(Number(progress?.extraStudySeconds ?? fallback) || 0));
 }
 
 function isCoinClaimProgressEligible(source, progress = {}) {
+  if (isDailyExpSource(source)) {
+    const tier = Math.max(1, Number(String(source).replace("exp_", "")) / 10 || 1);
+    return areDailyCoinTasksComplete(progress) && getExtraStudySeconds(progress) >= tier * HOME_DAILY_EXP_STEP_SECONDS;
+  }
   const requirement = HOME_COIN_TASK_REQUIREMENTS[source];
   if (!requirement) return false;
   return Number(progress?.[requirement.progressKey] || 0) >= requirement.minimum;
+}
+
+function rewardAmountForCoinSource(source) {
+  return isDailyExpSource(source) ? HOME_DAILY_EXP_REWARDS[source] : HOME_COIN_TASK_REWARDS[source];
 }
 
 function normalizeCoinPeriod(period) {
@@ -178,34 +212,43 @@ async function getCoinRequester(req) {
 }
 
 function coinWalletFromRows(rows = []) {
-  const getAmount = (period) => Number(rows.find((row) => row.period === period)?.amount || 0);
+  const getMetric = (period, key) => Number(rows.find((row) => row.period === period)?.[key] || 0);
   return {
-    coins: getAmount("total"),
-    weeklyCoins: getAmount("week"),
-    monthlyCoins: getAmount("month"),
+    coins: getMetric("total", "coins"),
+    exp: getMetric("total", "exp"),
+    score: getMetric("total", "score"),
+    weeklyCoins: getMetric("week", "coins"),
+    weeklyExp: getMetric("week", "exp"),
+    weeklyScore: getMetric("week", "score"),
+    monthlyCoins: getMetric("month", "coins"),
+    monthlyExp: getMetric("month", "exp"),
+    monthlyScore: getMetric("month", "score"),
   };
 }
 
 async function getCoinWallet(userId) {
   const result = await pool.query(
-    `SELECT period, COALESCE(SUM(amount), 0)::int AS amount
+    `SELECT period,
+            COALESCE(SUM(CASE WHEN source = ANY($2::text[]) THEN 0 ELSE amount END), 0)::int AS coins,
+            COALESCE(SUM(CASE WHEN source = ANY($2::text[]) THEN amount ELSE 0 END), 0)::int AS exp,
+            COALESCE(SUM(amount), 0)::int AS score
      FROM (
-       SELECT 'total' AS period, amount
+       SELECT 'total' AS period, source, amount
        FROM coin_transactions
        WHERE user_id = $1
        UNION ALL
-       SELECT 'week' AS period, amount
+       SELECT 'week' AS period, source, amount
        FROM coin_transactions
        WHERE user_id = $1
          AND created_at >= ${coinPeriodSql("week")}
        UNION ALL
-       SELECT 'month' AS period, amount
+       SELECT 'month' AS period, source, amount
        FROM coin_transactions
        WHERE user_id = $1
          AND created_at >= ${coinPeriodSql("month")}
      ) scoped
      GROUP BY period`,
-    [userId],
+    [userId, HOME_DAILY_EXP_SOURCES],
   );
   return coinWalletFromRows(result.rows);
 }
@@ -219,7 +262,7 @@ async function getTodayCoinClaims(userId) {
        AND period_key = $2
        AND source = ANY($3::text[])
      ORDER BY created_at ASC`,
-    [userId, periodKey, Object.keys(HOME_COIN_TASK_REWARDS)],
+    [userId, periodKey, [...Object.keys(HOME_COIN_TASK_REWARDS), ...HOME_DAILY_EXP_SOURCES]],
   );
   return {
     periodKey,
@@ -240,7 +283,8 @@ function publicCoinEntry(row) {
     avatarInitial: String(displayName || "H").trim().charAt(0).toUpperCase() || "H",
     avatarUrl: row.avatar_url || "",
     score: Number(row.score || 0),
-    coins: Number(row.total_coins || row.score || 0),
+    coins: Number(row.total_coins || row.coins || 0),
+    exp: Number(row.total_exp || row.exp || 0),
     rank: Number(row.rank || 0),
     updatedAt: row.last_awarded_at || null,
   };
@@ -256,13 +300,18 @@ async function getCoinLeaderboardData(req, searchParams = new URLSearchParams())
     `WITH period_scores AS (
        SELECT user_id,
               COALESCE(SUM(amount), 0)::int AS score,
+              COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN 0 ELSE amount END), 0)::int AS coins,
+              COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN amount ELSE 0 END), 0)::int AS exp,
               MAX(created_at) AS last_awarded_at
        FROM coin_transactions
        WHERE created_at >= ${scopedStartSql}
        GROUP BY user_id
      ),
      total_scores AS (
-       SELECT user_id, COALESCE(SUM(amount), 0)::int AS total_coins
+       SELECT user_id,
+              COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN 0 ELSE amount END), 0)::int AS total_coins,
+              COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN amount ELSE 0 END), 0)::int AS total_exp,
+              COALESCE(SUM(amount), 0)::int AS total_score
        FROM coin_transactions
        GROUP BY user_id
      ),
@@ -272,7 +321,11 @@ async function getCoinLeaderboardData(req, searchParams = new URLSearchParams())
               u.email,
               u.avatar_url,
               COALESCE(ps.score, 0)::int AS score,
+              COALESCE(ps.coins, 0)::int AS coins,
+              COALESCE(ps.exp, 0)::int AS exp,
               COALESCE(ts.total_coins, 0)::int AS total_coins,
+              COALESCE(ts.total_exp, 0)::int AS total_exp,
+              COALESCE(ts.total_score, 0)::int AS total_score,
               ps.last_awarded_at,
               ROW_NUMBER() OVER (
                 ORDER BY COALESCE(ps.score, 0) DESC,
@@ -283,13 +336,12 @@ async function getCoinLeaderboardData(req, searchParams = new URLSearchParams())
        LEFT JOIN period_scores ps ON ps.user_id = u.id
        LEFT JOIN total_scores ts ON ts.user_id = u.id
        WHERE u.is_active = TRUE
-         AND (COALESCE(ps.score, 0) > 0 OR u.id = $1::uuid)
      )
      SELECT *
      FROM ranked
      WHERE rank <= $2 OR user_id = $1::uuid
      ORDER BY rank ASC`,
-    [currentUserId, limit],
+    [currentUserId, limit, HOME_DAILY_EXP_SOURCES],
   );
   const entries = result.rows.map(publicCoinEntry);
   return {
@@ -321,6 +373,33 @@ function normalizeReferralRef(ref) {
 
 function isPartnerRole(role) {
   return ["sales", "ctv", "staff"].includes(normalizePublicRole(role));
+}
+
+async function ensurePartnerCodes() {
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_code TEXT;");
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_code_unique
+    ON users (lower(btrim(partner_code)))
+    WHERE partner_code IS NOT NULL AND btrim(partner_code) <> '';
+  `);
+  await pool.query(`
+    WITH existing AS (
+      SELECT COALESCE(MAX(partner_code::int), 0) AS max_code
+      FROM users
+      WHERE partner_code ~ '^[0-9]+$'
+    ),
+    missing AS (
+      SELECT id, ROW_NUMBER() OVER (ORDER BY created_at DESC, updated_at ASC, id ASC) AS rn
+      FROM users
+      WHERE role IN ('ctv', 'sales', 'koc')
+        AND (partner_code IS NULL OR btrim(partner_code) = '')
+    )
+    UPDATE public.users u
+    SET partner_code = (existing.max_code + missing.rn)::text,
+        updated_at = NOW()
+    FROM missing, existing
+    WHERE u.id = missing.id;
+  `);
 }
 
 function getPartnerReferralSeed(user) {
@@ -376,6 +455,41 @@ function normalizeSource(source) {
     .replace(/[^a-z0-9_-]/g, "")
     .slice(0, 40);
   return normalized || null;
+}
+
+function referralSourceFromPrefix(prefix) {
+  const normalized = String(prefix || "").trim().toUpperCase();
+  if (normalized === "F") return "facebook";
+  if (normalized === "T") return "tiktok";
+  if (normalized === "K") return "koc";
+  if (normalized === "L") return "ctv_livestream";
+  return null;
+}
+
+async function resolveReferralAttribution(ref, src) {
+  const normalizedRef = normalizeReferralRef(ref);
+  const normalizedSource = normalizeSource(src);
+  if (!normalizedRef) return { ref: null, src: normalizedSource };
+
+  const shortCodeMatch = normalizedRef.match(/^([ftkl])?([0-9]+)$/i);
+  if (!shortCodeMatch) return { ref: normalizedRef, src: normalizedSource };
+
+  const [, prefix = "", partnerCode] = shortCodeMatch;
+  const sourceFromPrefix = referralSourceFromPrefix(prefix);
+  const owner = await pool.query(
+    `SELECT ref
+     FROM users
+     WHERE lower(btrim(partner_code)) = $1
+       AND role IN ('ctv', 'sales', 'koc')
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [partnerCode],
+  );
+  const ownerRef = normalizeReferralRef(owner.rows[0]?.ref);
+  return {
+    ref: ownerRef || partnerCode,
+    src: normalizedSource || sourceFromPrefix,
+  };
 }
 
 const ANALYTICS_TZ = "Asia/Ho_Chi_Minh";
@@ -1088,6 +1202,7 @@ async function ensureSchema() {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
       ref TEXT,
+      partner_code TEXT,
       src TEXT,
       is_active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -1096,7 +1211,13 @@ async function ensureSchema() {
     );
   `);
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_code TEXT;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_code_unique
+    ON users (lower(btrim(partner_code)))
+    WHERE partner_code IS NOT NULL AND btrim(partner_code) <> '';
+  `);
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN NOT NULL DEFAULT FALSE;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS premium_until TIMESTAMPTZ;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT;");
@@ -1149,8 +1270,7 @@ async function handleRegister(req, res) {
   const fullName = String(body.fullName || body.name || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
-  const ref = normalizeReferralRef(body.ref);
-  const src = normalizeSource(body.src);
+  const attribution = await resolveReferralAttribution(body.ref, body.src);
 
   if (fullName.length < 2) {
     sendJson(res, 400, { error: "Vui lòng nhập họ và tên." });
@@ -1169,8 +1289,8 @@ async function handleRegister(req, res) {
     const result = await pool.query(
       `INSERT INTO users (full_name, email, password_hash, ref, src)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
-      [fullName, email, hashPassword(password), ref, src],
+       RETURNING id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at`,
+      [fullName, email, hashPassword(password), attribution.ref, attribution.src],
     );
     sendJson(res, 201, { user: publicUser(result.rows[0]) });
   } catch (error) {
@@ -1202,7 +1322,7 @@ async function handleLogin(req, res) {
   const updated = await pool.query(
     `UPDATE users SET last_login_at = NOW(), updated_at = NOW()
      WHERE id = $1
-     RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
+     RETURNING id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at`,
     [user.id],
   );
   sendJson(res, 200, { user: publicUser(updated.rows[0]) });
@@ -1217,8 +1337,9 @@ async function handleAdminUsers(req, res, url) {
   }
 
   if (req.method === "GET") {
+    await ensurePartnerCodes();
     const result = await pool.query(
-      `SELECT id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at
+      `SELECT id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at
        FROM users
        ORDER BY created_at DESC`,
     );
@@ -1239,7 +1360,7 @@ async function handleAdminUsers(req, res, url) {
       return;
     }
     const current = await pool.query(
-      `SELECT id, full_name, email, role, ref
+      `SELECT id, full_name, email, role, ref, partner_code
        FROM users
        WHERE id = $1`,
       [roleMatch[1]],
@@ -1265,10 +1386,21 @@ async function handleAdminUsers(req, res, url) {
            ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id`,
       [nextRole, roleMatch[1], roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
-    sendJson(res, 200, { user: publicUser(result.rows[0]) });
+    if (!result.rows[0]) {
+      sendJson(res, 404, { error: "Khong tim thay user." });
+      return;
+    }
+    await ensurePartnerCodes();
+    const refreshed = await pool.query(
+      `SELECT id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at
+       FROM users
+       WHERE id = $1`,
+      [roleMatch[1]],
+    );
+    sendJson(res, 200, { user: publicUser(refreshed.rows[0]) });
     return;
   }
 
@@ -1305,7 +1437,7 @@ async function handleAdminUsers(req, res, url) {
       `UPDATE users
        SET ref = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at`,
       [ref, refMatch[1]],
     );
     sendJson(res, 200, { user: publicUser(result.rows[0]) });
@@ -1325,7 +1457,7 @@ async function handleAdminUsers(req, res, url) {
     const role = normalizeEditableRole(body.role);
     const isActive = body.isActive === true;
     const roleCurrent = await pool.query(
-      `SELECT id, full_name, email, role, ref
+      `SELECT id, full_name, email, role, ref, partner_code
        FROM users
        WHERE id = $1`,
       [idMatch[1]],
@@ -1375,14 +1507,21 @@ async function handleAdminUsers(req, res, url) {
            is_active = $4,
            updated_at = NOW()
        WHERE id = $5
-       RETURNING id, full_name, email, role, ref, src, is_active, created_at, updated_at, last_login_at`,
+       RETURNING id`,
       [fullName, email, roleToSave, isActive, idMatch[1], roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
     if (!result.rows[0]) {
       sendJson(res, 404, { error: "Không tìm thấy user." });
       return;
     }
-    sendJson(res, 200, { user: publicUser(result.rows[0]) });
+    await ensurePartnerCodes();
+    const refreshed = await pool.query(
+      `SELECT id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at
+       FROM users
+       WHERE id = $1`,
+      [idMatch[1]],
+    );
+    sendJson(res, 200, { user: publicUser(refreshed.rows[0]) });
     return;
   }
 
@@ -1830,6 +1969,7 @@ async function handleCoinSummary(req, res) {
     wallet,
     today,
     rewards: HOME_COIN_TASK_REWARDS,
+    expRewards: HOME_DAILY_EXP_REWARDS,
     user: {
       id: requester.id,
       fullName: requester.full_name,
@@ -1857,10 +1997,12 @@ async function handleCoinClaim(req, res) {
     sendJson(res, 400, { error: "Nhiem vu chua du dieu kien nhan xu." });
     return;
   }
-  const amount = HOME_COIN_TASK_REWARDS[source];
+  const amount = rewardAmountForCoinSource(source);
+  const rewardType = isDailyExpSource(source) ? "exp" : "coin";
   const periodKey = `daily:${getVietnamDateKey()}`;
   const metadata = {
-    claimedFrom: "home_coin_hunt",
+    claimedFrom: rewardType === "exp" ? "home_daily_exp_bonus" : "home_coin_hunt",
+    rewardType,
     clientProgress: body.progress && typeof body.progress === "object" ? body.progress : null,
   };
   const inserted = await pool.query(
@@ -1879,6 +2021,7 @@ async function handleCoinClaim(req, res) {
       source: inserted.rows[0].source,
       periodKey: inserted.rows[0].period_key,
       amount: Number(inserted.rows[0].amount || 0),
+      rewardType,
       createdAt: inserted.rows[0].created_at,
     } : null,
     wallet,

@@ -38,6 +38,33 @@ export class AdminService {
     return ['sales', 'ctv', 'staff'].includes(this.normalizeRole(role));
   }
 
+  private async ensurePartnerCodes() {
+    await this.db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_code TEXT`);
+    await this.db.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_code_unique
+      ON users (lower(btrim(partner_code)))
+      WHERE partner_code IS NOT NULL AND btrim(partner_code) <> ''
+    `);
+    await this.db.query(`
+      WITH existing AS (
+        SELECT COALESCE(MAX(partner_code::int), 0) AS max_code
+        FROM users
+        WHERE partner_code ~ '^[0-9]+$'
+      ),
+      missing AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY created_at DESC, updated_at ASC, id ASC) AS rn
+        FROM users
+        WHERE role IN ('ctv', 'sales', 'koc')
+          AND (partner_code IS NULL OR btrim(partner_code) = '')
+      )
+      UPDATE public.users u
+      SET partner_code = (existing.max_code + missing.rn)::text,
+          updated_at = NOW()
+      FROM missing, existing
+      WHERE u.id = missing.id
+    `);
+  }
+
   private async findPartnerReferralOwner(ref: string | null, userId: string) {
     if (!ref) return null;
     const duplicate = await this.db.query(
@@ -107,6 +134,7 @@ export class AdminService {
       email: row.email,
       role,
       ref: row.ref || '',
+      partnerCode: row.partner_code || '',
       src: row.src || '',
       isActive: row.is_active,
       currentLevel: row.current_level || 'HSK2',
@@ -207,6 +235,7 @@ export class AdminService {
     const requester = await this.assertAdminUserListAccess(headers);
 
     try {
+      await this.ensurePartnerCodes();
       await this.recalculateCtvVipCounts();
       const useServerPagination = this.hasAdminUsersQueryOptions(query);
       const filters: string[] = [];
@@ -285,7 +314,7 @@ export class AdminService {
         const offset = (page - 1) * pageSize;
         const pageParams = [...filterParams, pageSize, offset];
         const result = await this.db.query(
-          `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+          `SELECT id, full_name, email, role, ref, partner_code, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
            FROM users
            ${whereSql}
            ORDER BY created_at DESC
@@ -306,7 +335,7 @@ export class AdminService {
       }
 
       const result = await this.db.query(
-        `SELECT id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
+        `SELECT id, full_name, email, role, ref, partner_code, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, vip, daily_reminder_enabled, created_at, updated_at, last_login_at
          FROM users
          ${whereSql}
          ORDER BY created_at DESC`,
@@ -418,7 +447,7 @@ export class AdminService {
       const result = await this.db.query(
         `INSERT INTO users (full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id, vip_trial_used)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+         RETURNING id`,
         [
           fullName,
           email,
@@ -432,7 +461,14 @@ export class AdminService {
           vipPlanId === '3d',
         ],
       );
-      return { user: this.publicUser(result.rows[0]) };
+      await this.ensurePartnerCodes();
+      const refreshed = await this.db.query(
+        `SELECT id, full_name, email, role, ref, partner_code, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at
+         FROM users
+         WHERE id = $1`,
+        [result.rows[0].id],
+      );
+      return { user: this.publicUser(refreshed.rows[0]) };
     } catch (error: any) {
       if (error.code === '23505') {
         throw new HttpException('Email này đã được đăng ký.', HttpStatus.CONFLICT);
@@ -495,7 +531,7 @@ export class AdminService {
 
     try {
       const current = await this.db.query(
-        `SELECT id, full_name, email, role, ref, is_active, current_level
+        `SELECT id, full_name, email, role, ref, partner_code, is_active, current_level
          FROM users
          WHERE id = $1`,
         [id],
@@ -545,7 +581,7 @@ export class AdminService {
              END,
              updated_at = NOW()
          WHERE id = $6
-         RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+         RETURNING id`,
         [
           fullName,
           email,
@@ -566,7 +602,14 @@ export class AdminService {
       if (!result.rows[0]) {
         throw new HttpException('Không tìm thấy user.', HttpStatus.NOT_FOUND);
       }
-      return { user: this.publicUser(result.rows[0]) };
+      await this.ensurePartnerCodes();
+      const refreshed = await this.db.query(
+        `SELECT id, full_name, email, role, ref, partner_code, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at
+         FROM users
+         WHERE id = $1`,
+        [id],
+      );
+      return { user: this.publicUser(refreshed.rows[0]) };
     } catch (error: any) {
       if (error instanceof HttpException) throw error;
       throw new HttpException(error.message || 'Lỗi server.', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -595,7 +638,7 @@ export class AdminService {
     }
 
     const current = await this.db.query(
-      `SELECT id, full_name, email, role, ref
+      `SELECT id, full_name, email, role, ref, partner_code
        FROM users
        WHERE id = $1`,
       [id],
@@ -615,10 +658,20 @@ export class AdminService {
            ref = CASE WHEN $3::boolean THEN $4 ELSE ref END,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+       RETURNING id`,
       [nextRole, id, roleChangeRef.shouldSetRef, roleChangeRef.ref],
     );
-    return { user: this.publicUser(result.rows[0]) };
+    if (!result.rows[0]) {
+      throw new HttpException('KhÃ´ng tÃ¬m tháº¥y user.', HttpStatus.NOT_FOUND);
+    }
+    await this.ensurePartnerCodes();
+    const refreshed = await this.db.query(
+      `SELECT id, full_name, email, role, ref, partner_code, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at
+       FROM users
+       WHERE id = $1`,
+      [id],
+    );
+    return { user: this.publicUser(refreshed.rows[0]) };
   }
 
   async updateUserRef(
@@ -667,7 +720,7 @@ export class AdminService {
        SET ref = $1,
            updated_at = NOW()
        WHERE id = $2
-       RETURNING id, full_name, email, role, ref, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
+       RETURNING id, full_name, email, role, ref, partner_code, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, created_at, updated_at, last_login_at`,
       [ref, id],
     );
     return { user: this.publicUser(result.rows[0]) };

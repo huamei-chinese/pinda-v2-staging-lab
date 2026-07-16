@@ -35,8 +35,8 @@ test("desktop sidebar keeps the streak card and panda artwork visible", () => {
   assert.match(styles, /\.home-desktop-sidebar-panda\s*\{[\s\S]*background-image:\s*url\("assets\/sidebar-panda\.png"\)/);
   assert.match(styles, /\.app-desktop-shell \.home-desktop-sidebar-panda\s*\{[\s\S]*display:\s*block !important;[\s\S]*max-height:\s*132px !important;/);
   assert.match(styles, /\.app-desktop-shell \.home-desktop-sidebar-streak\s*\{[\s\S]*display:\s*flex !important;/);
-  assert.match(indexHtml, /styles\.css\?v=analytics-kpi-cards-20260716/);
-  assert.match(publicIndexHtml, /styles\.css\?v=analytics-kpi-cards-20260716/);
+  assert.match(indexHtml, /styles\.css\?v=home-profile-responsive-fit-20260716/);
+  assert.match(publicIndexHtml, /styles\.css\?v=home-profile-responsive-fit-20260716/);
   assert.doesNotMatch(
     styles,
     /\.app-desktop-shell \.home-desktop-sidebar-streak,\s*\.app-desktop-shell \.home-desktop-sidebar-panda,\s*\.app-desktop-shell \.home-desktop-sidebar-foot:empty\s*\{[\s\S]*display:\s*none !important;/,

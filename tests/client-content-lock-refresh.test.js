@@ -33,7 +33,8 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=analytics-kpi-cards-20260716/);
+  assert.match(indexHtmlSource, /app\.js\?v=home-exp-bxh-20260716/);
+  assert.match(indexHtmlSource, /sound-effects\.js\?v=home-profile-responsive-fit-20260716/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
   assert.match(adminV2HtmlSource, /admin-v2\.js\?v=admin-locks-20260713/);
@@ -85,6 +86,50 @@ test("VIP upgrade modal paints before rendering plan cards", () => {
   assert.match(appSource, /document\.body\.appendChild\(modalDiv\);/);
   assert.match(appSource, /const scheduleAfterModalPaint = \(callback\) => \{[\s\S]*requestAnimationFrame\(\(\) => setTimeout\(callback, 0\)\);/);
   assert.match(appSource, /scheduleAfterModalPaint\(\(\) => \{[\s\S]*renderFallbackPlans\(\);[\s\S]*loadPaymentPlans\(\)/);
+});
+
+test("correct answer praise uses a friendly mascot instead of OK copy", () => {
+  const stylesSource = fs.readFileSync(path.join(root, "public", "styles.css"), "utf8");
+  assert.match(appSource, /function showPracticePraiseCelebration\(message\)/);
+  assert.match(appSource, /class="practice-praise-mascot"/);
+  assert.match(appSource, /class="practice-praise-ribbon"/);
+  assert.match(appSource, /Cố lên!/);
+  assert.doesNotMatch(appSource, /class="practice-praise-badge"[\s\S]*?>OK<\/span>/);
+  assert.match(stylesSource, /\.practice-praise-mascot\s*\{[\s\S]*animation:\s*practicePraiseMascotDance/);
+  assert.match(stylesSource, /@keyframes practicePraiseMascotDance/);
+  assert.match(indexHtmlSource, /styles\.css\?v=home-coin-desktop-responsive-20260716/);
+});
+
+test("quit modal uses a soft animated sad mascot instead of the old crying owl svg", () => {
+  const stylesSource = fs.readFileSync(path.join(root, "public", "styles.css"), "utf8");
+  assert.match(appSource, /class="quit-sad-mascot"/);
+  assert.match(appSource, /class="quit-sad-bubble"/);
+  assert.match(appSource, /Ở lại thêm chút nha/);
+  assert.doesNotMatch(appSource, /<svg viewBox="0 0 160 160" width="120" height="120">/);
+  assert.match(stylesSource, /\.quit-sad-mascot\s*\{[\s\S]*place-items:\s*center/);
+  assert.match(stylesSource, /@keyframes quitSadBob/);
+  assert.match(stylesSource, /@keyframes quitSadTear/);
+  assert.match(indexHtmlSource, /app\.js\?v=home-exp-bxh-20260716/);
+});
+
+test("home coin hunt uses Vietnamese diacritics for claimed rewards", () => {
+  assert.match(appSource, /\u0110\u00e3 nh\u1eadn \$\{claimedCoins\} xu\./);
+  assert.match(appSource, /B\u1ea1n \u0111\u00e3 ho\u00e0n th\u00e0nh \u0111\u1ee7 nhi\u1ec7m v\u1ee5 h\u00f4m nay r\u1ed3i ti\u1ebfp t\u1ee5c h\u1ecdc th\u00eam \u0111\u1ec3 nh\u1eadn th\u00eam EXP \u0111\u1ec3 c\u1ee7ng c\u1ed1 BXH nh\u00e9/);
+  assert.match(appSource, /\+\$\{amount\} EXP\. C\u1ed1 l\u00ean nh\u00e9 EXP n\u00e0y s\u1ebd c\u1ee7ng c\u1ed1 BXH c\u1ee7a b\u1ea1n \u0111\u00f3, c\u1ed1 l\u00ean !!!/);
+  assert.match(appSource, /const expToastBaseDelay =/);
+  assert.doesNotMatch(appSource, /Da nhan/);
+});
+
+test("coin leaderboard includes active users even before they earn coins", () => {
+  const serverSource = fs.readFileSync(path.join(root, "server.js"), "utf8");
+  const coinsServiceSource = fs.readFileSync(path.join(root, "src", "coins", "coins.service.ts"), "utf8");
+
+  for (const source of [serverSource, coinsServiceSource, netlifyApiSource]) {
+    assert.match(source, /LEFT JOIN period_scores ps ON ps\.user_id = u\.id/);
+    assert.match(source, /WHERE u\.is_active = TRUE/);
+    assert.doesNotMatch(source, /COALESCE\(ps\.score,\s*0\)\s*>\s*0\s*OR\s*u\.id\s*=\s*\$1::uuid/);
+    assert.match(source, /WHERE rank <= \$2 OR user_id = \$1::uuid/);
+  }
 });
 
 test("daily partial badge only remains on housing or moving theme cards", () => {

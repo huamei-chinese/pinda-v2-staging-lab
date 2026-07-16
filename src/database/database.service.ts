@@ -80,6 +80,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
         ref TEXT,
+        partner_code TEXT,
         src TEXT,
         vip INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -124,10 +125,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS ref TEXT;
     `);
     await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS partner_code TEXT;
+    `);
+    await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS src TEXT;
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_code_unique
+      ON users (lower(btrim(partner_code)))
+      WHERE partner_code IS NOT NULL AND btrim(partner_code) <> '';
     `);
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS coin_transactions (
@@ -178,6 +187,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
         ref TEXT,
+        partner_code TEXT,
         src TEXT,
         vip INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -225,10 +235,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;
     `);
     await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_code TEXT;
+    `);
+    await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS vip INTEGER NOT NULL DEFAULT 0;
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_partner_code_unique
+      ON users (lower(btrim(partner_code)))
+      WHERE partner_code IS NOT NULL AND btrim(partner_code) <> '';
     `);
     await this.seedStaffAccounts();
     await this.pool.query(`

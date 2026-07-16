@@ -38,6 +38,14 @@
       step: 0.048,
       attack: 0.006,
     },
+    celebration: {
+      frequencies: [392, 523, 659, 784, 1046, 1318, 1568, 2093],
+      waveform: "sine",
+      volume: 0.07,
+      duration: 0.18,
+      step: 0.065,
+      attack: 0.006,
+    },
     "record-start": {
       frequencies: [620, 880],
       waveform: "sine",

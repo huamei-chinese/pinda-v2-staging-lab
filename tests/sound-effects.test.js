@@ -29,3 +29,12 @@ test('success tone is the richest completion sound', async () => {
   assert.ok(success.frequencies.length > correct.frequencies.length);
   assert.ok(success.duration >= correct.duration);
 });
+
+test('celebration tone feels like a fireworks finish', async () => {
+  const celebration = getTonePattern('celebration');
+  const success = getTonePattern('success');
+
+  assert.ok(celebration.frequencies.length > success.frequencies.length);
+  assert.ok(Math.max(...celebration.frequencies) >= 2000);
+  assert.ok(celebration.volume >= success.volume);
+});

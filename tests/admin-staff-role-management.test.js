@@ -30,29 +30,35 @@ function createAdminServiceWithDb(db) {
 
 test("admin can set a normal user to content role in the database", async () => {
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
+      }
       if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return { rows: [{ id: "user-1", full_name: "Staff One", email: "staff@example.com", role: "user", ref: "" }] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "Staff One",
+          email: "staff@example.com",
+          role: "content",
+          partner_code: "",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: false,
+          premium_until: null,
+          vip_plan_id: null,
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "Staff One",
-            email: "staff@example.com",
-            role: "content",
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: false,
-            premium_until: null,
-            vip_plan_id: null,
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
         };
       }
       return { rows: [] };
@@ -69,29 +75,35 @@ test("admin can set a normal user to content role in the database", async () => 
 
 test("staff can assign full non-admin user roles", async () => {
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "staff", is_active: true }] };
       }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
+      }
       if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return { rows: [{ id: "user-1", role: "user" }] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: params[0],
+          partner_code: params[0] === "sales" ? "1" : "",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: false,
+          premium_until: null,
+          vip_plan_id: null,
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "User One",
-            email: "user@example.com",
-            role: params[0],
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: false,
-            premium_until: null,
-            vip_plan_id: null,
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
         };
       }
       return { rows: [] };
@@ -112,29 +124,35 @@ test("staff can assign full non-admin user roles", async () => {
 
 test("admin role update accepts staff but rejects admin role assignment", async () => {
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
       }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
+      }
       if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return { rows: [{ id: "user-1", role: "user" }] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: params[0],
+          partner_code: "",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: false,
+          premium_until: null,
+          vip_plan_id: null,
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "User One",
-            email: "user@example.com",
-            role: params[0],
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: false,
-            premium_until: null,
-            vip_plan_id: null,
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
         };
       }
       return { rows: [] };
@@ -153,11 +171,15 @@ test("admin role update accepts staff but rejects admin role assignment", async 
 
 test("promoting a referred user to ctv assigns a fresh partner referral code", async () => {
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
       }
       if (sql.includes("SELECT id, full_name, email, role, ref")) {
         return {
@@ -177,20 +199,22 @@ test("promoting a referred user to ctv assigns a fresh partner referral code", a
         return { rows: [] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "kiet",
+          email: "kle995301@gmail.com",
+          role: params[0],
+          ref: params[3],
+          partner_code: "1",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: false,
+          premium_until: null,
+          vip_plan_id: null,
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "kiet",
-            email: "kle995301@gmail.com",
-            role: params[0],
-            ref: params[3],
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: false,
-            premium_until: null,
-            vip_plan_id: null,
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
         };
       }
       return { rows: [] };
@@ -290,11 +314,15 @@ test("ctv vip recalculation counts only referred student users", () => {
 test("staff can update users and grant VIP from the full user endpoint", async () => {
   const future = new Date(Date.now() + 30 * 86400000).toISOString();
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "staff", is_active: true }] };
+      }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
       }
       if (sql.includes("SELECT id, full_name, email, role")) {
         return {
@@ -309,19 +337,21 @@ test("staff can update users and grant VIP from the full user endpoint", async (
         };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "User One VIP",
+          email: "vip@example.com",
+          role: "content",
+          partner_code: "",
+          is_active: true,
+          current_level: "HSK3",
+          is_premium: true,
+          premium_until: future,
+          vip_plan_id: "30d",
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "User One VIP",
-            email: "vip@example.com",
-            role: "content",
-            is_active: true,
-            current_level: "HSK3",
-            is_premium: true,
-            premium_until: future,
-            vip_plan_id: "30d",
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
         };
       }
       return { rows: [] };

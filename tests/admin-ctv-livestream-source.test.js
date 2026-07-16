@@ -29,3 +29,13 @@ test("admin CTV tab refreshes the full user list for staff referral attribution"
     /state\.adminTab = "collaborators";[\s\S]*if \(!state\.adminUsers\.length\) loadAdminUsers\(\);/,
   );
 });
+
+test("admin CTV generated links use fixed partner codes and source prefixes", () => {
+  assert.match(appSource, /partnerCode: normalizeAdminCtvPartnerCode\(user\.partnerCode \|\| user\.partner_code\)/);
+  assert.match(appSource, /facebook: "F"/);
+  assert.match(appSource, /tiktok: "T"/);
+  assert.match(appSource, /koc: "K"/);
+  assert.match(appSource, /ctv_livestream: "L"/);
+  assert.match(appSource, /const code = getAdminCtvShortReferralCode\(ctv\);/);
+  assert.doesNotMatch(appSource, /url\.searchParams\.set\("src"/);
+});

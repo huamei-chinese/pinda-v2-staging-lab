@@ -7,6 +7,15 @@ const HOME_COIN_TASK_REWARDS = {
   write: 15,
 } as const;
 
+const HOME_DAILY_EXP_REWARDS = {
+  exp_10: 10,
+  exp_20: 10,
+  exp_30: 10,
+} as const;
+
+const HOME_DAILY_EXP_SOURCES = Object.keys(HOME_DAILY_EXP_REWARDS) as Array<keyof typeof HOME_DAILY_EXP_REWARDS>;
+const HOME_DAILY_EXP_STEP_SECONDS = 10 * 60;
+
 const HOME_COIN_TASK_REQUIREMENTS = {
   vocab: { progressKey: 'savedVocabCount', minimum: 20 },
   listening: { progressKey: 'listenSeconds', minimum: 30 * 60 },
@@ -16,6 +25,8 @@ const HOME_COIN_TASK_REQUIREMENTS = {
 const HOME_COIN_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 type CoinSource = keyof typeof HOME_COIN_TASK_REWARDS;
+type ExpSource = keyof typeof HOME_DAILY_EXP_REWARDS;
+type RewardSource = CoinSource | ExpSource;
 type CoinPeriod = 'week' | 'month';
 
 @Injectable()
@@ -44,16 +55,40 @@ export class CoinsService {
     return formatter.format(date);
   }
 
-  private normalizeCoinSource(source: unknown): CoinSource | '' {
-    const normalized = String(source || '').trim().toLowerCase().replace(/^daily[-_:]/, '');
-    return Object.prototype.hasOwnProperty.call(HOME_COIN_TASK_REWARDS, normalized)
-      ? normalized as CoinSource
-      : '';
+  private normalizeCoinSource(source: unknown): RewardSource | '' {
+    const normalized = String(source || '').trim().toLowerCase().replace(/^daily[-_:]/, '').replace(/-/g, '_');
+    if (Object.prototype.hasOwnProperty.call(HOME_COIN_TASK_REWARDS, normalized)) return normalized as CoinSource;
+    if (Object.prototype.hasOwnProperty.call(HOME_DAILY_EXP_REWARDS, normalized)) return normalized as ExpSource;
+    return '';
   }
 
-  private isCoinClaimProgressEligible(source: CoinSource, progress: any): boolean {
+  private isExpSource(source: RewardSource): source is ExpSource {
+    return Object.prototype.hasOwnProperty.call(HOME_DAILY_EXP_REWARDS, source);
+  }
+
+  private areDailyCoinTasksComplete(progress: any): boolean {
+    return Object.keys(HOME_COIN_TASK_REQUIREMENTS).every((source) => {
+      const requirement = HOME_COIN_TASK_REQUIREMENTS[source as CoinSource];
+      return Number(progress?.[requirement.progressKey] || 0) >= requirement.minimum;
+    });
+  }
+
+  private getExtraStudySeconds(progress: any): number {
+    const fallback = Number(progress?.listenSeconds || 0) + Number(progress?.writeSeconds || 0) - (2 * 30 * 60);
+    return Math.max(0, Math.floor(Number(progress?.extraStudySeconds ?? fallback) || 0));
+  }
+
+  private isCoinClaimProgressEligible(source: RewardSource, progress: any): boolean {
+    if (this.isExpSource(source)) {
+      const tier = Math.max(1, Number(String(source).replace('exp_', '')) / 10 || 1);
+      return this.areDailyCoinTasksComplete(progress) && this.getExtraStudySeconds(progress) >= tier * HOME_DAILY_EXP_STEP_SECONDS;
+    }
     const requirement = HOME_COIN_TASK_REQUIREMENTS[source];
     return Number(progress?.[requirement.progressKey] || 0) >= requirement.minimum;
+  }
+
+  private rewardAmountForSource(source: RewardSource): number {
+    return this.isExpSource(source) ? HOME_DAILY_EXP_REWARDS[source] : HOME_COIN_TASK_REWARDS[source];
   }
 
   private normalizeCoinPeriod(period: unknown): CoinPeriod {
@@ -67,11 +102,17 @@ export class CoinsService {
   }
 
   private coinWalletFromRows(rows: any[]) {
-    const getAmount = (period: string) => Number(rows.find((row) => row.period === period)?.amount || 0);
+    const getMetric = (period: string, key: string) => Number(rows.find((row) => row.period === period)?.[key] || 0);
     return {
-      coins: getAmount('total'),
-      weeklyCoins: getAmount('week'),
-      monthlyCoins: getAmount('month'),
+      coins: getMetric('total', 'coins'),
+      exp: getMetric('total', 'exp'),
+      score: getMetric('total', 'score'),
+      weeklyCoins: getMetric('week', 'coins'),
+      weeklyExp: getMetric('week', 'exp'),
+      weeklyScore: getMetric('week', 'score'),
+      monthlyCoins: getMetric('month', 'coins'),
+      monthlyExp: getMetric('month', 'exp'),
+      monthlyScore: getMetric('month', 'score'),
       updatedAt: Date.now(),
     };
   }
@@ -84,7 +125,8 @@ export class CoinsService {
       avatarInitial: String(displayName || 'H').trim().charAt(0).toUpperCase() || 'H',
       avatarUrl: row.avatar_url || '',
       score: Number(row.score || 0),
-      coins: Number(row.total_coins || row.score || 0),
+      coins: Number(row.total_coins || row.coins || 0),
+      exp: Number(row.total_exp || row.exp || 0),
       rank: Number(row.rank || 0),
       updatedAt: row.last_awarded_at || null,
     };
@@ -103,24 +145,27 @@ export class CoinsService {
 
   private async getCoinWallet(userId: string) {
     const result = await this.db.query(
-      `SELECT period, COALESCE(SUM(amount), 0)::int AS amount
+      `SELECT period,
+              COALESCE(SUM(CASE WHEN source = ANY($2::text[]) THEN 0 ELSE amount END), 0)::int AS coins,
+              COALESCE(SUM(CASE WHEN source = ANY($2::text[]) THEN amount ELSE 0 END), 0)::int AS exp,
+              COALESCE(SUM(amount), 0)::int AS score
        FROM (
-         SELECT 'total' AS period, amount
+         SELECT 'total' AS period, source, amount
          FROM coin_transactions
          WHERE user_id = $1
          UNION ALL
-         SELECT 'week' AS period, amount
+         SELECT 'week' AS period, source, amount
          FROM coin_transactions
          WHERE user_id = $1
            AND created_at >= ${this.coinPeriodSql('week')}
          UNION ALL
-         SELECT 'month' AS period, amount
+         SELECT 'month' AS period, source, amount
          FROM coin_transactions
          WHERE user_id = $1
            AND created_at >= ${this.coinPeriodSql('month')}
        ) scoped
        GROUP BY period`,
-      [userId],
+      [userId, HOME_DAILY_EXP_SOURCES],
     );
     return this.coinWalletFromRows(result.rows);
   }
@@ -134,7 +179,7 @@ export class CoinsService {
          AND period_key = $2
          AND source = ANY($3::text[])
        ORDER BY created_at ASC`,
-      [userId, periodKey, Object.keys(HOME_COIN_TASK_REWARDS)],
+      [userId, periodKey, [...Object.keys(HOME_COIN_TASK_REWARDS), ...HOME_DAILY_EXP_SOURCES]],
     );
     return {
       periodKey,
@@ -158,6 +203,7 @@ export class CoinsService {
       wallet,
       today,
       rewards: HOME_COIN_TASK_REWARDS,
+      expRewards: HOME_DAILY_EXP_REWARDS,
       user: {
         id: requester.id,
         fullName: requester.full_name,
@@ -180,10 +226,12 @@ export class CoinsService {
     if (!this.isCoinClaimProgressEligible(source, body?.progress)) {
       throw new HttpException('Nhiem vu chua du dieu kien nhan xu.', HttpStatus.BAD_REQUEST);
     }
-    const amount = HOME_COIN_TASK_REWARDS[source];
+    const amount = this.rewardAmountForSource(source);
+    const rewardType = this.isExpSource(source) ? 'exp' : 'coin';
     const periodKey = `daily:${this.getVietnamDateKey()}`;
     const metadata = {
-      claimedFrom: 'home_coin_hunt',
+      claimedFrom: rewardType === 'exp' ? 'home_daily_exp_bonus' : 'home_coin_hunt',
+      rewardType,
       clientProgress: body?.progress && typeof body.progress === 'object' ? body.progress : null,
     };
     const inserted = await this.db.query(
@@ -202,6 +250,7 @@ export class CoinsService {
         source: inserted.rows[0].source,
         periodKey: inserted.rows[0].period_key,
         amount: Number(inserted.rows[0].amount || 0),
+        rewardType,
         createdAt: inserted.rows[0].created_at,
       } : null,
       wallet,
@@ -219,13 +268,18 @@ export class CoinsService {
       `WITH period_scores AS (
          SELECT user_id,
                 COALESCE(SUM(amount), 0)::int AS score,
+                COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN 0 ELSE amount END), 0)::int AS coins,
+                COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN amount ELSE 0 END), 0)::int AS exp,
                 MAX(created_at) AS last_awarded_at
          FROM coin_transactions
          WHERE created_at >= ${this.coinPeriodSql(period)}
          GROUP BY user_id
        ),
        total_scores AS (
-         SELECT user_id, COALESCE(SUM(amount), 0)::int AS total_coins
+         SELECT user_id,
+                COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN 0 ELSE amount END), 0)::int AS total_coins,
+                COALESCE(SUM(CASE WHEN source = ANY($3::text[]) THEN amount ELSE 0 END), 0)::int AS total_exp,
+                COALESCE(SUM(amount), 0)::int AS total_score
          FROM coin_transactions
          GROUP BY user_id
        ),
@@ -235,7 +289,11 @@ export class CoinsService {
                 u.email,
                 u.avatar_url,
                 COALESCE(ps.score, 0)::int AS score,
+                COALESCE(ps.coins, 0)::int AS coins,
+                COALESCE(ps.exp, 0)::int AS exp,
                 COALESCE(ts.total_coins, 0)::int AS total_coins,
+                COALESCE(ts.total_exp, 0)::int AS total_exp,
+                COALESCE(ts.total_score, 0)::int AS total_score,
                 ps.last_awarded_at,
                 ROW_NUMBER() OVER (
                   ORDER BY COALESCE(ps.score, 0) DESC,
@@ -246,13 +304,12 @@ export class CoinsService {
          LEFT JOIN period_scores ps ON ps.user_id = u.id
          LEFT JOIN total_scores ts ON ts.user_id = u.id
          WHERE u.is_active = TRUE
-           AND (COALESCE(ps.score, 0) > 0 OR u.id = $1::uuid)
        )
        SELECT *
        FROM ranked
        WHERE rank <= $2 OR user_id = $1::uuid
        ORDER BY rank ASC`,
-      [currentUserId, limit],
+      [currentUserId, limit, HOME_DAILY_EXP_SOURCES],
     );
     const entries = result.rows.map((row) => this.publicCoinEntry(row));
     return {

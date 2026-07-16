@@ -68,6 +68,41 @@ export class AuthService {
     return normalized || null;
   }
 
+  private referralSourceFromPrefix(prefix: string): string | null {
+    const normalized = String(prefix || '').trim().toUpperCase();
+    if (normalized === 'F') return 'facebook';
+    if (normalized === 'T') return 'tiktok';
+    if (normalized === 'K') return 'koc';
+    if (normalized === 'L') return 'ctv_livestream';
+    return null;
+  }
+
+  private async resolveReferralAttribution(ref?: string, src?: string) {
+    const normalizedRef = this.normalizeReferralRef(ref);
+    const normalizedSource = this.normalizeSource(src);
+    if (!normalizedRef) return { ref: null, src: normalizedSource };
+
+    const shortCodeMatch = normalizedRef.match(/^([ftkl])?([0-9]+)$/i);
+    if (!shortCodeMatch) return { ref: normalizedRef, src: normalizedSource };
+
+    const [, prefix = '', partnerCode] = shortCodeMatch;
+    const sourceFromPrefix = this.referralSourceFromPrefix(prefix);
+    const owner = await this.db.query(
+      `SELECT ref
+       FROM users
+       WHERE lower(btrim(partner_code)) = $1
+         AND role IN ('ctv', 'sales', 'koc')
+       ORDER BY created_at ASC
+       LIMIT 1`,
+      [partnerCode],
+    );
+    const ownerRef = this.normalizeReferralRef(owner.rows[0]?.ref);
+    return {
+      ref: ownerRef || partnerCode,
+      src: normalizedSource || sourceFromPrefix,
+    };
+  }
+
   publicUser(row: any) {
     const premiumUntil = row.premium_until ? new Date(row.premium_until) : null;
     const isPremium = Boolean(
@@ -120,15 +155,14 @@ export class AuthService {
       throw new HttpException('Mật khẩu cần tối thiểu 6 ký tự.', HttpStatus.BAD_REQUEST);
     }
 
-    const referralRef = this.normalizeReferralRef(ref);
-    const trafficSource = this.normalizeSource(src);
+    const attribution = await this.resolveReferralAttribution(ref, src);
 
     try {
       const result = await this.db.query(
         `INSERT INTO users (full_name, email, password_hash, role, ref, src)
          VALUES ($1, $2, $3, 'user', $4, $5)
          RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-        [fullName, email, this.hashPassword(password), referralRef, trafficSource],
+        [fullName, email, this.hashPassword(password), attribution.ref, attribution.src],
       );
       return { user: this.publicUser(result.rows[0]) };
     } catch (error: any) {
