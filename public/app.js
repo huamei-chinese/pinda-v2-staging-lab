@@ -632,6 +632,7 @@ const HOME_DAILY_EXP_SOURCES = [
   { id: "exp_20", tier: 2, reward: HOME_DAILY_EXP_REWARD },
   { id: "exp_30", tier: 3, reward: HOME_DAILY_EXP_REWARD },
 ];
+const PRACTICE_PRAISE_CELEBRATION_ENABLED = false;
 const HOME_COIN_REALTIME_REFRESH_MS = 10000;
 const HOME_WEEKLY_MISSION_TARGETS = {
   streakDays: 3,
@@ -11325,7 +11326,6 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   const isVi = state.lang === "vi";
   const active = activeNavOverride || getDesktopNavActive();
   const navClass = (id) => `home-desktop-nav-item${active === id ? " is-active" : ""}`;
-  const stats = getHomeDashboardStats();
 
   return `
     <aside class="home-desktop-sidebar" aria-label="${isVi ? "Điều hướng" : "导航"}">
@@ -11360,14 +11360,6 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
         </button>
       </nav>
-
-      <div class="home-desktop-sidebar-streak">
-        <span class="home-desktop-sidebar-streak-icon" aria-hidden="true">🔥</span>
-        <div>
-          <strong>${stats.streakDays} ${isVi ? "ngày" : "天"}</strong>
-          <small>${isVi ? "Chuỗi ngày học" : "连续学习"}</small>
-        </div>
-      </div>
 
       <div class="home-desktop-sidebar-panda" aria-hidden="true"></div>
 
@@ -17372,7 +17364,7 @@ function finishItem(options = {}) {
   renderPractice();
   burst();
   playTone("success");
-  if (praiseMessage) showPracticePraiseCelebration(praiseMessage);
+  if (PRACTICE_PRAISE_CELEBRATION_ENABLED && praiseMessage) showPracticePraiseCelebration(praiseMessage);
   if (options.autoAdvance) {
     schedulePracticeSpeak(360);
   }

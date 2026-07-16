@@ -91,6 +91,8 @@ test("VIP upgrade modal paints before rendering plan cards", () => {
 test("correct answer praise uses a friendly mascot instead of OK copy", () => {
   const stylesSource = fs.readFileSync(path.join(root, "public", "styles.css"), "utf8");
   assert.match(appSource, /function showPracticePraiseCelebration\(message\)/);
+  assert.match(appSource, /const PRACTICE_PRAISE_CELEBRATION_ENABLED = false;/);
+  assert.match(appSource, /if \(PRACTICE_PRAISE_CELEBRATION_ENABLED && praiseMessage\) showPracticePraiseCelebration\(praiseMessage\);/);
   assert.match(appSource, /class="practice-praise-mascot"/);
   assert.match(appSource, /class="practice-praise-ribbon"/);
   assert.match(appSource, /Cố lên!/);
