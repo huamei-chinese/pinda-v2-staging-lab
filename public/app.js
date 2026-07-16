@@ -798,6 +798,7 @@ const state = {
   adminVipContentSummaryPage: 1,
   adminVipSessionPage: 1,
   adminVipHighEngagementPage: 1,
+  adminVipAnalyticsUserPage: 1,
   adminVip: null,
   adminVipLoading: false,
   adminVipError: "",
@@ -5241,6 +5242,7 @@ function joinLearningBehaviorMetaLabels(labels = []) {
 }
 
 const ADMIN_VIP_ANALYTICS_PAGE_SIZE = 10;
+const ADMIN_VIP_ANALYTICS_USER_PAGE_SIZE = 5;
 
 function getAdminAnalyticsTablePagination(rows = [], currentPage = 1, pageSize = ADMIN_VIP_ANALYTICS_PAGE_SIZE) {
   const safeRows = Array.isArray(rows) ? rows : [];
@@ -5722,15 +5724,19 @@ function renderAdminAnalyticsPanelHTML() {
     const vipContentSummaryPagination = getAdminAnalyticsTablePagination(vipContentSummary, state.adminVipContentSummaryPage);
     const vipHighEngagementRows = buildAdminVipHighEngagementRows(vipContentSummary, isVi);
     const vipHighEngagementPagination = getAdminAnalyticsTablePagination(vipHighEngagementRows, state.adminVipHighEngagementPage);
+    const vipUserSummaryPagination = getAdminAnalyticsTablePagination(vipUserSummary, state.adminVipAnalyticsUserPage, ADMIN_VIP_ANALYTICS_USER_PAGE_SIZE);
     state.adminVipSessionPage = vipSessionPagination.currentPage;
     state.adminVipContentSummaryPage = vipContentSummaryPagination.currentPage;
     state.adminVipHighEngagementPage = vipHighEngagementPagination.currentPage;
+    state.adminVipAnalyticsUserPage = vipUserSummaryPagination.currentPage;
     const vipSessionRows = vipSessionPagination.pageRows;
     const vipContentSummaryRows = vipContentSummaryPagination.pageRows;
     const vipHighEngagementPageRows = vipHighEngagementPagination.pageRows;
+    const vipUserSummaryRows = vipUserSummaryPagination.pageRows;
     const vipSessionPaginationHTML = renderAdminAnalyticsPaginationHTML("sessions", vipSessionPagination, isVi);
     const vipContentSummaryPaginationHTML = renderAdminAnalyticsPaginationHTML("content", vipContentSummaryPagination, isVi);
     const vipHighEngagementPaginationHTML = renderAdminAnalyticsPaginationHTML("high-engagement", vipHighEngagementPagination, isVi);
+    const vipUserSummaryPaginationHTML = renderAdminAnalyticsPaginationHTML("users", vipUserSummaryPagination, isVi);
 
     const vipBehaviorRowsHTML = vipSessions.length
       ? vipSessionRows.map((session, index) => {
@@ -5830,9 +5836,9 @@ function renderAdminAnalyticsPanelHTML() {
       : `<tr><td colspan="8" class="admin-empty">${isVi ? "Ch\u01b0a c\u00f3 catalog \u0111\u1ec3 so s\u00e1nh m\u1ee9c nhi\u1ec1u ng\u01b0\u1eddi v\u00e0o." : "\u6682\u65e0\u53ef\u6bd4\u8f83\u7684\u76ee\u5f55\u6570\u636e\u3002"}</td></tr>`;
 
     const vipUserSummaryHTML = vipUserSummary.length
-      ? vipUserSummary.map((row, index) => `
+      ? vipUserSummaryRows.map((row, index) => `
           <tr>
-            <td><span class="rank">${index + 1}</span></td>
+            <td><span class="rank">${vipUserSummaryPagination.startIndex + index + 1}</span></td>
             <td>
               <strong>${escapeHtml(row.fullName || row.email || "\u2014")}</strong>
               <small>${escapeHtml(row.email || "")}</small>
@@ -5902,6 +5908,7 @@ function renderAdminAnalyticsPanelHTML() {
                 </thead>
                 <tbody>${vipUserSummaryHTML}</tbody>
               </table>
+              ${vipUserSummaryPaginationHTML}
             </section>
           </div>
           <h4>${isVi ? "T\u1ed5ng h\u1ee3p chi ti\u1ebft theo b\u00e0i/ph\u1ea7n" : "\u6309\u8bfe\u7a0b/\u90e8\u5206\u6c47\u603b"}</h4>
@@ -5994,6 +6001,7 @@ async function loadAdminAnalytics() {
   state.adminVipContentSummaryPage = 1;
   state.adminVipSessionPage = 1;
   state.adminVipHighEngagementPage = 1;
+  state.adminVipAnalyticsUserPage = 1;
   state.adminAnalyticsLoading = true;
   state.adminAnalyticsError = "";
   renderAdmin();
@@ -17251,6 +17259,7 @@ function bindEvents() {
       state.adminVipContentSummaryPage = 1;
       state.adminVipSessionPage = 1;
       state.adminVipHighEngagementPage = 1;
+      state.adminVipAnalyticsUserPage = 1;
       savePersistedRoute();
       loadAdminAnalytics();
       return;
@@ -17295,6 +17304,7 @@ function bindEvents() {
         state.adminVipContentSummaryPage = 1;
         state.adminVipSessionPage = 1;
         state.adminVipHighEngagementPage = 1;
+        state.adminVipAnalyticsUserPage = 1;
         savePersistedRoute();
         loadAdminAnalytics();
       }
@@ -17309,6 +17319,7 @@ function bindEvents() {
       if (kind === "content") state.adminVipContentSummaryPage = page;
       if (kind === "sessions") state.adminVipSessionPage = page;
       if (kind === "high-engagement") state.adminVipHighEngagementPage = page;
+      if (kind === "users") state.adminVipAnalyticsUserPage = page;
       renderAdmin();
       return;
     }
