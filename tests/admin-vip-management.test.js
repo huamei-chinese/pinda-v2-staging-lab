@@ -113,3 +113,16 @@ test("admin learning analytics uses daily summary table for chart and funnel tot
   assert.match(adminServiceSource, /popup: this\.sumAnalyticsRows\(dailySummary\.rows, 'popup_users'\)/);
   assert.match(adminServiceSource, /vip: this\.sumAnalyticsRows\(dailySummary\.rows, 'active_vip_users'\)/);
 });
+
+test("learning analytics event detail queries use Vietnam-local day boundaries", () => {
+  for (const [name, source] of [
+    ["admin service", adminServiceSource],
+    ["local server", serverSource],
+    ["netlify function", netlifyApiSource],
+  ]) {
+    assert.match(source, /\$1::date::timestamp AT TIME ZONE/, `${name} should cast date input to local midnight before timezone conversion`);
+    assert.match(source, /\(\$2::date \+ 1\)::timestamp AT TIME ZONE/, `${name} should cast end date to local midnight before timezone conversion`);
+    assert.doesNotMatch(source, /\$1::date AT TIME ZONE/, `${name} should not interpret date-only params as UTC midnight`);
+    assert.doesNotMatch(source, /\(\$2::date \+ 1\) AT TIME ZONE/, `${name} should not interpret date-only end params as UTC midnight`);
+  }
+});

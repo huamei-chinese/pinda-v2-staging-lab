@@ -17,3 +17,15 @@ test("admin CTV livestream source has dedicated visual styles", () => {
   assert.match(stylesSource, /\.admin-ctv-source-card--ctv_livestream/);
   assert.match(stylesSource, /\.admin-ctv-src-pill\.src-ctv_livestream/);
 });
+
+test("admin CTV tab refreshes the full user list for staff referral attribution", () => {
+  assert.match(appSource, /case "collaborators":\s*loadAdminUsers\(\);\s*break;/);
+  assert.match(
+    appSource,
+    /const adminCtvTabBtn = event\.target\.closest\("#adminCtvTabBtn"\);[\s\S]*state\.adminTab = "collaborators";[\s\S]*savePersistedRoute\(\);\s*loadAdminUsers\(\);\s*return;/,
+  );
+  assert.doesNotMatch(
+    appSource,
+    /state\.adminTab = "collaborators";[\s\S]*if \(!state\.adminUsers\.length\) loadAdminUsers\(\);/,
+  );
+});

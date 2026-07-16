@@ -540,6 +540,7 @@ const state = {
   listeningEpisodeId: "ep-001",
   listeningSentenceIndex: 0,
   listeningVocabPracticeIndex: 0,
+  listeningCompletionSource: "",
   listeningPinyinOn: true,
   listeningVietnameseOn: false,
   listeningPlaybackRate: [0.75, 1, 1.25, 1.5].includes(Number(localStorage.getItem("v2-listening-rate"))) ? Number(localStorage.getItem("v2-listening-rate")) : 1,
@@ -2329,6 +2330,10 @@ function areContentLocksTrusted() {
   return state.contentLocksReady === true && state.contentLocksFailed !== true;
 }
 
+function shouldUseLocalContentLockFallback() {
+  return BACKEND_DISABLED === true;
+}
+
 function getHskLessonFreeItemLimit(lessonId) {
   if (!Object.prototype.hasOwnProperty.call(state.hskLessonFreeItemLimits || {}, lessonId)) {
     return null;
@@ -2380,15 +2385,19 @@ function getHskAccessRule(lessonId, contentType = "word") {
   const { level, lessonNo } = parseHskLessonAccessMeta(lessonId);
   const itemType = normalizeAccessItemType(contentType);
   if (!level || !lessonNo) return accessRule("locked", 0);
+  if (!shouldUseLocalContentLockFallback()) return accessRule("locked", 0);
 
-  if (level === 1 || level === 2) {
-    if (lessonNo <= 2) return accessRule("open");
-    if (lessonNo === 3) return accessRule("partial", itemType === "sentence" ? 4 : 6);
+  if (level >= 1 && level <= 3) {
+    if (lessonNo <= 3) return accessRule("open");
+    if (lessonNo === 4) return accessRule("partial", itemType === "sentence" ? 3 : 7);
     return accessRule("locked", 0);
   }
 
-  if (level >= 3 && level <= 6) {
-    if (lessonNo <= 2) return accessRule("partial", itemType === "sentence" ? 2 : 6);
+  if (level >= 4 && level <= 6) {
+    if (level === 4 && lessonNo <= 2) return accessRule("open");
+    if ((level === 5 || level === 6) && lessonNo === 1) return accessRule("partial", 5);
+    if ((level === 5 || level === 6) && lessonNo === 2) return accessRule("open");
+    if (lessonNo === 3) return accessRule("partial", itemType === "sentence" ? 10 : 20);
     return accessRule("locked", 0);
   }
 
@@ -2412,6 +2421,7 @@ function getDailyThemeAccessRule(themeId, contentType = "word") {
     if (limit > 0) return accessRule("partial", Math.floor(limit));
     return accessRule("open");
   }
+  if (!shouldUseLocalContentLockFallback()) return accessRule("locked", 0);
   const themeIndex = getDailyThemeAccessIndex(themeId);
   const itemType = normalizeAccessItemType(contentType);
   if (themeIndex === 1) return accessRule("open");
@@ -2430,7 +2440,7 @@ function combineAccessStatuses(statuses = []) {
 
 function getHskLessonAccessStatus(lessonId) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return combineAccessStatuses([
     getHskAccessRule(lessonId, "word").status,
     getHskAccessRule(lessonId, "sentence").status,
@@ -2439,7 +2449,7 @@ function getHskLessonAccessStatus(lessonId) {
 
 function getDailyThemeAccessStatus(themeId) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return combineAccessStatuses([
     getDailyThemeAccessRule(themeId, "word").status,
     getDailyThemeAccessRule(themeId, "sentence").status,
@@ -2448,13 +2458,13 @@ function getDailyThemeAccessStatus(themeId) {
 
 function getHskContentTypeAccessStatus(lessonId, contentType) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return getHskAccessRule(lessonId, contentType).status;
 }
 
 function getDailyContentTypeAccessStatus(themeId, contentType) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return getDailyThemeAccessRule(themeId, contentType).status;
 }
 
@@ -7108,14 +7118,19 @@ function getListeningRecordingOptions() {
 
 function isListeningTopicLockedForUser(topicId) {
   if (hasPremiumAccess()) return false;
-  return state.listeningTopicAccessRules?.[topicId]?.lockedForFree === true;
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return true;
+  const topicRule = state.listeningTopicAccessRules?.[topicId];
+  if (topicRule) return topicRule.lockedForFree === true;
+  return !shouldUseLocalContentLockFallback();
 }
 
 function isListeningLessonLockedForUser(lessonId) {
   if (hasPremiumAccess()) return false;
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return true;
   const lessonRule = state.listeningLessonAccessRules?.[lessonId];
   if (lessonRule?.lockedForFree === true) return true;
-  return lessonRule?.topicId ? isListeningTopicLockedForUser(lessonRule.topicId) : false;
+  if (lessonRule?.topicId) return isListeningTopicLockedForUser(lessonRule.topicId);
+  return !shouldUseLocalContentLockFallback();
 }
 
 function stopListeningRepeatSilenceMonitor() {
@@ -7752,6 +7767,9 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
     </article>
   `).join("");
   const progress = Math.round(((safeIndex + 1) / total) * 100);
+  const nextLabel = safeIndex >= total - 1
+    ? (state.lang === "vi" ? "Hoàn thành" : "完成")
+    : "Next";
 
   return `
     <div class="listening-vocab-practice-progress">
@@ -7779,7 +7797,7 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
       </div>
       <div class="listening-vocab-example-list">${examplesHTML}</div>
       <button class="listening-vocab-next-btn" type="button" data-listening-vocab-next>
-        Next
+        ${nextLabel}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
       </button>
     </div>
@@ -7840,6 +7858,9 @@ function renderListeningRepeatLesson(options = {}) {
     : listeningRepeatSpeechState === "paused"
       ? (isVi ? "Tiếp tục" : "Resume")
       : (isVi ? "Nghe lại" : "Replay");
+  const repeatNextLabel = currentIndex >= total - 1
+    ? (isVi ? "Hoàn thành" : "Finish")
+    : (isVi ? "Tiếp" : "Next");
 
   setScreenWithDesktopShell("listening", `
     <div class="listening-repeat-lesson-screen listening-repeat-lesson-screen--compact">
@@ -7905,7 +7926,7 @@ function renderListeningRepeatLesson(options = {}) {
         <div class="listening-repeat-footer-actions">
           <button class="listening-repeat-bottom-back" type="button" data-listening-repeat-back>${isVi ? "Trở lại" : "Back"}</button>
           <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
-            ${isVi ? "Tiếp" : "Next"}
+            ${repeatNextLabel}
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
           </button>
         </div>
@@ -8227,6 +8248,10 @@ function syncListeningAudioUi() {
   const current = audio ? Math.min(audio.currentTime || 0, duration) : getListeningSentenceStart(episode, state.listeningSentenceIndex);
   const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
   if (audio?.ended) listeningPlaybackRequested = false;
+  if (audio?.ended) {
+    finishListeningLesson("audio", { duration });
+    return;
+  }
   if (audio && !audio.paused) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
 
   if (currentTimeNode) currentTimeNode.textContent = listeningFormatTime(current);
@@ -10276,29 +10301,273 @@ function showAnswer() {
   finishItem();
 }
 
+function renderCompleteExperience(collection, isVocab, totalItems, practiceDuration, options = {}) {
+  const isVi = state.lang === "vi";
+  const completedLessons = Math.max(1, state.completed?.size || 1);
+  const milestoneSize = 5;
+  const milestoneProgress = completedLessons % milestoneSize || milestoneSize;
+  const nextMilestone = completedLessons % milestoneSize === 0
+    ? completedLessons
+    : completedLessons + (milestoneSize - milestoneProgress);
+  const remainingToMilestone = Math.max(0, nextMilestone - completedLessons);
+  const milestonePercent = Math.round((milestoneProgress / milestoneSize) * 100);
+  const completionBadge = options.completionBadge || (isVi ? "Mục luyện đã chinh phục" : "练习已攻克");
+  const leadText = options.leadText || (isVi
+    ? "Bạn vừa hoàn tất một phiên luyện gõ rõ ràng, gọn và có tiến bộ."
+    : "你刚完成了一次清晰、稳定、有进步的打字练习。");
+  const momentumTitle = remainingToMilestone === 0
+    ? (isVi ? `Chạm mốc ${completedLessons} bài` : `已达 ${completedLessons} 课里程碑`)
+    : (isVi ? `${milestoneProgress}/${milestoneSize} bước tới mốc ${nextMilestone} bài` : `${milestoneProgress}/${milestoneSize} 步迈向 ${nextMilestone} 课`);
+  const momentumCopy = remainingToMilestone === 0
+    ? (isVi ? "Rất đẹp. Mở bài tiếp theo để biến đà này thành thói quen." : "很好。继续下一课，把这个节奏变成习惯。")
+    : (isVi ? `Còn ${remainingToMilestone} bài nữa để mở một mốc tiến bộ mới.` : `还差 ${remainingToMilestone} 课即可达成新的进步节点。`);
+  const continueHint = options.continueHint || (isVi
+    ? "Tiếp tục ngay khi nhịp gõ còn tốt."
+    : "趁手感还在，继续下一课。");
+  const fireworkCheer = options.fireworkCheer || (isVi
+    ? "Póp! Bài này đã về đích."
+    : "啪！本课顺利到站。");
+  const statLabel = options.statLabel || t("itemCount");
+  const statDetail = options.statDetail || (isVi ? "đã gõ xong" : "已完成");
+  const focusDetail = options.focusDetail || (isVi ? "tập trung" : "专注练习");
+  const railLeft = options.railLeft || "pin yin";
+  const railRight = options.railRight || "拼音";
+  const secondaryLabel = options.secondaryLabel || (isVocab ? (isVi ? "Về bộ từ" : "返回生词本") : t("backHome"));
+  const showPrimary = options.showPrimary ?? !isVocab;
+  const primaryLabel = options.primaryLabel || t("nextLesson");
+
+  screens.complete.innerHTML = `
+    <div class="complete-sky-show" aria-hidden="true">
+      <span class="complete-sky-rocket complete-sky-rocket--one"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--two"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--three"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--four"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--five"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--six"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--seven"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--eight"></span>
+    </div>
+    <section class="complete-card complete-card--reward" aria-labelledby="completeTitle">
+      <div class="complete-celebration" aria-hidden="true">
+        <span class="complete-burst complete-burst--left"></span>
+        <span class="trophy">
+          <span class="trophy-ring"></span>
+          <span class="trophy-check">✓</span>
+          <span class="trophy-sparkles">✦✦</span>
+        </span>
+        <span class="complete-burst complete-burst--right"></span>
+      </div>
+      <div class="complete-pop-note">${fireworkCheer}</div>
+      <div class="complete-kicker">
+        <span>${completionBadge}</span>
+        <strong>+1</strong>
+      </div>
+      <h1 id="completeTitle">${t("completeTitle")}</h1>
+      <p class="complete-lead">${leadText}</p>
+      <div class="complete-type-rail" aria-hidden="true">
+        <span>${railLeft}</span>
+        <i></i>
+        <span>${railRight}</span>
+        <b>✓</b>
+      </div>
+      <div class="complete-lesson-name">${escapeHtml(collection.title || "")}</div>
+      <div class="complete-stats">
+        <span class="complete-stat-card">
+          <small>${statLabel}</small>
+          <strong>${totalItems}</strong>
+          <em>${statDetail}</em>
+        </span>
+        <span class="complete-stat-card complete-stat-card--time">
+          <small>${isVi ? "Thời gian" : "用时"}</small>
+          <strong>${practiceDuration}</strong>
+          <em>${focusDetail}</em>
+        </span>
+        <span class="complete-stat-card complete-stat-card--momentum">
+          <small>${isVi ? "Tổng tiến độ" : "总进度"}</small>
+          <strong>${completedLessons}</strong>
+          <em>${isVi ? "bài đã hoàn thành" : "课已完成"}</em>
+        </span>
+      </div>
+      <div class="complete-momentum" style="--complete-progress:${milestonePercent}%">
+        <div>
+          <span>${isVi ? "Đà học hiện tại" : "当前学习节奏"}</span>
+          <strong>${momentumTitle}</strong>
+        </div>
+        <div class="complete-momentum-bar" aria-hidden="true"><i></i></div>
+        <p>${momentumCopy}</p>
+      </div>
+      <div class="complete-actions">
+        <button class="secondary" data-complete="home" type="button">${secondaryLabel}</button>
+        ${showPrimary ? `<button class="primary" data-complete="next" type="button">${primaryLabel} <span aria-hidden="true">→</span></button>` : ""}
+      </div>
+      ${showPrimary ? `<p class="complete-continue-hint">${continueHint}</p>` : ""}
+    </section>
+  `;
+}
+
+function getListeningCompletionCollection(episode = getListeningEpisode()) {
+  const title = state.lang === "vi"
+    ? (episode.title || episode.titleZh || episode.id)
+    : (episode.titleZh || episode.title || episode.id);
+  return {
+    id: `listening:${episode.id}`,
+    no: "",
+    title,
+    items: Array.from({ length: Math.max(1, episode.sentences?.length || episode.keywords?.length || 1) }, () => ({})),
+  };
+}
+
+function getListeningCompletionCopy(source = state.listeningCompletionSource || "audio", episode = getListeningEpisode()) {
+  const isVi = state.lang === "vi";
+  const sentenceCount = Math.max(1, episode.sentences?.length || 0);
+  const keywordCount = Math.max(1, episode.keywords?.length || 0);
+
+  if (source === "vocab") {
+    return {
+      totalItems: keywordCount,
+      statLabel: isVi ? "Từ vựng" : "词语",
+      statDetail: isVi ? "đã học" : "已学习",
+      focusDetail: isVi ? "ghi nhớ" : "记忆训练",
+      completionBadge: isVi ? "Từ vựng đã hoàn thành" : "词汇已完成",
+      leadText: isVi
+        ? "Bạn đã đi hết bộ từ trọng tâm của bài nghe. Vốn từ đang dày lên rất ổn."
+        : "你已经学完本课重点词汇，词汇基础更稳了。",
+      fireworkCheer: isVi ? "Từ cuối cùng cũng đã vào kho nhớ." : "最后一个词也收进记忆库了。",
+      continueHint: isVi ? "Giữ đà này và chuyển sang nói theo để khóa bài chắc hơn." : "趁热进入跟读，把本课锁得更牢。",
+    };
+  }
+
+  if (source === "repeat") {
+    return {
+      totalItems: sentenceCount,
+      statLabel: isVi ? "Câu" : "句子",
+      statDetail: isVi ? "đã nói theo" : "已跟读",
+      focusDetail: isVi ? "phản xạ nói" : "口语跟读",
+      completionBadge: isVi ? "Nói theo đã hoàn thành" : "跟读已完成",
+      leadText: isVi
+        ? "Bạn đã nói theo hết các câu trong bài. Khẩu hình, nhịp và phản xạ đang lên tay."
+        : "你已经完成本课全部跟读，语感和反应正在变稳。",
+      fireworkCheer: isVi ? "Câu cuối khép lại gọn đẹp." : "最后一句漂亮收尾。",
+      continueHint: isVi ? "Mở bài nghe tiếp theo khi giọng còn đang vào nhịp." : "语感还在线，继续下一课。",
+    };
+  }
+
+  return {
+    totalItems: sentenceCount,
+    statLabel: isVi ? "Câu nghe" : "听力句子",
+    statDetail: isVi ? "đã nghe hết" : "已听完",
+    focusDetail: isVi ? "luyện nghe" : "听力训练",
+    completionBadge: isVi ? "Audio đã nghe trọn bài" : "音频已听完",
+    leadText: isVi
+      ? "Bạn đã nghe trọn bài audio. Một vòng nghe đủ nhịp luôn đáng được chúc mừng."
+      : "你已经完整听完本课音频，这一轮听力完成得很扎实。",
+    fireworkCheer: isVi ? "Audio về đích, tai cũng lên level." : "音频到站，听感升级。",
+    continueHint: isVi ? "Qua bài tiếp theo hoặc học từ vựng để giữ mạch tiến bộ." : "继续下一课，或趁热巩固词汇。",
+  };
+}
+
+function renderListeningComplete(source = state.listeningCompletionSource || "audio") {
+  const episode = getListeningEpisode();
+  const copy = getListeningCompletionCopy(source, episode);
+  const duration = source === "audio"
+    ? listeningFormatTime(Number(episode.duration || getListeningItemDuration(episode.sentences || [])))
+    : formatPracticeDuration(state.practiceStartedAt || Date.now(), state.practiceCompletedAt || Date.now());
+
+  renderCompleteExperience(
+    getListeningCompletionCollection(episode),
+    false,
+    copy.totalItems,
+    duration,
+    {
+      ...copy,
+      railLeft: "ting li",
+      railRight: "听力",
+      secondaryLabel: state.lang === "vi" ? "Về luyện nghe" : "返回听力",
+      primaryLabel: state.lang === "vi" ? "Bài nghe tiếp theo" : "下一课听力",
+      showPrimary: true,
+    },
+  );
+}
+
+function getListeningCompletionId(episode = getListeningEpisode()) {
+  return `listening:${episode.id}`;
+}
+
+function finishListeningLesson(source = "audio", detail = {}) {
+  const episode = getListeningEpisode();
+  if (!episode?.id) return;
+  state.module = "listening";
+  state.listeningCompletionSource = source;
+  state.practiceCompletedAt = Date.now();
+  if (!state.practiceStartedAt) state.practiceStartedAt = state.practiceCompletedAt - 1000;
+
+  const duration = Number(detail.duration || episode.duration || getListeningItemDuration(episode.sentences || []));
+  if (typeof updateListeningLessonProgress === "function") {
+    updateListeningLessonProgress(episode.id, duration, duration, { completed: true });
+  }
+
+  const completionId = getListeningCompletionId(episode);
+  const wasCompleted = state.completed.has(completionId);
+  state.completed.add(completionId);
+  if (!wasCompleted) {
+    recordUserActivity("complete", {
+      title: episode.title || episode.titleZh || "",
+    });
+    if (typeof trackEvent === "function") {
+      trackEvent("practice_completed", {
+        ...buildPracticeEventContext(),
+        questionId: completionId,
+        lessonId: episode.id,
+        module: "listening",
+        source,
+        isCorrect: true,
+      });
+    }
+  }
+  saveState();
+  renderListeningComplete(source);
+  setScreen("complete");
+  playTone("success");
+}
+
+function isListeningEpisodeLockedForUser(episodeId = "") {
+  const topicId = typeof getListeningTopicByEpisodeId === "function"
+    ? (getListeningTopicByEpisodeId(episodeId)?.id || "")
+    : "";
+  return typeof isListeningContentLocked === "function" && isListeningContentLocked(topicId, episodeId);
+}
+
+function openNextListeningLesson() {
+  const episodes = listeningEpisodes.filter(Boolean);
+  if (!episodes.length) return;
+  const currentIndex = Math.max(0, episodes.findIndex((episode) => episode.id === state.listeningEpisodeId));
+  const nextEpisode = Array.from({ length: episodes.length }, (_, offset) => episodes[(currentIndex + offset + 1) % episodes.length])
+    .find((episode) => episode?.id && !isListeningEpisodeLockedForUser(episode.id))
+    || episodes[currentIndex]
+    || episodes[0];
+
+  state.module = "listening";
+  state.listeningEpisodeId = nextEpisode.id;
+  state.listeningCompletionSource = "";
+  state.listeningView = "detail";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+  state.practiceStartedAt = 0;
+  state.practiceCompletedAt = 0;
+  renderListening();
+  setScreen("listening");
+}
+
 function renderComplete() {
+  if (state.module === "listening") {
+    renderListeningComplete();
+    return;
+  }
   const collection = currentCollection();
   const isVocab = state.module === "vocab";
   const totalItems = collection.items.length;
   const practiceDuration = formatPracticeDuration(state.practiceStartedAt, state.practiceCompletedAt || Date.now());
-  screens.complete.innerHTML = `
-    <section class="complete-card">
-      <span class="trophy" aria-hidden="true">
-        <span class="trophy-check">✓</span>
-        <span class="trophy-sparkles">✦✦</span>
-      </span>
-      <h1>${t("completeTitle")}</h1>
-      <p>${t("completeSub")}</p>
-      <div class="complete-stats">
-        <span class="complete-stat-card"><strong>${totalItems}</strong>${t("itemCount")}</span>
-        <span class="complete-stat-card complete-stat-card--time"><strong>${practiceDuration}</strong>${state.lang === "vi" ? "Thời gian" : "用时"}</span>
-      </div>
-      <div class="complete-actions">
-        <button class="secondary" data-complete="home" type="button">${isVocab ? (state.lang === "vi" ? "Về bộ từ" : "返回生词本") : t("backHome")}</button>
-        ${isVocab ? "" : `<button class="primary" data-complete="next" type="button">${t("nextLesson")} <span aria-hidden="true">→</span></button>`}
-      </div>
-    </section>
-  `;
+  renderCompleteExperience(collection, isVocab, totalItems, practiceDuration);
 }
 
 function chooseChineseVoice() {
@@ -10425,6 +10694,13 @@ function bindEvents() {
     }
   });
   $("#backBtn")?.addEventListener("click", () => {
+    if (state.screen === "complete" && state.module === "listening") {
+      state.listeningCompletionSource = "";
+      state.listeningView = "dashboard";
+      renderListening();
+      setScreen("listening");
+      return;
+    }
     if (state.screen === "practice" || state.screen === "complete") {
       renderCourse();
       setScreen("course");
@@ -10517,6 +10793,8 @@ function bindEvents() {
         state.listeningEpisodeId = episodeId;
         state.listeningView = "detail";
         state.listeningSentenceIndex = 0;
+        state.listeningVocabPracticeIndex = 0;
+        state.listeningCompletionSource = "";
         renderListening();
         return;
       }
@@ -10610,7 +10888,12 @@ function bindEvents() {
 
       if (event.target.closest("[data-listening-vocab-next]")) {
         const episode = getListeningEpisode();
-        state.listeningVocabPracticeIndex = (state.listeningVocabPracticeIndex + 1) % Math.max(1, episode.keywords.length);
+        const total = Math.max(1, episode.keywords.length);
+        if (state.listeningVocabPracticeIndex >= total - 1) {
+          finishListeningLesson("vocab");
+          return;
+        }
+        state.listeningVocabPracticeIndex += 1;
         if (state.listeningView === "vocab") renderListeningVocabLesson({ preserveScroll: true });
         else renderListeningVocabPractice(state.listeningVocabPracticeIndex);
         return;
@@ -10619,12 +10902,16 @@ function bindEvents() {
       const listeningJumpBtn = event.target.closest("[data-listening-jump]");
       if (listeningJumpBtn) {
         if (listeningJumpBtn.dataset.listeningJump === "vocab") {
+          state.practiceStartedAt = Date.now();
+          state.practiceCompletedAt = 0;
           state.listeningView = "vocab";
           renderListening();
           return;
         }
         if (listeningJumpBtn.dataset.listeningJump === "repeat") {
           resetListeningRepeatAttempt();
+          state.practiceStartedAt = Date.now();
+          state.practiceCompletedAt = 0;
           state.listeningView = "repeat";
           renderListening();
           return;
@@ -10659,7 +10946,11 @@ function bindEvents() {
       if (event.target.closest("[data-listening-repeat-next]")) {
         const episode = getListeningEpisode();
         const total = Math.max(1, episode.sentences.length);
-        setListeningRepeatLessonSentence((state.listeningSentenceIndex + 1) % total);
+        if (state.listeningSentenceIndex >= total - 1) {
+          finishListeningLesson("repeat");
+          return;
+        }
+        setListeningRepeatLessonSentence(state.listeningSentenceIndex + 1);
         renderListeningRepeatLesson({ preserveScroll: true });
         return;
       }
@@ -10676,6 +10967,12 @@ function bindEvents() {
       }
 
       if (event.target.closest("[data-listening-next]")) {
+        const episode = getListeningEpisode();
+        const total = Math.max(1, episode.sentences.length);
+        if (state.listeningSentenceIndex >= total - 1) {
+          finishListeningLesson("audio", { duration: Number(episode.duration || getListeningItemDuration(episode.sentences || [])) });
+          return;
+        }
         seekListeningSentence(state.listeningSentenceIndex + 1, isListeningPlaybackActive());
         return;
       }
@@ -11607,6 +11904,17 @@ function bindEvents() {
     }
     const completeBtn = event.target.closest("[data-complete]");
     if (completeBtn) {
+      if (state.module === "listening") {
+        if (completeBtn.dataset.complete === "home") {
+          state.listeningCompletionSource = "";
+          state.listeningView = "dashboard";
+          renderListening();
+          setScreen("listening");
+        } else {
+          openNextListeningLesson();
+        }
+        return;
+      }
       if (completeBtn.dataset.complete === "home") {
         if (state.module === "vocab") {
           renderVocab();

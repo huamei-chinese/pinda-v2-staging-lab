@@ -3191,8 +3191,8 @@ async function getLearningAnalytics(req, searchParams) {
   const cacheKey = analyticsCacheKey("learning", fromYmd, toYmd);
   const cached = bypassCache ? null : getAnalyticsCache(cacheKey);
   if (cached) return json(cached);
-  const withinRange = `created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
-  const eventWithinRange = `e.created_at >= ($1::date AT TIME ZONE '${ANALYTICS_TZ}') AND e.created_at < (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const withinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
+  const eventWithinRange = `e.created_at >= ($1::date::timestamp AT TIME ZONE '${ANALYTICS_TZ}') AND e.created_at < (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}')`;
   const dayBucket = `to_char(date_trunc('day', created_at AT TIME ZONE '${ANALYTICS_TZ}'), 'YYYY-MM-DD')`;
   const params = [fromYmd, toYmd];
   const vipSessionCte = `
@@ -3227,7 +3227,7 @@ async function getLearningAnalytics(req, searchParams) {
       FROM session_starts s
       LEFT JOIN learning_events e ON e.user_id = s.user_id
        AND e.created_at >= s.created_at
-       AND e.created_at < COALESCE(s.next_started_at, (($2::date + 1) AT TIME ZONE '${ANALYTICS_TZ}'))
+       AND e.created_at < COALESCE(s.next_started_at, (($2::date + 1)::timestamp AT TIME ZONE '${ANALYTICS_TZ}'))
        AND e.event_type IN ('study_session_started', 'study_session_heartbeat', 'study_session_ended')
        AND COALESCE(e.module, '') = COALESCE(s.module, '')
        AND COALESCE(e.lesson_id, '') = COALESCE(s.lesson_id, '')

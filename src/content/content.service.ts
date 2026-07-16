@@ -471,7 +471,6 @@ export class ContentService {
     const result = await this.db.query(
       `SELECT lesson_id, free_item_limit, free_word_limit, free_sentence_limit, locked_for_free
        FROM hsk_lesson_locks
-       WHERE locked_for_free = TRUE OR free_item_limit > 0 OR free_word_limit > 0 OR free_sentence_limit > 0
        ORDER BY lesson_id ASC`,
     );
     return result.rows.map((row) => ({

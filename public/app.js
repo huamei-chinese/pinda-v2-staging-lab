@@ -613,10 +613,38 @@ const STUDENT_TOKEN_STORAGE_KEY = "huamei_student_token";
 const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
 const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
 const HOME_TODAY_STUDY_STORAGE_KEY = "v2-home-today-study";
+const HOME_COIN_WALLET_STORAGE_PREFIX = "v2-home-coin-wallet";
 const HOME_QUICK_HSK_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-last-lesson";
 const HOME_QUICK_HSK_SENTENCE_LAST_LESSON_STORAGE_KEY = "v2-home-quick-hsk-sentence-last-lesson";
 const HOME_TODAY_TIME_TARGET_SECONDS = 30 * 60;
 const HOME_TODAY_VOCAB_TARGET = 20;
+const HOME_TODAY_COIN_REWARDS = {
+  vocab: 10,
+  listening: 15,
+  write: 15,
+};
+const HOME_WEEKLY_MISSION_TARGETS = {
+  streakDays: 3,
+  savedVocab: 50,
+  completedLessons: 5,
+};
+const HOME_WEEKLY_COIN_REWARDS = {
+  streak: 30,
+  vocab: 35,
+  lessons: 45,
+};
+const HOME_COIN_FAKE_LEADERBOARD = [
+  { id: "linh-chi", name: "Linh Chi", weeklyCoins: 48, monthlyCoins: 148 },
+  { id: "minh-anh", name: "Minh Anh", weeklyCoins: 43, monthlyCoins: 132 },
+  { id: "gia-khanh", name: "Gia Khánh", weeklyCoins: 38, monthlyCoins: 118 },
+  { id: "thanh-truc", name: "Thanh Trúc", weeklyCoins: 34, monthlyCoins: 104 },
+  { id: "bao-ngoc", name: "Bảo Ngọc", weeklyCoins: 29, monthlyCoins: 91 },
+  { id: "duc-huy", name: "Đức Huy", weeklyCoins: 25, monthlyCoins: 78 },
+  { id: "mai-phuong", name: "Mai Phương", weeklyCoins: 21, monthlyCoins: 64 },
+  { id: "quang-minh", name: "Quang Minh", weeklyCoins: 17, monthlyCoins: 51 },
+  { id: "ha-linh", name: "Hà Linh", weeklyCoins: 13, monthlyCoins: 37 },
+  { id: "nam-khoi", name: "Nam Khôi", weeklyCoins: 9, monthlyCoins: 24 },
+];
 
 function iconSvg(name) {
   const icons = {
@@ -727,12 +755,14 @@ const state = {
   listeningLessonsBackTarget: "levels",
   listeningLevelId: "dialogue-so-cap",
   listeningBackTarget: "",
+  listeningCompletionSource: "",
   listeningEpisodeId: "ep-001",
   listeningSentenceIndex: 0,
   listeningVocabPracticeIndex: 0,
   listeningSubtitleMode: localStorage.getItem("v2-listening-subtitle-mode") || "pinyin-zh",
   listeningPlaybackRate: [0.75, 1, 1.25, 1.5].includes(Number(localStorage.getItem("v2-listening-rate"))) ? Number(localStorage.getItem("v2-listening-rate")) : 1,
   listeningSaved: new Set(JSON.parse(localStorage.getItem("v2-listening-saved") || "[]")),
+  homeLeaderboardPeriod: localStorage.getItem("v2-home-leaderboard-period") === "month" ? "month" : "week",
   user: readStoredStudentUser(),
   adminUser: readStoredAdminUser(),
   activities: JSON.parse(localStorage.getItem("v2-activities") || "[]"),
@@ -1046,6 +1076,612 @@ function getHomeTodayStudyProgress() {
 
 function formatHomeTodayMinuteValue(seconds) {
   return Math.min(30, Math.floor(Math.max(0, seconds) / 60));
+}
+
+function getHomeCoinWalletIdentity() {
+  const user = state.user || {};
+  const rawIdentity = user.id || user.publicId || user.email || user.fullName || "guest";
+  const safeIdentity = String(rawIdentity || "guest")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
+  return safeIdentity || "guest";
+}
+
+function getHomeCoinWalletProfile() {
+  const user = state.user || {};
+  const displayName = state.user
+    ? (user.fullName || user.email || "Học viên HuaMei")
+    : (state.lang === "vi" ? "Khách học thử" : "体验用户");
+  const avatarInitial = String(displayName || "H")
+    .trim()
+    .charAt(0)
+    .toUpperCase() || "H";
+  return {
+    identity: getHomeCoinWalletIdentity(),
+    displayName,
+    avatarInitial,
+  };
+}
+
+function getHomeCoinWalletKey() {
+  return `${HOME_COIN_WALLET_STORAGE_PREFIX}:${getHomeCoinWalletIdentity()}`;
+}
+
+function readHomeCoinWallet() {
+  const key = getHomeCoinWalletKey();
+  const profile = getHomeCoinWalletProfile();
+  const fallback = {
+    identity: profile.identity,
+    displayName: profile.displayName,
+    avatarInitial: profile.avatarInitial,
+    coins: 0,
+    weeklyCoins: 0,
+    monthlyCoins: 0,
+    updatedAt: Date.now(),
+  };
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || "null");
+    if (!stored || typeof stored !== "object") {
+      localStorage.setItem(key, JSON.stringify(fallback));
+      return fallback;
+    }
+    const coins = Math.max(0, Math.floor(Number(stored.coins || 0)));
+    const wallet = {
+      identity: profile.identity,
+      displayName: profile.displayName,
+      avatarInitial: profile.avatarInitial,
+      coins,
+      weeklyCoins: Math.max(0, Math.floor(Number(stored.weeklyCoins ?? coins))),
+      monthlyCoins: Math.max(0, Math.floor(Number(stored.monthlyCoins ?? coins))),
+      updatedAt: Number(stored.updatedAt || 0) || Date.now(),
+    };
+    localStorage.setItem(key, JSON.stringify(wallet));
+    return wallet;
+  } catch {
+    return fallback;
+  }
+}
+
+function getHomeCoinHuntData(isVi = state.lang === "vi") {
+  const progress = getHomeTodayStudyProgress();
+  const wallet = readHomeCoinWallet();
+  const vocabCount = Math.min(progress.savedVocabCount, HOME_TODAY_VOCAB_TARGET);
+  const listenMinutes = formatHomeTodayMinuteValue(progress.listenSeconds);
+  const writeMinutes = formatHomeTodayMinuteValue(progress.writeSeconds);
+  const tasks = [
+    {
+      id: "vocab",
+      icon: "book",
+      label: isVi ? "Lưu 20 từ vựng" : "收藏 20 个词",
+      hint: isVi ? "Lưu từ mới khi luyện tập" : "练习时收藏生词",
+      value: `${vocabCount}/${HOME_TODAY_VOCAB_TARGET}`,
+      done: vocabCount >= HOME_TODAY_VOCAB_TARGET,
+      reward: HOME_TODAY_COIN_REWARDS.vocab,
+      ratio: Math.min(1, vocabCount / HOME_TODAY_VOCAB_TARGET),
+    },
+    {
+      id: "listening",
+      icon: "listening",
+      label: isVi ? "Luyện nghe 30 phút" : "听力 30 分钟",
+      hint: isVi ? "Nghe bài theo trình độ" : "按水平练听力",
+      value: `${listenMinutes}/30 ${isVi ? "phút" : "分钟"}`,
+      done: progress.listenSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
+      reward: HOME_TODAY_COIN_REWARDS.listening,
+      ratio: Math.min(1, progress.listenSeconds / HOME_TODAY_TIME_TARGET_SECONDS),
+    },
+    {
+      id: "write",
+      icon: "write",
+      label: isVi ? "Luyện gõ 30 phút" : "拼打 30 分钟",
+      hint: isVi ? "Gõ HSK hoặc giao tiếp" : "练 HSK 或高频汉语",
+      value: `${writeMinutes}/30 ${isVi ? "phút" : "分钟"}`,
+      done: progress.writeSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
+      reward: HOME_TODAY_COIN_REWARDS.write,
+      ratio: Math.min(1, progress.writeSeconds / HOME_TODAY_TIME_TARGET_SECONDS),
+    },
+  ];
+  const totalReward = tasks.reduce((sum, task) => sum + task.reward, 0);
+  const unlockedReward = tasks.filter((task) => task.done).reduce((sum, task) => sum + task.reward, 0);
+  return {
+    ...progress,
+    walletCoins: wallet.coins,
+    tasks,
+    totalReward,
+    unlockedReward,
+  };
+}
+
+function getHomeWeeklyMissionData(isVi = state.lang === "vi") {
+  const stats = getHomeDashboardStats();
+  const savedVocabCount = state.saved instanceof Set ? state.saved.size : 0;
+  const completedLessons = state.completed instanceof Set ? state.completed.size : 0;
+  const streakDays = Math.max(0, Number(stats.streakDays || 0));
+  const missions = [
+    {
+      id: "streak",
+      icon: "listening",
+      label: isVi ? "Học đều 3 ngày" : "连续学习 3 天",
+      hint: isVi ? "Giữ nhịp học trong tuần này" : "保持本周学习节奏",
+      current: Math.min(streakDays, HOME_WEEKLY_MISSION_TARGETS.streakDays),
+      target: HOME_WEEKLY_MISSION_TARGETS.streakDays,
+      reward: HOME_WEEKLY_COIN_REWARDS.streak,
+    },
+    {
+      id: "vocab",
+      icon: "book",
+      label: isVi ? "Lưu 50 từ mới" : "收藏 50 个新词",
+      hint: isVi ? "Tích lũy từ vựng để ôn lại" : "积累词汇用于复习",
+      current: Math.min(savedVocabCount, HOME_WEEKLY_MISSION_TARGETS.savedVocab),
+      target: HOME_WEEKLY_MISSION_TARGETS.savedVocab,
+      reward: HOME_WEEKLY_COIN_REWARDS.vocab,
+    },
+    {
+      id: "lessons",
+      icon: "write",
+      label: isVi ? "Hoàn thành 5 bài" : "完成 5 节课",
+      hint: isVi ? "Luyện gõ hoặc nghe đều được tính" : "打字或听力课程都计入",
+      current: Math.min(completedLessons, HOME_WEEKLY_MISSION_TARGETS.completedLessons),
+      target: HOME_WEEKLY_MISSION_TARGETS.completedLessons,
+      reward: HOME_WEEKLY_COIN_REWARDS.lessons,
+    },
+  ].map((mission) => ({
+    ...mission,
+    done: mission.current >= mission.target,
+    ratio: mission.target > 0 ? Math.min(1, mission.current / mission.target) : 0,
+  }));
+  const completedCount = missions.filter((mission) => mission.done).length;
+  const totalReward = missions.reduce((sum, mission) => sum + mission.reward, 0);
+  return {
+    missions,
+    completedCount,
+    totalCount: missions.length,
+    totalReward,
+    percent: Math.round((missions.reduce((sum, mission) => sum + mission.ratio, 0) / missions.length) * 100),
+  };
+}
+
+function getHomeCoinLeaderboardPeriod() {
+  return state.homeLeaderboardPeriod === "month" ? "month" : "week";
+}
+
+function setHomeCoinLeaderboardPeriod(period) {
+  state.homeLeaderboardPeriod = period === "month" ? "month" : "week";
+  localStorage.setItem("v2-home-leaderboard-period", state.homeLeaderboardPeriod);
+}
+
+function formatHomeCoinIdentityName(identity, isVi = state.lang === "vi") {
+  const cleaned = String(identity || "")
+    .replace(/^guest$/, isVi ? "Khách học thử" : "体验用户")
+    .replace(/[-_.]+/g, " ")
+    .trim();
+  if (!cleaned) return isVi ? "Học viên HuaMei" : "HuaMei 学员";
+  return cleaned
+    .split(/\s+/)
+    .slice(0, 3)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function collectHomeCoinLeaderboardEntries(period = getHomeCoinLeaderboardPeriod()) {
+  const currentWallet = readHomeCoinWallet();
+  const currentIdentity = getHomeCoinWalletIdentity();
+  const scoreKey = period === "month" ? "monthlyCoins" : "weeklyCoins";
+  const prefix = `${HOME_COIN_WALLET_STORAGE_PREFIX}:`;
+  const entries = new Map();
+
+  const addWallet = (wallet, identity = currentIdentity) => {
+    if (!wallet || typeof wallet !== "object") return;
+    const walletIdentity = String(wallet.identity || identity || "guest");
+    const coins = Math.max(0, Math.floor(Number(wallet.coins || 0)));
+    const score = Math.max(0, Math.floor(Number(wallet[scoreKey] ?? coins)));
+    const displayName = wallet.displayName || formatHomeCoinIdentityName(walletIdentity);
+    const avatarInitial = String(wallet.avatarInitial || displayName || "H").trim().charAt(0).toUpperCase() || "H";
+    const existing = entries.get(walletIdentity);
+    const entry = {
+      identity: walletIdentity,
+      displayName,
+      avatarInitial,
+      score,
+      coins,
+      updatedAt: Number(wallet.updatedAt || 0) || 0,
+      isCurrent: walletIdentity === currentIdentity,
+      isFake: Boolean(wallet.isFake),
+    };
+    if (!existing || entry.score > existing.score || entry.isCurrent) entries.set(walletIdentity, entry);
+  };
+
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith(prefix)) continue;
+      const stored = JSON.parse(localStorage.getItem(key) || "null");
+      addWallet(stored, key.slice(prefix.length));
+    }
+  } catch {
+    // Local storage can be unavailable in private contexts; keep the current user entry.
+  }
+
+  addWallet(currentWallet, currentIdentity);
+  HOME_COIN_FAKE_LEADERBOARD.forEach((item) => {
+    addWallet({
+      identity: `fake-${item.id}`,
+      displayName: item.name,
+      avatarInitial: item.name.charAt(0).toUpperCase(),
+      coins: item.monthlyCoins,
+      weeklyCoins: item.weeklyCoins,
+      monthlyCoins: item.monthlyCoins,
+      updatedAt: 0,
+      isFake: true,
+    }, `fake-${item.id}`);
+  });
+
+  return Array.from(entries.values())
+    .sort((a, b) => (
+      (b.score - a.score)
+      || (Number(b.isCurrent) - Number(a.isCurrent))
+      || (Number(a.isFake) - Number(b.isFake))
+      || (b.updatedAt - a.updatedAt)
+      || a.displayName.localeCompare(b.displayName)
+    ))
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+}
+
+function getHomeCoinLeaderboardData(isVi = state.lang === "vi", period = getHomeCoinLeaderboardPeriod()) {
+  const safePeriod = period === "month" ? "month" : "week";
+  const entries = collectHomeCoinLeaderboardEntries(safePeriod);
+  const current = entries.find((entry) => entry.isCurrent) || entries[0] || null;
+  return {
+    period: safePeriod,
+    entries: entries.slice(0, 10),
+    current,
+    periodLabel: safePeriod === "month"
+      ? (isVi ? "Tháng này" : "本月")
+      : (isVi ? "Tuần này" : "本周"),
+    scoreLabel: safePeriod === "month"
+      ? (isVi ? "xu tháng" : "月金币")
+      : (isVi ? "xu tuần" : "周金币"),
+  };
+}
+
+function renderHomeCoinLeaderboardCardHTML(isVi, options = {}) {
+  const period = options.period || getHomeCoinLeaderboardPeriod();
+  const data = getHomeCoinLeaderboardData(isVi, period);
+  const scoreUnit = isVi ? "xu" : "金币";
+  const topEntries = data.entries.slice(0, 3);
+  const cardClass = [
+    "home-desktop-calendar-card",
+    "home-coin-leaderboard-card",
+    options.sheet ? "home-coin-leaderboard-card--sheet" : "",
+  ].filter(Boolean).join(" ");
+  const currentRank = data.current?.rank || 1;
+  const currentScore = data.current?.score || 0;
+  const targetRank = currentRank > 10 ? 10 : Math.max(1, currentRank - 1);
+  const targetEntry = data.entries.find((entry) => entry.rank === targetRank)
+    || data.entries[Math.min(data.entries.length - 1, Math.max(0, targetRank - 1))]
+    || data.current;
+  const targetScore = Math.max(0, Number(targetEntry?.score || 0));
+  const neededScore = currentRank <= 1 ? 0 : Math.max(0, targetScore - currentScore);
+  const chasePercent = targetScore > 0
+    ? Math.min(100, Math.max(currentScore > 0 ? 16 : 8, Math.round((currentScore / targetScore) * 100)))
+    : 100;
+  const targetLabel = currentRank > 10
+    ? (isVi ? "Top 10" : "前十")
+    : `#${targetRank}`;
+  const chaseTitle = currentRank <= 1
+    ? (isVi ? "Bạn đang dẫn đầu" : "你正在领先")
+    : (isVi ? `Cần ${neededScore} ${scoreUnit} để vào ${targetLabel}` : `还差 ${neededScore} 金币进入 ${targetLabel}`);
+  const chaseHint = currentRank <= 1
+    ? (isVi ? "Giữ nhịp học hôm nay để không bị bắt kịp." : "今天继续学习，保持领先。")
+    : (isVi ? `Vượt ${targetEntry?.displayName || "đối thủ gần nhất"} là lên sóng bảng tuần.` : `超过 ${targetEntry?.displayName || "前一名"} 就能上榜。`);
+  const leaderboardTitle = options.sheet
+    ? (isVi ? "BXH HuaMei" : "HuaMei Rank")
+    : (isVi ? "Top săn xu" : "金币排行");
+  return `
+    <section class="${cardClass}" aria-label="${isVi ? "Bảng xếp hạng săn xu" : "金币排行榜"}">
+      <header class="home-coin-leaderboard-head">
+        <span class="home-coin-leaderboard-icon" aria-hidden="true">${desktopNavIcon("ranking")}</span>
+        <div>
+          <span>${isVi ? "Bảng xếp hạng" : "排行榜"}</span>
+          <h3>${escapeHtml(leaderboardTitle)}</h3>
+        </div>
+        <strong>${escapeHtml(data.periodLabel)}</strong>
+      </header>
+
+      <div class="home-coin-leaderboard-tabs" role="tablist" aria-label="${isVi ? "Chọn kỳ xếp hạng" : "选择排行周期"}">
+        <button type="button" class="${data.period === "week" ? "is-active" : ""}" data-home-leaderboard-period="week">${isVi ? "Tuần" : "周榜"}</button>
+        <button type="button" class="${data.period === "month" ? "is-active" : ""}" data-home-leaderboard-period="month">${isVi ? "Tháng" : "月榜"}</button>
+      </div>
+
+      <div class="home-coin-leaderboard-showcase" aria-label="${isVi ? "Ba người đứng đầu" : "前三名"}">
+        ${topEntries.map((entry) => `
+          <article class="home-coin-leaderboard-podium-card home-coin-leaderboard-podium-card--rank-${entry.rank}">
+            <span class="home-coin-leaderboard-podium-medal" aria-hidden="true">${entry.rank}</span>
+            <span class="home-coin-leaderboard-podium-avatar" aria-hidden="true">${escapeHtml(entry.avatarInitial)}</span>
+            <strong>${escapeHtml(entry.displayName)}</strong>
+            <b>${entry.score}<small>${scoreUnit}</small></b>
+          </article>
+        `).join("")}
+      </div>
+
+      <div class="home-coin-leaderboard-chase">
+        <span class="home-coin-leaderboard-chase-badge" aria-hidden="true">${escapeHtml(data.current?.avatarInitial || "B")}</span>
+        <div class="home-coin-leaderboard-chase-main">
+          <strong>${isVi ? `Bạn đang #${currentRank}` : `你当前 #${currentRank}`}</strong>
+          <small>${currentScore} ${data.scoreLabel}</small>
+          <span class="home-coin-leaderboard-chase-rail" aria-hidden="true">
+            <em>#${currentRank}</em>
+            <i><b style="width:${chasePercent}%"></b></i>
+            <em>${targetLabel}</em>
+          </span>
+        </div>
+        <div class="home-coin-leaderboard-chase-goal">
+          <strong>${escapeHtml(chaseTitle)}</strong>
+          <small>${escapeHtml(chaseHint)}</small>
+        </div>
+      </div>
+
+      <ol class="home-coin-leaderboard-list">
+        ${data.entries.map((entry) => `
+          <li class="${[
+            entry.isCurrent ? "is-current" : "",
+            entry.rank <= 3 ? "is-podium-rank" : "",
+            `home-coin-leaderboard-row--rank-${entry.rank}`,
+          ].filter(Boolean).join(" ")}">
+            <span class="home-coin-leaderboard-rank">${entry.rank <= 3 ? `#${entry.rank}` : entry.rank}</span>
+            <span class="home-coin-leaderboard-avatar" aria-hidden="true">${escapeHtml(entry.avatarInitial)}</span>
+            <span class="home-coin-leaderboard-copy">
+              <strong>${escapeHtml(entry.displayName)}</strong>
+              <small>${entry.isCurrent ? (isVi ? "Bạn" : "你") : (isVi ? "Thành viên" : "会员")}</small>
+            </span>
+            <b>${entry.score}<small>${isVi ? "xu" : "金币"}</small></b>
+            <span class="home-coin-leaderboard-trend" aria-hidden="true">${entry.rank % 3 === 0 ? "↘" : "↗"}</span>
+          </li>
+        `).join("")}
+      </ol>
+
+      <p class="home-coin-leaderboard-foot">
+        ${isVi ? `Bạn đang hạng #${currentRank} với ${currentScore} ${data.scoreLabel}.` : `当前排名 #${currentRank}，${currentScore} ${data.scoreLabel}。`}
+      </p>
+    </section>
+  `;
+}
+
+function renderHomeCoinLeaderboardTriggerHTML(isVi) {
+  const data = getHomeCoinLeaderboardData(isVi);
+  const currentRank = data.current?.rank || 1;
+  const currentScore = data.current?.score || 0;
+  const topScore = data.entries[0]?.score || 0;
+  return `
+    <button type="button" class="home-coin-leaderboard-trigger" data-home-leaderboard-open aria-label="${isVi ? "Mở bảng xếp hạng săn xu" : "打开金币排行榜"}">
+      <span class="home-coin-leaderboard-trigger-icon" aria-hidden="true">${desktopNavIcon("ranking")}</span>
+      <span class="home-coin-leaderboard-trigger-copy">
+        <small>${isVi ? "Bảng xếp hạng" : "排行榜"}</small>
+        <strong>${isVi ? "Top săn xu" : "金币排行"}</strong>
+        <em>${isVi ? `Bạn #${currentRank} • ${currentScore} xu` : `你 #${currentRank} • ${currentScore} 金币`}</em>
+      </span>
+      <span class="home-coin-leaderboard-trigger-meta">
+        <b>${topScore}</b>
+        <small>${isVi ? "top 1" : "第一"}</small>
+      </span>
+    </button>
+  `;
+}
+
+function homeCoinTaskIconHTML(name) {
+  if (name === "book") {
+    return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H7a3 3 0 0 0-3 3V5.5z"/><path d="M4 18a3 3 0 0 1 3-3h13"/></svg>`;
+  }
+  if (name === "listening") {
+    return desktopNavIcon("listening");
+  }
+  return desktopNavIcon("write");
+}
+
+function renderHomeCoinHuntCardHTML(isVi, options = {}) {
+  const data = getHomeCoinHuntData(isVi);
+  const cardClass = [
+    "home-desktop-calendar-card",
+    "home-coin-hunt-card",
+    options.sheet ? "home-coin-hunt-card--sheet" : "",
+  ].filter(Boolean).join(" ");
+  return `
+    <section class="${cardClass}" aria-label="${isVi ? "Săn xu hôm nay" : "今日赚金币"}">
+      <header class="home-coin-hunt-head">
+        <span class="home-coin-hunt-icon" aria-hidden="true">${desktopNavIcon("chest")}</span>
+        <div>
+          <span>${isVi ? "Rương nhiệm vụ" : "任务宝箱"}</span>
+          <h3>${isVi ? "Săn xu hôm nay" : "今日赚金币"}</h3>
+        </div>
+        <time datetime="${escapeAttr(getVietnamTodayKey())}">${escapeHtml(data.dateLabel)}</time>
+      </header>
+
+      <div class="home-coin-hunt-balance">
+        <div>
+          <span>${isVi ? "Xu hiện có" : "当前金币"}</span>
+          <strong>${data.walletCoins}<small>${isVi ? "xu" : "金币"}</small></strong>
+        </div>
+        <p>${isVi ? `Hoàn thành nhiệm vụ hôm nay để mở tối đa ${data.totalReward} xu.` : `完成今日任务，最多可得 ${data.totalReward} 金币。`}</p>
+      </div>
+
+      <div class="home-coin-hunt-progress" aria-hidden="true">
+        <span><i style="width:${data.percent}%"></i></span>
+        <strong>${data.completedCount}/${data.totalCount}</strong>
+      </div>
+
+      <ul class="home-coin-hunt-tasks">
+        ${data.tasks.map((task) => `
+          <li class="${task.done ? "is-done" : ""}">
+            <span class="home-coin-hunt-task-icon" aria-hidden="true">${homeCoinTaskIconHTML(task.icon)}</span>
+            <span class="home-coin-hunt-task-copy">
+              <strong>${escapeHtml(task.label)}</strong>
+              <small>${escapeHtml(task.hint)}</small>
+            </span>
+            <span class="home-coin-hunt-task-meta">
+              <em>${escapeHtml(task.value)}</em>
+              <b>+${task.reward} ${isVi ? "xu" : "金币"}</b>
+            </span>
+          </li>
+        `).join("")}
+      </ul>
+
+      <button type="button" class="home-coin-hunt-cta" data-home-coin-hunt-start>
+        ${isVi ? "Bắt đầu săn xu" : "开始赚金币"}
+      </button>
+    </section>
+  `;
+}
+
+function renderHomeWeeklyMissionCardHTML(isVi) {
+  const data = getHomeWeeklyMissionData(isVi);
+  return `
+    <section class="home-weekly-mission-card" aria-label="${isVi ? "Nhiệm vụ tuần" : "本周任务"}">
+      <header class="home-weekly-mission-head">
+        <span class="home-weekly-mission-icon" aria-hidden="true">${desktopNavIcon("chest")}</span>
+        <div>
+          <span>${isVi ? "Tuần này" : "本周"}</span>
+          <h3>${isVi ? "Nhiệm vụ tuần" : "本周任务"}</h3>
+        </div>
+        <strong>${data.completedCount}/${data.totalCount}</strong>
+      </header>
+
+      <div class="home-weekly-mission-progress" aria-hidden="true">
+        <span><i style="width:${data.percent}%"></i></span>
+        <small>${data.percent}%</small>
+      </div>
+
+      <ul class="home-weekly-mission-list">
+        ${data.missions.map((mission) => `
+          <li class="${mission.done ? "is-done" : ""}">
+            <span class="home-weekly-mission-task-icon" aria-hidden="true">${homeCoinTaskIconHTML(mission.icon)}</span>
+            <span class="home-weekly-mission-copy">
+              <strong>${escapeHtml(mission.label)}</strong>
+              <small>${escapeHtml(mission.hint)}</small>
+            </span>
+            <span class="home-weekly-mission-meta">
+              <em>${mission.current}/${mission.target}</em>
+              <b>+${mission.reward} ${isVi ? "xu" : "金币"}</b>
+            </span>
+          </li>
+        `).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function renderHomeTodayStudyCardHTML(isVi) {
+  return renderHomeCoinHuntCardHTML(isVi);
+}
+
+function closeHomeCoinHuntPanel(options = {}) {
+  const sheet = $("#homeCoinHuntSheet");
+  if (!sheet) return;
+  document.body.classList.remove("home-coin-hunt-sheet-open");
+  sheet.classList.remove("is-open");
+  const remove = () => sheet.remove();
+  if (options.immediate) remove();
+  else window.setTimeout(remove, 180);
+}
+
+function showHomeCoinHuntPanel() {
+  closeHomeCoinHuntPanel({ immediate: true });
+  closeHomeLeaderboardPanel({ immediate: true });
+  const isVi = state.lang === "vi";
+  const sheet = document.createElement("div");
+  sheet.id = "homeCoinHuntSheet";
+  sheet.className = "home-coin-hunt-sheet screen-home";
+  sheet.innerHTML = `
+    <div class="home-coin-hunt-sheet-backdrop" data-home-coin-hunt-close></div>
+    <div class="home-coin-hunt-sheet-panel home-coin-hunt-sheet-panel--tasks" role="dialog" aria-modal="true" aria-label="${isVi ? "Săn xu hôm nay" : "今日赚金币"}">
+      <button type="button" class="home-coin-hunt-rank-chip" data-home-leaderboard-open>
+        <span aria-hidden="true">${desktopNavIcon("ranking")}</span>
+        ${isVi ? "Xem BXH" : "看排行"}
+      </button>
+      <button type="button" class="home-coin-hunt-sheet-close" data-home-coin-hunt-close aria-label="${isVi ? "Đóng" : "关闭"}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      ${renderHomeCoinHuntCardHTML(isVi, { sheet: true })}
+      ${renderHomeWeeklyMissionCardHTML(isVi)}
+    </div>
+  `;
+  sheet.addEventListener("click", (event) => {
+    if (event.target.closest("[data-home-leaderboard-open]")) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeHomeCoinHuntPanel();
+      showHomeLeaderboardPanel();
+      return;
+    }
+    if (event.target.closest("[data-home-coin-hunt-close]")) {
+      closeHomeCoinHuntPanel();
+      return;
+    }
+    if (event.target.closest("[data-home-coin-hunt-start]")) {
+      closeHomeCoinHuntPanel();
+      navigatePrimaryTab("write");
+    }
+  });
+  document.body.appendChild(sheet);
+  document.body.classList.add("home-coin-hunt-sheet-open");
+  requestAnimationFrame(() => sheet.classList.add("is-open"));
+}
+
+function closeHomeLeaderboardPanel(options = {}) {
+  const sheet = $("#homeLeaderboardSheet");
+  if (!sheet) return;
+  document.body.classList.remove("home-coin-hunt-sheet-open");
+  sheet.classList.remove("is-open");
+  const remove = () => sheet.remove();
+  if (options.immediate) remove();
+  else window.setTimeout(remove, 180);
+}
+
+function showHomeLeaderboardPanel() {
+  closeHomeCoinHuntPanel({ immediate: true });
+  closeHomeLeaderboardPanel({ immediate: true });
+  const isVi = state.lang === "vi";
+  const sheet = document.createElement("div");
+  sheet.id = "homeLeaderboardSheet";
+  sheet.className = "home-coin-hunt-sheet home-leaderboard-sheet screen-home";
+  sheet.innerHTML = `
+    <div class="home-coin-hunt-sheet-backdrop" data-home-leaderboard-close></div>
+    <div class="home-coin-hunt-sheet-panel home-leaderboard-sheet-panel" role="dialog" aria-modal="true" aria-label="${isVi ? "Bảng xếp hạng săn xu" : "金币排行榜"}">
+      <button type="button" class="home-coin-hunt-sheet-close" data-home-leaderboard-close aria-label="${isVi ? "Đóng" : "关闭"}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      ${renderHomeCoinLeaderboardCardHTML(isVi, { sheet: true })}
+    </div>
+  `;
+  sheet.addEventListener("click", (event) => {
+    const periodBtn = event.target.closest("[data-home-leaderboard-period]");
+    if (periodBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      setHomeCoinLeaderboardPeriod(periodBtn.dataset.homeLeaderboardPeriod);
+      const currentCard = sheet.querySelector(".home-coin-leaderboard-card");
+      if (currentCard) currentCard.outerHTML = renderHomeCoinLeaderboardCardHTML(isVi, { sheet: true });
+      return;
+    }
+    if (event.target.closest("[data-home-leaderboard-close]")) {
+      closeHomeLeaderboardPanel();
+    }
+  });
+  document.body.appendChild(sheet);
+  document.body.classList.add("home-coin-hunt-sheet-open");
+  requestAnimationFrame(() => sheet.classList.add("is-open"));
+}
+
+function refreshHomeCoinLeaderboardViews() {
+  const isVi = state.lang === "vi";
+  const rerenderLeaderboardCard = (root) => {
+    const currentCard = root?.querySelector?.(".home-coin-leaderboard-card");
+    if (currentCard) currentCard.outerHTML = renderHomeCoinLeaderboardCardHTML(isVi, { sheet: true });
+  };
+  rerenderLeaderboardCard($("#homeCoinHuntSheet"));
+  rerenderLeaderboardCard($("#homeLeaderboardSheet"));
+  if (state.screen === "home") renderHome();
 }
 
 function makeSentences(episodeId, rows = []) {
@@ -1718,6 +2354,7 @@ function openRandomSuggestedListeningLesson() {
   state.listeningView = "detail";
   state.listeningSentenceIndex = 0;
   state.listeningVocabPracticeIndex = 0;
+  state.listeningCompletionSource = "";
   state.listeningBackTarget = "dashboard";
   state.listeningLessonsBackTarget = "dashboard";
   state.listeningSeedEpisodeId = "";
@@ -1749,6 +2386,9 @@ function openRandomListeningRepeatPractice() {
   state.listeningView = "repeat";
   state.listeningSentenceIndex = selected.sentenceIndex;
   state.listeningVocabPracticeIndex = 0;
+  state.listeningCompletionSource = "";
+  state.practiceStartedAt = Date.now();
+  state.practiceCompletedAt = 0;
   state.listeningBackTarget = "dashboard";
   state.listeningLessonsBackTarget = "dashboard";
   state.listeningSeedEpisodeId = "";
@@ -3540,11 +4180,11 @@ function hasPremiumAccess() {
 }
 
 function areContentLocksTrusted() {
-  return state.contentLocksReady === true && state.contentLocksFailed !== true || shouldUseLocalContentLockFallback();
+  return state.contentLocksReady === true && state.contentLocksFailed !== true;
 }
 
 function shouldUseLocalContentLockFallback() {
-  return (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && /DATABASE_URL|Backend/i.test(String(state.contentLocksError || backendDisabledMessage()));
+  return BACKEND_DISABLED === true;
 }
 
 function getHskLessonFreeItemLimit(lessonId) {
@@ -3601,15 +4241,19 @@ function getHskAccessRule(lessonId, contentType = "word") {
   if (state.hskLockedLessonIds.has(String(lessonId || ""))) return accessRule("locked", 0);
   const configuredFreeLimit = getHskLessonFreeItemLimit(lessonId);
   if (configuredFreeLimit !== null) return accessRule("partial", configuredFreeLimit);
+  if (!shouldUseLocalContentLockFallback()) return accessRule("locked", 0);
 
-  if (level === 1 || level === 2) {
-    if (lessonNo <= 2) return accessRule("open");
-    if (lessonNo === 3) return accessRule("partial", itemType === "sentence" ? 4 : 6);
+  if (level >= 1 && level <= 3) {
+    if (lessonNo <= 3) return accessRule("open");
+    if (lessonNo === 4) return accessRule("partial", itemType === "sentence" ? 3 : 7);
     return accessRule("locked", 0);
   }
 
-  if (level >= 3 && level <= 6) {
-    if (lessonNo <= 2) return accessRule("partial", itemType === "sentence" ? 2 : 6);
+  if (level >= 4 && level <= 6) {
+    if (level === 4 && lessonNo <= 2) return accessRule("open");
+    if ((level === 5 || level === 6) && lessonNo === 1) return accessRule("partial", 5);
+    if ((level === 5 || level === 6) && lessonNo === 2) return accessRule("open");
+    if (lessonNo === 3) return accessRule("partial", itemType === "sentence" ? 10 : 20);
     return accessRule("locked", 0);
   }
 
@@ -3633,6 +4277,7 @@ function getDailyThemeAccessRule(themeId, contentType = "word") {
     if (limit > 0) return accessRule("partial", Math.floor(limit));
     return accessRule("open");
   }
+  if (!shouldUseLocalContentLockFallback()) return accessRule("locked", 0);
   const themeIndex = getDailyThemeAccessIndex(themeId);
   const itemType = normalizeAccessItemType(contentType);
   if (themeIndex === 1) return accessRule("open");
@@ -3651,7 +4296,7 @@ function combineAccessStatuses(statuses = []) {
 
 function getHskLessonAccessStatus(lessonId) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return combineAccessStatuses([
     getHskAccessRule(lessonId, "word").status,
     getHskAccessRule(lessonId, "sentence").status,
@@ -3660,7 +4305,7 @@ function getHskLessonAccessStatus(lessonId) {
 
 function getDailyThemeAccessStatus(themeId) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return combineAccessStatuses([
     getDailyThemeAccessRule(themeId, "word").status,
     getDailyThemeAccessRule(themeId, "sentence").status,
@@ -3669,13 +4314,13 @@ function getDailyThemeAccessStatus(themeId) {
 
 function getHskContentTypeAccessStatus(lessonId, contentType) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return getHskAccessRule(lessonId, contentType).status;
 }
 
 function getDailyContentTypeAccessStatus(themeId, contentType) {
   if (hasPremiumAccess()) return "open";
-  if (!areContentLocksTrusted()) return "locked";
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return "locked";
   return getDailyThemeAccessRule(themeId, contentType).status;
 }
 
@@ -3915,7 +4560,6 @@ async function loadContentLocks() {
     }, {});
     state.hskLessonAccessRules = Object.fromEntries(
       hskAccessItems
-        .filter((item) => item.lockedForFree === true || Math.max(0, Number(item.freeItemLimit || item.freeWordLimit || item.freeSentenceLimit || 0)) > 0)
         .map((item) => [item.lessonId, {
           lockedForFree: item.lockedForFree === true,
           freeWordLimit: Math.max(0, Number(item.freeWordLimit || item.freeItemLimit || 0)),
@@ -4024,6 +4668,7 @@ async function loadAllContentAccessRules() {
 
 function isListeningContentLocked(topicId = "", lessonId = "") {
   if (hasPremiumAccess() || isAdminUser()) return false;
+  if (!areContentLocksTrusted() && !shouldUseLocalContentLockFallback()) return true;
   return state.listeningLockedTopicIds.has(String(topicId || "")) || state.listeningLockedLessonIds.has(String(lessonId || ""));
 }
 
@@ -7150,6 +7795,13 @@ function restorePersistedRoute() {
       }
 
       case "complete":
+        if (state.module === "listening") {
+          state.listeningCompletionSource = "";
+          state.listeningView = "levels";
+          renderListening();
+          setScreen("listening");
+          return true;
+        }
         if (state.module === "daily" && state.dailyBackTarget === "write-communication") {
           backToWriteCommunicationCourse();
           return true;
@@ -7196,7 +7848,7 @@ function loadActiveAdminTabData() {
       loadAdminContentLocks();
       break;
     case "collaborators":
-      if (!state.adminUsers.length) loadAdminUsers();
+      loadAdminUsers();
       break;
     case "analytics":
       loadAdminAnalytics();
@@ -7268,6 +7920,7 @@ function setScreen(name) {
   const bottomDaily = $("#bottomNavDailyBtn");
   const bottomVocab = $("#bottomNavVocabBtn");
   const bottomListening = $("#bottomNavListeningBtn");
+  const bottomCoinHunt = $("#bottomNavCoinHuntBtn");
   const bottomSubscriptions = $("#bottomNavSubscriptionsBtn");
   const bottomAccount = $("#bottomNavAccountBtn");
   const showBottomNav = ["home", "course", "vocab", "listening", "account"].includes(name);
@@ -7283,6 +7936,7 @@ function setScreen(name) {
     bottomVocab.classList.toggle("active", name === "vocab");
     bottomListening.classList.toggle("active", name === "listening");
     bottomSubscriptions.classList.toggle("active", name === "subscriptions");
+    bottomCoinHunt?.classList.remove("active");
     bottomAccount.classList.toggle("active", name === "account");
     bottomAccount.classList.toggle("hidden", BACKEND_DISABLED);
   }
@@ -7320,6 +7974,7 @@ function renderChrome() {
   const bottomDailyBtn = $("#bottomNavDailyBtn");
   const bottomVocabBtn = $("#bottomNavVocabBtn");
   const bottomListeningBtn = $("#bottomNavListeningBtn");
+  const bottomCoinHuntBtn = $("#bottomNavCoinHuntBtn");
   const bottomSubscriptionsBtn = $("#bottomNavSubscriptionsBtn");
   const bottomAccountBtn = $("#bottomNavAccountBtn");
 
@@ -7347,6 +8002,15 @@ function renderChrome() {
     bottomListeningBtn.dataset.bottomNav = "listen";
     bottomListeningBtn.querySelector(".mobile-bottom-nav-label").textContent = isVi ? "Luyện nghe" : "听力";
     bottomListeningBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("listening");
+  }
+
+  if (bottomCoinHuntBtn) {
+    bottomCoinHuntBtn.dataset.bottomNav = "coin-hunt";
+    bottomCoinHuntBtn.setAttribute("aria-label", isVi ? "Rương nhiệm vụ" : "任务宝箱");
+    bottomCoinHuntBtn.querySelector(".mobile-bottom-nav-label").innerHTML = isVi
+      ? "<span>Rương</span><span>Nhiệm vụ</span>"
+      : "<span>宝箱</span><span>任务</span>";
+    bottomCoinHuntBtn.querySelector(".mobile-bottom-nav-icon").innerHTML = desktopNavIcon("chest");
   }
 
   if (bottomSubscriptionsBtn) {
@@ -9987,67 +10651,6 @@ function getHomeDashboardStats() {
   };
 }
 
-function renderHomeTodayStudyCardHTML(isVi) {
-  const progress = getHomeTodayStudyProgress();
-  const vocabCount = Math.min(progress.savedVocabCount, HOME_TODAY_VOCAB_TARGET);
-  const listenMinutes = formatHomeTodayMinuteValue(progress.listenSeconds);
-  const writeMinutes = formatHomeTodayMinuteValue(progress.writeSeconds);
-  const rows = [
-    {
-      label: isVi ? "Từ vựng" : "词汇",
-      value: `${vocabCount} / ${HOME_TODAY_VOCAB_TARGET}`,
-      done: vocabCount >= HOME_TODAY_VOCAB_TARGET,
-    },
-    {
-      label: isVi ? "Luyện nghe" : "听力练习",
-      value: `${listenMinutes} / 30 ${isVi ? "phút" : "分钟"}`,
-      done: progress.listenSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
-    },
-    {
-      label: isVi ? "Luyện gõ" : "拼打",
-      value: `${writeMinutes} / 30 ${isVi ? "phút" : "分钟"}`,
-      done: progress.writeSeconds >= HOME_TODAY_TIME_TARGET_SECONDS,
-    },
-  ];
-
-  return `
-    <section class="home-desktop-calendar-card home-today-study-card" aria-label="${isVi ? "Hôm nay học gì" : "今天学什么"}">
-      <header class="home-today-study-head">
-        <span class="home-today-study-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="5" width="16" height="15" rx="3"></rect>
-            <path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-5"></path>
-          </svg>
-        </span>
-        <div>
-          <h3>${isVi ? "Hôm nay học gì?" : "今天学什么？"}</h3>
-        </div>
-        <time datetime="${escapeAttr(getVietnamTodayKey())}">${escapeHtml(progress.dateLabel)}</time>
-      </header>
-
-      <div class="home-today-study-summary">
-        <div class="home-today-study-ring" style="--home-today-progress: ${progress.percent};">
-          <span>${progress.percent}%</span>
-        </div>
-        <div class="home-today-study-copy">
-          <strong>${isVi ? `Đã hoàn thành ${progress.completedCount} / ${progress.totalCount} mục` : `已完成 ${progress.completedCount} / ${progress.totalCount} 项`}</strong>
-          <span class="home-today-study-bar" aria-hidden="true"><i style="width: ${progress.percent}%"></i></span>
-        </div>
-      </div>
-
-      <ul class="home-today-study-list">
-        ${rows.map((row) => `
-          <li class="${row.done ? "is-done" : ""}">
-            <span class="home-today-study-check" aria-hidden="true">${row.done ? "✓" : ""}</span>
-            <span>${escapeHtml(row.label)}</span>
-            <strong>${escapeHtml(row.value)}</strong>
-          </li>
-        `).join("")}
-      </ul>
-    </section>
-  `;
-}
-
 function renderHomeDesktopSavedVocabHTML(isVi) {
   const savedItems = Array.from(state.saved)
     .map((hanzi) => ({ hanzi, ...findItemByHanzi(hanzi) }))
@@ -10139,6 +10742,8 @@ function desktopNavIcon(name) {
     account: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
     write: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>`,
     vip: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.3 2.55 5.16 5.7.83-4.12 4.02.97 5.67L12 16.3l-5.1 2.68.97-5.67-4.12-4.02 5.7-.83L12 3.3z"/></svg>`,
+    chest: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9z"/><path d="M3 7h18v4H3z"/><path d="M8 7a4 4 0 0 1 8 0"/><path d="M12 11v10"/><circle cx="12" cy="15.5" r="1.6"/></svg>`,
+    ranking: `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19V9"/><path d="M12 19V5"/><path d="M19 19v-7"/><path d="M4 19h16"/><path d="m9 8 3-3 3 3"/></svg>`,
   };
   return icons[name] || "";
 }
@@ -10174,6 +10779,9 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
               <path d="m12 3.3 2.55 5.16 5.7.83-4.12 4.02.97 5.67L12 16.3l-5.1 2.68.97-5.67-4.12-4.02 5.7-.83L12 3.3z"/>
             </svg>
           </span>${isVi ? "G\u00f3i VIP" : "VIP \u5957\u9910"}
+        </button>
+        <button type="button" class="home-desktop-nav-item home-desktop-rank-label" data-home-leaderboard-open aria-label="${isVi ? "Mở bảng xếp hạng săn xu" : "打开金币排行榜"}">
+          <span aria-hidden="true">${desktopNavIcon("ranking")}</span>${isVi ? "BXH săn xu" : "金币排行"}
         </button>
         <button type="button" class="${navClass("account")}" data-home-nav="account">
           <span aria-hidden="true">${desktopNavIcon("account")}</span>${isVi ? "Cá nhân" : "个人"}
@@ -12994,6 +13602,9 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
     </article>
   `).join("");
   const progress = Math.round(((safeIndex + 1) / total) * 100);
+  const nextLabel = safeIndex >= total - 1
+    ? (state.lang === "vi" ? "Hoàn thành" : "完成")
+    : "Next";
 
   return `
     <div class="listening-vocab-practice-progress">
@@ -13023,7 +13634,7 @@ function buildListeningVocabPracticeHTML(index = state.listeningVocabPracticeInd
           ${state.lang === "vi" ? "Trở lại" : "Back"}
         </button>
         <button class="listening-vocab-next-btn" type="button" data-listening-vocab-next>
-          Next
+          ${nextLabel}
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
         </button>
       </div>
@@ -13153,6 +13764,9 @@ function renderListeningRepeatLesson(options = {}) {
     : listeningRepeatSpeechState === "paused"
       ? (isVi ? "Tiếp tục" : "Resume")
       : (isVi ? "Nghe lại" : "Replay");
+  const repeatNextLabel = currentIndex >= total - 1
+    ? (isVi ? "Hoàn thành" : "Finish")
+    : (isVi ? "Câu tiếp theo" : "Next sentence");
 
   const repeatWordBase = String(sentence.chinese || "").replace(/[。！？!?，,]/g, "");
   const repeatPinyinParts = String(sentence.pinyin || "")
@@ -13374,7 +13988,7 @@ function renderListeningRepeatLesson(options = {}) {
           </div>
 
           <button class="listening-repeat-next-btn" type="button" data-listening-repeat-next>
-            ${isVi ? "Câu tiếp theo" : "Next sentence"}
+            ${repeatNextLabel}
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
           </button>
         </section>
@@ -13781,7 +14395,13 @@ function syncListeningAudioUi() {
       scroll: Boolean(listeningPlaybackRequested || (audio && !audio.paused)),
     });
   }
-  if (!isTitlePhase) updateListeningLessonProgress(episode.id, current, duration, { completed: Boolean(audio?.ended || percent >= 100) });
+  if (!isTitlePhase) {
+    updateListeningLessonProgress(episode.id, current, duration, { completed: Boolean(audio?.ended || percent >= 100) });
+    if (audio?.ended) {
+      finishListeningLesson("audio", { duration });
+      return;
+    }
+  }
   if (audio && !audio.paused && !isTitlePhase) setListeningActiveSentence(getListeningSentenceIndexAtTime(episode, current));
 
   if (currentTimeNode) currentTimeNode.textContent = listeningFormatTime(current);
@@ -14047,6 +14667,8 @@ function renderHomeDesktopLayoutHTML(isVi) {
       </div>
       
       <aside class="home-desktop-rail" aria-label="${isVi ? "Tiến độ học tập" : "学习进度"}">
+        ${renderHomeCoinLeaderboardTriggerHTML(isVi)}
+
         <div class="${homeDesktopProfileClass}" ${homeDesktopProfileAttrs}>
           <div class="home-desktop-avatar">${avatarHTML}</div>
           <div class="home-desktop-profile-copy">
@@ -16225,29 +16847,273 @@ function showAnswer() {
   finishItem();
 }
 
+function renderCompleteExperience(collection, isVocab, totalItems, practiceDuration, options = {}) {
+  const isVi = state.lang === "vi";
+  const completedLessons = Math.max(1, state.completed?.size || 1);
+  const milestoneSize = 5;
+  const milestoneProgress = completedLessons % milestoneSize || milestoneSize;
+  const nextMilestone = completedLessons % milestoneSize === 0
+    ? completedLessons
+    : completedLessons + (milestoneSize - milestoneProgress);
+  const remainingToMilestone = Math.max(0, nextMilestone - completedLessons);
+  const milestonePercent = Math.round((milestoneProgress / milestoneSize) * 100);
+  const completionBadge = options.completionBadge || (isVi ? "Mục luyện đã chinh phục" : "练习已攻克");
+  const leadText = options.leadText || (isVi
+    ? "Bạn vừa hoàn tất một phiên luyện gõ rõ ràng, gọn và có tiến bộ."
+    : "你刚完成了一次清晰、稳定、有进步的打字练习。");
+  const momentumTitle = remainingToMilestone === 0
+    ? (isVi ? `Chạm mốc ${completedLessons} bài` : `已达 ${completedLessons} 课里程碑`)
+    : (isVi ? `${milestoneProgress}/${milestoneSize} bước tới mốc ${nextMilestone} bài` : `${milestoneProgress}/${milestoneSize} 步迈向 ${nextMilestone} 课`);
+  const momentumCopy = remainingToMilestone === 0
+    ? (isVi ? "Rất đẹp. Mở bài tiếp theo để biến đà này thành thói quen." : "很好。继续下一课，把这个节奏变成习惯。")
+    : (isVi ? `Còn ${remainingToMilestone} bài nữa để mở một mốc tiến bộ mới.` : `还差 ${remainingToMilestone} 课即可达成新的进步节点。`);
+  const continueHint = options.continueHint || (isVi
+    ? "Tiếp tục ngay khi nhịp gõ còn tốt."
+    : "趁手感还在，继续下一课。");
+  const fireworkCheer = options.fireworkCheer || (isVi
+    ? "Póp! Bài này đã về đích."
+    : "啪！本课顺利到站。");
+  const statLabel = options.statLabel || t("itemCount");
+  const statDetail = options.statDetail || (isVi ? "đã gõ xong" : "已完成");
+  const focusDetail = options.focusDetail || (isVi ? "tập trung" : "专注练习");
+  const railLeft = options.railLeft || "pin yin";
+  const railRight = options.railRight || "拼音";
+  const secondaryLabel = options.secondaryLabel || (isVocab ? (isVi ? "Về bộ từ" : "返回生词本") : t("backHome"));
+  const showPrimary = options.showPrimary ?? !isVocab;
+  const primaryLabel = options.primaryLabel || t("nextLesson");
+
+  screens.complete.innerHTML = `
+    <div class="complete-sky-show" aria-hidden="true">
+      <span class="complete-sky-rocket complete-sky-rocket--one"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--two"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--three"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--four"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--five"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--six"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--seven"></span>
+      <span class="complete-sky-rocket complete-sky-rocket--eight"></span>
+    </div>
+    <section class="complete-card complete-card--reward" aria-labelledby="completeTitle">
+      <div class="complete-celebration" aria-hidden="true">
+        <span class="complete-burst complete-burst--left"></span>
+        <span class="trophy">
+          <span class="trophy-ring"></span>
+          <span class="trophy-check">✓</span>
+          <span class="trophy-sparkles">✦✦</span>
+        </span>
+        <span class="complete-burst complete-burst--right"></span>
+      </div>
+      <div class="complete-pop-note">${fireworkCheer}</div>
+      <div class="complete-kicker">
+        <span>${completionBadge}</span>
+        <strong>+1</strong>
+      </div>
+      <h1 id="completeTitle">${t("completeTitle")}</h1>
+      <p class="complete-lead">${leadText}</p>
+      <div class="complete-type-rail" aria-hidden="true">
+        <span>${railLeft}</span>
+        <i></i>
+        <span>${railRight}</span>
+        <b>✓</b>
+      </div>
+      <div class="complete-lesson-name">${escapeHtml(collection.title || "")}</div>
+      <div class="complete-stats">
+        <span class="complete-stat-card">
+          <small>${statLabel}</small>
+          <strong>${totalItems}</strong>
+          <em>${statDetail}</em>
+        </span>
+        <span class="complete-stat-card complete-stat-card--time">
+          <small>${isVi ? "Thời gian" : "用时"}</small>
+          <strong>${practiceDuration}</strong>
+          <em>${focusDetail}</em>
+        </span>
+        <span class="complete-stat-card complete-stat-card--momentum">
+          <small>${isVi ? "Tổng tiến độ" : "总进度"}</small>
+          <strong>${completedLessons}</strong>
+          <em>${isVi ? "bài đã hoàn thành" : "课已完成"}</em>
+        </span>
+      </div>
+      <div class="complete-momentum" style="--complete-progress:${milestonePercent}%">
+        <div>
+          <span>${isVi ? "Đà học hiện tại" : "当前学习节奏"}</span>
+          <strong>${momentumTitle}</strong>
+        </div>
+        <div class="complete-momentum-bar" aria-hidden="true"><i></i></div>
+        <p>${momentumCopy}</p>
+      </div>
+      <div class="complete-actions">
+        <button class="secondary" data-complete="home" type="button">${secondaryLabel}</button>
+        ${showPrimary ? `<button class="primary" data-complete="next" type="button">${primaryLabel} <span aria-hidden="true">→</span></button>` : ""}
+      </div>
+      ${showPrimary ? `<p class="complete-continue-hint">${continueHint}</p>` : ""}
+    </section>
+  `;
+}
+
+function getListeningCompletionCollection(episode = getListeningEpisode()) {
+  const title = state.lang === "vi"
+    ? (episode.title || episode.titleZh || episode.id)
+    : (episode.titleZh || episode.title || episode.id);
+  return {
+    id: `listening:${episode.id}`,
+    no: "",
+    title,
+    items: Array.from({ length: Math.max(1, episode.sentences?.length || episode.keywords?.length || 1) }, () => ({})),
+  };
+}
+
+function getListeningCompletionCopy(source = state.listeningCompletionSource || "audio", episode = getListeningEpisode()) {
+  const isVi = state.lang === "vi";
+  const sentenceCount = Math.max(1, episode.sentences?.length || 0);
+  const keywordCount = Math.max(1, episode.keywords?.length || 0);
+
+  if (source === "vocab") {
+    return {
+      totalItems: keywordCount,
+      statLabel: isVi ? "Từ vựng" : "词语",
+      statDetail: isVi ? "đã học" : "已学习",
+      focusDetail: isVi ? "ghi nhớ" : "记忆训练",
+      completionBadge: isVi ? "Từ vựng đã hoàn thành" : "词汇已完成",
+      leadText: isVi
+        ? "Bạn đã đi hết bộ từ trọng tâm của bài nghe. Vốn từ đang dày lên rất ổn."
+        : "你已经学完本课重点词汇，词汇基础更稳了。",
+      fireworkCheer: isVi ? "Từ cuối cùng cũng đã vào kho nhớ." : "最后一个词也收进记忆库了。",
+      continueHint: isVi ? "Giữ đà này và chuyển sang nói theo để khóa bài chắc hơn." : "趁热进入跟读，把本课锁得更牢。",
+    };
+  }
+
+  if (source === "repeat") {
+    return {
+      totalItems: sentenceCount,
+      statLabel: isVi ? "Câu" : "句子",
+      statDetail: isVi ? "đã nói theo" : "已跟读",
+      focusDetail: isVi ? "phản xạ nói" : "口语跟读",
+      completionBadge: isVi ? "Nói theo đã hoàn thành" : "跟读已完成",
+      leadText: isVi
+        ? "Bạn đã nói theo hết các câu trong bài. Khẩu hình, nhịp và phản xạ đang lên tay."
+        : "你已经完成本课全部跟读，语感和反应正在变稳。",
+      fireworkCheer: isVi ? "Câu cuối khép lại gọn đẹp." : "最后一句漂亮收尾。",
+      continueHint: isVi ? "Mở bài nghe tiếp theo khi giọng còn đang vào nhịp." : "语感还在线，继续下一课。",
+    };
+  }
+
+  return {
+    totalItems: sentenceCount,
+    statLabel: isVi ? "Câu nghe" : "听力句子",
+    statDetail: isVi ? "đã nghe hết" : "已听完",
+    focusDetail: isVi ? "luyện nghe" : "听力训练",
+    completionBadge: isVi ? "Audio đã nghe trọn bài" : "音频已听完",
+    leadText: isVi
+      ? "Bạn đã nghe trọn bài audio. Một vòng nghe đủ nhịp luôn đáng được chúc mừng."
+      : "你已经完整听完本课音频，这一轮听力完成得很扎实。",
+    fireworkCheer: isVi ? "Audio về đích, tai cũng lên level." : "音频到站，听感升级。",
+    continueHint: isVi ? "Qua bài tiếp theo hoặc học từ vựng để giữ mạch tiến bộ." : "继续下一课，或趁热巩固词汇。",
+  };
+}
+
+function renderListeningComplete(source = state.listeningCompletionSource || "audio") {
+  const episode = getListeningEpisode();
+  const copy = getListeningCompletionCopy(source, episode);
+  const duration = source === "audio"
+    ? listeningFormatTime(Number(episode.duration || getListeningItemDuration(episode.sentences || [])))
+    : formatPracticeDuration(state.practiceStartedAt || Date.now(), state.practiceCompletedAt || Date.now());
+
+  renderCompleteExperience(
+    getListeningCompletionCollection(episode),
+    false,
+    copy.totalItems,
+    duration,
+    {
+      ...copy,
+      railLeft: "ting li",
+      railRight: "听力",
+      secondaryLabel: state.lang === "vi" ? "Về luyện nghe" : "返回听力",
+      primaryLabel: state.lang === "vi" ? "Bài nghe tiếp theo" : "下一课听力",
+      showPrimary: true,
+    },
+  );
+}
+
+function getListeningCompletionId(episode = getListeningEpisode()) {
+  return `listening:${episode.id}`;
+}
+
+function finishListeningLesson(source = "audio", detail = {}) {
+  const episode = getListeningEpisode();
+  if (!episode?.id) return;
+  state.module = "listening";
+  state.listeningCompletionSource = source;
+  state.practiceCompletedAt = Date.now();
+  if (!state.practiceStartedAt) state.practiceStartedAt = state.practiceCompletedAt - 1000;
+
+  const duration = Number(detail.duration || episode.duration || getListeningItemDuration(episode.sentences || []));
+  if (typeof updateListeningLessonProgress === "function") {
+    updateListeningLessonProgress(episode.id, duration, duration, { completed: true });
+  }
+
+  const completionId = getListeningCompletionId(episode);
+  const wasCompleted = state.completed.has(completionId);
+  state.completed.add(completionId);
+  if (!wasCompleted) {
+    recordUserActivity("complete", {
+      title: episode.title || episode.titleZh || "",
+    });
+    if (typeof trackEvent === "function") {
+      trackEvent("practice_completed", {
+        ...buildPracticeEventContext(),
+        questionId: completionId,
+        lessonId: episode.id,
+        module: "listening",
+        source,
+        isCorrect: true,
+      });
+    }
+  }
+  saveState();
+  renderListeningComplete(source);
+  setScreen("complete");
+  playTone("success");
+}
+
+function isListeningEpisodeLockedForUser(episodeId = "") {
+  const topicId = typeof getListeningTopicByEpisodeId === "function"
+    ? (getListeningTopicByEpisodeId(episodeId)?.id || "")
+    : "";
+  return typeof isListeningContentLocked === "function" && isListeningContentLocked(topicId, episodeId);
+}
+
+function openNextListeningLesson() {
+  const episodes = listeningEpisodes.filter(Boolean);
+  if (!episodes.length) return;
+  const currentIndex = Math.max(0, episodes.findIndex((episode) => episode.id === state.listeningEpisodeId));
+  const nextEpisode = Array.from({ length: episodes.length }, (_, offset) => episodes[(currentIndex + offset + 1) % episodes.length])
+    .find((episode) => episode?.id && !isListeningEpisodeLockedForUser(episode.id))
+    || episodes[currentIndex]
+    || episodes[0];
+
+  state.module = "listening";
+  state.listeningEpisodeId = nextEpisode.id;
+  state.listeningCompletionSource = "";
+  state.listeningView = "detail";
+  state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0;
+  state.practiceStartedAt = 0;
+  state.practiceCompletedAt = 0;
+  renderListening();
+  setScreen("listening");
+}
+
 function renderComplete() {
+  if (state.module === "listening") {
+    renderListeningComplete();
+    return;
+  }
   const collection = currentCollection();
   const isVocab = state.module === "vocab";
   const totalItems = collection.items.length;
   const practiceDuration = formatPracticeDuration(state.practiceStartedAt, state.practiceCompletedAt || Date.now());
-  screens.complete.innerHTML = `
-    <section class="complete-card">
-      <span class="trophy" aria-hidden="true">
-        <span class="trophy-check">✓</span>
-        <span class="trophy-sparkles">✦✦</span>
-      </span>
-      <h1>${t("completeTitle")}</h1>
-      <p>${t("completeSub")}</p>
-      <div class="complete-stats">
-        <span class="complete-stat-card"><strong>${totalItems}</strong>${t("itemCount")}</span>
-        <span class="complete-stat-card complete-stat-card--time"><strong>${practiceDuration}</strong>${state.lang === "vi" ? "Thời gian" : "用时"}</span>
-      </div>
-      <div class="complete-actions">
-        <button class="secondary" data-complete="home" type="button">${isVocab ? (state.lang === "vi" ? "Về bộ từ" : "返回生词本") : t("backHome")}</button>
-        ${isVocab ? "" : `<button class="primary" data-complete="next" type="button">${t("nextLesson")} <span aria-hidden="true">→</span></button>`}
-      </div>
-    </section>
-  `;
+  renderCompleteExperience(collection, isVocab, totalItems, practiceDuration);
 }
 
 function chooseChineseVoice() {
@@ -16462,10 +17328,21 @@ function bindEvents() {
         showUpgradePlansModal();
         return;
       }
+      if (bottomNavBtn.dataset.bottomNav === "coin-hunt") {
+        showHomeCoinHuntPanel();
+        return;
+      }
       navigatePrimaryTab(bottomNavBtn.dataset.bottomNav);
     }
   });
   $("#backBtn")?.addEventListener("click", () => {
+    if (state.screen === "complete" && state.module === "listening") {
+      state.listeningCompletionSource = "";
+      state.listeningView = "levels";
+      renderListening();
+      setScreen("listening");
+      return;
+    }
     if (state.screen === "practice" || state.screen === "complete") {
       backFromPracticeToCourse();
     } else if (state.screen === "course") {
@@ -16600,6 +17477,8 @@ function bindEvents() {
         state.listeningBackTarget = "lessons";
         state.listeningView = "detail";
         state.listeningSentenceIndex = 0;
+        state.listeningVocabPracticeIndex = 0;
+        state.listeningCompletionSource = "";
         renderListening();
         return;
       }
@@ -16638,6 +17517,8 @@ function bindEvents() {
         state.listeningEpisodeId = listeningOpenBtn.dataset.listeningOpen;
         state.listeningView = "detail";
         state.listeningSentenceIndex = 0;
+        state.listeningVocabPracticeIndex = 0;
+        state.listeningCompletionSource = "";
         renderListening();
         return;
       }
@@ -16777,7 +17658,12 @@ function bindEvents() {
 
       if (event.target.closest("[data-listening-vocab-next]")) {
         const episode = getListeningEpisode();
-        state.listeningVocabPracticeIndex = (state.listeningVocabPracticeIndex + 1) % Math.max(1, episode.keywords.length);
+        const total = Math.max(1, episode.keywords.length);
+        if (state.listeningVocabPracticeIndex >= total - 1) {
+          finishListeningLesson("vocab");
+          return;
+        }
+        state.listeningVocabPracticeIndex += 1;
         if (state.listeningView === "vocab") renderListeningVocabLesson({ preserveScroll: true });
         else renderListeningVocabPractice(state.listeningVocabPracticeIndex);
         return;
@@ -16786,12 +17672,16 @@ function bindEvents() {
       const listeningJumpBtn = event.target.closest("[data-listening-jump]");
       if (listeningJumpBtn) {
         if (listeningJumpBtn.dataset.listeningJump === "vocab") {
+          state.practiceStartedAt = Date.now();
+          state.practiceCompletedAt = 0;
           state.listeningView = "vocab";
           renderListening();
           return;
         }
         if (listeningJumpBtn.dataset.listeningJump === "repeat") {
           resetListeningRepeatAttempt();
+          state.practiceStartedAt = Date.now();
+          state.practiceCompletedAt = 0;
           state.listeningView = "repeat";
           state.listeningSentenceIndex = 0;
           renderListening();
@@ -16833,7 +17723,11 @@ function bindEvents() {
       if (event.target.closest("[data-listening-repeat-next]")) {
         const episode = getListeningEpisode();
         const total = Math.max(1, episode.sentences.length);
-        setListeningRepeatLessonSentence((state.listeningSentenceIndex + 1) % total);
+        if (state.listeningSentenceIndex >= total - 1) {
+          finishListeningLesson("repeat");
+          return;
+        }
+        setListeningRepeatLessonSentence(state.listeningSentenceIndex + 1);
         renderListeningRepeatLesson({ preserveScroll: true });
         return;
       }
@@ -16856,6 +17750,12 @@ function bindEvents() {
       }
 
       if (event.target.closest("[data-listening-next]")) {
+        const episode = getListeningEpisode();
+        const total = Math.max(1, episode.sentences.length);
+        if (state.listeningSentenceIndex >= total - 1) {
+          finishListeningLesson("audio", { duration: Number(episode.duration || getListeningItemDuration(episode.sentences || [])) });
+          return;
+        }
         seekListeningSentence(state.listeningSentenceIndex + 1, true);
         return;
       }
@@ -17215,7 +18115,7 @@ function bindEvents() {
       state.adminTab = "collaborators";
       renderAdmin();
       savePersistedRoute();
-      if (!state.adminUsers.length) loadAdminUsers();
+      loadAdminUsers();
       return;
     }
 
@@ -17882,6 +18782,23 @@ function bindEvents() {
       return;
     }
 
+    if (event.target.closest("[data-home-coin-hunt-start]")) {
+      navigatePrimaryTab("write");
+      return;
+    }
+
+    if (event.target.closest("[data-home-leaderboard-open]")) {
+      showHomeLeaderboardPanel();
+      return;
+    }
+
+    const homeLeaderboardPeriodBtn = event.target.closest("[data-home-leaderboard-period]");
+    if (homeLeaderboardPeriodBtn) {
+      setHomeCoinLeaderboardPeriod(homeLeaderboardPeriodBtn.dataset.homeLeaderboardPeriod);
+      if (state.screen === "home") renderHome();
+      return;
+    }
+
     const homeTopicBtn = event.target.closest("[data-home-topic]");
     if (homeTopicBtn) {
       openDailyTopicFromHome(homeTopicBtn.dataset.homeTopic);
@@ -18215,6 +19132,17 @@ function bindEvents() {
     }
     const completeBtn = event.target.closest("[data-complete]");
     if (completeBtn) {
+      if (state.module === "listening") {
+        if (completeBtn.dataset.complete === "home") {
+          state.listeningCompletionSource = "";
+          state.listeningView = "levels";
+          renderListening();
+          setScreen("listening");
+        } else {
+          openNextListeningLesson();
+        }
+        return;
+      }
       if (completeBtn.dataset.complete === "home") {
         if (state.module === "vocab") {
           renderVocab();
@@ -18709,6 +19637,7 @@ function applyRouteFromLocation() {
   const episodeId = decodeURIComponent(listeningDetailMatch[1]);
   state.screen = "listening"; state.listeningEpisodeId = episodeId;
   state.listeningView = "detail"; state.listeningSentenceIndex = 0;
+  state.listeningVocabPracticeIndex = 0; state.listeningCompletionSource = "";
   renderListening(options); setScreen("listening"); return true;
 }
 
@@ -18739,6 +19668,14 @@ function init() {
     flushHomeTodayStudySession();
     endLearningBehaviorSession();
     flushLearningEvents(true);
+  });
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === "v2-home-leaderboard-period"
+      || String(event.key || "").startsWith(`${HOME_COIN_WALLET_STORAGE_PREFIX}:`)
+    ) {
+      refreshHomeCoinLeaderboardViews();
+    }
   });
   renderChrome();
   if (window.location.pathname === "/admin") {

@@ -1235,8 +1235,8 @@ export class AdminService {
 
     const { fromYmd, toYmd, days } = this.resolveAnalyticsRange(options);
     const tz = AdminService.ANALYTICS_TZ;
-    const withinRange = `created_at >= ($1::date AT TIME ZONE '${tz}') AND created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
-    const eventWithinRange = `e.created_at >= ($1::date AT TIME ZONE '${tz}') AND e.created_at < (($2::date + 1) AT TIME ZONE '${tz}')`;
+    const withinRange = `created_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
+    const eventWithinRange = `e.created_at >= ($1::date::timestamp AT TIME ZONE '${tz}') AND e.created_at < (($2::date + 1)::timestamp AT TIME ZONE '${tz}')`;
     const params = [fromYmd, toYmd];
     const vipSessionCte = `
       WITH vip_users AS (
@@ -1270,7 +1270,7 @@ export class AdminService {
         FROM session_starts s
         LEFT JOIN learning_events e ON e.user_id = s.user_id
          AND e.created_at >= s.created_at
-         AND e.created_at < COALESCE(s.next_started_at, (($2::date + 1) AT TIME ZONE '${tz}'))
+         AND e.created_at < COALESCE(s.next_started_at, (($2::date + 1)::timestamp AT TIME ZONE '${tz}'))
          AND e.event_type IN ('study_session_started', 'study_session_heartbeat', 'study_session_ended')
          AND COALESCE(e.module, '') = COALESCE(s.module, '')
          AND COALESCE(e.lesson_id, '') = COALESCE(s.lesson_id, '')
