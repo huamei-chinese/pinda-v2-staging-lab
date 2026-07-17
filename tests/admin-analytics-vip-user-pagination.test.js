@@ -21,5 +21,5 @@ test("VIP learning analytics user summary is paginated at five users per page", 
 });
 
 test("public entrypoint cache-busts the current app bundle", () => {
-  assert.match(publicIndex, /app\.js\?v=content-lock-server-truth-20260716/);
+  assert.match(publicIndex, /app\.js\?v=auth-forgot-under-password-20260717/);
 });

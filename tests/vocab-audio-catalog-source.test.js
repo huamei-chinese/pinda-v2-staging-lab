@@ -45,8 +45,8 @@ test("runtime audio resolver understands catalog audio metadata fields", () => {
 });
 
 test("html cache bust forces browsers to fetch the vocabulary audio fix", () => {
-  assert.match(publicIndex, /app\.js\?v=admin-staff-permissions-20260715/);
+  assert.match(publicIndex, /app\.js\?v=auth-forgot-under-password-20260717/);
   assert.match(publicIndex, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(rootIndex, /app\.js\?v=admin-staff-permissions-20260715/);
+  assert.match(rootIndex, /app\.js\?v=auth-forgot-under-password-20260717/);
   assert.match(rootIndex, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
 });

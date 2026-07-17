@@ -36,6 +36,6 @@ test("mobile bottom nav fits five tabs with VIP styling", () => {
   assert.doesNotMatch(stylesCss, /#bottomNavDailyBtn,\s*#bottomNavVocabBtn,\s*#bottomNavSubscriptionsBtn\s*\{/);
   assert.match(stylesCss, /\.mobile-bottom-nav-vip\s*\{[\s\S]*?color:\s*#a16207 !important;/);
   assert.match(stylesCss, /\.upgrade-plans-grid\s*\{[\s\S]*?width:\s*min\(100%,\s*390px\);/);
-  assert.match(indexHtml, /styles\.css\?v=home-profile-responsive-fit-20260716/);
-  assert.match(indexHtml, /app\.js\?v=home-profile-responsive-fit-20260716/);
+  assert.match(indexHtml, /styles\.css\?v=auth-forgot-under-password-20260717/);
+  assert.match(indexHtml, /app\.js\?v=auth-forgot-under-password-20260717/);
 });

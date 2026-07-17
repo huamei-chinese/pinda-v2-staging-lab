@@ -15,7 +15,7 @@ test("complete screen trophy shakes like a gif and plays a celebration tone", ()
   assert.match(stylesSource, /completeTrophySparkBurst/);
   assert.match(stylesSource, /completeTrophyHalo/);
   assert.match(stylesSource, /\.complete-card--reward \.trophy\s*\{[\s\S]*completeTrophyWiggle/);
-  assert.match(indexHtml, /styles\.css\?v=home-profile-responsive-fit-20260716/);
+  assert.match(indexHtml, /styles\.css\?v=auth-forgot-under-password-20260717/);
   assert.match(indexHtml, /sound-effects\.js\?v=home-profile-responsive-fit-20260716/);
-  assert.match(indexHtml, /app\.js\?v=home-profile-responsive-fit-20260716/);
+  assert.match(indexHtml, /app\.js\?v=auth-forgot-under-password-20260717/);
 });

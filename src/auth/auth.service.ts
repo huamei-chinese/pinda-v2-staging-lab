@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import * as crypto from 'crypto';
+import * as tls from 'tls';
 
 @Injectable()
 export class AuthService {
@@ -406,11 +407,127 @@ export class AuthService {
       .digest('hex');
   }
 
-  private async sendVerificationEmail(email: string, code: string): Promise<'sent' | 'dev'> {
+  private passwordResetHash(userId: string, email: string, code: string): string {
+    const secret = process.env.PASSWORD_RESET_SECRET || process.env.EMAIL_VERIFICATION_SECRET || '';
+    if (process.env.NODE_ENV === 'production' && !secret) {
+      throw new HttpException('PASSWORD_RESET_SECRET or EMAIL_VERIFICATION_SECRET is required in production.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    return crypto
+      .createHash('sha256')
+      .update(`${userId}:${email}:${code}:password-reset:${secret || 'huamei-password-reset-dev'}`)
+      .digest('hex');
+  }
+
+  private cleanHeader(value: string): string {
+    return String(value || '').replace(/[\r\n]+/g, ' ').trim();
+  }
+
+  private extractEmailAddress(value: string): string {
+    const text = String(value || '').trim();
+    const match = text.match(/<([^>]+)>/);
+    return (match ? match[1] : text).trim();
+  }
+
+  private smtpPassword(host: string, password: string): string {
+    return /gmail/i.test(host) ? String(password || '').replace(/\s+/g, '') : String(password || '');
+  }
+
+  private readSmtpResponse(socket: tls.TLSSocket): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let buffer = '';
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error('SMTP timeout.'));
+      }, 15000);
+      const cleanup = () => {
+        clearTimeout(timeout);
+        socket.off('data', onData);
+        socket.off('error', onError);
+      };
+      const onError = (error: Error) => {
+        cleanup();
+        reject(error);
+      };
+      const onData = (chunk: Buffer | string) => {
+        buffer += chunk.toString();
+        const lines = buffer.split(/\r?\n/).filter(Boolean);
+        if (lines.some((line) => /^\d{3} /.test(line))) {
+          cleanup();
+          resolve(buffer);
+        }
+      };
+      socket.on('data', onData);
+      socket.once('error', onError);
+    });
+  }
+
+  private async smtpCommand(socket: tls.TLSSocket, command: string | null, expectedCodes: string[]) {
+    if (command !== null) socket.write(`${command}\r\n`);
+    const response = await this.readSmtpResponse(socket);
+    const code = response.slice(0, 3);
+    if (!expectedCodes.includes(code)) {
+      throw new Error(`SMTP failed (${code || 'no code'}): ${response.trim()}`);
+    }
+    return response;
+  }
+
+  private async sendSmtpEmail(to: string, subject: string, html: string): Promise<void> {
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = Number(process.env.SMTP_PORT || 465);
+    const user = String(process.env.SMTP_USER || '').trim();
+    const pass = this.smtpPassword(host, process.env.SMTP_PASS || '');
+    const from = process.env.SMTP_FROM || (user ? `HuaMei <${user}>` : process.env.EMAIL_FROM || '');
+    if (!user || !pass || !from) {
+      throw new Error('SMTP_USER, SMTP_PASS and SMTP_FROM/EMAIL_FROM are required.');
+    }
+
+    const socket = tls.connect({ host, port, servername: host, rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' });
+    socket.setEncoding('utf8');
+    try {
+      await this.smtpCommand(socket, null, ['220']);
+      await this.smtpCommand(socket, `EHLO ${this.cleanHeader(process.env.SMTP_HELO || 'localhost')}`, ['250']);
+      await this.smtpCommand(socket, 'AUTH LOGIN', ['334']);
+      await this.smtpCommand(socket, Buffer.from(user).toString('base64'), ['334']);
+      await this.smtpCommand(socket, Buffer.from(pass).toString('base64'), ['235']);
+      await this.smtpCommand(socket, `MAIL FROM:<${this.extractEmailAddress(from)}>`, ['250']);
+      await this.smtpCommand(socket, `RCPT TO:<${this.extractEmailAddress(to)}>`, ['250', '251']);
+      await this.smtpCommand(socket, 'DATA', ['354']);
+      const message = [
+        `From: ${this.cleanHeader(from)}`,
+        `To: ${this.cleanHeader(to)}`,
+        `Subject: ${this.cleanHeader(subject)}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        html,
+      ].join('\r\n');
+      socket.write(`${message.replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..')}\r\n.\r\n`);
+      await this.smtpCommand(socket, null, ['250']);
+      await this.smtpCommand(socket, 'QUIT', ['221']);
+    } finally {
+      socket.end();
+    }
+  }
+
+  private async sendTransactionalEmail(email: string, subject: string, html: string, logPrefix: string, code: string): Promise<'sent' | 'dev'> {
+    const smtpUser = process.env.SMTP_USER || '';
+    const smtpPass = process.env.SMTP_PASS || '';
+    if (smtpUser && smtpPass) {
+      try {
+        await this.sendSmtpEmail(email, subject, html);
+        return 'sent';
+      } catch (error) {
+        console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
+        throw new HttpException('Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.', HttpStatus.BAD_GATEWAY);
+      }
+    }
+
     const resendApiKey = process.env.RESEND_API_KEY || '';
     const from = process.env.EMAIL_FROM || 'HuaMei <no-reply@huamei.vn>';
     if (!resendApiKey) {
-      console.log(`[email-verification] ${email}: ${code}`);
+      console.log(`[${logPrefix}] ${email}: ${code}`);
       return 'dev';
     }
 
@@ -420,11 +537,21 @@ export class AuthService {
         Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from,
-        to: email,
-        subject: 'Ma xac minh email HuaMei',
-        html: `
+      body: JSON.stringify({ from, to: email, subject, html }),
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
+      throw new HttpException('Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.', HttpStatus.BAD_GATEWAY);
+    }
+    return 'sent';
+  }
+
+  private async sendVerificationEmail(email: string, code: string): Promise<'sent' | 'dev'> {
+    return this.sendTransactionalEmail(
+      email,
+      'Ma xac minh email HuaMei',
+      `
           <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
             <h2>Ma xac minh email HuaMei</h2>
             <p>Nhap ma ben duoi de xac minh email cua ban:</p>
@@ -432,12 +559,26 @@ export class AuthService {
             <p>Ma co hieu luc trong 10 phut.</p>
           </div>
         `,
-      }),
-    });
-    if (!response.ok) {
-      throw new HttpException('Khong the gui email xac minh. Vui long thu lai sau.', HttpStatus.BAD_GATEWAY);
-    }
-    return 'sent';
+      'email-verification',
+      code,
+    );
+  }
+
+  private async sendPasswordResetEmail(email: string, code: string): Promise<'sent' | 'dev'> {
+    return this.sendTransactionalEmail(
+      email,
+      'Ma dat lai mat khau HuaMei',
+      `
+          <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+            <h2>Dat lai mat khau HuaMei</h2>
+            <p>Nhap ma ben duoi de tao mat khau moi cho tai khoan cua ban:</p>
+            <p style="font-size:28px;font-weight:800;letter-spacing:6px">${code}</p>
+            <p>Ma co hieu luc trong 10 phut. Neu ban khong yeu cau, hay bo qua email nay.</p>
+          </div>
+        `,
+      'password-reset',
+      code,
+    );
   }
 
   async sendEmailVerificationCode(id: string, headers: Record<string, string | string[] | undefined>) {
@@ -503,6 +644,99 @@ export class AuthService {
        WHERE id = $1
        RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
       [id],
+    );
+    return { ok: true, user: this.publicUser(updated.rows[0]) };
+  }
+
+  async requestPasswordReset(email: string) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw new HttpException('Email khong hop le.', HttpStatus.BAD_REQUEST);
+    }
+
+    const current = await this.db.query('SELECT id, email, is_active FROM users WHERE email = $1', [normalizedEmail]);
+    const user = current.rows[0];
+    if (!user) {
+      throw new HttpException('Email nay chua co tai khoan.', HttpStatus.NOT_FOUND);
+    }
+    if (!user.is_active) {
+      throw new HttpException('Tai khoan da bi khoa.', HttpStatus.FORBIDDEN);
+    }
+
+    const code = String(crypto.randomInt(100000, 1000000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await this.db.query(
+      `UPDATE users
+       SET password_reset_code_hash = $1,
+           password_reset_expires_at = $2,
+           updated_at = NOW()
+       WHERE id = $3`,
+      [this.passwordResetHash(user.id, user.email, code), expiresAt.toISOString(), user.id],
+    );
+    const delivery = await this.sendPasswordResetEmail(user.email, code);
+    return {
+      ok: true,
+      delivery,
+      expiresAt: expiresAt.toISOString(),
+      devCode: delivery === 'dev' && process.env.NODE_ENV !== 'production' ? code : undefined,
+    };
+  }
+
+  private async getPasswordResetUser(email: string, code: string) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedCode = String(code || '').replace(/\D/g, '');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw new HttpException('Email khong hop le.', HttpStatus.BAD_REQUEST);
+    }
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      throw new HttpException('Ma xac minh gom 6 chu so.', HttpStatus.BAD_REQUEST);
+    }
+
+    const current = await this.db.query(
+      `SELECT id, email, password_reset_code_hash, password_reset_expires_at, is_active
+       FROM users
+       WHERE email = $1`,
+      [normalizedEmail],
+    );
+    const user = current.rows[0];
+    if (!user) throw new HttpException('Email hoac ma xac minh khong dung.', HttpStatus.BAD_REQUEST);
+    if (!user.is_active) throw new HttpException('Tai khoan da bi khoa.', HttpStatus.FORBIDDEN);
+    const expiresAt = user.password_reset_expires_at ? new Date(user.password_reset_expires_at) : null;
+    if (!user.password_reset_code_hash || !expiresAt || expiresAt.getTime() < Date.now()) {
+      throw new HttpException('Ma xac minh da het han. Vui long gui lai ma moi.', HttpStatus.BAD_REQUEST);
+    }
+    if (this.passwordResetHash(user.id, user.email, normalizedCode) !== user.password_reset_code_hash) {
+      throw new HttpException('Ma xac minh khong dung.', HttpStatus.BAD_REQUEST);
+    }
+    return { user, code: normalizedCode };
+  }
+
+  async verifyPasswordResetCode(email: string, code: string) {
+    await this.getPasswordResetUser(email, code);
+    return { ok: true };
+  }
+
+  async confirmPasswordReset(email: string, code: string, newPassword: string, confirmPassword: string) {
+    const password = String(newPassword || '');
+    const confirmation = String(confirmPassword || '');
+    if (password.length < 6) {
+      throw new HttpException('Mat khau moi can toi thieu 6 ky tu.', HttpStatus.BAD_REQUEST);
+    }
+    if (password !== confirmation) {
+      throw new HttpException('Mat khau xac nhan khong khop.', HttpStatus.BAD_REQUEST);
+    }
+
+    const { user } = await this.getPasswordResetUser(email, code);
+    const updated = await this.db.query(
+      `UPDATE users
+       SET password_hash = $1,
+           password_reset_code_hash = NULL,
+           password_reset_expires_at = NULL,
+           last_login_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
+      [this.hashPassword(password), user.id],
     );
     return { ok: true, user: this.publicUser(updated.rows[0]) };
   }

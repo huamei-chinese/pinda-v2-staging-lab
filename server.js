@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const tls = require("tls");
 const { Pool } = require("pg");
 
 const root = __dirname;
@@ -1201,6 +1202,8 @@ async function ensureSchema() {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
+      password_reset_code_hash TEXT,
+      password_reset_expires_at TIMESTAMPTZ,
       ref TEXT,
       partner_code TEXT,
       src TEXT,
@@ -1211,6 +1214,8 @@ async function ensureSchema() {
     );
   `);
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_code_hash TEXT;");
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_code TEXT;");
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS src TEXT;");
   await pool.query(`
@@ -1326,6 +1331,289 @@ async function handleLogin(req, res) {
     [user.id],
   );
   sendJson(res, 200, { user: publicUser(updated.rows[0]) });
+}
+
+function passwordResetHash(userId, email, code) {
+  const secret = process.env.PASSWORD_RESET_SECRET || process.env.EMAIL_VERIFICATION_SECRET || "";
+  if (process.env.NODE_ENV === "production" && !secret) {
+    throw new Error("PASSWORD_RESET_SECRET or EMAIL_VERIFICATION_SECRET is required in production.");
+  }
+  return crypto
+    .createHash("sha256")
+    .update(`${userId}:${email}:${code}:password-reset:${secret || "huamei-password-reset-dev"}`)
+    .digest("hex");
+}
+
+function cleanEmailHeader(value) {
+  return String(value || "").replace(/[\r\n]+/g, " ").trim();
+}
+
+function extractEmailAddress(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/<([^>]+)>/);
+  return (match ? match[1] : text).trim();
+}
+
+function smtpPassword(host, password) {
+  return /gmail/i.test(host) ? String(password || "").replace(/\s+/g, "") : String(password || "");
+}
+
+function readSmtpResponse(socket) {
+  return new Promise((resolve, reject) => {
+    let buffer = "";
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("SMTP timeout."));
+    }, 15000);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off("data", onData);
+      socket.off("error", onError);
+    };
+    const onError = (error) => {
+      cleanup();
+      reject(error);
+    };
+    const onData = (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split(/\r?\n/).filter(Boolean);
+      if (lines.some((line) => /^\d{3} /.test(line))) {
+        cleanup();
+        resolve(buffer);
+      }
+    };
+    socket.on("data", onData);
+    socket.once("error", onError);
+  });
+}
+
+async function smtpCommand(socket, command, expectedCodes) {
+  if (command !== null) socket.write(`${command}\r\n`);
+  const response = await readSmtpResponse(socket);
+  const code = response.slice(0, 3);
+  if (!expectedCodes.includes(code)) {
+    throw new Error(`SMTP failed (${code || "no code"}): ${response.trim()}`);
+  }
+  return response;
+}
+
+async function sendSmtpEmail(to, subject, html) {
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT || 465);
+  const user = String(process.env.SMTP_USER || "").trim();
+  const pass = smtpPassword(host, process.env.SMTP_PASS || "");
+  const from = process.env.SMTP_FROM || (user ? `HuaMei <${user}>` : process.env.EMAIL_FROM || "");
+  if (!user || !pass || !from) {
+    const error = new Error("SMTP_USER, SMTP_PASS and SMTP_FROM/EMAIL_FROM are required.");
+    error.status = 503;
+    throw error;
+  }
+
+  const socket = tls.connect({ host, port, servername: host, rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== "false" });
+  socket.setEncoding("utf8");
+  try {
+    await smtpCommand(socket, null, ["220"]);
+    await smtpCommand(socket, `EHLO ${cleanEmailHeader(process.env.SMTP_HELO || "localhost")}`, ["250"]);
+    await smtpCommand(socket, "AUTH LOGIN", ["334"]);
+    await smtpCommand(socket, Buffer.from(user).toString("base64"), ["334"]);
+    await smtpCommand(socket, Buffer.from(pass).toString("base64"), ["235"]);
+    await smtpCommand(socket, `MAIL FROM:<${extractEmailAddress(from)}>`, ["250"]);
+    await smtpCommand(socket, `RCPT TO:<${extractEmailAddress(to)}>`, ["250", "251"]);
+    await smtpCommand(socket, "DATA", ["354"]);
+    const message = [
+      `From: ${cleanEmailHeader(from)}`,
+      `To: ${cleanEmailHeader(to)}`,
+      `Subject: ${cleanEmailHeader(subject)}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      html,
+    ].join("\r\n");
+    socket.write(`${message.replace(/\r?\n/g, "\r\n").replace(/^\./gm, "..")}\r\n.\r\n`);
+    await smtpCommand(socket, null, ["250"]);
+    await smtpCommand(socket, "QUIT", ["221"]);
+  } finally {
+    socket.end();
+  }
+}
+
+async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      await sendSmtpEmail(email, subject, html);
+      return "sent";
+    } catch (error) {
+      console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
+      const smtpError = new Error("Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.");
+      smtpError.status = 502;
+      throw smtpError;
+    }
+  }
+
+  const resendApiKey = process.env.RESEND_API_KEY || "";
+  const from = process.env.EMAIL_FROM || "HuaMei <no-reply@huamei.vn>";
+  if (!resendApiKey) {
+    console.log(`[${logPrefix}] ${email}: ${code}`);
+    return "dev";
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from, to: email, subject, html }),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
+    const error = new Error("Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.");
+    error.status = 502;
+    throw error;
+  }
+  return "sent";
+}
+
+async function sendPasswordResetEmail(email, code) {
+  return sendTransactionalEmail(
+    email,
+    "Ma dat lai mat khau HuaMei",
+    `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+          <h2>Dat lai mat khau HuaMei</h2>
+          <p>Nhap ma ben duoi de tao mat khau moi cho tai khoan cua ban:</p>
+          <p style="font-size:28px;font-weight:800;letter-spacing:6px">${code}</p>
+          <p>Ma co hieu luc trong 10 phut. Neu ban khong yeu cau, hay bo qua email nay.</p>
+        </div>
+      `,
+    "password-reset",
+    code,
+  );
+}
+
+async function getPasswordResetUser(email, code) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedCode = String(code || "").replace(/\D/g, "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    const error = new Error("Email khong hop le.");
+    error.status = 400;
+    throw error;
+  }
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    const error = new Error("Ma xac minh gom 6 chu so.");
+    error.status = 400;
+    throw error;
+  }
+  const result = await pool.query(
+    `SELECT id, email, password_reset_code_hash, password_reset_expires_at, is_active
+     FROM users
+     WHERE email = $1`,
+    [normalizedEmail],
+  );
+  const user = result.rows[0];
+  if (!user) {
+    const error = new Error("Email hoac ma xac minh khong dung.");
+    error.status = 400;
+    throw error;
+  }
+  if (!user.is_active) {
+    const error = new Error("Tai khoan da bi khoa.");
+    error.status = 403;
+    throw error;
+  }
+  const expiresAt = user.password_reset_expires_at ? new Date(user.password_reset_expires_at) : null;
+  if (!user.password_reset_code_hash || !expiresAt || expiresAt.getTime() < Date.now()) {
+    const error = new Error("Ma xac minh da het han. Vui long gui lai ma moi.");
+    error.status = 400;
+    throw error;
+  }
+  if (passwordResetHash(user.id, user.email, normalizedCode) !== user.password_reset_code_hash) {
+    const error = new Error("Ma xac minh khong dung.");
+    error.status = 400;
+    throw error;
+  }
+  return { user, code: normalizedCode };
+}
+
+async function handlePasswordResetRequest(req, res) {
+  if (!requireDatabase(res)) return;
+  const body = await readBody(req);
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    sendJson(res, 400, { error: "Email khong hop le." });
+    return;
+  }
+  const current = await pool.query("SELECT id, email, is_active FROM users WHERE email = $1", [email]);
+  const user = current.rows[0];
+  if (!user) {
+    sendJson(res, 404, { error: "Email nay chua co tai khoan." });
+    return;
+  }
+  if (!user.is_active) {
+    sendJson(res, 403, { error: "Tai khoan da bi khoa." });
+    return;
+  }
+  const code = String(crypto.randomInt(100000, 1000000));
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await pool.query(
+    `UPDATE users
+     SET password_reset_code_hash = $1,
+         password_reset_expires_at = $2,
+         updated_at = NOW()
+     WHERE id = $3`,
+    [passwordResetHash(user.id, user.email, code), expiresAt.toISOString(), user.id],
+  );
+  const delivery = await sendPasswordResetEmail(user.email, code);
+  sendJson(res, 200, {
+    ok: true,
+    delivery,
+    expiresAt: expiresAt.toISOString(),
+    devCode: delivery === "dev" && process.env.NODE_ENV !== "production" ? code : undefined,
+  });
+}
+
+async function handlePasswordResetVerify(req, res) {
+  if (!requireDatabase(res)) return;
+  const body = await readBody(req);
+  try {
+    await getPasswordResetUser(body.email, body.code);
+    sendJson(res, 200, { ok: true });
+  } catch (error) {
+    sendJson(res, error.status || 400, { error: error.message || "Khong the xac minh ma." });
+  }
+}
+
+async function handlePasswordResetConfirm(req, res) {
+  if (!requireDatabase(res)) return;
+  const body = await readBody(req);
+  const newPassword = String(body.newPassword || body.password || "");
+  const confirmPassword = String(body.confirmPassword || "");
+  if (newPassword.length < 6) {
+    sendJson(res, 400, { error: "Mat khau moi can toi thieu 6 ky tu." });
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    sendJson(res, 400, { error: "Mat khau xac nhan khong khop." });
+    return;
+  }
+  try {
+    const { user } = await getPasswordResetUser(body.email, body.code);
+    const updated = await pool.query(
+      `UPDATE users
+       SET password_hash = $1,
+           password_reset_code_hash = NULL,
+           password_reset_expires_at = NULL,
+           last_login_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, full_name, email, role, ref, partner_code, src, is_active, created_at, updated_at, last_login_at`,
+      [hashPassword(newPassword), user.id],
+    );
+    sendJson(res, 200, { ok: true, user: publicUser(updated.rows[0]) });
+  } catch (error) {
+    sendJson(res, error.status || 400, { error: error.message || "Khong the dat lai mat khau." });
+  }
 }
 
 async function handleAdminUsers(req, res, url) {
@@ -2098,6 +2386,18 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/api/coins/leaderboard" && req.method === "GET") {
       await handleCoinLeaderboard(req, res, url);
+      return;
+    }
+    if (url.pathname === "/api/password-reset/request" && req.method === "POST") {
+      await handlePasswordResetRequest(req, res);
+      return;
+    }
+    if (url.pathname === "/api/password-reset/verify" && req.method === "POST") {
+      await handlePasswordResetVerify(req, res);
+      return;
+    }
+    if (url.pathname === "/api/password-reset/confirm" && req.method === "POST") {
+      await handlePasswordResetConfirm(req, res);
       return;
     }
     if (url.pathname.startsWith("/api/")) {

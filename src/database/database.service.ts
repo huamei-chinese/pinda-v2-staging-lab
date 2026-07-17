@@ -79,6 +79,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
+        password_reset_code_hash TEXT,
+        password_reset_expires_at TIMESTAMPTZ,
         ref TEXT,
         partner_code TEXT,
         src TEXT,
@@ -120,6 +122,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_reset_code_hash TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS ref TEXT;
@@ -186,6 +194,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
+        password_reset_code_hash TEXT,
+        password_reset_expires_at TIMESTAMPTZ,
         ref TEXT,
         partner_code TEXT,
         src TEXT,
@@ -230,6 +240,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_code_hash TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS ref TEXT;

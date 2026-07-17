@@ -15,11 +15,15 @@ function createAdminServiceWithDb(db) {
 
 test("admin update can cancel VIP and clear the stored plan id", async () => {
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
       }
       if (sql.includes("SELECT id, full_name, email, role")) {
         return { rows: [{
@@ -32,19 +36,21 @@ test("admin update can cancel VIP and clear the stored plan id", async () => {
         }] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: "student",
+          partner_code: "",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: false,
+          premium_until: null,
+          vip_plan_id: null,
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "User One",
-            email: "user@example.com",
-            role: "student",
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: false,
-            premium_until: null,
-            vip_plan_id: null,
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
           rowCount: 1,
         };
       }
@@ -72,11 +78,15 @@ test("admin update can cancel VIP and clear the stored plan id", async () => {
 test("admin update can set a future VIP expiry and latest plan id", async () => {
   const future = new Date(Date.now() + 10 * 86400000).toISOString();
   const calls = [];
+  let updatedRow = null;
   const db = {
     async query(sql, params) {
       calls.push({ sql, params });
       if (sql.includes("SELECT role, ref, is_active FROM users")) {
         return { rows: [{ role: "admin", is_active: true }] };
+      }
+      if (updatedRow && sql.includes("partner_code, is_active")) {
+        return { rows: [updatedRow] };
       }
       if (sql.includes("SELECT id, full_name, email, role")) {
         return { rows: [{
@@ -89,19 +99,21 @@ test("admin update can set a future VIP expiry and latest plan id", async () => 
         }] };
       }
       if (sql.includes("UPDATE users")) {
+        updatedRow = {
+          id: "user-1",
+          full_name: "User One",
+          email: "user@example.com",
+          role: "student",
+          partner_code: "",
+          is_active: true,
+          current_level: "HSK2",
+          is_premium: true,
+          premium_until: future,
+          vip_plan_id: "30d",
+          daily_reminder_enabled: true,
+        };
         return {
-          rows: [{
-            id: "user-1",
-            full_name: "User One",
-            email: "user@example.com",
-            role: "student",
-            is_active: true,
-            current_level: "HSK2",
-            is_premium: true,
-            premium_until: future,
-            vip_plan_id: "30d",
-            daily_reminder_enabled: true,
-          }],
+          rows: [{ id: "user-1" }],
           rowCount: 1,
         };
       }

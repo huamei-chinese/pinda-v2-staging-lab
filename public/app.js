@@ -4087,6 +4087,24 @@ async function refreshPaymentPlans() {
   return state.paymentPlans;
 }
 
+function getApiRequestUrl(path) {
+  const value = String(path || "");
+  if (!value.startsWith("/api/")) return value;
+
+  const configuredBackendUrl = getConfiguredBackendUrl();
+  if (configuredBackendUrl) {
+    return `${configuredBackendUrl.replace(/\/+$/, "")}${value}`;
+  }
+
+  const isLocalFrontendOnly = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    && ["3000", "4172", "5173"].includes(window.location.port);
+  if (isLocalFrontendOnly) {
+    return `${window.location.protocol}//${window.location.hostname}:4173${value}`;
+  }
+
+  return value;
+}
+
 async function apiRequest(path, options = {}) {
   if (BACKEND_DISABLED && path.startsWith("/api/")) {
     throw new Error(backendDisabledMessage());
@@ -4096,15 +4114,22 @@ async function apiRequest(path, options = {}) {
     || /^\/api\/users\/[^/]+\/status(?:\?|$)/.test(path)
     || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path)
     || /^\/api\/coins(?:\/|\?|$)/.test(path);
-  const response = await fetch(path, {
-    cache: shouldBypassCache ? "no-store" : options.cache,
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  const requestUrl = getApiRequestUrl(path);
+  let response;
+  try {
+    response = await fetch(requestUrl, {
+      cache: shouldBypassCache ? "no-store" : options.cache,
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    console.warn("API request failed", requestUrl, error);
+    throw new Error("Khong ket noi duoc server. Neu dang chay local, hay bat backend o http://localhost:4173.");
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data.error
@@ -9510,6 +9535,7 @@ function showModal(type) {
             <button class="password-toggle-btn" type="button" data-toggle-password="authPassword">${isVi ? "Hiện" : "显示"}</button>
           </div>
         </div>
+        ${isLogin ? `<div class="auth-forgot-row"><button class="btn-forgot-password" id="forgotPasswordBtn" type="button">${isVi ? "Quên mật khẩu?" : "忘记密码？"}</button></div>` : ""}
         ${!isLogin ? `
         <div class="form-group">
           <label for="authConfirmPassword">${isVi ? "Nhập lại mật khẩu" : "确认密码"}</label>
@@ -9542,6 +9568,14 @@ function showModal(type) {
     modalDiv.remove();
     showModal(isLogin ? "register" : "login");
   };
+
+  if (isLogin) {
+    document.getElementById("forgotPasswordBtn")?.addEventListener("click", () => {
+      const email = document.getElementById("authEmail")?.value.trim() || "";
+      modalDiv.remove();
+      showPasswordResetModal(email);
+    });
+  }
 
   modalDiv.querySelectorAll("[data-toggle-password]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -9610,6 +9644,243 @@ function showModal(type) {
       submitBtn.textContent = isLogin ? (isVi ? "Đăng nhập" : "登录") : (isVi ? "Đăng ký" : "注册");
     }
   };
+}
+
+function showPasswordResetModal(prefillEmail = "") {
+  if (BACKEND_DISABLED) {
+    showToast(backendDisabledMessage());
+    return;
+  }
+  document.getElementById("authModal")?.remove();
+  const isVi = state.lang === "vi";
+  const modalDiv = document.createElement("div");
+  modalDiv.id = "authModal";
+  modalDiv.className = "auth-modal-overlay password-reset-overlay";
+  let resetStep = "email";
+  let resetEmail = String(prefillEmail || "").trim().toLowerCase();
+  let resetCode = "";
+  let devCode = "";
+  let statusText = "";
+  let statusType = "";
+
+  const stepIndex = () => resetStep === "email" ? 1 : resetStep === "code" ? 2 : 3;
+  const stepTitle = () => {
+    if (resetStep === "email") return isVi ? "Lấy lại mật khẩu" : "找回密码";
+    if (resetStep === "code") return isVi ? "Nhập mã xác minh" : "输入验证码";
+    return isVi ? "Tạo mật khẩu mới" : "设置新密码";
+  };
+  const stepSubtitle = () => {
+    if (resetStep === "email") return isVi ? "Nhập email đã đăng ký, HuaMei sẽ gửi mã 6 số để xác nhận." : "输入注册邮箱，我们会发送 6 位验证码。";
+    if (resetStep === "code") return isVi ? `Mã 6 số đã được gửi tới ${resetEmail}.` : `验证码已发送至 ${resetEmail}。`;
+    return isVi ? "Mã đã đúng. Hãy nhập mật khẩu mới để đăng nhập lại." : "验证码正确，请设置新密码。";
+  };
+
+  function render() {
+    const activeStep = stepIndex();
+    modalDiv.innerHTML = `
+      <div class="auth-modal-content auth-modal-content--password-reset">
+        <button class="auth-modal-close" id="closePasswordResetModal" type="button">&times;</button>
+        <div class="auth-modal-logo password-reset-logo">锁</div>
+        <h2>${escapeHtml(stepTitle())}</h2>
+        <p class="auth-modal-sub">${escapeHtml(stepSubtitle())}</p>
+        <div class="password-reset-steps" aria-label="${isVi ? "Tiến trình đặt lại mật khẩu" : "重置密码进度"}">
+          ${[1, 2, 3].map((step) => `
+            <span class="password-reset-step ${step <= activeStep ? "active" : ""}">
+              <b>${step}</b>
+              <small>${step === 1 ? (isVi ? "Email" : "邮箱") : step === 2 ? (isVi ? "Mã" : "验证码") : (isVi ? "Mật khẩu" : "密码")}</small>
+            </span>
+          `).join("")}
+        </div>
+        ${resetStep === "email" ? `
+          <form id="passwordResetEmailForm" class="password-reset-form">
+            <div class="form-group">
+              <label for="passwordResetEmailInput">Email</label>
+              <input type="email" id="passwordResetEmailInput" value="${escapeAttr(resetEmail)}" placeholder="you@example.com" required />
+            </div>
+            <p class="auth-form-message ${statusType}" id="passwordResetMessage" role="status">${escapeHtml(statusText)}</p>
+            <button type="submit" class="btn-auth-submit">${isVi ? "Gửi mã 6 số" : "发送验证码"}</button>
+          </form>
+        ` : ""}
+        ${resetStep === "code" ? `
+          <form id="passwordResetCodeForm" class="password-reset-form">
+            <div class="form-group">
+              <label for="passwordResetCodeInput">${isVi ? "Mã xác minh" : "验证码"}</label>
+              <input class="password-reset-code-input" type="text" id="passwordResetCodeInput" inputmode="numeric" maxlength="6" value="${escapeAttr(resetCode)}" placeholder="000000" required />
+              ${devCode ? `<small class="password-reset-dev-code">${isVi ? "Mã dev:" : "开发验证码:"} <strong>${escapeHtml(devCode)}</strong></small>` : ""}
+            </div>
+            <p class="auth-form-message ${statusType}" id="passwordResetMessage" role="status">${escapeHtml(statusText)}</p>
+            <div class="password-reset-actions">
+              <button type="button" class="btn-auth-secondary" id="passwordResetChangeEmailBtn">${isVi ? "Đổi email" : "更换邮箱"}</button>
+              <button type="button" class="btn-auth-secondary" id="passwordResetResendBtn">${isVi ? "Gửi lại" : "重新发送"}</button>
+              <button type="submit" class="btn-auth-submit">${isVi ? "Xác minh mã" : "验证"}</button>
+            </div>
+          </form>
+        ` : ""}
+        ${resetStep === "password" ? `
+          <form id="passwordResetConfirmForm" class="password-reset-form">
+            <div class="form-group">
+              <label for="passwordResetNewPassword">${isVi ? "Mật khẩu mới" : "新密码"}</label>
+              <div class="password-input-row">
+                <input type="password" id="passwordResetNewPassword" required />
+                <button class="password-toggle-btn" type="button" data-toggle-password="passwordResetNewPassword">${isVi ? "Hiện" : "显示"}</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="passwordResetConfirmPassword">${isVi ? "Nhập lại mật khẩu mới" : "确认新密码"}</label>
+              <div class="password-input-row">
+                <input type="password" id="passwordResetConfirmPassword" required />
+                <button class="password-toggle-btn" type="button" data-toggle-password="passwordResetConfirmPassword">${isVi ? "Hiện" : "显示"}</button>
+              </div>
+            </div>
+            <p class="auth-form-message ${statusType}" id="passwordResetMessage" role="status">${escapeHtml(statusText)}</p>
+            <button type="submit" class="btn-auth-submit">${isVi ? "Cập nhật và đăng nhập" : "更新并登录"}</button>
+          </form>
+        ` : ""}
+        <div class="auth-modal-footer password-reset-footer">
+          <span>${isVi ? "Bạn đã nhớ mật khẩu?" : "想起密码了？"}</span>
+          <button class="btn-auth-switch" id="passwordResetLoginBtn" type="button">${isVi ? "Quay lại đăng nhập" : "返回登录"}</button>
+        </div>
+      </div>
+    `;
+    bindPasswordResetModal();
+  }
+
+  async function requestResetCode(button) {
+    statusText = "";
+    statusType = "";
+    button.disabled = true;
+    button.textContent = isVi ? "Đang gửi mã..." : "正在发送...";
+    try {
+      const data = await apiRequest("/api/password-reset/request", {
+        method: "POST",
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      devCode = data.devCode || "";
+      resetStep = "code";
+      statusType = "success";
+      statusText = isVi ? "Đã gửi mã. Vui lòng kiểm tra email của bạn." : "验证码已发送，请查看邮箱。";
+      render();
+    } catch (error) {
+      statusType = "error";
+      statusText = error.message || (isVi ? "Không thể gửi mã." : "无法发送验证码。");
+      render();
+    }
+  }
+
+  function bindPasswordResetModal() {
+    modalDiv.querySelector("#closePasswordResetModal").onclick = () => modalDiv.remove();
+    modalDiv.querySelector("#passwordResetLoginBtn").onclick = () => {
+      modalDiv.remove();
+      showModal("login");
+    };
+    modalDiv.onclick = (event) => {
+      if (event.target === modalDiv) modalDiv.remove();
+    };
+    modalDiv.querySelectorAll("[data-toggle-password]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = modalDiv.querySelector(`#${button.dataset.togglePassword}`);
+        if (!input) return;
+        const showPassword = input.type === "password";
+        input.type = showPassword ? "text" : "password";
+        button.textContent = showPassword ? (isVi ? "Ẩn" : "隐藏") : (isVi ? "Hiện" : "显示");
+      });
+    });
+
+    const emailForm = modalDiv.querySelector("#passwordResetEmailForm");
+    if (emailForm) {
+      emailForm.onsubmit = async (event) => {
+        event.preventDefault();
+        resetEmail = modalDiv.querySelector("#passwordResetEmailInput").value.trim().toLowerCase();
+        const submitBtn = emailForm.querySelector(".btn-auth-submit");
+        await requestResetCode(submitBtn);
+      };
+    }
+
+    const codeInput = modalDiv.querySelector("#passwordResetCodeInput");
+    if (codeInput) {
+      codeInput.addEventListener("input", () => {
+        resetCode = codeInput.value.replace(/\D/g, "").slice(0, 6);
+        codeInput.value = resetCode;
+      });
+    }
+    modalDiv.querySelector("#passwordResetChangeEmailBtn")?.addEventListener("click", () => {
+      resetStep = "email";
+      statusText = "";
+      statusType = "";
+      render();
+    });
+    modalDiv.querySelector("#passwordResetResendBtn")?.addEventListener("click", async (event) => {
+      await requestResetCode(event.currentTarget);
+    });
+    const codeForm = modalDiv.querySelector("#passwordResetCodeForm");
+    if (codeForm) {
+      codeForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const submitBtn = codeForm.querySelector(".btn-auth-submit");
+        submitBtn.disabled = true;
+        submitBtn.textContent = isVi ? "Đang xác minh..." : "正在验证...";
+        try {
+          await apiRequest("/api/password-reset/verify", {
+            method: "POST",
+            body: JSON.stringify({ email: resetEmail, code: resetCode }),
+          });
+          resetStep = "password";
+          statusType = "success";
+          statusText = isVi ? "Mã đã đúng. Vui lòng tạo mật khẩu mới." : "验证码正确，请设置新密码。";
+          render();
+        } catch (error) {
+          statusType = "error";
+          statusText = error.message || (isVi ? "Mã xác minh không đúng." : "验证码不正确。");
+          render();
+        }
+      };
+    }
+
+    const confirmForm = modalDiv.querySelector("#passwordResetConfirmForm");
+    if (confirmForm) {
+      confirmForm.onsubmit = async (event) => {
+        event.preventDefault();
+        const submitBtn = confirmForm.querySelector(".btn-auth-submit");
+        const newPassword = modalDiv.querySelector("#passwordResetNewPassword").value;
+        const confirmPassword = modalDiv.querySelector("#passwordResetConfirmPassword").value;
+        if (newPassword !== confirmPassword) {
+          statusType = "error";
+          statusText = isVi ? "Mật khẩu nhập lại không khớp." : "两次输入的密码不一致。";
+          render();
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = isVi ? "Đang cập nhật..." : "正在更新...";
+        try {
+          const data = await apiRequest("/api/password-reset/confirm", {
+            method: "POST",
+            body: JSON.stringify({ email: resetEmail, code: resetCode, newPassword, confirmPassword }),
+          });
+          state.user = data.user;
+          state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
+          if (state.adminUser) state.adminTab = getSafeAdminTab(state.adminTab);
+          saveState();
+          await loadContentLocks().catch(() => {});
+          renderAll();
+          statusType = "success";
+          statusText = isVi ? "Mật khẩu đã được cập nhật. Bạn đã đăng nhập lại." : "密码已更新，你已重新登录。";
+          render();
+          setTimeout(() => modalDiv.remove(), 650);
+        } catch (error) {
+          statusType = "error";
+          statusText = error.message || (isVi ? "Không thể cập nhật mật khẩu." : "无法更新密码。");
+          render();
+        }
+      };
+    }
+  }
+
+  render();
+  document.body.appendChild(modalDiv);
+  setTimeout(() => {
+    const focusTarget = modalDiv.querySelector("input");
+    focusTarget?.focus();
+  }, 30);
 }
 
 function showEmailVerificationModal() {

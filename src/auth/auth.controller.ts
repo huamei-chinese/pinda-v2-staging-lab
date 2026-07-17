@@ -22,6 +22,28 @@ export class AuthController {
     return this.authService.login(email, password);
   }
 
+  @Post('password-reset/request')
+  async requestPasswordReset(@Body() body: any) {
+    const email = String(body.email || '').trim().toLowerCase();
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Post('password-reset/verify')
+  async verifyPasswordResetCode(@Body() body: any) {
+    const email = String(body.email || '').trim().toLowerCase();
+    const code = String(body.code || '');
+    return this.authService.verifyPasswordResetCode(email, code);
+  }
+
+  @Post('password-reset/confirm')
+  async confirmPasswordReset(@Body() body: any) {
+    const email = String(body.email || '').trim().toLowerCase();
+    const code = String(body.code || '');
+    const newPassword = String(body.newPassword || body.password || '');
+    const confirmPassword = String(body.confirmPassword || '');
+    return this.authService.confirmPasswordReset(email, code, newPassword, confirmPassword);
+  }
+
   @Get('users/:id/status')
   async getCurrentUser(
     @Param('id') id: string,

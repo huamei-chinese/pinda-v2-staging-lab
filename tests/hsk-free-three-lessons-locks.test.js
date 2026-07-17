@@ -46,6 +46,6 @@ test("public app preserves open HSK access rules returned by the API", () => {
 });
 
 test("entrypoints cache-bust the server-truth content lock bundle", () => {
-  assert.match(rootIndex, /app\.js\?v=content-lock-server-truth-20260716/);
-  assert.match(publicIndex, /app\.js\?v=content-lock-server-truth-20260716/);
+  assert.match(rootIndex, /app\.js\?v=auth-forgot-under-password-20260717/);
+  assert.match(publicIndex, /app\.js\?v=auth-forgot-under-password-20260717/);
 });

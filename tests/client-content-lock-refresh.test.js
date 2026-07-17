@@ -33,7 +33,7 @@ test("public admin scripts use deploy cache busters", () => {
   assert.match(indexHtmlSource, /practice-rules\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /speech-config\.js\?v=static-cache-20260714/);
   assert.match(indexHtmlSource, /lesson-new-format-loader\.js\?v=vocab-audio-catalog-20260714/);
-  assert.match(indexHtmlSource, /app\.js\?v=home-exp-bxh-20260716/);
+  assert.match(indexHtmlSource, /app\.js\?v=auth-forgot-under-password-20260717/);
   assert.match(indexHtmlSource, /sound-effects\.js\?v=home-profile-responsive-fit-20260716/);
   assert.match(indexHtmlSource, /asset-config\.js/);
   assert.match(adminV2HtmlSource, /admin-v2\.css\?v=static-cache-20260714/);
@@ -99,7 +99,7 @@ test("correct answer praise uses a friendly mascot instead of OK copy", () => {
   assert.doesNotMatch(appSource, /class="practice-praise-badge"[\s\S]*?>OK<\/span>/);
   assert.match(stylesSource, /\.practice-praise-mascot\s*\{[\s\S]*animation:\s*practicePraiseMascotDance/);
   assert.match(stylesSource, /@keyframes practicePraiseMascotDance/);
-  assert.match(indexHtmlSource, /styles\.css\?v=home-coin-desktop-responsive-20260716/);
+  assert.match(indexHtmlSource, /styles\.css\?v=auth-forgot-under-password-20260717/);
 });
 
 test("quit modal uses a soft animated sad mascot instead of the old crying owl svg", () => {
@@ -111,7 +111,7 @@ test("quit modal uses a soft animated sad mascot instead of the old crying owl s
   assert.match(stylesSource, /\.quit-sad-mascot\s*\{[\s\S]*place-items:\s*center/);
   assert.match(stylesSource, /@keyframes quitSadBob/);
   assert.match(stylesSource, /@keyframes quitSadTear/);
-  assert.match(indexHtmlSource, /app\.js\?v=home-exp-bxh-20260716/);
+  assert.match(indexHtmlSource, /app\.js\?v=auth-forgot-under-password-20260717/);
 });
 
 test("home coin hunt uses Vietnamese diacritics for claimed rewards", () => {

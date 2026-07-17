@@ -14,5 +14,5 @@ test("home desktop profile card keeps account details visible on desktop widths"
   assert.match(styles, /\.screen-home \.home-desktop-profile-card--regular \.home-desktop-level-badge[\s\S]*white-space:\s*normal/);
   assert.match(styles, /\.screen-home \.home-desktop-membership-perks[\s\S]*flex-wrap:\s*wrap/);
   assert.match(styles, /grid-template-columns:\s*minmax\(0, 1fr\) clamp\(282px, 24vw, 330px\)/);
-  assert.match(indexHtml, /styles\.css\?v=home-profile-responsive-fit-20260716/);
+  assert.match(indexHtml, /styles\.css\?v=auth-forgot-under-password-20260717/);
 });

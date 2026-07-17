@@ -9986,6 +9986,30 @@ p {
   outline: none;
 }
 
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -12px 0 18px;
+}
+
+.btn-forgot-password {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.btn-forgot-password:hover,
+.btn-forgot-password:focus-visible {
+  color: #0f766e;
+  text-decoration: underline;
+  outline: none;
+}
+
 .form-group select:focus {
   border-color: #0ea855;
 }
@@ -10071,6 +10095,132 @@ p {
 
 .auth-modal-content--email-verify {
   max-width: 480px;
+}
+
+.auth-modal-content--password-reset {
+  width: min(500px, 100%);
+  padding-top: 36px;
+}
+
+.password-reset-logo {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0ea855, #0f766e);
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.22);
+}
+
+.password-reset-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: -8px 0 24px;
+}
+
+.password-reset-step {
+  min-width: 0;
+  min-height: 58px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.password-reset-step b {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.password-reset-step small {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.password-reset-step.active {
+  border-color: rgba(14, 168, 85, 0.35);
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.password-reset-step.active b {
+  background: #0ea855;
+  color: #ffffff;
+}
+
+.password-reset-form .form-group {
+  margin-bottom: 16px;
+}
+
+.password-reset-code-input {
+  text-align: center;
+  font-size: 22px !important;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+}
+
+.password-reset-dev-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.password-reset-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.35fr;
+  gap: 10px;
+}
+
+.password-reset-actions .btn-auth-submit,
+.password-reset-actions .btn-auth-secondary {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.password-reset-footer {
+  margin-top: 22px;
+}
+
+@media (max-width: 520px) {
+  .auth-modal-content--password-reset {
+    padding: 30px 20px;
+  }
+
+  .password-reset-steps {
+    gap: 6px;
+  }
+
+  .password-reset-step {
+    min-height: 52px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .password-reset-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .auth-modal-content--email-verify .form-group {
