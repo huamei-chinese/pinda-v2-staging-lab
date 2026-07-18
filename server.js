@@ -2413,8 +2413,8 @@ const server = http.createServer(async (req, res) => {
 
 ensureSchema()
   .then(() => {
-    server.listen(port, () => {
-      console.log(`Listening on http://localhost:${port}`);
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Listening on http://0.0.0.0:${port}`);
     });
   })
   .catch((error) => {

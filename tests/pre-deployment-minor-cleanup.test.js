@@ -11,6 +11,8 @@ const { PaymentPlansService } = require("../src/payment/payment-plans.service");
 const { ContentService } = require("../src/content/content.service");
 
 const envExample = fs.readFileSync(path.join(__dirname, "..", ".env.example"), "utf8");
+const mainSource = fs.readFileSync(path.join(__dirname, "..", "src", "main.ts"), "utf8");
+const standaloneServerSource = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
 const packageJson = require("../package.json");
 const railwayJson = require("../railway.json");
 
@@ -118,13 +120,15 @@ test("Railway deploy runs the compiled Nest production server", () => {
   assert.equal(railwayJson.build.buildCommand, "npm run build");
   assert.equal(railwayJson.deploy.startCommand, "npm run start:prod");
   assert.equal(railwayJson.deploy.healthcheckPath, "/");
+  assert.match(mainSource, /app\.listen\(port,\s*['"]0\.0\.0\.0['"]\)/);
+  assert.match(standaloneServerSource, /server\.listen\(port,\s*["']0\.0\.0\.0["']/);
 });
 
 test("public HSK lock rules are read fresh so admin lock changes reach clients", async () => {
   let publicSelectCount = 0;
   const db = {
     async query(sql) {
-      if (/FROM hsk_lesson_locks\s+WHERE locked_for_free/.test(sql)) {
+      if (/SELECT\s+lesson_id,[\s\S]*FROM hsk_lesson_locks\s+ORDER BY lesson_id ASC/.test(sql)) {
         publicSelectCount += 1;
         return {
           rows: publicSelectCount === 1
