@@ -5,6 +5,7 @@ import { Pool, QueryResult } from 'pg';
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pool: Pool | null = null;
   private readonly seededStaffEmails = ['kamini01@gmail.com', 'theanh.tuyendung3332@gmail.com'];
+  private readonly readRetryAttempts = 3;
 
   async onModuleInit() {
     const databaseUrl = process.env.DATABASE_URL;
@@ -16,6 +17,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: { rejectUnauthorized: false },
+      max: this.readPositiveIntEnv('PG_POOL_MAX', 10),
+      idleTimeoutMillis: this.readPositiveIntEnv('PG_IDLE_TIMEOUT_MS', 10000),
+      connectionTimeoutMillis: this.readPositiveIntEnv('PG_CONNECTION_TIMEOUT_MS', 10000),
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+    });
+    this.pool.on('error', (error) => {
+      console.warn('PostgreSQL idle connection error:', this.describeDbError(error));
     });
 
     try {
@@ -54,7 +63,83 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-    return this.pool.query<T>(text, params);
+    const canRetry = this.isRetryableReadQuery(text);
+    const attempts = canRetry ? this.readRetryAttempts : 1;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await this.pool.query<T>(text, params);
+      } catch (error) {
+        lastError = error;
+        if (!canRetry || attempt >= attempts || !this.isTransientDatabaseError(error)) {
+          throw error;
+        }
+        console.warn(`Transient PostgreSQL read error. Retrying ${attempt}/${attempts - 1}:`, this.describeDbError(error));
+        await this.sleep(100 * attempt);
+      }
+    }
+
+    throw lastError;
+  }
+
+  private readPositiveIntEnv(name: string, fallback: number): number {
+    const value = Number(process.env[name]);
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+  }
+
+  private isRetryableReadQuery(text: string): boolean {
+    const sql = this.stripLeadingSqlComments(text).trim();
+    if (/^select\b/i.test(sql)) return true;
+    if (!/^with\b/i.test(sql)) return false;
+    return !/\b(insert|update|delete|merge|create|alter|drop|truncate)\b/i.test(sql);
+  }
+
+  private stripLeadingSqlComments(text: string): string {
+    let sql = text || '';
+    let previous = '';
+    while (sql !== previous) {
+      previous = sql;
+      sql = sql
+        .replace(/^\s*--[^\n\r]*(?:\r?\n|$)/, '')
+        .replace(/^\s*\/\*[\s\S]*?\*\//, '');
+    }
+    return sql;
+  }
+
+  private isTransientDatabaseError(error: unknown): boolean {
+    const anyError = error as { code?: string; message?: string };
+    const code = String(anyError?.code || '').toUpperCase();
+    if ([
+      'ECONNRESET',
+      'ECONNREFUSED',
+      'ETIMEDOUT',
+      'EPIPE',
+      '08000',
+      '08003',
+      '08006',
+      '08001',
+      '08004',
+      '57P01',
+      '57P02',
+      '57P03',
+      '53300',
+    ].includes(code)) {
+      return true;
+    }
+    return /connection terminated|read ECONNRESET|server closed the connection|terminating connection|timeout/i.test(String(anyError?.message || ''));
+  }
+
+  private describeDbError(error: unknown) {
+    const anyError = error as { code?: string; message?: string };
+    return {
+      code: anyError?.code || 'UNKNOWN',
+      message: anyError?.message || String(error),
+    };
+  }
+
+  private sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async ensureUserCompatibilityColumns() {
