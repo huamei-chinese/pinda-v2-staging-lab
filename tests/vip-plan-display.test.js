@@ -64,16 +64,20 @@ test("admin user list distinguishes VIP 3d, VIP 30d, VIP 90d, and free plans", (
   assert.match(appSource, /VIP 3 tháng/);
 });
 
-test("admin user plan filter only tracks sellable VIP plan durations", () => {
+test("admin user plan filter supports all, VIP, non-VIP, and sellable VIP durations", () => {
   const filterSelect = appSource.match(/<select id="adminUserPlanFilter"[\s\S]*?<\/select>/)?.[0] || "";
   assert.match(filterSelect, /value="all"[\s\S]*Tất cả/);
+  assert.match(filterSelect, /value="vip"[\s\S]*VIP/);
+  assert.match(filterSelect, /value="free"[\s\S]*Không VIP/);
   assert.match(filterSelect, /value="3d"[\s\S]*VIP 3 ngày/);
   assert.match(filterSelect, /value="30d"[\s\S]*VIP 30 ngày/);
   assert.match(filterSelect, /value="90d"[\s\S]*VIP 3 tháng/);
   assert.doesNotMatch(filterSelect, /value="FREE"|value="PREMIUM"|value="EMPLOYEE"/);
-  assert.match(appSource, /const ADMIN_USER_PLAN_FILTER_VALUES = new Set\(\["all", "3d", "30d", "90d"\]\)/);
+  assert.match(appSource, /const ADMIN_USER_PLAN_FILTER_VALUES = new Set\(\["all", "vip", "free", "3d", "30d", "90d"\]\)/);
   assert.match(appSource, /function normalizeAdminUserPlanFilter\(/);
   assert.match(appSource, /function getAdminUserVipPlanFilterValue\(/);
+  assert.match(appSource, /planFilter === "vip" && !isActivePremiumUser\(user\)/);
+  assert.match(appSource, /planFilter === "free" && isActivePremiumUser\(user\)/);
   assert.match(appSource, /getAdminUserVipPlanFilterValue\(user\) !== planFilter/);
 });
 

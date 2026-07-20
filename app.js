@@ -3957,10 +3957,11 @@ function getAdminUserPlan(user) {
   return "FREE";
 }
 
-const ADMIN_USER_PLAN_FILTER_VALUES = new Set(["all", "3d", "30d", "90d"]);
+const ADMIN_USER_PLAN_FILTER_VALUES = new Set(["all", "vip", "free", "3d", "30d", "90d"]);
 
 function normalizeAdminUserPlanFilter(value) {
   const normalized = String(value || "all").trim().toLowerCase();
+  if (normalized === "premium" || normalized === "pro") return "vip";
   if (normalized === "7d") return "3d";
   return ADMIN_USER_PLAN_FILTER_VALUES.has(normalized) ? normalized : "all";
 }
@@ -3969,11 +3970,11 @@ function shouldUseAdminUsersServerPagination() {
   return state.screen === "admin" && (state.adminTab || "users") === "users";
 }
 
-function getAdminUsersRequestUrl() {
-  if (!shouldUseAdminUsersServerPagination()) return "/api/admin/users";
+function getAdminUsersRequestUrl(options = {}) {
+  if (!shouldUseAdminUsersServerPagination() && !options.forceServerPagination) return "/api/admin/users";
   const params = new URLSearchParams();
-  params.set("page", String(Math.max(1, Number(state.adminUserPage || 1))));
-  params.set("pageSize", String(Math.max(1, Number(state.adminUserPageSize || 9))));
+  params.set("page", String(Math.max(1, Number(options.page ?? state.adminUserPage ?? 1))));
+  params.set("pageSize", String(Math.max(1, Number(options.pageSize ?? state.adminUserPageSize ?? 9))));
   const search = String(state.adminUserSearch || "").trim();
   const level = state.adminUserLevelFilter || "all";
   const plan = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
@@ -4007,6 +4008,22 @@ function hasAdminUsersServerPagination() {
 
 function getAdminUserVipPlanFilterValue(user) {
   return normalizeVipPlanId(user);
+}
+
+function adminUserMatchesCurrentFilters(user) {
+  const query = normalizeLatin(String(state.adminUserSearch || "").trim());
+  const levelFilter = state.adminUserLevelFilter || "all";
+  const planFilter = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
+  const level = user.currentLevel || user.level || "HSK2";
+  if (levelFilter !== "all" && level !== levelFilter) return false;
+  if (planFilter === "vip" && !isActivePremiumUser(user)) return false;
+  if (planFilter === "free" && isActivePremiumUser(user)) return false;
+  if (!["all", "vip", "free"].includes(planFilter) && getAdminUserVipPlanFilterValue(user) !== planFilter) return false;
+  if (!query) return true;
+  const name = normalizeLatin(user.fullName || "");
+  const email = normalizeLatin(user.email || "");
+  const id = normalizeLatin(String(user.id || ""));
+  return name.includes(query) || email.includes(query) || id.includes(query);
 }
 
 function getAdminUserPlanLabel(plan, isVi = state.lang === "vi") {
@@ -4102,20 +4119,128 @@ function buildAdminUserPatchPayload(row, extra = {}) {
 
 function getFilteredAdminUsers() {
   if (hasAdminUsersServerPagination()) return state.adminUsers || [];
-  const query = normalizeLatin(state.adminUserSearch.trim());
-  const levelFilter = state.adminUserLevelFilter || "all";
-  const planFilter = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
+  return state.adminUsers.filter((user) => adminUserMatchesCurrentFilters(user));
+}
 
-  return state.adminUsers.filter((user) => {
-    const level = user.currentLevel || user.level || "HSK2";
-    if (levelFilter !== "all" && level !== levelFilter) return false;
-    if (planFilter !== "all" && getAdminUserVipPlanFilterValue(user) !== planFilter) return false;
-    if (!query) return true;
-    const name = normalizeLatin(user.fullName || "");
-    const email = normalizeLatin(user.email || "");
-    const id = normalizeLatin(String(user.id || ""));
-    return name.includes(query) || email.includes(query) || id.includes(query);
+async function fetchAdminUsersForExport() {
+  const pageSize = 100;
+  const firstPage = await apiRequest(getAdminUsersRequestUrl({ forceServerPagination: true, page: 1, pageSize }), {
+    headers: { "X-Admin-User-Id": getAdminUserId() },
   });
+  const users = Array.isArray(firstPage.users) ? [...firstPage.users] : [];
+  const pagination = firstPage.pagination || null;
+  const totalPages = Math.min(200, Math.max(1, Number(pagination?.totalPages || 1) || 1));
+  if (pagination?.serverSide === true) {
+    for (let page = 2; page <= totalPages; page += 1) {
+      const data = await apiRequest(getAdminUsersRequestUrl({ forceServerPagination: true, page, pageSize }), {
+        headers: { "X-Admin-User-Id": getAdminUserId() },
+      });
+      users.push(...(Array.isArray(data.users) ? data.users : []));
+    }
+  }
+  return users.filter((user) => adminUserMatchesCurrentFilters(user));
+}
+
+function getAdminUserPlanFilterLabel(value = state.adminUserPlanFilter, isVi = state.lang === "vi") {
+  const filter = normalizeAdminUserPlanFilter(value);
+  if (filter === "vip") return "VIP";
+  if (filter === "free") return isVi ? "Không VIP" : "非 VIP";
+  if (filter === "3d") return isVi ? "VIP 3 ngày" : "VIP 3d";
+  if (filter === "30d") return isVi ? "VIP 30 ngày" : "VIP 30d";
+  if (filter === "90d") return isVi ? "VIP 3 tháng" : "VIP 90d";
+  return isVi ? "Tất cả" : "全部";
+}
+
+function getAdminUsersExportFileName() {
+  const date = new Date().toISOString().slice(0, 10);
+  const plan = normalizeAdminUserPlanFilter(state.adminUserPlanFilter);
+  const level = String(state.adminUserLevelFilter || "all").toLowerCase();
+  return `huamei-users-${plan}-${level}-${date}.xls`;
+}
+
+function escapeExcelCell(value) {
+  const text = String(value ?? "");
+  const safeText = /^[=+\-@]/.test(text.trim()) ? `'${text}` : text;
+  return escapeHtml(safeText);
+}
+
+function buildAdminUsersExcelHTML(users, isVi = state.lang === "vi") {
+  const headers = isVi
+    ? ["#", "Họ và tên", "Email", "Vai trò", "Cấp độ", "Gói", "Thời hạn VIP", "Trạng thái", "Mã ref", "Nguồn", "Ngày đăng ký", "Lần đăng nhập cuối"]
+    : ["#", "姓名", "Email", "角色", "等级", "套餐", "VIP 到期", "状态", "推荐码", "来源", "注册日期", "最后登录"];
+  const rows = users.map((user, index) => {
+    const hasPremium = isActivePremiumUser(user);
+    const plan = getAdminUserPlan(user);
+    return [
+      index + 1,
+      user.fullName || user.name || "",
+      user.email || "",
+      getAdminRoleLabel(user.role, isVi),
+      user.currentLevel || user.level || "HSK2",
+      getAdminUserPlanLabel(plan, isVi),
+      hasPremium ? formatAdminDate(user.premiumUntil || user.vipExpiresAt) : "N/A",
+      user.isActive === false ? (isVi ? "Đã khóa" : "已停用") : (isVi ? "Hoạt động" : "正常"),
+      user.ref || user.referralRef || "",
+      user.src || user.source || "",
+      formatAdminDate(user.createdAt || user.created_at),
+      formatAdminDate(user.lastLoginAt || user.last_login_at),
+    ];
+  });
+  const filterText = [
+    `${isVi ? "Bộ lọc gói" : "套餐筛选"}: ${getAdminUserPlanFilterLabel(state.adminUserPlanFilter, isVi)}`,
+    `${isVi ? "Cấp độ" : "等级"}: ${state.adminUserLevelFilter || "all"}`,
+    `${isVi ? "Tìm kiếm" : "搜索"}: ${state.adminUserSearch || ""}`,
+  ].join(" | ");
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+    th, td { border: 1px solid #d9e2ef; padding: 6px 8px; mso-number-format:"\\@"; }
+    th { background: #eaf2ff; font-weight: 700; }
+    .meta { font-weight: 700; background: #f8fafc; }
+  </style>
+</head>
+<body>
+  <table>
+    <tr><td class="meta" colspan="${headers.length}">HuaMei Admin - ${escapeExcelCell(isVi ? "Xuất người dùng" : "导出用户")}</td></tr>
+    <tr><td class="meta" colspan="${headers.length}">${escapeExcelCell(filterText)}</td></tr>
+    <tr>${headers.map((header) => `<th>${escapeExcelCell(header)}</th>`).join("")}</tr>
+    ${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeExcelCell(cell)}</td>`).join("")}</tr>`).join("")}
+  </table>
+</body>
+</html>`;
+}
+
+async function exportAdminUsersExcel(button) {
+  const isVi = state.lang === "vi";
+  const originalHTML = button?.innerHTML || "";
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = `<strong>${isVi ? "Đang xuất..." : "导出中..."}</strong>`;
+  }
+  try {
+    const users = await fetchAdminUsersForExport();
+    const html = buildAdminUsersExcelHTML(users, isVi);
+    const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getAdminUsersExportFileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast(isVi ? `Đã xuất ${users.length} người dùng.` : `已导出 ${users.length} 个用户。`);
+  } catch (error) {
+    showToast(error.message || (isVi ? "Không thể xuất Excel người dùng." : "无法导出用户 Excel。"));
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHTML;
+    }
+  }
 }
 
 function getAdminUserPagination(users) {
@@ -4364,8 +4489,9 @@ function renderAdmin() {
             <p>${adminSubtitleMap[adminTab] || adminSubtitleMap.users}</p>
           </div>
           ${adminTab === "users" ? `
-            <button class="admin-create-account-card" id="adminCreateAccountBtn" type="button">
-              <strong>${isVi ? "Tạo tài khoản" : "创建账户"}</strong>
+            <button class="admin-export-users-card" id="adminExportUsersBtn" type="button">
+              <strong>${isVi ? "Xuất Excel" : "导出 Excel"}</strong>
+              <small>${escapeHtml(getAdminUserPlanFilterLabel(planFilter, isVi))}</small>
             </button>
           ` : ""}
         </section>
@@ -4382,6 +4508,8 @@ function renderAdmin() {
             </select>
             <select id="adminUserPlanFilter" class="admin-filter-select" aria-label="${isVi ? "Lọc theo gói" : "按套餐筛选"}">
               <option value="all" ${planFilter === "all" ? "selected" : ""}>${isVi ? "Tất cả" : "全部"}</option>
+              <option value="vip" ${planFilter === "vip" ? "selected" : ""}>VIP</option>
+              <option value="free" ${planFilter === "free" ? "selected" : ""}>${isVi ? "Không VIP" : "非 VIP"}</option>
               <option value="3d" ${planFilter === "3d" ? "selected" : ""}>${isVi ? "VIP 3 ngày" : "3天 VIP"}</option>
               <option value="30d" ${planFilter === "30d" ? "selected" : ""}>${isVi ? "VIP 30 ngày" : "30天 VIP"}</option>
               <option value="90d" ${planFilter === "90d" ? "selected" : ""}>${isVi ? "VIP 3 tháng" : "90天 VIP"}</option>
@@ -4791,108 +4919,6 @@ function showChangePasswordModal() {
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = isVi ? "Cập nhật mật khẩu" : "更新密码";
-    }
-  };
-}
-
-function showAdminCreateAccountModal() {
-  const isVi = state.lang === "vi";
-  const existing = document.getElementById("adminCreateAccountModal");
-  if (existing) existing.remove();
-
-  const modalDiv = document.createElement("div");
-  modalDiv.id = "adminCreateAccountModal";
-  modalDiv.className = "auth-modal-overlay admin-create-account-overlay";
-  modalDiv.innerHTML = `
-    <div class="auth-modal-content admin-create-account-modal">
-      <button class="auth-modal-close" id="closeAdminCreateAccountModal" type="button">&times;</button>
-      <div class="auth-modal-logo">＋</div>
-      <h2>${isVi ? "Tạo tài khoản học viên" : "创建学员账户"}</h2>
-      <p class="auth-modal-sub">${isVi ? "Nhập thông tin tài khoản theo dữ liệu quản lý người dùng." : "按用户管理字段填写账户信息。"}</p>
-
-      <form id="adminCreateAccountForm" class="auth-form admin-create-account-form">
-        <div class="form-group">
-          <label for="adminCreateName">${isVi ? "Họ và tên" : "姓名"}</label>
-          <input type="text" id="adminCreateName" placeholder="${isVi ? "Nguyễn Nhi" : "Nguyễn Nhi"}" required />
-        </div>
-        <div class="form-group">
-          <label for="adminCreateEmail">Email</label>
-          <input type="email" id="adminCreateEmail" placeholder="student@gmail.com" required />
-        </div>
-        <div class="admin-create-account-grid">
-          <div class="form-group">
-            <label for="adminCreateLevel">${isVi ? "Cấp độ" : "等级"}</label>
-            <select id="adminCreateLevel">
-              ${Object.keys(hskLevels).map((level) => `<option value="${level}" ${level === "HSK2" ? "selected" : ""}>${level}</option>`).join("")}
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="adminCreatePlan">${isVi ? "Gói" : "套餐"}</label>
-            <select id="adminCreatePlan">
-              <option value="FREE">Free</option>
-              <option value="PREMIUM">Pro</option>
-            </select>
-          </div>
-        </div>
-        <div class="admin-create-account-grid admin-create-account-grid--single">
-          <div class="form-group">
-            <label for="adminCreateDuration">${isVi ? "Thời hạn Pro (ngày)" : "Pro 期限（天）"}</label>
-            <input type="number" id="adminCreateDuration" min="0" step="1" placeholder="N/A" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="adminCreatePassword">${isVi ? "Mật khẩu khởi tạo" : "初始密码"}</label>
-          <input type="password" id="adminCreatePassword" placeholder="••••••••" required />
-        </div>
-        <p class="auth-form-message" id="adminCreateAccountMessage" role="status"></p>
-        <button type="submit" class="btn-auth-submit">${isVi ? "Tạo tài khoản" : "创建账户"}</button>
-      </form>
-    </div>
-  `;
-
-  document.body.appendChild(modalDiv);
-
-  const closeModal = () => modalDiv.remove();
-  modalDiv.querySelector("#closeAdminCreateAccountModal").onclick = closeModal;
-  modalDiv.onclick = (event) => {
-    if (event.target === modalDiv) closeModal();
-  };
-
-  modalDiv.querySelector("#adminCreateAccountForm").onsubmit = async (event) => {
-    event.preventDefault();
-    const message = modalDiv.querySelector("#adminCreateAccountMessage");
-    const submitBtn = modalDiv.querySelector(".btn-auth-submit");
-    const payload = {
-      fullName: modalDiv.querySelector("#adminCreateName").value.trim(),
-      email: modalDiv.querySelector("#adminCreateEmail").value.trim(),
-      currentLevel: modalDiv.querySelector("#adminCreateLevel").value,
-      plan: modalDiv.querySelector("#adminCreatePlan").value,
-      durationDays: Number(modalDiv.querySelector("#adminCreateDuration").value || 0),
-      isActive: true,
-      password: modalDiv.querySelector("#adminCreatePassword").value,
-    };
-
-    message.textContent = "";
-    message.className = "auth-form-message";
-    submitBtn.disabled = true;
-    submitBtn.textContent = isVi ? "Đang tạo..." : "正在创建...";
-
-    try {
-      const data = await apiRequest("/api/admin/users", {
-        method: "POST",
-        headers: { "X-Admin-User-Id": getAdminUserId() },
-        body: JSON.stringify(payload),
-      });
-      state.adminUsers = [data.user, ...state.adminUsers.filter((user) => user.id !== data.user.id)];
-      loadAdminUsers();
-      showToast(isVi ? "Đã tạo tài khoản học viên." : "已创建学员账户。");
-      closeModal();
-    } catch (error) {
-      message.textContent = error.message;
-      message.classList.add("error");
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = isVi ? "Tạo tài khoản" : "创建账户";
     }
   };
 }
@@ -11222,9 +11248,9 @@ function bindEvents() {
       return;
     }
 
-    const adminCreateAccountBtn = event.target.closest("#adminCreateAccountBtn");
-    if (adminCreateAccountBtn && state.screen === "admin") {
-      showAdminCreateAccountModal();
+    const adminExportUsersBtn = event.target.closest("#adminExportUsersBtn");
+    if (adminExportUsersBtn && state.screen === "admin") {
+      exportAdminUsersExcel(adminExportUsersBtn);
       return;
     }
 

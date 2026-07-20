@@ -216,8 +216,10 @@ export class AdminService {
     return Math.min(100, Math.max(1, Math.floor(Number(raw || 9)) || 9));
   }
 
-  private normalizeAdminUsersPlanFilter(value: string | string[] | undefined): 'all' | '3d' | '30d' | '90d' {
+  private normalizeAdminUsersPlanFilter(value: string | string[] | undefined): 'all' | 'vip' | 'free' | '3d' | '30d' | '90d' {
     const raw = String(Array.isArray(value) ? value[0] : value || 'all').trim().toLowerCase();
+    if (raw === 'vip' || raw === 'premium' || raw === 'pro') return 'vip';
+    if (raw === 'free' || raw === 'non-vip' || raw === 'none') return 'free';
     if (raw === '3d' || raw === '7d') return '3d';
     if (raw === '30d') return raw;
     if (raw === '90d' || raw === '3m') return '90d';
@@ -269,7 +271,12 @@ export class AdminService {
       }
 
       const plan = this.normalizeAdminUsersPlanFilter(query.plan);
-      if (plan !== 'all') {
+      if (plan === 'vip') {
+        filters.push(`is_premium = TRUE`);
+        filters.push(`(premium_until IS NULL OR premium_until > NOW())`);
+      } else if (plan === 'free') {
+        filters.push(`NOT (is_premium = TRUE AND (premium_until IS NULL OR premium_until > NOW()))`);
+      } else if (plan !== 'all') {
         const planPlaceholder = addFilterParam(plan);
         filters.push(`is_premium = TRUE`);
         filters.push(`(premium_until IS NULL OR premium_until > NOW())`);

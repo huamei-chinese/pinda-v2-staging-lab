@@ -24,6 +24,10 @@ test("admin users service supports server-side pagination, search, level, and VI
   assert.match(serviceSource, /email ILIKE/);
   assert.match(serviceSource, /id::text ILIKE/);
   assert.match(serviceSource, /current_level =/);
+  assert.match(serviceSource, /raw === 'vip'/);
+  assert.match(serviceSource, /raw === 'free'/);
+  assert.match(serviceSource, /plan === 'vip'/);
+  assert.match(serviceSource, /plan === 'free'/);
   assert.match(serviceSource, /vip_plan_id/);
   assert.match(serviceSource, /serverSide: true/);
   assert.match(serviceSource, /totalUsers/);
@@ -42,4 +46,15 @@ test("admin users client sends pagination filters to the server and uses returne
   assert.match(publicAppSource, /state\.adminUserSummary = data\.summary/);
   assert.match(publicAppSource, /hasAdminUsersServerPagination\(\)/);
   assert.match(publicAppSource, /adminUserSearchTimer = setTimeout/);
+});
+
+test("admin users page exports Excel from current filters instead of creating accounts", () => {
+  assert.match(publicAppSource, /id="adminExportUsersBtn"/);
+  assert.match(publicAppSource, /function exportAdminUsersExcel\(/);
+  assert.match(publicAppSource, /function fetchAdminUsersForExport\(/);
+  assert.match(publicAppSource, /forceServerPagination: true/);
+  assert.match(publicAppSource, /application\/vnd\.ms-excel/);
+  assert.doesNotMatch(publicAppSource, /id="adminCreateAccountBtn"/);
+  assert.doesNotMatch(publicAppSource, /function showAdminCreateAccountModal\(/);
+  assert.doesNotMatch(publicAppSource, /id="adminCreateAccountForm"/);
 });
