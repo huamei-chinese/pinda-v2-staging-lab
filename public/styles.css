@@ -51105,6 +51105,257 @@ body:has(#practiceScreen:not(.hidden)) {
   }
 }
 
+/* iPad/tablet performance layer: lighter rendering and calmer responsive layouts. */
+@media (min-width: 641px) and (max-width: 1366px) {
+  :root {
+    --tablet-card-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    --tablet-soft-border: 1px solid rgba(255, 255, 255, .68);
+  }
+
+  html,
+  body,
+  #app,
+  .screen {
+    scroll-behavior: auto !important;
+    overscroll-behavior-y: contain;
+  }
+
+  .screen,
+  .app-desktop-shell,
+  .listening-repeat-lesson-screen--compact {
+    background-attachment: scroll !important;
+  }
+
+  .screen::before,
+  .screen::after,
+  .app-desktop-shell::before,
+  .app-desktop-shell::after,
+  .home-duo-card::before,
+  .home-duo-card::after,
+  .home-desktop-module-card::before,
+  .home-desktop-module-card::after,
+  .listening-topic-hero::before,
+  .listening-topic-hero::after,
+  .listening-repeat-feed-card--active::before,
+  .listening-repeat-feed-card--active::after {
+    animation: none !important;
+    transition-duration: 0ms !important;
+    will-change: auto !important;
+  }
+
+  .home-duo-pinwheel,
+  .listening-waveform i,
+  .listening-lesson-wave i,
+  .listening-repeat-feed-active-content::before,
+  .listening-repeat-feed-active-content::after,
+  .listening-repeat-mic-large::before,
+  .listening-repeat-mic-large::after,
+  .home-coin-hunt-card *,
+  .home-leaderboard-card * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    will-change: auto !important;
+  }
+
+  .home-desktop-sidebar,
+  .mobile-bottom-nav,
+  .home-desktop-profile-card,
+  .home-desktop-calendar-card,
+  .home-coin-hunt-card,
+  .home-leaderboard-card,
+  .home-desktop-vocab-card,
+  .home-desktop-quick-card,
+  .home-duo-card,
+  .account-profile-card,
+  .account-info-card,
+  .account-upgrade-banner,
+  .hsk-level-card,
+  .daily-theme-card,
+  .vocab-card,
+  .listening-player-card,
+  .listening-script-card,
+  .listening-keyword-block,
+  .listening-translation-panel,
+  .listening-quick-links-card,
+  .listening-repeat-feed-card--active {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: var(--tablet-card-shadow) !important;
+  }
+
+  .home-desktop-sidebar,
+  .mobile-bottom-nav {
+    border: var(--tablet-soft-border) !important;
+  }
+
+  .home-desktop-main,
+  .home-desktop-rail,
+  .listening-dashboard-content,
+  .listening-dashboard-rail-v3,
+  .account-panel,
+  .account-info-card,
+  .hsk-level-card,
+  .daily-theme-card,
+  .vocab-card,
+  .listening-script-card,
+  .listening-keyword-block,
+  .listening-translation-panel,
+  .listening-quick-links-card {
+    contain: layout paint style;
+  }
+
+  .home-desktop-module-cover,
+  .home-duo-art,
+  .home-duo-art img,
+  .listening-detail-hero,
+  .listening-topic-hero,
+  .listening-repeat-feed-active-content {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .home-mobile-topic-card,
+  .daily-theme-card,
+  .hsk-level-card,
+  .vocab-card,
+  .listening-sentence,
+  .listening-topic-card-v2,
+  .listening-lesson-row {
+    content-visibility: auto;
+    contain-intrinsic-size: 140px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .home-desktop-sidebar {
+    display: none !important;
+  }
+
+  .app-desktop-shell,
+  .app-desktop-shell--home,
+  .app-desktop-shell--course,
+  .app-desktop-shell--vocab,
+  .app-desktop-shell--account,
+  .app-desktop-shell--listening {
+    display: block !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    padding: 0 !important;
+  }
+
+  .home-desktop-layout,
+  .listening-dashboard-main,
+  .account-layout,
+  .daily-course-layout,
+  .vocab-shell,
+  .vocab-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .home-desktop-rail,
+  .listening-dashboard-rail-v3 {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .home-desktop-rail > *,
+  .listening-dashboard-rail-v3 > * {
+    min-width: 0 !important;
+  }
+
+  .account-panel.account-mobile-stack,
+  .account-panel-grid,
+  .account-info-grid,
+  .account-security-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .hsk-level-grid,
+  .daily-theme-grid,
+  .listening-topic-grid,
+  .home-mobile-topics-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .listening-lessons-screen,
+  .listening-vocab-lesson-screen,
+  .vocab-screen,
+  .hsk-level-picker,
+  .daily-course-layout {
+    padding-bottom: calc(102px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) and (orientation: portrait) {
+  .home-desktop-rail,
+  .listening-dashboard-rail-v3,
+  .hsk-level-grid,
+  .daily-theme-grid,
+  .listening-topic-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-desktop-topbar h1,
+  .listening-dashboard-title h1,
+  .hsk-level-hero h1 {
+    font-size: clamp(34px, 7vw, 46px) !important;
+    line-height: 1.06 !important;
+  }
+
+  .home-duo-card,
+  .home-desktop-module-card.home-duo-card {
+    min-height: 268px !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .app-desktop-content {
+    padding: 16px !important;
+  }
+
+  .app-desktop-shell--account .account-layout,
+  .app-desktop-shell--course .daily-course-layout,
+  #listeningScreen .app-desktop-shell--listening .listening-detail-spa:not(.listening-detail-mobile),
+  #listeningScreen .app-desktop-shell--listening .listening-detail-practice-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: 960px !important;
+    margin-inline: auto !important;
+  }
+
+  .account-panel.account-mobile-stack,
+  .account-panel-grid,
+  .account-info-grid,
+  .account-security-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #listeningScreen .app-desktop-shell--listening .listening-repeat-card {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1366px) {
+  .home-desktop-layout,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-dashboard-main) .listening-dashboard-main {
+    gap: 16px !important;
+  }
+
+  .home-desktop-rail,
+  #listeningScreen .app-desktop-shell--listening:has(.listening-dashboard-main) .listening-dashboard-rail-v3 {
+    width: min(100%, 286px) !important;
+  }
+
+  .home-desktop-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 /* Home desktop profile: make regular and active VIP accounts visually distinct. */
 @media (min-width: 1281px) {
   .screen-home .home-desktop-profile-card--regular,
