@@ -79,12 +79,18 @@ export class PronunciationAssessmentService {
       const details = this.errorDetails(error);
       console.error('Pronunciation assessment failed', { provider, message, details });
       throw new HttpException({
-        error: message,
+        error: this.publicAssessmentFailureMessage(provider),
         code: 'speech_assessment_failed',
         provider,
-        details,
       }, HttpStatus.BAD_GATEWAY);
     }
+  }
+
+  private publicAssessmentFailureMessage(provider: string) {
+    if (provider === 'openai') {
+      return 'He thong cham noi theo dang can cau hinh lai OpenAI API key. Vui long thu lai sau.';
+    }
+    return 'Khong cham duoc phat am. Vui long thu lai sau.';
   }
 
   private errorDetails(error: unknown) {

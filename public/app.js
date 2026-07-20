@@ -4087,9 +4087,23 @@ async function refreshPaymentPlans() {
   return state.paymentPlans;
 }
 
+function getLocalApiRequestBaseUrl() {
+  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return null;
+  if (["3000", "4172", "5173"].includes(window.location.port)) {
+    return `${window.location.protocol}//${window.location.hostname}:4173`;
+  }
+  if (window.location.port === "4173" || window.location.port === "") return "";
+  return null;
+}
+
 function getApiRequestUrl(path) {
   const value = String(path || "");
   if (!value.startsWith("/api/")) return value;
+
+  const localApiBaseUrl = getLocalApiRequestBaseUrl();
+  if (localApiBaseUrl !== null) {
+    return `${localApiBaseUrl}${value}`;
+  }
 
   const configuredBackendUrl = getConfiguredBackendUrl();
   if (configuredBackendUrl) {
@@ -4135,7 +4149,11 @@ async function apiRequest(path, options = {}) {
     const message = data.error
       || (Array.isArray(data.message) ? data.message[0] : data.message)
       || "Không thể kết nối server.";
-    throw new Error(message);
+    const requestError = new Error(message);
+    requestError.status = response.status;
+    requestError.code = data.code;
+    requestError.provider = data.provider;
+    throw requestError;
   }
   return data;
 }
@@ -13368,7 +13386,22 @@ function normalizeListeningRealtimeWsUrl(value) {
   }
 }
 
+function getLocalListeningRealtimeWsUrl() {
+  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return "";
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  if (["3000", "4172", "5173"].includes(window.location.port)) {
+    return `${protocol}//${window.location.hostname}:4173${LISTENING_REALTIME_WS_PATH}`;
+  }
+  if (window.location.port === "4173" || window.location.port === "") {
+    return `${protocol}//${window.location.host}${LISTENING_REALTIME_WS_PATH}`;
+  }
+  return "";
+}
+
 function getListeningRealtimeWsUrl() {
+  const localWs = getLocalListeningRealtimeWsUrl();
+  if (localWs) return localWs;
+
   const configuredWs = normalizeListeningRealtimeWsUrl(
     window.HUAMEI_REALTIME_WS_URL
     || localStorage.getItem(LISTENING_REALTIME_WS_STORAGE_KEY)
@@ -13954,6 +13987,9 @@ function isListeningPronunciationApiUnavailableError(error) {
 
   return status === 404
     || status === 503
+    || status === 502
+    || code === "openai_request_failed"
+    || code === "speech_assessment_failed"
     || code === "speech_not_configured"
     || /pronunciation assessment|chưa được cấu hình|chua duoc cau hinh|không thể kết nối server|failed to fetch|load failed/i.test(message);
 }

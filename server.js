@@ -12,6 +12,7 @@ function loadEnvFile() {
   if (!fs.existsSync(envPath)) return;
 
   const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+  const envValues = {};
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -28,7 +29,13 @@ function loadEnvFile() {
       value = value.slice(1, -1);
     }
 
-    if (key && process.env[key] === undefined) {
+    if (key) {
+      envValues[key] = value;
+    }
+  }
+
+  for (const [key, value] of Object.entries(envValues)) {
+    if (process.env[key] === undefined) {
       process.env[key] = value;
     }
   }
@@ -719,6 +726,13 @@ function speechAssessmentProvider() {
   return "";
 }
 
+function publicPronunciationAssessmentError(provider = "") {
+  if (provider === "openai") {
+    return "He thong cham noi theo dang can cau hinh lai OpenAI API key. Vui long thu lai sau.";
+  }
+  return "Khong cham duoc phat am. Vui long thu lai sau.";
+}
+
 function iflytekIseUrl() {
   const protocol = (process.env.IFLYTEK_ISE_PROTOCOL || "wss").replace(/:$/, "");
   const host = process.env.IFLYTEK_ISE_HOST || "ise-api-sg.xf-yun.com";
@@ -1150,6 +1164,8 @@ async function handlePronunciationAssessment(req, res) {
         : await assessWithAzure(referenceText, audioBuffer, body.mimeType);
     sendJson(res, 200, { ...result, ...assessToneAndIntonation(audioBuffer, body.pinyin || ""), referenceText });
   } catch (error) {
+    console.error("Pronunciation assessment failed", { provider, message: error?.message || error });
+    if (error && typeof error === "object") error.message = publicPronunciationAssessmentError(provider);
     sendJson(res, error.status || 502, { error: error.message || "Không chấm được phát âm.", code: "speech_assessment_failed", provider });
   }
 }

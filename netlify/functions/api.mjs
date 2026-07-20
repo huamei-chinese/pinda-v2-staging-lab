@@ -153,6 +153,13 @@ function speechAssessmentProvider() {
   return hasIflytek ? "iflytek" : "";
 }
 
+function publicPronunciationAssessmentError(provider = "") {
+  if (provider === "openai") {
+    return "He thong cham noi theo dang can cau hinh lai OpenAI API key. Vui long thu lai sau.";
+  }
+  return "Khong cham duoc phat am. Vui long thu lai sau.";
+}
+
 function clampScore(value, fallback = 0) {
   const score = Number(value);
   if (!Number.isFinite(score)) return fallback;
@@ -760,9 +767,24 @@ async function assessListeningPronunciation(body) {
   if (!audioBuffer.length) throw apiError("Audio ghi âm không hợp lệ.", 400);
   if (audioBuffer.length > 8 * 1024 * 1024) throw apiError("Audio ghi âm quá lớn.", 413);
 
-  const result = provider === "openai"
-    ? await assessWithOpenAi(referenceText, audioBuffer, String(body.mimeType || ""), String(body.pinyin || ""))
-    : await assessWithIflytek(referenceText, audioBuffer);
+  let result;
+  try {
+    result = provider === "openai"
+      ? await assessWithOpenAi(referenceText, audioBuffer, String(body.mimeType || ""), String(body.pinyin || ""))
+      : await assessWithIflytek(referenceText, audioBuffer);
+  } catch (error) {
+    console.error("Pronunciation assessment failed", {
+      provider,
+      message: error?.message || error,
+      status: error?.status,
+      payload: error?.payload,
+    });
+    throw apiError({
+      error: publicPronunciationAssessmentError(provider),
+      code: "speech_assessment_failed",
+      provider,
+    }, error?.status || 502);
+  }
   return json({ ...result, ...assessToneAndIntonation(audioBuffer, body.pinyin || ""), referenceText });
 }
 
@@ -1531,6 +1553,13 @@ function bankConfig() {
     accountNumber: env("SEPAY_BANK_ACCOUNT"),
     accountName: env("SEPAY_BANK_ACCOUNT_NAME") || "HUAMEI EDUCATION",
     paymentPrefix: (env("SEPAY_PAYMENT_PREFIX") || "HUAMEI").toUpperCase(),
+  };
+}
+
+function sepayApiConfig() {
+  return {
+    token: env("SEPAY_API_TOKEN") || env("SEPAY_USER_API_TOKEN"),
+    baseUrl: env("SEPAY_API_BASE_URL") || "https://userapi.sepay.vn/v2",
   };
 }
 
@@ -3496,6 +3525,10 @@ async function orderStatus(orderId, userId) {
   const order = result.rows[0];
   if (!order) throw apiError({ error: "Không tìm thấy đơn thanh toán." }, 404);
   if (userId && order.user_id !== userId) throw apiError({ error: "Không có quyền xem đơn này." }, 403);
+  if (order.status === "pending") {
+    const reconciledOrder = await reconcilePendingOrderFromSepayApi(order);
+    if (reconciledOrder) Object.assign(order, reconciledOrder);
+  }
   if (order.status === "pending" && order.expires_at && new Date(order.expires_at) < new Date()) {
     await query("UPDATE payment_orders SET status = 'expired' WHERE id = $1 AND status = 'pending'", [orderId]);
     order.status = "expired";
@@ -3589,6 +3622,78 @@ async function findOrderFromWebhook(payload) {
   return null;
 }
 
+function normalizeSepayLookupText(value) {
+  return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function getSepayTransactionAmount(transaction) {
+  return Number(transaction?.amount_in ?? transaction?.amountIn ?? transaction?.transferAmount ?? 0);
+}
+
+function getSepayTransactionPaidAt(transaction) {
+  return parseSepayTransactionDate(transaction?.transaction_date || transaction?.transactionDate || "");
+}
+
+function sepayTransactionMatchesOrder(transaction, order) {
+  const expectedCode = normalizeSepayLookupText(order?.transfer_code);
+  if (!expectedCode) return false;
+  const amount = getSepayTransactionAmount(transaction);
+  if (!amount || amount < Number(order.amount || 0)) return false;
+  const transferType = String(transaction?.transfer_type || transaction?.transferType || "").trim().toLowerCase();
+  if (transferType && transferType !== "in") return false;
+  const config = bankConfig();
+  const accountNumber = String(transaction?.account_number || transaction?.accountNumber || "").replace(/\D/g, "");
+  const expectedAccount = String(config.accountNumber || "").replace(/\D/g, "");
+  if (expectedAccount && accountNumber && accountNumber !== expectedAccount) return false;
+  const haystack = [
+    transaction?.code,
+    transaction?.transaction_content,
+    transaction?.content,
+    transaction?.description,
+    transaction?.reference_number,
+    transaction?.referenceCode,
+  ].map((value) => normalizeSepayLookupText(value)).join(" ");
+  return haystack.includes(expectedCode);
+}
+
+async function findSepayApiTransactionForOrder(order) {
+  const config = sepayApiConfig();
+  if (!config.token || !order?.transfer_code) return null;
+  const baseUrl = config.baseUrl.replace(/\/+$/, "");
+  const params = new URLSearchParams({
+    q: String(order.transfer_code),
+    transfer_type: "in",
+    amount_in_min: String(Math.max(0, Number(order.amount || 0))),
+    amount_in_max: String(Math.max(0, Number(order.amount || 0))),
+    per_page: "10",
+    page: "1",
+    timestamp_format: "iso8601",
+  });
+  const response = await fetch(`${baseUrl}/transactions?${params.toString()}`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${config.token}`,
+    },
+  });
+  if (!response.ok) return null;
+  const body = await response.json().catch(() => null);
+  const transactions = Array.isArray(body?.data) ? body.data : [];
+  return transactions.find((transaction) => sepayTransactionMatchesOrder(transaction, order)) || null;
+}
+
+async function reconcilePendingOrderFromSepayApi(order) {
+  try {
+    const transaction = await findSepayApiTransactionForOrder(order);
+    if (!transaction) return null;
+    const paidAt = getSepayTransactionPaidAt(transaction) || new Date();
+    await activateOrder(order, null, paidAt);
+    const refreshed = await query("SELECT * FROM payment_orders WHERE id = $1", [order.id]);
+    return refreshed.rows[0] || null;
+  } catch {
+    return null;
+  }
+}
+
 async function activateOrder(order, sepayId, paidAt = new Date()) {
   const plan = await getPlanById(order.plan_id);
   if (!plan) return;
@@ -3598,23 +3703,28 @@ async function activateOrder(order, sepayId, paidAt = new Date()) {
     const orderResult = await client.query("SELECT * FROM payment_orders WHERE id = $1 FOR UPDATE", [order.id]);
     const lockedOrder = orderResult.rows[0];
     if (!lockedOrder || lockedOrder.status !== "pending") {
-      await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = COALESCE($2, order_id) WHERE sepay_id = $1", [sepayId, order.id]);
+      if (sepayId !== null) {
+        await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = COALESCE($2, order_id) WHERE sepay_id = $1", [sepayId, order.id]);
+      }
       await client.query("COMMIT");
       return;
     }
     const userResult = await client.query("SELECT premium_until, vip_trial_used FROM users WHERE id = $1 FOR UPDATE", [lockedOrder.user_id]);
     const user = userResult.rows[0];
     const isIntroVipPlan = isIntroVipPlanId(plan.id);
-    const paidAtIso = Number.isNaN(paidAt.getTime()) ? new Date().toISOString() : paidAt.toISOString();
+    const now = new Date();
+    const paidAtBase = Number.isNaN(paidAt.getTime()) || paidAt.getTime() > now.getTime() + 5 * 60 * 1000 ? now : paidAt;
+    const paidAtIso = paidAtBase.toISOString();
     if (isIntroVipPlan && (user?.vip_trial_used || await hasUsedIntroVipPlan(lockedOrder.user_id, client.query.bind(client), lockedOrder.id))) {
       await client.query("UPDATE payment_orders SET status = 'duplicate', paid_at = $2 WHERE id = $1 AND status = 'pending'", [lockedOrder.id, paidAtIso]);
-      await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
+      if (sepayId !== null) {
+        await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
+      }
       await client.query("COMMIT");
       return;
     }
-    const now = new Date();
     const currentEnd = user?.premium_until ? new Date(user.premium_until) : null;
-    const premiumUntil = applyPlanDuration(currentEnd && currentEnd > now ? currentEnd : now, plan);
+    const premiumUntil = applyPlanDuration(currentEnd && currentEnd > paidAtBase ? currentEnd : paidAtBase, plan);
     await client.query("UPDATE payment_orders SET status = 'paid', paid_at = $2, plan_id = $3 WHERE id = $1 AND status = 'pending'", [lockedOrder.id, paidAtIso, plan.id]);
     await client.query(
       `UPDATE users
@@ -3623,10 +3733,12 @@ async function activateOrder(order, sepayId, paidAt = new Date()) {
            vip_plan_id = $3,
            vip_trial_used = CASE WHEN $4::boolean THEN TRUE ELSE vip_trial_used END,
            updated_at = NOW()
-       WHERE id = $1`,
+      WHERE id = $1`,
       [lockedOrder.user_id, premiumUntil.toISOString(), plan.id, isIntroVipPlan],
     );
-    await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
+    if (sepayId !== null) {
+      await client.query("UPDATE sepay_webhook_events SET processed = TRUE, order_id = $2 WHERE sepay_id = $1", [sepayId, lockedOrder.id]);
+    }
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

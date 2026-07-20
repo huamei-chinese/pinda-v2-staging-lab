@@ -9,6 +9,8 @@ const stylesSource = fs.readFileSync(path.join(root, "public", "styles.css"), "u
 const authControllerSource = fs.readFileSync(path.join(root, "src", "auth", "auth.controller.ts"), "utf8");
 const authServiceSource = fs.readFileSync(path.join(root, "src", "auth", "auth.service.ts"), "utf8");
 const databaseServiceSource = fs.readFileSync(path.join(root, "src", "database", "database.service.ts"), "utf8");
+const mainSource = fs.readFileSync(path.join(root, "src", "main.ts"), "utf8");
+const standaloneServerSource = fs.readFileSync(path.join(root, "server.js"), "utf8");
 const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
 const envExampleSource = fs.readFileSync(path.join(root, ".env.example"), "utf8");
 
@@ -33,6 +35,8 @@ test("password reset frontend uses the three-step backend flow", () => {
 
 test("local frontend-only ports send API requests to the Nest backend port", () => {
   assert.match(appSource, /function getApiRequestUrl/);
+  assert.match(appSource, /function getLocalApiRequestBaseUrl/);
+  assert.match(appSource, /localApiBaseUrl !== null/);
   assert.match(appSource, /"4172"/);
   assert.match(appSource, /:4173\$\{value\}/);
   assert.match(appSource, /getConfiguredBackendUrl/);
@@ -73,4 +77,15 @@ test("email codes support Gmail app-password SMTP configuration", () => {
   assert.match(netlifyApiSource, /SMTP_PASS/);
   assert.match(envExampleSource, /SMTP_HOST=smtp\.gmail\.com/);
   assert.match(envExampleSource, /SMTP_PASS=your_google_app_password_without_spaces/);
+});
+
+test("local .env loader lets later duplicate keys win without overriding deployment env", () => {
+  assert.match(mainSource, /const envValues: Record<string, string> = \{\};/);
+  assert.match(mainSource, /envValues\[key\] = value;/);
+  assert.match(mainSource, /for \(const \[key, value\] of Object\.entries\(envValues\)\)/);
+  assert.match(mainSource, /if \(process\.env\[key\] === undefined\)/);
+  assert.match(standaloneServerSource, /const envValues = \{\};/);
+  assert.match(standaloneServerSource, /envValues\[key\] = value;/);
+  assert.match(standaloneServerSource, /for \(const \[key, value\] of Object\.entries\(envValues\)\)/);
+  assert.match(standaloneServerSource, /if \(process\.env\[key\] === undefined\)/);
 });

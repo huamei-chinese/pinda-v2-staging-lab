@@ -91,10 +91,121 @@ test("SePay order activation does not extend VIP when the order is already proce
   );
 });
 
+test("payment status reconciles a pending VIP order from SePay API when webhook is missing", async () => {
+  const previousToken = process.env.SEPAY_API_TOKEN;
+  const previousAccount = process.env.SEPAY_BANK_ACCOUNT;
+  const previousFetch = global.fetch;
+  process.env.SEPAY_API_TOKEN = "unit-test-sepay-token";
+  process.env.SEPAY_BANK_ACCOUNT = "0399054584";
+
+  const order = {
+    id: "order-129k",
+    user_id: "user-129k",
+    email: "buyer@example.com",
+    plan_id: "30d",
+    amount: 129000,
+    transfer_code: "HUAMEI2C9C8F02",
+    status: "pending",
+    paid_at: null,
+    expires_at: new Date(Date.now() - 60_000).toISOString(),
+  };
+  const queries = [];
+  const clientQueries = [];
+  const db = {
+    async query(sql, params) {
+      queries.push({ sql, params });
+      if (sql.includes("FROM payment_orders o")) {
+        return { rows: [{ ...order }], rowCount: 1 };
+      }
+      if (sql === "SELECT * FROM payment_orders WHERE id = $1") {
+        return { rows: [{ ...order, status: "paid", paid_at: "2026-07-19T10:34:00.000Z" }], rowCount: 1 };
+      }
+      if (sql.includes("SELECT is_premium, premium_until FROM users")) {
+        return { rows: [{ is_premium: true, premium_until: "2026-08-18T10:34:00.000Z" }], rowCount: 1 };
+      }
+      if (sql.includes("UPDATE payment_orders SET status = 'expired'")) {
+        throw new Error("order should reconcile before it expires");
+      }
+      return { rows: [], rowCount: 0 };
+    },
+    getPool: () => ({
+      connect: async () => ({
+        async query(sql, params) {
+          clientQueries.push({ sql, params });
+          if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [], rowCount: 0 };
+          if (sql.includes("SELECT * FROM payment_orders WHERE id = $1 FOR UPDATE")) {
+            return { rows: [{ ...order }], rowCount: 1 };
+          }
+          if (sql.includes("SELECT premium_until, vip_trial_used FROM users")) {
+            return { rows: [{ premium_until: null, vip_trial_used: false }], rowCount: 1 };
+          }
+          if (sql.includes("UPDATE payment_orders")) return { rows: [], rowCount: 1 };
+          if (sql.includes("UPDATE users")) return { rows: [], rowCount: 1 };
+          return { rows: [], rowCount: 0 };
+        },
+        release() {},
+      }),
+    }),
+  };
+  const plans = {
+    getPlanById: async () => ({
+      id: "30d",
+      months: 30,
+      durationUnit: "days",
+      amount: 129000,
+      nameVi: "Goi VIP 30 ngay",
+      nameZh: "30 days VIP",
+    }),
+  };
+  global.fetch = async (url, options) => {
+    assert.match(String(url), /https:\/\/userapi\.sepay\.vn\/v2\/transactions\?/);
+    assert.match(String(url), /q=HUAMEI2C9C8F02/);
+    assert.match(String(url), /amount_in_min=129000/);
+    assert.equal(options.headers.Authorization, "Bearer unit-test-sepay-token");
+    return {
+      ok: true,
+      async json() {
+        return {
+          status: "success",
+          data: [{
+            id: "sepay-api-transaction-1",
+            transaction_date: "2026-07-19T17:34:00+07:00",
+            account_number: "0399054584",
+            transfer_type: "in",
+            amount_in: 129000,
+            transaction_content: "MBVCB.15194738791.766224.HUAMEI2C9C8F02",
+            reference_number: "FT26201090402872",
+            code: null,
+          }],
+        };
+      },
+    };
+  };
+
+  try {
+    const service = new PaymentService(db, plans);
+    const result = await service.getOrderStatus(order.id, order.user_id);
+
+    assert.equal(result.order.status, "paid");
+    assert.equal(result.premium.isPremium, true);
+    assert.equal(clientQueries.some((query) => query.sql.includes("UPDATE users")), true);
+    assert.equal(clientQueries.some((query) => query.sql.includes("sepay_webhook_events")), false);
+  } finally {
+    if (previousToken === undefined) delete process.env.SEPAY_API_TOKEN;
+    else process.env.SEPAY_API_TOKEN = previousToken;
+    if (previousAccount === undefined) delete process.env.SEPAY_BANK_ACCOUNT;
+    else process.env.SEPAY_BANK_ACCOUNT = previousAccount;
+    global.fetch = previousFetch;
+  }
+});
+
 test("Netlify SePay activation persists the selected VIP plan id", () => {
   assert.match(netlifyApiSource, /ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_plan_id TEXT/);
   assert.match(netlifyApiSource, /function parseSepayTransactionDate\(value\)/);
   assert.match(netlifyApiSource, /parseSepayTransactionDate\(payload\.transactionDate\)/);
+  assert.match(netlifyApiSource, /function sepayApiConfig\(\)/);
+  assert.match(netlifyApiSource, /async function reconcilePendingOrderFromSepayApi\(order\)/);
+  assert.match(netlifyApiSource, /reconcilePendingOrderFromSepayApi\(order\)/);
   assert.match(netlifyApiSource, /paid_at = \$2/);
   assert.match(netlifyApiSource, /\{ id: "3d", months: 3, durationUnit: "days", amount: 29000/);
   assert.match(netlifyApiSource, /\{ id: "30d", months: 30, durationUnit: "days", amount: 129000/);

@@ -88,7 +88,7 @@ test("Netlify and local server expose all VIP overview users before API fallback
 test("Netlify admin user updates persist VIP plan ids including 90d", () => {
   assert.match(netlifyApiSource, /function vipPlanIdFromDuration\(planId, durationDays\)/);
   assert.match(netlifyApiSource, /if \(durationDays === 90\) return "90d"/);
-  assert.match(netlifyApiSource, /INSERT INTO users \(full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id\)/);
+  assert.match(netlifyApiSource, /INSERT INTO users \(full_name, email, password_hash, role, is_active, current_level, is_premium, premium_until, vip_plan_id, vip_trial_used\)/);
   assert.match(netlifyApiSource, /vip_plan_id = CASE[\s\S]*COALESCE\(\$9, vip_plan_id\)/);
 });
 

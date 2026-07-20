@@ -9,6 +9,7 @@ function loadEnvFile() {
   if (!fs.existsSync(envPath)) return;
 
   const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  const envValues: Record<string, string> = {};
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -25,7 +26,13 @@ function loadEnvFile() {
       value = value.slice(1, -1);
     }
 
-    if (key && process.env[key] === undefined) {
+    if (key) {
+      envValues[key] = value;
+    }
+  }
+
+  for (const [key, value] of Object.entries(envValues)) {
+    if (process.env[key] === undefined) {
       process.env[key] = value;
     }
   }
