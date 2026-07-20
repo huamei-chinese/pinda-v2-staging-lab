@@ -17251,32 +17251,40 @@ function findItemByHanzi(hanzi) {
 
 function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
   const item = itemDetail || {};
-  const itemHanzi = item.hanzi || hanzi;
-  const audioNormal = resolveAudioSource(item, "normal") || item.audioNormal || item.audioSrc || "";
-  const audioSlow = resolveAudioSource(item, "slow") || item.audioSlow || item.audio_slow || audioNormal;
-  const words = Array.isArray(item.words) && item.words.length > 0
-    ? item.words
+  const itemHanzi = hanzi || item.hanzi || "";
+  const normalizedTarget = normalizeHanzi(itemHanzi);
+  const itemMatchesTarget = normalizeHanzi(item.hanzi || itemChineseText(item)) === normalizedTarget;
+  const matchingWord = Array.isArray(item.words)
+    ? item.words.find((word) => normalizeHanzi(word?.text) === normalizedTarget)
+    : null;
+  const audioOwner = itemMatchesTarget ? item : matchingWord || {};
+  const audioNormal = resolveAudioSource(audioOwner, "normal") || audioOwner.audioNormal || audioOwner.audioSrc || "";
+  const audioSlow = resolveAudioSource(audioOwner, "slow") || audioOwner.audioSlow || audioOwner.audio_slow || audioNormal;
+  const candidateWords = Array.isArray(item.words) ? item.words.filter(Boolean) : [];
+  const wordsMatchTarget = normalizeHanzi(candidateWords.map((word) => word.text || "").join("")) === normalizedTarget;
+  const words = candidateWords.length > 0 && wordsMatchTarget
+    ? candidateWords
     : itemHanzi
       ? [{
         text: itemHanzi,
-        pinyin: item.pinyin || "",
-        tone: item.tone || "",
-        pos: item.pos || "",
-        vi: item.vi || "",
+        pinyin: matchingWord?.pinyin || item.pinyin || "",
+        tone: matchingWord?.tone || item.tone || "",
+        pos: matchingWord?.pos || item.pos || "",
+        vi: matchingWord?.vi || matchingWord?.vietnamese || item.vi || "",
         audioNormal,
         audioSlow,
-        audioSrc: item.audioSrc || audioNormal,
+        audioSrc: audioOwner.audioSrc || audioNormal,
       }]
       : [];
 
   return {
     ...item,
     hanzi: itemHanzi,
-    vi: item.vi || "",
+    vi: matchingWord?.vi || matchingWord?.vietnamese || item.vi || "",
     stage: item.stage || "word",
     audioNormal,
     audioSlow,
-    audioSrc: item.audioSrc || audioNormal,
+    audioSrc: audioOwner.audioSrc || audioNormal,
     words,
   };
 }
@@ -17539,7 +17547,7 @@ function renderPractice() {
       <section class="exercise-card">
         <span class="stage-pill">${hskContentTypeLabel(practiceStage)}</span>
         <p>${state.mode === "translate" ? t("translateHint") : t("dictationHint")}</p>
-        <h1 class="practice-prompt practice-prompt--${promptVariant}">${state.mode === "dictation" ? "听一听" : itemNow.vi}</h1>
+        <h1 class="practice-prompt practice-prompt--${promptVariant}">${state.mode === "dictation" ? itemNow.hanzi : itemNow.vi}</h1>
         <div class="slot-row">
           ${itemNow.words.map((word, index) => {
     const active = practiceRules.shouldRenderAnswerInput(state, index);
