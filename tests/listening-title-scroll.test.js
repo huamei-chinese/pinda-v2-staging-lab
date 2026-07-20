@@ -26,3 +26,10 @@ test("resuming a prepared title phase scrolls before playback starts", () => {
     /if \(phase === "main"\) \{[\s\S]*\} else if \(phase === "title"\) \{[\s\S]*setListeningTitleSentenceActive\(\{ scroll: true \}\);[\s\S]*\} else \{[\s\S]*prepareListeningMainAudio\(audio, episode\);[\s\S]*\}[\s\S]*playListeningAudio\(audio, token\);/,
   );
 });
+
+test("replay current listening sentence binds audio and stops after the sentence segment", () => {
+  assert.match(appSource, /function replayListeningCurrentSentence\(\) \{[\s\S]*bindListeningAudioEvents\(\);/);
+  assert.match(appSource, /getListeningRepeatSentenceAudioBounds\(\{ \.\.\.sentence, audioSrc: "" \}, audio\)/);
+  assert.match(appSource, /listeningSentenceReplayStopTimer = window\.setTimeout/);
+  assert.match(appSource, /if \(event\.target\.closest\("\[data-listening-replay\]"\)\) \{[\s\S]*replayListeningCurrentSentence\(\);/);
+});

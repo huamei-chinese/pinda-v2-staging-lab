@@ -13079,6 +13079,7 @@ let listeningPlaybackRequested = false;
 let listeningPlaybackToken = 0;
 let listeningRepeatSpeechToken = 0;
 let listeningRepeatSpeechState = "idle";
+let listeningSentenceReplayStopTimer = null;
 let listeningRepeatAudioStopTimer = null;
 let listeningRepeatStopTonePlayed = false;
 let listeningRealtimeWs = null;
@@ -15189,7 +15190,14 @@ function closeListeningSpeedMenus() {
   });
 }
 
+function clearListeningSentenceReplayStopTimer() {
+  if (!listeningSentenceReplayStopTimer) return;
+  window.clearTimeout(listeningSentenceReplayStopTimer);
+  listeningSentenceReplayStopTimer = null;
+}
+
 function nextListeningPlaybackToken() {
+  clearListeningSentenceReplayStopTimer();
   listeningPlaybackToken += 1;
   return listeningPlaybackToken;
 }
@@ -15355,6 +15363,55 @@ function seekListeningSentence(index, autoplay = false) {
     const audio = $("#listeningAudio");
     if (audio) prepareListeningMainAudio(audio, episode, startTime);
     syncListeningAudioUi();
+  });
+}
+
+function replayListeningCurrentSentence() {
+  bindListeningAudioEvents();
+  closeListeningSpeedMenus();
+  window.speechSynthesis?.cancel?.();
+
+  const episode = getListeningEpisode();
+  const total = episode.sentences.length;
+  if (!total) return;
+
+  state.listeningSentenceIndex = Math.max(0, Math.min(state.listeningSentenceIndex, total - 1));
+  const sentence = episode.sentences[state.listeningSentenceIndex] || {};
+  const audio = $("#listeningAudio");
+
+  refreshListeningActiveSentenceUi();
+
+  if (!audio || !episode.audioSrc) {
+    listeningPlaybackRequested = true;
+    nextListeningPlaybackToken();
+    if (!speakListeningSentence(state.listeningSentenceIndex)) {
+      listeningPlaybackRequested = false;
+      nextListeningPlaybackToken();
+      syncListeningAudioUi();
+    }
+    return;
+  }
+
+  const playbackRate = getListeningPlaybackRate();
+  const { startTime, stopTime } = getListeningRepeatSentenceAudioBounds({ ...sentence, audioSrc: "" }, audio);
+  listeningPlaybackRequested = true;
+  const token = nextListeningPlaybackToken();
+  prepareListeningMainAudio(audio, episode, startTime);
+  setListeningActiveSentence(state.listeningSentenceIndex, { force: true, scroll: true });
+  setListeningPlaybackUi(true);
+  playListeningAudio(audio, token).then(() => {
+    if (!isCurrentListeningPlaybackToken(token) || audio.paused) return;
+    const remainingMs = Math.max(
+      450,
+      ((stopTime - (audio.currentTime || startTime)) / playbackRate) * 1000 + LISTENING_REPEAT_STOP_TIMER_GRACE_MS,
+    );
+    listeningSentenceReplayStopTimer = window.setTimeout(() => {
+      listeningSentenceReplayStopTimer = null;
+      if (!isCurrentListeningPlaybackToken(token)) return;
+      if (!audio.paused) audio.pause();
+      listeningPlaybackRequested = false;
+      syncListeningAudioUi();
+    }, remainingMs);
   });
 }
 
@@ -18664,7 +18721,7 @@ function bindEvents() {
       }
 
       if (event.target.closest("[data-listening-replay]")) {
-        seekListeningSentence(state.listeningSentenceIndex, true);
+        replayListeningCurrentSentence();
         return;
       }
 
