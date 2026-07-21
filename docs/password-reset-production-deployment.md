@@ -68,9 +68,9 @@ MAIL_SERVICE_SECRET
 EMAIL_DELIVERY_MODE
 ```
 
-`RESEND_API_KEY` không còn được code xác thực/quên mật khẩu sử dụng. Nếu hệ
-thống nhắc học hằng ngày vẫn dùng Resend thì có thể giữ biến này cho scheduled
-function đó; nó không được dùng làm fallback cho OTP.
+`RESEND_API_KEY` không còn được bất kỳ luồng email production nào sử dụng và có
+thể xóa khỏi Railway/Netlify. Quên mật khẩu, xác minh email và nhắc học đều dùng
+Gmail SMTP; không có fallback sang Resend.
 
 Không gọi các endpoint cũ:
 

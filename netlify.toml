@@ -14,9 +14,6 @@
     "public/lesson-high-frequency-topic-unit.js"
   ]
 
-[functions."daily-reminders"]
-  schedule = "0 0 * * *"
-
 [[redirects]]
   from = "/listening-app"
   to = "/listening-app/index.html"

@@ -208,6 +208,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
     `);
+    await this.ensureReminderDeliverySchema();
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
     `);
@@ -335,6 +336,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
     `);
+    await this.ensureReminderDeliverySchema();
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
     `);
@@ -609,6 +611,33 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.query(`
       CREATE INDEX IF NOT EXISTS idx_coin_transactions_created
       ON coin_transactions(created_at DESC);
+    `);
+  }
+
+  private async ensureReminderDeliverySchema() {
+    if (!this.pool) return;
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS daily_reminder_deliveries (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reminder_date DATE NOT NULL,
+        email TEXT NOT NULL,
+        full_name TEXT,
+        status TEXT NOT NULL DEFAULT 'pending'
+          CHECK (status IN ('pending', 'processing', 'sent', 'failed', 'skipped')),
+        attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+        provider_message_id TEXT,
+        last_error TEXT,
+        locked_at TIMESTAMPTZ,
+        sent_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, reminder_date)
+      );
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_daily_reminder_deliveries_dispatch
+      ON daily_reminder_deliveries (reminder_date, status, created_at);
     `);
   }
 

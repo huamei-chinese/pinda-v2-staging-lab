@@ -1,0 +1,8 @@
+[build]
+  publish = "netlify-mail-public"
+  command = ""
+
+[functions]
+  directory = "netlify/reminder-functions"
+  node_bundler = "esbuild"
+

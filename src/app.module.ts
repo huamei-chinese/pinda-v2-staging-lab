@@ -10,6 +10,7 @@ import { ListeningModule } from './listening/listening.module';
 import { EventsModule } from './events/events.module';
 import { CoinsModule } from './coins/coins.module';
 import { AdminV2LocalPreviewModule } from './admin-v2-local-preview/admin-v2-local-preview.module';
+import { RemindersModule } from './reminders/reminders.module';
 
 const NO_STORE_CACHE_CONTROL = 'no-store, no-cache, must-revalidate, proxy-revalidate';
 const LONG_LIVED_STATIC_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -62,6 +63,7 @@ function setShortLivedRuntimeHeaders(res: any) {
     EventsModule,
     CoinsModule,
     AdminV2LocalPreviewModule,
+    RemindersModule,
   ],
 })
 export class AppModule {}
