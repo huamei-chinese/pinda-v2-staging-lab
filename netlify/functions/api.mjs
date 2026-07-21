@@ -2125,39 +2125,76 @@ async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
     return "dev";
   }
 
+  const deliveryErrors = [];
   if (env("SMTP_USER") && env("SMTP_PASS")) {
     try {
       await sendSmtpEmail(email, subject, html);
       return "sent";
     } catch (error) {
-      console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
-      throw apiError("Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.", 502);
+      const message = error instanceof Error ? error.message : String(error);
+      deliveryErrors.push(`smtp: ${message}`);
+      console.warn(`[${logPrefix}] SMTP email failed; trying Resend fallback:`, message);
     }
   }
 
   const resendApiKey = env("RESEND_API_KEY");
   const from = env("EMAIL_FROM") || "HuaMei <no-reply@huamei.vn>";
-  if (!resendApiKey) {
+  if (!resendApiKey && deliveryErrors.length === 0) {
     if (isProduction()) {
       throw apiError("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.", 503);
     }
     console.log(`[${logPrefix}] ${email}: ${code}`);
     return "dev";
   }
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to: email, subject, html }),
-  });
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
-    throw apiError("Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.", 502);
+  if (resendApiKey) {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ from, to: email, subject, html }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`HTTP ${response.status}: ${detail.slice(0, 500)}`);
+      }
+      return "sent";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      deliveryErrors.push(`resend: ${message}`);
+      console.warn(`[${logPrefix}] Resend email failed:`, message);
+    }
   }
-  return "sent";
+
+  console.error(`[${logPrefix}] All configured email providers failed: ${deliveryErrors.join(" | ")}`);
+  throw apiError("Dịch vụ gửi email đang tạm thời gián đoạn. Vui lòng thử lại sau.", 502);
+}
+
+function withCors(response, req) {
+  const origin = String(req.headers.get("origin") || "").replace(/\/+$/, "");
+  const configuredOrigins = env("CORS_ALLOWED_ORIGINS")
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  const allowedOrigins = new Set([
+    "https://hoctrung.com",
+    "https://www.hoctrung.com",
+    "http://localhost:4172",
+    "http://localhost:4173",
+    "http://localhost:5173",
+    ...configuredOrigins,
+  ]);
+  if (origin && allowedOrigins.has(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+  }
+  response.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type, Cache-Control");
+  response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  response.headers.set("Access-Control-Max-Age", "86400");
+  response.headers.append("Vary", "Origin");
+  return response;
 }
 
 async function sendVerificationEmail(email, code) {
@@ -4426,12 +4463,12 @@ async function route(req) {
 }
 
 export default async function handler(req) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204 });
+  if (req.method === "OPTIONS") return withCors(new Response(null, { status: 204 }), req);
   try {
-    return await route(req);
+    return withCors(await route(req), req);
   } catch (error) {
     console.error(error);
-    return json(error.payload || { error: error.message || "Lỗi server." }, error.status || 500);
+    return withCors(json(error.payload || { error: error.message || "Lỗi server." }, error.status || 500), req);
   }
 }
 

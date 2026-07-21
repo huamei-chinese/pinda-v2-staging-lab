@@ -534,6 +534,29 @@ function renderHighFrequencyTopicsLoading(options = {}) {
   `, "app-desktop-shell--course", activeNav, options);
 }
 
+function renderHskLessonOpenLoading(options = {}) {
+  const isVi = state.lang === "vi";
+  const contentType = options.contentType || "";
+  const loadingTitle = contentType === "word"
+    ? (isVi ? "Đang chuẩn bị từ vựng..." : "正在准备词汇...")
+    : contentType === "sentence"
+      ? (isVi ? "Đang chuẩn bị phần câu..." : "正在准备句子...")
+      : (isVi ? "Đang mở bài học..." : "正在打开课程...");
+  setScreenWithDesktopShell("course", `
+    <section class="hsk-lesson-screen hsk-lesson-screen--loading">
+      <div class="hsk-lesson-panel">
+        ${renderLessonLoadingHTML({
+          variant: "write",
+          title: loadingTitle,
+          detail: isVi
+            ? "Đang kiểm tra quyền truy cập và chuẩn bị nội dung luyện tập."
+            : "正在检查访问权限并准备练习内容。",
+        })}
+      </div>
+    </section>
+  `, "app-desktop-shell--course", "hsk");
+}
+
 const hskTags = {
   "hsk2-l1": { text: "Du lịch", class: "tag-travel", icon: "🌲" },
   "hsk2-l2": { text: "Thói quen", class: "tag-habit", icon: "🕒" },
@@ -4287,6 +4310,7 @@ async function firebaseUpdatePassword(currentPassword, newPassword) {
 }
 
 async function apiRequest(path, options = {}) {
+  const { auth = true, ...fetchOptions } = options;
   if (BACKEND_DISABLED && path.startsWith("/api/")) {
     throw new Error(backendDisabledMessage());
   }
@@ -4296,17 +4320,17 @@ async function apiRequest(path, options = {}) {
     || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path)
     || /^\/api\/coins(?:\/|\?|$)/.test(path);
   const requestUrl = getApiRequestUrl(path);
-  const firebaseIdToken = await getFirebaseIdToken();
+  const firebaseIdToken = auth ? await getFirebaseIdToken() : "";
   let response;
   try {
     response = await fetch(requestUrl, {
-      cache: shouldBypassCache ? "no-store" : options.cache,
-      ...options,
+      cache: shouldBypassCache ? "no-store" : fetchOptions.cache,
+      ...fetchOptions,
       headers: {
         "Content-Type": "application/json",
         ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
         ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),
-        ...(options.headers || {}),
+        ...(fetchOptions.headers || {}),
       },
     });
   } catch (error) {
@@ -4325,6 +4349,12 @@ async function apiRequest(path, options = {}) {
     throw requestError;
   }
   return data;
+}
+
+const PASSWORD_RESET_API_BASE_URL = "https://servermail222.netlify.app";
+
+function passwordResetApiRequest(path, options = {}) {
+  return apiRequest(`${PASSWORD_RESET_API_BASE_URL}${path}`, { ...options, auth: false });
 }
 
 const TRAFFIC_SOURCE_KEY = "v2-traffic-source";
@@ -9610,7 +9640,7 @@ function renderAdmin() {
     screens.admin.innerHTML = `
       <section class="admin-login-screen">
         <form class="admin-login-card" id="adminLoginForm">
-          <img class="admin-login-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+          <img class="admin-login-logo" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
           <h1>${isVi ? "Đăng nhập Admin" : "管理员登录"}</h1>
           <p>${isVi ? "Chỉ tài khoản có quyền admin mới có thể truy cập trang quản trị." : "只有管理员账户可以访问控制台。"}</p>
           <label>
@@ -9685,7 +9715,7 @@ function renderAdmin() {
     <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
         <div class="admin-brand">
-          <img class="admin-brand-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+          <img class="admin-brand-logo" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
           <div><strong>HuaMei</strong><small>ADMIN CONSOLE</small></div>
         </div>
         <button class="admin-language-inline-btn" id="adminLanguageInlineBtn" type="button">
@@ -9825,7 +9855,7 @@ function showModal(type) {
     <div class="auth-modal-content">
       <button class="auth-modal-close" id="closeAuthModal" type="button">&times;</button>
       <div class="auth-modal-logo auth-modal-logo--brand">
-        <img src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+        <img src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
       </div>
       <h2>${isLogin ? (isVi ? "Đăng nhập" : "登录") : (isVi ? "Đăng ký tài khoản" : "注册账户")}</h2>
       <p class="auth-modal-sub">${isLogin ? (isVi ? "Chào mừng bạn quay trở lại!" : "欢迎回来！") : (isVi ? "Bắt đầu hành trình học tiếng Trung ngay hôm nay." : "立即开始您的中文学习之旅。")}</p>
@@ -10095,7 +10125,7 @@ function showPasswordResetModal(prefillEmail = "") {
     button.disabled = true;
     button.textContent = isVi ? "Đang gửi mã..." : "正在发送...";
     try {
-      const data = await apiRequest("/api/password-reset/request", {
+      const data = await passwordResetApiRequest("/api/password-reset/request", {
         method: "POST",
         body: JSON.stringify({ email: resetEmail }),
       });
@@ -10164,7 +10194,7 @@ function showPasswordResetModal(prefillEmail = "") {
         submitBtn.disabled = true;
         submitBtn.textContent = isVi ? "Đang xác minh..." : "正在验证...";
         try {
-          await apiRequest("/api/password-reset/verify", {
+          await passwordResetApiRequest("/api/password-reset/verify", {
             method: "POST",
             body: JSON.stringify({ email: resetEmail, code: resetCode }),
           });
@@ -10196,7 +10226,7 @@ function showPasswordResetModal(prefillEmail = "") {
         submitBtn.disabled = true;
         submitBtn.textContent = isVi ? "Đang cập nhật..." : "正在更新...";
         try {
-          const data = await apiRequest("/api/password-reset/confirm", {
+          const data = await passwordResetApiRequest("/api/password-reset/confirm", {
             method: "POST",
             body: JSON.stringify({ email: resetEmail, code: resetCode, newPassword, confirmPassword }),
           });
@@ -11641,7 +11671,7 @@ function renderGlobalFooter() {
         <div class="footer-container">
           <div class="footer-brand-col">
             <div class="footer-logo">
-              <img class="footer-logo-image" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+              <img class="footer-logo-image" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
               <span class="footer-logo-text">${isVi ? "Học Tiếng Trung" : "学习中文"}</span>
             </div>
             <p class="footer-tagline">${isVi ? "Học dễ hiểu - Nhớ lâu - Ứng dụng ngay" : "易学 - 难忘 - 即学即用"}</p>
@@ -11850,7 +11880,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   return `
     <aside class="home-desktop-sidebar" aria-label="${isVi ? "Điều hướng" : "导航"}">
       <div class="home-desktop-brand">
-        <img class="home-desktop-brand-icon" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+        <img class="home-desktop-brand-icon" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
           <small>${isVi ? "Học đúng - Nhớ lâu" : "学得准 – 记得稳"}</small>
@@ -15793,7 +15823,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
 
         <section class="home-desktop-saved-section">
           <div class="home-desktop-section-head">
-            <h2><span class="saved-heading-star">★</span> ${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h2>
+            <h2><span class="saved-heading-star">★</span> ${isVi ? "Bộ từ đã lưu" : "收藏生词"}</h2>
             <button type="button" class="home-desktop-link-btn" data-home-module="vocab">${isVi ? "Xem tất cả" : "查看全部"} ›</button>
           </div>
           ${renderHomeDesktopSavedVocabHTML(isVi)}
@@ -16001,9 +16031,9 @@ function renderHomeMobileSavedVocabHTML(isVi) {
     .slice(0, 4);
 
   return `
-    <section class="home-mobile-saved-section" aria-label="${isVi ? "Từ vựng đã lưu" : "收藏生词"}">
+    <section class="home-mobile-saved-section" aria-label="${isVi ? "Bộ từ đã lưu" : "收藏生词"}">
       <div class="home-mobile-saved-head">
-        <h2><span class="saved-heading-star">★</span> ${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h2>
+        <h2><span class="saved-heading-star">★</span> ${isVi ? "Bộ từ đã lưu" : "收藏生词"}</h2>
         <button type="button" class="home-mobile-saved-link" data-home-module="vocab">
           ${isVi ? "Xem tất cả" : "查看全部"} <span aria-hidden="true">›</span>
         </button>
@@ -16330,7 +16360,10 @@ function renderHskLessonListHTML(options = {}) {
         <div class="hsk-lesson-right">
           <span class="hsk-items-count hsk-items-count--word">${wordCount} ${isVi ? "từ vựng" : "生词"}</span>
           <span class="hsk-items-count hsk-items-count--phrase">${sentenceCount} ${isVi ? "câu" : "句子"}</span>
-          ${isLocked ? "" : `<button class="hsk-lesson-arrow-btn" type="button" aria-label="${isVi ? "Luyện tập" : "练习"}">›</button>`}
+          ${isLocked ? "" : `
+            <button class="hsk-lesson-arrow-btn" type="button" aria-label="${isVi ? "Luyện tập" : "练习"}">›</button>
+            <span class="hsk-lesson-loading-spinner" role="status" aria-label="${isVi ? "Đang mở bài học" : "正在打开课程"}"></span>
+          `}
         </div>
       </div>
     `;
@@ -17492,6 +17525,18 @@ function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
     audioSrc: audioOwner.audioSrc || audioNormal,
     words,
   };
+}
+
+function setHskLessonCardLoading(lessonCard, loading = true) {
+  if (!lessonCard) return;
+  lessonCard.classList.toggle("is-loading", loading);
+  if (loading) lessonCard.setAttribute("aria-busy", "true");
+  else lessonCard.removeAttribute("aria-busy");
+  lessonCard.querySelector(".hsk-lesson-arrow-btn")?.toggleAttribute("disabled", loading);
+}
+
+function waitForHskLessonLoadingPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 320))));
 }
 
 function startSavedVocabPractice(index = 0) {
@@ -20214,8 +20259,11 @@ function bindEvents() {
       const nextContentType = hskContentTypeBtn.dataset.hskContentType;
       if (state.hskPendingLessonId) {
         if (showFastVipPromptIfKnownLocked(getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked", promptHskLessonLocked)) return;
+        renderHskLessonOpenLoading({ contentType: nextContentType });
+        await waitForHskLessonLoadingPaint();
         await refreshContentLocksIfStale(0, { force: true });
         if (getHskContentTypeAccessStatus(state.hskPendingLessonId, nextContentType) === "locked") {
+          renderHskCourse();
           promptHskLessonLocked();
           return;
         }
@@ -20233,10 +20281,14 @@ function bindEvents() {
     }
     const lessonBtn = event.target.closest("[data-lesson]");
     if (lessonBtn) {
+      if (lessonBtn.classList.contains("is-loading")) return;
       const lessonId = lessonBtn.dataset.lesson;
       if (showFastVipPromptIfKnownLocked(isHskLessonLockedForUser(lessonId), promptHskLessonLocked)) return;
+      renderHskLessonOpenLoading();
+      await waitForHskLessonLoadingPaint();
       await refreshContentLocksIfStale(0, { force: true });
       if (isHskLessonLockedForUser(lessonId)) {
+        renderHskCourse();
         promptHskLessonLocked();
         return;
       }

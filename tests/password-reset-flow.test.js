@@ -25,9 +25,11 @@ test("login modal exposes a forgot-password entry point", () => {
 
 test("password reset frontend uses the three-step backend flow", () => {
   assert.match(appSource, /function showPasswordResetModal/);
-  assert.match(appSource, /\/api\/password-reset\/request/);
-  assert.match(appSource, /\/api\/password-reset\/verify/);
-  assert.match(appSource, /\/api\/password-reset\/confirm/);
+  assert.match(appSource, /PASSWORD_RESET_API_BASE_URL = "https:\/\/servermail222\.netlify\.app"/);
+  assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/request"/);
+  assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/verify"/);
+  assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/confirm"/);
+  assert.match(appSource, /\{ \.\.\.options, auth: false \}/);
   assert.match(appSource, /passwordResetCodeInput/);
   assert.match(appSource, /passwordResetNewPassword/);
   assert.match(appSource, /state\.user = data\.user/);
@@ -86,6 +88,33 @@ test("email codes support Gmail app-password SMTP configuration", () => {
   assert.match(netlifyApiSource, /SMTP_PASS/);
   assert.match(envExampleSource, /SMTP_HOST=smtp\.gmail\.com/);
   assert.match(envExampleSource, /SMTP_PASS=your_google_app_password_without_spaces/);
+});
+
+test("Netlify API allows password reset calls from hoctrung.com", () => {
+  assert.match(netlifyApiSource, /https:\/\/hoctrung\.com/);
+  assert.match(netlifyApiSource, /Access-Control-Allow-Origin/);
+  assert.match(netlifyApiSource, /Access-Control-Allow-Methods/);
+  assert.match(netlifyApiSource, /withCors\(await route\(req\), req\)/);
+});
+
+test("transactional email falls back when the preferred provider fails", () => {
+  for (const source of [authServiceSource, standaloneServerSource, netlifyApiSource]) {
+    assert.match(source, /deliveryErrors/);
+    assert.match(source, /trying (?:fallback|Resend fallback)/);
+    assert.match(source, /All configured email providers failed/);
+    assert.match(source, /AbortSignal\.timeout\(20_000\)/);
+  }
+});
+
+test("Railway delegates transactional email to the protected Netlify mail function", () => {
+  for (const source of [authServiceSource, standaloneServerSource]) {
+    assert.match(source, /MAIL_SERVICE_URL/);
+    assert.match(source, /MAIL_SERVICE_SECRET/);
+    assert.match(source, /Authorization: `Bearer \$\{mailServiceSecret\}`/);
+    assert.match(source, /JSON\.stringify\(\{ email, type: logPrefix, code \}\)/);
+  }
+  assert.match(envExampleSource, /MAIL_SERVICE_URL=https:\/\/servermail222\.netlify\.app\/\.netlify\/functions\/mail/);
+  assert.match(envExampleSource, /MAIL_SERVICE_SECRET=replace_with_at_least_32_random_characters/);
 });
 
 test("development OTP logging is explicit and forbidden in production", () => {

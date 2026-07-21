@@ -688,6 +688,37 @@ export class AuthService {
       return 'dev';
     }
 
+    const deliveryErrors: string[] = [];
+    const mailServiceUrl = String(process.env.MAIL_SERVICE_URL || '').trim();
+    if (mailServiceUrl) {
+      const mailServiceSecret = String(process.env.MAIL_SERVICE_SECRET || '');
+      if (!mailServiceSecret) {
+        throw new HttpException(
+          'MAIL_SERVICE_SECRET is required when MAIL_SERVICE_URL is configured.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      try {
+        const response = await fetch(mailServiceUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${mailServiceSecret}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, type: logPrefix, code }),
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) {
+          throw new Error(`Mail service returned HTTP ${response.status}.`);
+        }
+        return 'sent';
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        deliveryErrors.push(`mail-service: ${message}`);
+        console.warn(`[${logPrefix}] Netlify mail service failed; trying fallback:`, message);
+      }
+    }
+
     const smtpUser = process.env.SMTP_USER || '';
     const smtpPass = process.env.SMTP_PASS || '';
     if (smtpUser && smtpPass) {
@@ -695,14 +726,15 @@ export class AuthService {
         await this.sendSmtpEmail(email, subject, html);
         return 'sent';
       } catch (error) {
-        console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
-        throw new HttpException('Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.', HttpStatus.BAD_GATEWAY);
+        const message = error instanceof Error ? error.message : String(error);
+        deliveryErrors.push(`smtp: ${message}`);
+        console.warn(`[${logPrefix}] SMTP email failed; trying fallback:`, message);
       }
     }
 
     const resendApiKey = process.env.RESEND_API_KEY || '';
     const from = process.env.EMAIL_FROM || 'HuaMei <no-reply@huamei.vn>';
-    if (!resendApiKey) {
+    if (!resendApiKey && deliveryErrors.length === 0) {
       if (process.env.NODE_ENV === 'production') {
         throw new HttpException(
           'Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.',
@@ -713,20 +745,34 @@ export class AuthService {
       return 'dev';
     }
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to: email, subject, html }),
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
-      throw new HttpException('Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.', HttpStatus.BAD_GATEWAY);
+    if (resendApiKey) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ from, to: email, subject, html }),
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => '');
+          throw new Error(`HTTP ${response.status}: ${detail.slice(0, 500)}`);
+        }
+        return 'sent';
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        deliveryErrors.push(`resend: ${message}`);
+        console.warn(`[${logPrefix}] Resend email failed:`, message);
+      }
     }
-    return 'sent';
+
+    console.error(`[${logPrefix}] All configured email providers failed: ${deliveryErrors.join(' | ')}`);
+    throw new HttpException(
+      'Dịch vụ gửi email đang tạm thời gián đoạn. Vui lòng thử lại sau.',
+      HttpStatus.BAD_GATEWAY,
+    );
   }
 
   private async sendVerificationEmail(email: string, code: string): Promise<'sent' | 'dev'> {

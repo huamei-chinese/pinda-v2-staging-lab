@@ -2659,6 +2659,8 @@ p {
 }
 
 .hsk-lesson-screen .hsk-lesson-card {
+  position: relative;
+  overflow: hidden;
   min-height: 92px;
   display: grid;
   grid-template-columns: minmax(360px, 1fr) auto auto;
@@ -2668,6 +2670,71 @@ p {
   border-color: #e5e7eb;
   padding: 16px 30px 16px 24px;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.hsk-lesson-screen .hsk-lesson-card.is-loading {
+  cursor: progress;
+  pointer-events: none;
+  border-color: var(--hsk-theme-primary);
+  background: linear-gradient(90deg, var(--hsk-theme-faint) 0%, #ffffff 58%, var(--hsk-theme-soft) 100%);
+  box-shadow: 0 14px 30px var(--hsk-theme-shadow);
+}
+
+.hsk-lesson-screen .hsk-lesson-card.is-loading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 42%;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--hsk-theme-primary-light), var(--hsk-theme-primary-dark));
+  animation: hsk-lesson-loading-track 0.85s ease-in-out infinite;
+}
+
+.hsk-lesson-screen .hsk-lesson-card.is-loading .hsk-lesson-number {
+  animation: hsk-lesson-loading-pulse 0.85s ease-in-out infinite alternate;
+}
+
+.hsk-lesson-loading-spinner {
+  display: none;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 3px solid var(--hsk-theme-border);
+  border-top-color: var(--hsk-theme-primary-dark);
+  border-radius: 50%;
+  animation: hsk-lesson-loading-spin 0.7s linear infinite;
+}
+
+.hsk-lesson-screen .hsk-lesson-card.is-loading .hsk-lesson-arrow-btn {
+  display: none;
+}
+
+.hsk-lesson-screen .hsk-lesson-card.is-loading .hsk-lesson-loading-spinner {
+  display: inline-block;
+}
+
+@keyframes hsk-lesson-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hsk-lesson-loading-track {
+  0% { transform: translateX(-115%); }
+  100% { transform: translateX(340%); }
+}
+
+@keyframes hsk-lesson-loading-pulse {
+  from { transform: scale(0.96); filter: saturate(0.9); }
+  to { transform: scale(1.04); filter: saturate(1.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hsk-lesson-screen .hsk-lesson-card.is-loading::after,
+  .hsk-lesson-screen .hsk-lesson-card.is-loading .hsk-lesson-number,
+  .hsk-lesson-loading-spinner {
+    animation: none;
+  }
 }
 
 .hsk-lesson-screen .hsk-lesson-card.completed {
@@ -14540,15 +14607,15 @@ p {
   .home-desktop-brand-icon {
     width: 42px;
     height: 42px;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #34c879 0%, #0ea855 100%);
+    border-radius: 0;
+    background: transparent;
     color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
-    box-shadow: 0 8px 18px rgba(14, 168, 85, 0.24);
-    object-fit: cover;
+    box-shadow: none;
+    object-fit: contain;
     display: block;
   }
 
@@ -36556,7 +36623,7 @@ body:has(#practiceScreen:not(.hidden)) {
   .screen-home .home-desktop-saved-section {
     padding: 18px 16px !important;
     border-radius: 22px !important;
-    display: none !important;
+    display: block !important;
   }
 
   .screen-home .home-desktop-section-head {
@@ -36572,12 +36639,30 @@ body:has(#practiceScreen:not(.hidden)) {
     gap: 10px !important;
   }
 
+  .screen-home .home-desktop-vocab-card {
+    min-width: 0 !important;
+    padding: 14px 12px !important;
+  }
+
+  .screen-home .home-desktop-vocab-hanzi {
+    font-size: 25px !important;
+  }
+
+  .screen-home .home-desktop-vocab-pinyin,
+  .screen-home .home-desktop-vocab-meaning {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
   .screen-home .home-desktop-vocab-empty {
-    /* min-height: 86px !important; */
-    padding: 0px 18px !important;
+    min-height: 78px !important;
+    padding: 16px 18px !important;
     border-radius: 18px !important;
     font-size: 14px !important;
     line-height: 1.45 !important;
+    display: grid !important;
+    place-items: center !important;
   }
 
   .screen-home .home-desktop-challenge {
@@ -37794,9 +37879,9 @@ body:has(#practiceScreen:not(.hidden)) {
   .app-desktop-shell .home-desktop-brand-icon {
     width: 48px !important;
     height: 48px !important;
-    border-radius: 14px !important;
-    background: linear-gradient(135deg, #2bd47d, #0ea855) !important;
-    box-shadow: 0 16px 30px rgba(14, 168, 85, 0.26) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .app-desktop-shell .home-desktop-brand strong {
@@ -56846,5 +56931,183 @@ body:has(#practiceScreen:not(.hidden)) {
 
   .screen-home .home-coin-hunt-card {
     grid-column: auto !important;
+  }
+}
+
+/* Saved-vocabulary cards reuse the desktop markup on compact home layouts.
+   Restate the complete component here because its base rules live in the
+   desktop-only home block. */
+@media (max-width: 900px) {
+  .screen-home .home-desktop-saved-section {
+    position: relative !important;
+    display: block !important;
+    padding: 14px 16px 16px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(219, 234, 254, 0.92) !important;
+    border-radius: 20px !important;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.84), rgba(240, 253, 250, 0.7)),
+      linear-gradient(105deg, transparent 0 18%, rgba(219, 234, 254, 0.3) 18% 34%, transparent 34% 52%, rgba(209, 250, 229, 0.25) 52% 70%, transparent 70%) !important;
+    box-shadow: 0 12px 28px rgba(30, 64, 175, 0.08) !important;
+    backdrop-filter: blur(7px) saturate(1.06) !important;
+    -webkit-backdrop-filter: blur(7px) saturate(1.06) !important;
+  }
+
+  .screen-home .home-desktop-saved-section::before,
+  .screen-home .home-desktop-saved-section::after {
+    display: none !important;
+  }
+
+  .screen-home .home-desktop-saved-section > * {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .screen-home .home-desktop-section-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    min-height: 30px !important;
+    margin: 0 0 10px !important;
+  }
+
+  .screen-home .home-desktop-section-head h2 {
+    margin: 0 !important;
+    color: #172b45 !important;
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+  }
+
+  .screen-home .home-desktop-link-btn {
+    min-height: 30px !important;
+    padding: 0 4px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #0b9f55 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    box-shadow: none !important;
+  }
+
+  .screen-home .home-desktop-vocab-empty {
+    display: grid !important;
+    min-height: 72px !important;
+    margin: 0 !important;
+    padding: 14px 18px !important;
+    place-items: center !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(219, 234, 254, 0.9) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    color: #718096 !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+    box-shadow: 0 7px 18px rgba(148, 163, 184, 0.08) !important;
+  }
+
+  .screen-home .home-desktop-vocab-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .screen-home .home-desktop-vocab-card {
+    position: relative !important;
+    display: grid !important;
+    grid-template-rows: auto auto minmax(18px, 1fr) auto !important;
+    min-width: 0 !important;
+    min-height: 148px !important;
+    padding: 14px 12px 12px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(219, 229, 242, 0.96) !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.94) !important;
+    box-shadow: 0 10px 24px rgba(30, 64, 175, 0.09) !important;
+  }
+
+  .screen-home .home-desktop-vocab-top {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .screen-home .home-desktop-vocab-hanzi {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    color: #0f2744 !important;
+    font-family: "Noto Sans SC", sans-serif !important;
+    font-size: 25px !important;
+    font-weight: 800 !important;
+    line-height: 1.12 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-home .home-desktop-vocab-star {
+    display: inline-grid !important;
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    place-items: center !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #f59e0b !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    appearance: none !important;
+  }
+
+  .screen-home .home-desktop-vocab-pinyin {
+    margin: 5px 0 0 !important;
+    overflow: hidden !important;
+    color: #66768a !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-home .home-desktop-vocab-meaning {
+    margin: 3px 0 0 !important;
+    overflow: hidden !important;
+    color: #718096 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .screen-home .home-desktop-vocab-speak.vocab-speak-btn {
+    position: static !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    margin: 10px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: linear-gradient(105deg, #6557ff 0%, #3388ee 52%, #08beca 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.22) !important;
+  }
+
+  .screen-home .home-desktop-vocab-speak.vocab-speak-btn svg {
+    width: 15px !important;
+    height: 15px !important;
   }
 }

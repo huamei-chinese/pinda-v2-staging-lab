@@ -4392,7 +4392,7 @@ function renderAdmin() {
     screens.admin.innerHTML = `
       <section class="admin-login-screen">
         <form class="admin-login-card" id="adminLoginForm">
-          <img class="admin-login-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+          <img class="admin-login-logo" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
           <h1>${isVi ? "Đăng nhập Admin" : "管理员登录"}</h1>
           <p>${isVi ? "Chỉ tài khoản có quyền admin mới có thể truy cập trang quản trị." : "只有管理员账户可以访问控制台。"}</p>
           <label>
@@ -4445,7 +4445,7 @@ function renderAdmin() {
     <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
         <div class="admin-brand">
-          <img class="admin-brand-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+          <img class="admin-brand-logo" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
           <div><strong>HuaMei</strong><small>ADMIN CONSOLE</small></div>
         </div>
         <button class="admin-language-inline-btn" id="adminLanguageInlineBtn" type="button">
@@ -4577,7 +4577,7 @@ function showModal(type) {
     <div class="auth-modal-content">
       <button class="auth-modal-close" id="closeAuthModal" type="button">&times;</button>
       <div class="auth-modal-logo auth-modal-logo--brand">
-        <img src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+        <img src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
       </div>
       <h2>${isLogin ? (isVi ? "Đăng nhập" : "登录") : (isVi ? "Đăng ký tài khoản" : "注册账户")}</h2>
       <p class="auth-modal-sub">${isLogin ? (isVi ? "Chào mừng bạn quay trở lại!" : "欢迎回来！") : (isVi ? "Bắt đầu hành trình học tiếng Trung ngay hôm nay." : "立即开始您的中文学习之旅。")}</p>
@@ -6118,7 +6118,7 @@ function renderGlobalFooter() {
         <div class="footer-container">
           <div class="footer-brand-col">
             <div class="footer-logo">
-              <img class="footer-logo-image" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+              <img class="footer-logo-image" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
               <span class="footer-logo-text">${isVi ? "Học Tiếng Trung" : "学习中文"}</span>
             </div>
             <p class="footer-tagline">${isVi ? "Học dễ hiểu - Nhớ lâu - Ứng dụng ngay" : "易学 - 难忘 - 即学即用"}</p>
@@ -6339,7 +6339,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   return `
     <aside class="home-desktop-sidebar" aria-label="${isVi ? "Điều hướng" : "导航"}">
       <div class="home-desktop-brand">
-        <img class="home-desktop-brand-icon" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
+        <img class="home-desktop-brand-icon" src="/assets/huamei-logo-transparent.png" alt="Logo Học Trung HuaMei" />
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
           <small>${isVi ? "Viết đúng - Nhớ lâu" : "写好字 · 记得牢"}</small>
@@ -8458,7 +8458,7 @@ function renderHomeDesktopLayoutHTML(isVi) {
 
         <section class="home-desktop-saved-section">
           <div class="home-desktop-section-head">
-            <h2><span class="saved-heading-star">★</span> ${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h2>
+            <h2><span class="saved-heading-star">★</span> ${isVi ? "Bộ từ đã lưu" : "收藏生词"}</h2>
             <button type="button" class="home-desktop-link-btn" data-home-module="vocab">${isVi ? "Xem tất cả" : "查看全部"} ›</button>
           </div>
           ${renderHomeDesktopSavedVocabHTML(isVi)}
@@ -8648,9 +8648,9 @@ function renderHomeMobileSavedVocabHTML(isVi) {
     .slice(0, 4);
 
   return `
-    <section class="home-mobile-saved-section" aria-label="${isVi ? "Từ vựng đã lưu" : "收藏生词"}">
+    <section class="home-mobile-saved-section" aria-label="${isVi ? "Bộ từ đã lưu" : "收藏生词"}">
       <div class="home-mobile-saved-head">
-        <h2><span class="saved-heading-star">★</span> ${isVi ? "Từ vựng đã lưu" : "收藏生词"}</h2>
+        <h2><span class="saved-heading-star">★</span> ${isVi ? "Bộ từ đã lưu" : "收藏生词"}</h2>
         <button type="button" class="home-mobile-saved-link" data-home-module="vocab">
           ${isVi ? "Xem tất cả" : "查看全部"} <span aria-hidden="true">›</span>
         </button>
@@ -8893,7 +8893,10 @@ function renderHskLessonListHTML(options = {}) {
         <div class="hsk-lesson-right">
           <span class="hsk-items-count hsk-items-count--word">${wordCount} ${isVi ? "từ vựng" : "生词"}</span>
           <span class="hsk-items-count hsk-items-count--phrase">${sentenceCount} ${isVi ? "câu" : "句子"}</span>
-          ${isLocked ? "" : `<button class="hsk-lesson-arrow-btn" type="button" aria-label="${isVi ? "Luyện tập" : "练习"}">›</button>`}
+          ${isLocked ? "" : `
+            <button class="hsk-lesson-arrow-btn" type="button" aria-label="${isVi ? "Luyện tập" : "练习"}">›</button>
+            <span class="hsk-lesson-loading-spinner" role="status" aria-label="${isVi ? "Đang mở bài học" : "正在打开课程"}"></span>
+          `}
         </div>
       </div>
     `;
@@ -9817,6 +9820,18 @@ function normalizeVocabPracticeItem(itemDetail, hanzi = "") {
     audioSrc: audioOwner.audioSrc || audioNormal,
     words,
   };
+}
+
+function setHskLessonCardLoading(lessonCard, loading = true) {
+  if (!lessonCard) return;
+  lessonCard.classList.toggle("is-loading", loading);
+  if (loading) lessonCard.setAttribute("aria-busy", "true");
+  else lessonCard.removeAttribute("aria-busy");
+  lessonCard.querySelector(".hsk-lesson-arrow-btn")?.toggleAttribute("disabled", loading);
+}
+
+function waitForHskLessonLoadingPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 320))));
 }
 
 function startSavedVocabPractice(index = 0) {
@@ -11861,14 +11876,18 @@ function bindEvents() {
     }
     const lessonBtn = event.target.closest("[data-lesson]");
     if (lessonBtn) {
+      if (lessonBtn.classList.contains("is-loading")) return;
       const lessonId = lessonBtn.dataset.lesson;
       if (isHskLessonLockedForUser(lessonId)) {
         promptHskLessonLocked();
         return;
       }
-      state.hskPendingLessonId = lessonId;
-      state.hskContentType = "";
-      renderHskCourse();
+      setHskLessonCardLoading(lessonBtn, true);
+      waitForHskLessonLoadingPaint().then(() => {
+        state.hskPendingLessonId = lessonId;
+        state.hskContentType = "";
+        renderHskCourse();
+      });
       return;
     }
     const themeBtn = event.target.closest("[data-theme]");
