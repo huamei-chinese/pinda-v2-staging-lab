@@ -1455,6 +1455,17 @@ async function sendSmtpEmail(to, subject, html) {
 }
 
 async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
+  const deliveryMode = String(process.env.EMAIL_DELIVERY_MODE || "").trim().toLowerCase();
+  if (deliveryMode === "dev") {
+    if (process.env.NODE_ENV === "production") {
+      const error = new Error("EMAIL_DELIVERY_MODE=dev is not allowed in production.");
+      error.status = 503;
+      throw error;
+    }
+    console.log(`[${logPrefix}] ${email}: ${code}`);
+    return "dev";
+  }
+
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       await sendSmtpEmail(email, subject, html);
@@ -1470,6 +1481,11 @@ async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
   const resendApiKey = process.env.RESEND_API_KEY || "";
   const from = process.env.EMAIL_FROM || "HuaMei <no-reply@huamei.vn>";
   if (!resendApiKey) {
+    if (process.env.NODE_ENV === "production") {
+      const error = new Error("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.");
+      error.status = 503;
+      throw error;
+    }
     console.log(`[${logPrefix}] ${email}: ${code}`);
     return "dev";
   }

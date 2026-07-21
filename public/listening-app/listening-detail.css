@@ -67,18 +67,12 @@ svg {
   gap: 10px;
 }
 
-.brand-flower {
+.brand-logo {
   width: 42px;
   height: 42px;
-  color: #f3132f;
-}
-
-.brand-flower svg {
-  width: 42px;
-  height: 42px;
-  fill: currentColor;
-  stroke: #fff;
-  stroke-width: 1.4;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
 .brand strong {

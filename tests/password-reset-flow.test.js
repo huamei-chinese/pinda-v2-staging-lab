@@ -33,6 +33,15 @@ test("password reset frontend uses the three-step backend flow", () => {
   assert.match(appSource, /state\.user = data\.user/);
 });
 
+test("Gmail OTP remains the password-reset path when Firebase authentication is enabled", () => {
+  const resetModal = appSource.match(/function showPasswordResetModal[\s\S]*?\n}\r?\n\r?\nfunction showEmailVerificationModal/)?.[0] || "";
+  assert.match(resetModal, /\/api\/password-reset\/request/);
+  assert.doesNotMatch(resetModal, /firebaseSendPasswordResetEmail/);
+  assert.match(resetModal, /firebaseSignIn\(resetEmail, newPassword\)/);
+  assert.match(authServiceSource, /firebaseAuth\.ensureUser\(user\.email, user\.full_name, password\)/);
+  assert.match(authServiceSource, /firebaseAuth\.revokeUserSessions\(firebaseUid\)/);
+});
+
 test("local frontend-only ports send API requests to the Nest backend port", () => {
   assert.match(appSource, /function getApiRequestUrl/);
   assert.match(appSource, /function getLocalApiRequestBaseUrl/);
@@ -77,6 +86,14 @@ test("email codes support Gmail app-password SMTP configuration", () => {
   assert.match(netlifyApiSource, /SMTP_PASS/);
   assert.match(envExampleSource, /SMTP_HOST=smtp\.gmail\.com/);
   assert.match(envExampleSource, /SMTP_PASS=your_google_app_password_without_spaces/);
+});
+
+test("development OTP logging is explicit and forbidden in production", () => {
+  for (const source of [authServiceSource, standaloneServerSource, netlifyApiSource]) {
+    assert.match(source, /EMAIL_DELIVERY_MODE/);
+    assert.match(source, /EMAIL_DELIVERY_MODE=dev is not allowed in production/);
+    assert.match(source, /Chưa cấu hình dịch vụ gửi email/);
+  }
 });
 
 test("local .env loader lets later duplicate keys win without overriding deployment env", () => {

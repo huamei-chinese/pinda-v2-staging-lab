@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { json, urlencoded } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { FirebaseAuthService } from './auth/firebase-auth.service';
 
 function loadEnvFile() {
   const envPath = path.join(process.cwd(), '.env');
@@ -45,6 +46,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(json({ limit: '30mb' }));
   app.use(urlencoded({ extended: true, limit: '30mb' }));
+  const firebaseAuth = app.get(FirebaseAuthService);
+  app.use('/api', (req: any, res: any, next: any) => {
+    void firebaseAuth.authenticateRequest(req, res, next);
+  });
   app.use('/admin', (req: any, res: any, next: any) => {
     if (req.method !== 'GET') return next();
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

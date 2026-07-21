@@ -4392,7 +4392,7 @@ function renderAdmin() {
     screens.admin.innerHTML = `
       <section class="admin-login-screen">
         <form class="admin-login-card" id="adminLoginForm">
-          <div class="admin-login-logo">中</div>
+          <img class="admin-login-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
           <h1>${isVi ? "Đăng nhập Admin" : "管理员登录"}</h1>
           <p>${isVi ? "Chỉ tài khoản có quyền admin mới có thể truy cập trang quản trị." : "只有管理员账户可以访问控制台。"}</p>
           <label>
@@ -4445,7 +4445,7 @@ function renderAdmin() {
     <div class="admin-console ${isStaffAdminUser() ? "admin-console--staff" : "admin-console--admin"}">
       <aside class="admin-sidebar">
         <div class="admin-brand">
-          <span>中</span>
+          <img class="admin-brand-logo" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
           <div><strong>HuaMei</strong><small>ADMIN CONSOLE</small></div>
         </div>
         <button class="admin-language-inline-btn" id="adminLanguageInlineBtn" type="button">
@@ -4577,7 +4577,7 @@ function showModal(type) {
     <div class="auth-modal-content">
       <button class="auth-modal-close" id="closeAuthModal" type="button">&times;</button>
       <div class="auth-modal-logo auth-modal-logo--brand">
-        <img src="/assets/huamei-logo.png" alt="HuaMei" />
+        <img src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
       </div>
       <h2>${isLogin ? (isVi ? "Đăng nhập" : "登录") : (isVi ? "Đăng ký tài khoản" : "注册账户")}</h2>
       <p class="auth-modal-sub">${isLogin ? (isVi ? "Chào mừng bạn quay trở lại!" : "欢迎回来！") : (isVi ? "Bắt đầu hành trình học tiếng Trung ngay hôm nay." : "立即开始您的中文学习之旅。")}</p>
@@ -6118,7 +6118,7 @@ function renderGlobalFooter() {
         <div class="footer-container">
           <div class="footer-brand-col">
             <div class="footer-logo">
-              <div class="footer-logo-circle">中</div>
+              <img class="footer-logo-image" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
               <span class="footer-logo-text">${isVi ? "Học Tiếng Trung" : "学习中文"}</span>
             </div>
             <p class="footer-tagline">${isVi ? "Học dễ hiểu - Nhớ lâu - Ứng dụng ngay" : "易学 - 难忘 - 即学即用"}</p>
@@ -6339,7 +6339,7 @@ function renderAppDesktopSidebarHTML(activeNavOverride = "") {
   return `
     <aside class="home-desktop-sidebar" aria-label="${isVi ? "Điều hướng" : "导航"}">
       <div class="home-desktop-brand">
-        <span class="home-desktop-brand-icon" aria-hidden="true">✎</span>
+        <img class="home-desktop-brand-icon" src="/assets/huamei-logo.jpg" alt="Logo Học Trung HuaMei" />
         <div>
           <strong>${isVi ? "HuaMei" : "HuaMei"}</strong>
           <small>${isVi ? "Viết đúng - Nhớ lâu" : "写好字 · 记得牢"}</small>
@@ -10072,7 +10072,7 @@ function renderPractice() {
       <section class="exercise-card">
         <span class="stage-pill">${hskContentTypeLabel(practiceStage)}</span>
         <p>${state.mode === "translate" ? t("translateHint") : t("dictationHint")}</p>
-        <h1 class="practice-prompt practice-prompt--${promptVariant}">${state.mode === "dictation" ? itemNow.hanzi : itemNow.vi}</h1>
+        <h1 class="practice-prompt practice-prompt--${promptVariant}">${state.mode === "dictation" ? t("play") : itemNow.vi}</h1>
         <div class="slot-row">
           ${itemNow.words.map((word, index) => {
     const active = practiceRules.shouldRenderAnswerInput(state, index);
@@ -11716,7 +11716,7 @@ function bindEvents() {
     const homeModuleBtn = event.target.closest("[data-home-module]");
     if (homeModuleBtn) {
       if (homeModuleBtn.dataset.homeModule === "vocab") {
-        startSavedVocabPractice();
+        navigatePrimaryTab("vocab");
         return;
       }
       navigatePrimaryTab(homeModuleBtn.dataset.homeModule);

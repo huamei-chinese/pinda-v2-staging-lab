@@ -9717,6 +9717,16 @@ p {
   margin-right: 10px;
 }
 
+.footer-logo-image {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  margin-right: 10px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
 .footer-logo-text {
   font-size: 20px;
   font-weight: 800;
@@ -14538,6 +14548,8 @@ p {
     justify-content: center;
     font-size: 18px;
     box-shadow: 0 8px 18px rgba(14, 168, 85, 0.24);
+    object-fit: cover;
+    display: block;
   }
 
   .home-desktop-brand strong {
@@ -20813,6 +20825,8 @@ body:has(#practiceScreen:not(.hidden)) {
   font-family: "Noto Sans SC", sans-serif;
   font-size: 26px;
   font-weight: 900;
+  object-fit: cover;
+  display: block;
 }
 
 .admin-login-card h1 {
@@ -20916,6 +20930,15 @@ body:has(#practiceScreen:not(.hidden)) {
   font-family: "Noto Sans SC", sans-serif;
   font-size: 19px;
   font-weight: 900;
+}
+
+.admin-brand-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 9px;
+  object-fit: cover;
+  display: block;
 }
 
 .admin-brand strong {

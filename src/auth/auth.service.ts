@@ -2,10 +2,14 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import * as crypto from 'crypto';
 import * as tls from 'tls';
+import { FirebaseAuthService } from './firebase-auth.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly firebaseAuth: FirebaseAuthService,
+  ) {}
 
   private normalizeVipPlanId(planId: string | null | undefined): string | null {
     const normalized = String(planId || '').trim().toLowerCase();
@@ -197,6 +201,166 @@ export class AuthService {
       [user.id],
     );
     return { user: this.publicUser(updated.rows[0]) };
+  }
+
+  firebaseConfig() {
+    return this.firebaseAuth.publicConfig();
+  }
+
+  async canRegisterFirebase(email: string) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw new HttpException('Email không hợp lệ.', HttpStatus.BAD_REQUEST);
+    }
+    const existing = await this.db.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [normalizedEmail]);
+    if (existing.rows[0]) {
+      throw new HttpException(
+        'Email này đã có tài khoản. Vui lòng đăng nhập để chuyển tài khoản sang Firebase.',
+        HttpStatus.CONFLICT,
+      );
+    }
+    return { ok: true };
+  }
+
+  private authorizationToken(headers: Record<string, string | string[] | undefined>): string {
+    return this.firebaseAuth.bearerToken(headers.authorization);
+  }
+
+  async syncFirebaseSession(
+    body: any,
+    headers: Record<string, string | string[] | undefined>,
+  ) {
+    const identity = await this.firebaseAuth.verifyIdToken(this.authorizationToken(headers));
+    const requestedName = String(body.fullName || identity.name || '').trim();
+    const byUid = await this.db.query('SELECT * FROM users WHERE firebase_uid = $1 LIMIT 1', [identity.uid]);
+    let user = byUid.rows[0];
+
+    if (!user) {
+      const byEmail = await this.db.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [identity.email]);
+      const existing = byEmail.rows[0];
+      if (existing) {
+        if (existing.firebase_uid && existing.firebase_uid !== identity.uid) {
+          throw new HttpException('Email này đã liên kết với tài khoản Firebase khác.', HttpStatus.CONFLICT);
+        }
+        if (!identity.emailVerified) {
+          throw new HttpException(
+            'Tài khoản cũ cần đăng nhập bằng mật khẩu hiện tại một lần để chuyển sang Firebase.',
+            HttpStatus.CONFLICT,
+          );
+        }
+        const attached = await this.db.query(
+          `UPDATE users
+           SET firebase_uid = $1,
+               email_verified_at = COALESCE(email_verified_at, NOW()),
+               last_login_at = NOW(),
+               updated_at = NOW()
+           WHERE id = $2
+           RETURNING *`,
+          [identity.uid, existing.id],
+        );
+        user = attached.rows[0];
+      } else {
+        if (requestedName.length < 2) {
+          throw new HttpException('Vui lòng nhập họ và tên.', HttpStatus.BAD_REQUEST);
+        }
+        const attribution = await this.resolveReferralAttribution(body.ref, body.src);
+        const created = await this.db.query(
+          `INSERT INTO users (full_name, email, password_hash, firebase_uid, role, ref, src, email_verified_at, last_login_at)
+           VALUES ($1, $2, $3, $4, 'user', $5, $6, $7, NOW())
+           RETURNING *`,
+          [
+            requestedName,
+            identity.email,
+            this.hashPassword(crypto.randomBytes(32).toString('base64url')),
+            identity.uid,
+            attribution.ref,
+            attribution.src,
+            identity.emailVerified ? new Date().toISOString() : null,
+          ],
+        );
+        user = created.rows[0];
+      }
+    } else {
+      const updated = await this.db.query(
+        `UPDATE users
+         SET email = $1,
+             email_verified_at = CASE WHEN $2 THEN COALESCE(email_verified_at, NOW()) ELSE email_verified_at END,
+             last_login_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $3
+         RETURNING *`,
+        [identity.email, identity.emailVerified, user.id],
+      );
+      user = updated.rows[0];
+    }
+
+    if (!user?.is_active) {
+      throw new HttpException('Tài khoản đã bị khóa.', HttpStatus.FORBIDDEN);
+    }
+    return { user: this.publicUser(user) };
+  }
+
+  async migrateLegacyUserToFirebase(email: string, password: string) {
+    if (!this.firebaseAuth.isEnabled()) {
+      throw new HttpException('Firebase Authentication chưa được cấu hình.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    const result = await this.db.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
+    const user = result.rows[0];
+    if (!user || !this.verifyPassword(password, user.password_hash)) {
+      throw new HttpException('Email hoặc mật khẩu không đúng.', HttpStatus.UNAUTHORIZED);
+    }
+    if (!user.is_active) {
+      throw new HttpException('Tài khoản đã bị khóa.', HttpStatus.FORBIDDEN);
+    }
+
+    const firebaseUser = await this.firebaseAuth.ensureUser(user.email, user.full_name, password);
+    if (user.firebase_uid && user.firebase_uid !== firebaseUser.uid) {
+      throw new HttpException('Tài khoản đã liên kết với Firebase UID khác.', HttpStatus.CONFLICT);
+    }
+    await this.db.query(
+      `UPDATE users
+       SET firebase_uid = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [firebaseUser.uid, user.id],
+    );
+    const customToken = await this.firebaseAuth.createCustomToken(firebaseUser.uid);
+    return { customToken };
+  }
+
+  async prepareFirebasePasswordReset(email: string) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const genericResult = {
+      ok: true,
+      message: 'Nếu email đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu.',
+    };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return genericResult;
+
+    const result = await this.db.query(
+      'SELECT id, full_name, email, firebase_uid, is_active FROM users WHERE email = $1 LIMIT 1',
+      [normalizedEmail],
+    );
+    const user = result.rows[0];
+    if (!user?.is_active) return genericResult;
+
+    // Linked accounts can receive the reset email through the public Firebase
+    // API. Avoid an unnecessary Admin SDK call that could fail first.
+    if (user.firebase_uid) return genericResult;
+
+    try {
+      const firebaseUser = await this.firebaseAuth.ensureUser(user.email, user.full_name);
+      await this.db.query(
+        'UPDATE users SET firebase_uid = $1, updated_at = NOW() WHERE id = $2',
+        [firebaseUser.uid, user.id],
+      );
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.error('Firebase legacy password-reset preparation failed:', error);
+      throw new HttpException(
+        'Dịch vụ đặt lại mật khẩu đang tạm thời gián đoạn. Vui lòng thử lại sau.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+    return genericResult;
   }
 
   async getCurrentUser(id: string, headers: Record<string, string | string[] | undefined>) {
@@ -512,6 +676,18 @@ export class AuthService {
   }
 
   private async sendTransactionalEmail(email: string, subject: string, html: string, logPrefix: string, code: string): Promise<'sent' | 'dev'> {
+    const deliveryMode = String(process.env.EMAIL_DELIVERY_MODE || '').trim().toLowerCase();
+    if (deliveryMode === 'dev') {
+      if (process.env.NODE_ENV === 'production') {
+        throw new HttpException(
+          'EMAIL_DELIVERY_MODE=dev is not allowed in production.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      console.log(`[${logPrefix}] ${email}: ${code}`);
+      return 'dev';
+    }
+
     const smtpUser = process.env.SMTP_USER || '';
     const smtpPass = process.env.SMTP_PASS || '';
     if (smtpUser && smtpPass) {
@@ -527,6 +703,12 @@ export class AuthService {
     const resendApiKey = process.env.RESEND_API_KEY || '';
     const from = process.env.EMAIL_FROM || 'HuaMei <no-reply@huamei.vn>';
     if (!resendApiKey) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new HttpException(
+          'Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
       console.log(`[${logPrefix}] ${email}: ${code}`);
       return 'dev';
     }
@@ -693,7 +875,7 @@ export class AuthService {
     }
 
     const current = await this.db.query(
-      `SELECT id, email, password_reset_code_hash, password_reset_expires_at, is_active
+      `SELECT id, full_name, email, firebase_uid, password_reset_code_hash, password_reset_expires_at, is_active
        FROM users
        WHERE email = $1`,
       [normalizedEmail],
@@ -727,16 +909,29 @@ export class AuthService {
     }
 
     const { user } = await this.getPasswordResetUser(email, code);
+    let firebaseUid = user.firebase_uid || null;
+    if (this.firebaseAuth.isEnabled()) {
+      const firebaseUser = await this.firebaseAuth.ensureUser(user.email, user.full_name, password);
+      if (firebaseUid && firebaseUid !== firebaseUser.uid) {
+        throw new HttpException(
+          'Tài khoản đang liên kết với một định danh Firebase khác.',
+          HttpStatus.CONFLICT,
+        );
+      }
+      firebaseUid = firebaseUser.uid;
+      await this.firebaseAuth.revokeUserSessions(firebaseUid);
+    }
     const updated = await this.db.query(
       `UPDATE users
        SET password_hash = $1,
+           firebase_uid = COALESCE($2, firebase_uid),
            password_reset_code_hash = NULL,
            password_reset_expires_at = NULL,
            last_login_at = NOW(),
            updated_at = NOW()
-       WHERE id = $2
+       WHERE id = $3
        RETURNING id, full_name, email, role, ref, src, is_active, current_level, avatar_url, is_premium, premium_until, vip_plan_id, vip_trial_used, daily_reminder_enabled, email_verified_at, created_at, updated_at, last_login_at`,
-      [this.hashPassword(password), user.id],
+      [this.hashPassword(password), firebaseUid, user.id],
     );
     return { ok: true, user: this.publicUser(updated.rows[0]) };
   }
