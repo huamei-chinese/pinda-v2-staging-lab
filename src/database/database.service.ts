@@ -151,6 +151,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
+        firebase_uid TEXT,
         role TEXT NOT NULL DEFAULT 'user',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         current_level TEXT NOT NULL DEFAULT 'HSK2',
@@ -174,6 +175,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_login_at TIMESTAMPTZ
       );
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS firebase_uid TEXT;
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_firebase_uid_unique
+      ON users (firebase_uid)
+      WHERE firebase_uid IS NOT NULL AND btrim(firebase_uid) <> '';
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS current_level TEXT NOT NULL DEFAULT 'HSK2';
@@ -266,6 +275,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         full_name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
+        firebase_uid TEXT,
         role TEXT NOT NULL DEFAULT 'user',
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         current_level TEXT NOT NULL DEFAULT 'HSK2',
@@ -289,6 +299,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         last_login_at TIMESTAMPTZ
       );
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS firebase_uid TEXT;
+    `);
+    await this.pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_firebase_uid_unique
+      ON users (firebase_uid)
+      WHERE firebase_uid IS NOT NULL AND btrim(firebase_uid) <> '';
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS current_level TEXT NOT NULL DEFAULT 'HSK2';

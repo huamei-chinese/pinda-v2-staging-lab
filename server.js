@@ -1455,6 +1455,45 @@ async function sendSmtpEmail(to, subject, html) {
 }
 
 async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
+  const deliveryMode = String(process.env.EMAIL_DELIVERY_MODE || "").trim().toLowerCase();
+  if (deliveryMode === "dev") {
+    if (process.env.NODE_ENV === "production") {
+      const error = new Error("EMAIL_DELIVERY_MODE=dev is not allowed in production.");
+      error.status = 503;
+      throw error;
+    }
+    console.log(`[${logPrefix}] ${email}: ${code}`);
+    return "dev";
+  }
+
+  const mailServiceUrl = String(process.env.MAIL_SERVICE_URL || "").trim();
+  if (mailServiceUrl) {
+    const mailServiceSecret = String(process.env.MAIL_SERVICE_SECRET || "");
+    if (!mailServiceSecret) {
+      const error = new Error("MAIL_SERVICE_SECRET is required when MAIL_SERVICE_URL is configured.");
+      error.status = 503;
+      throw error;
+    }
+    try {
+      const response = await fetch(mailServiceUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${mailServiceSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, type: logPrefix, code }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) throw new Error(`Mail service returned HTTP ${response.status}.`);
+      return "sent";
+    } catch (error) {
+      console.warn(`[${logPrefix}] Netlify mail service failed:`, error instanceof Error ? error.message : error);
+      const mailError = new Error("Không thể gửi email qua mail server. Vui lòng thử lại sau.");
+      mailError.status = 502;
+      throw mailError;
+    }
+  }
+
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       await sendSmtpEmail(email, subject, html);
@@ -1470,6 +1509,11 @@ async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
   const resendApiKey = process.env.RESEND_API_KEY || "";
   const from = process.env.EMAIL_FROM || "HuaMei <no-reply@huamei.vn>";
   if (!resendApiKey) {
+    if (process.env.NODE_ENV === "production") {
+      const error = new Error("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.");
+      error.status = 503;
+      throw error;
+    }
     console.log(`[${logPrefix}] ${email}: ${code}`);
     return "dev";
   }

@@ -4119,6 +4119,173 @@ function getApiRequestUrl(path) {
   return value;
 }
 
+let firebaseConfigPromise = null;
+
+function readFirebaseSession() {
+  return readStoredJson(STUDENT_TOKEN_STORAGE_KEY);
+}
+
+function writeFirebaseSession(session) {
+  if (!session?.idToken || !session?.refreshToken) {
+    removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(STUDENT_TOKEN_STORAGE_KEY, JSON.stringify(session));
+}
+
+async function getFirebaseConfig() {
+  if (firebaseConfigPromise) return firebaseConfigPromise;
+  firebaseConfigPromise = fetch(getApiRequestUrl("/api/auth/firebase-config"), {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" },
+  })
+    .then(async (response) => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Không thể tải cấu hình Firebase.");
+      return data;
+    })
+    .catch((error) => {
+      firebaseConfigPromise = null;
+      console.warn("Firebase config unavailable; legacy authentication remains active.", error);
+      return { enabled: false };
+    });
+  return firebaseConfigPromise;
+}
+
+function firebaseErrorMessage(data, fallback = "Không thể xác thực tài khoản.") {
+  const code = String(data?.error?.message || data?.error || "").split(" : ")[0];
+  const messages = {
+    EMAIL_EXISTS: "Email này đã được đăng ký.",
+    EMAIL_NOT_FOUND: "Email hoặc mật khẩu không đúng.",
+    INVALID_LOGIN_CREDENTIALS: "Email hoặc mật khẩu không đúng.",
+    INVALID_PASSWORD: "Email hoặc mật khẩu không đúng.",
+    USER_DISABLED: "Tài khoản đã bị khóa.",
+    WEAK_PASSWORD: "Mật khẩu cần tối thiểu 6 ký tự.",
+    INVALID_EMAIL: "Email không hợp lệ.",
+    TOKEN_EXPIRED: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+    INVALID_ID_TOKEN: "Phiên đăng nhập không hợp lệ.",
+    TOO_MANY_ATTEMPTS_TRY_LATER: "Bạn thao tác quá nhiều lần. Vui lòng thử lại sau.",
+    OPERATION_NOT_ALLOWED: "Đăng nhập email/mật khẩu chưa được bật trong Firebase.",
+  };
+  return messages[code] || fallback;
+}
+
+async function firebaseRestRequest(endpoint, body) {
+  const config = await getFirebaseConfig();
+  if (!config.enabled || !config.apiKey) throw new Error("Firebase Authentication chưa được cấu hình.");
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/${endpoint}?key=${encodeURIComponent(config.apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(firebaseErrorMessage(data));
+    error.firebaseCode = String(data?.error?.message || "");
+    throw error;
+  }
+  return data;
+}
+
+function firebaseSessionFromResponse(data) {
+  return {
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Date.now() + (Math.max(60, Number(data.expiresIn || 3600)) * 1000),
+    localId: data.localId || "",
+    email: data.email || "",
+  };
+}
+
+async function refreshFirebaseSession(session) {
+  const config = await getFirebaseConfig();
+  if (!config.enabled || !session?.refreshToken) return null;
+  const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(config.apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: session.refreshToken,
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    clearAllAuthStorage();
+    state.user = null;
+    state.adminUser = null;
+    throw new Error(firebaseErrorMessage(data, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."));
+  }
+  const refreshed = {
+    idToken: data.id_token,
+    refreshToken: data.refresh_token || session.refreshToken,
+    expiresAt: Date.now() + (Math.max(60, Number(data.expires_in || 3600)) * 1000),
+    localId: data.user_id || session.localId || "",
+    email: session.email || "",
+  };
+  writeFirebaseSession(refreshed);
+  return refreshed;
+}
+
+async function getFirebaseIdToken() {
+  const session = readFirebaseSession();
+  if (!session?.idToken) return "";
+  if (Number(session.expiresAt || 0) > Date.now() + 60_000) return session.idToken;
+  const refreshed = await refreshFirebaseSession(session);
+  return refreshed?.idToken || "";
+}
+
+async function firebaseSignUp(email, password) {
+  const data = await firebaseRestRequest("accounts:signUp", {
+    email,
+    password,
+    returnSecureToken: true,
+  });
+  const session = firebaseSessionFromResponse(data);
+  writeFirebaseSession(session);
+  return session;
+}
+
+async function firebaseSignIn(email, password) {
+  const data = await firebaseRestRequest("accounts:signInWithPassword", {
+    email,
+    password,
+    returnSecureToken: true,
+  });
+  const session = firebaseSessionFromResponse(data);
+  writeFirebaseSession(session);
+  return session;
+}
+
+async function firebaseSignInWithCustomToken(customToken) {
+  const data = await firebaseRestRequest("accounts:signInWithCustomToken", {
+    token: customToken,
+    returnSecureToken: true,
+  });
+  const session = firebaseSessionFromResponse(data);
+  writeFirebaseSession(session);
+  return session;
+}
+
+async function firebaseSendPasswordResetEmail(email) {
+  return firebaseRestRequest("accounts:sendOobCode", {
+    requestType: "PASSWORD_RESET",
+    email,
+  });
+}
+
+async function firebaseUpdatePassword(currentPassword, newPassword) {
+  if (!state.user?.email) throw new Error("Không tìm thấy email tài khoản.");
+  await firebaseSignIn(state.user.email, currentPassword);
+  const idToken = await getFirebaseIdToken();
+  const data = await firebaseRestRequest("accounts:update", {
+    idToken,
+    password: newPassword,
+    returnSecureToken: true,
+  });
+  writeFirebaseSession(firebaseSessionFromResponse(data));
+  return data;
+}
+
 async function apiRequest(path, options = {}) {
   if (BACKEND_DISABLED && path.startsWith("/api/")) {
     throw new Error(backendDisabledMessage());
@@ -4129,6 +4296,7 @@ async function apiRequest(path, options = {}) {
     || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path)
     || /^\/api\/coins(?:\/|\?|$)/.test(path);
   const requestUrl = getApiRequestUrl(path);
+  const firebaseIdToken = await getFirebaseIdToken();
   let response;
   try {
     response = await fetch(requestUrl, {
@@ -4137,6 +4305,7 @@ async function apiRequest(path, options = {}) {
       headers: {
         "Content-Type": "application/json",
         ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
+        ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),
         ...(options.headers || {}),
       },
     });
@@ -7883,8 +8052,6 @@ function saveState() {
   else removeAuthStorageKey(STUDENT_USER_STORAGE_KEY);
   if (state.adminUser) localStorage.setItem(ADMIN_USER_STORAGE_KEY, JSON.stringify(state.adminUser));
   else removeAuthStorageKey(ADMIN_USER_STORAGE_KEY);
-  removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
-  removeAuthStorageKey(ADMIN_TOKEN_STORAGE_KEY);
   clearLegacyAuthStorage();
   scheduleHomeCoinClaimCheck();
 }
@@ -9755,16 +9922,47 @@ function showModal(type) {
     submitBtn.textContent = isLogin ? (isVi ? "Đang đăng nhập..." : "正在登录...") : (isVi ? "Đang đăng ký..." : "正在注册...");
 
     try {
-      const data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
-        method: "POST",
-        body: JSON.stringify(isLogin ? { email, password } : {
-          fullName,
-          email,
-          password,
-          ref: getReferralRefFromUrl(),
-          src: getTrafficSource(),
-        }),
-      });
+      const firebaseConfig = await getFirebaseConfig();
+      let data;
+      if (firebaseConfig.enabled) {
+        removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
+        if (isLogin) {
+          try {
+            await firebaseSignIn(email, password);
+          } catch (firebaseError) {
+            const migrated = await apiRequest("/api/auth/firebase-migrate", {
+              method: "POST",
+              body: JSON.stringify({ email, password }),
+            });
+            await firebaseSignInWithCustomToken(migrated.customToken);
+          }
+        } else {
+          await apiRequest("/api/auth/firebase-can-register", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+          });
+          await firebaseSignUp(email, password);
+        }
+        data = await apiRequest("/api/auth/firebase-session", {
+          method: "POST",
+          body: JSON.stringify({
+            fullName,
+            ref: getReferralRefFromUrl(),
+            src: getTrafficSource(),
+          }),
+        });
+      } else {
+        data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
+          method: "POST",
+          body: JSON.stringify(isLogin ? { email, password } : {
+            fullName,
+            email,
+            password,
+            ref: getReferralRefFromUrl(),
+            src: getTrafficSource(),
+          }),
+        });
+      }
       if (!isLogin) clearReferralAttribution();
       state.user = data.user;
       state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
@@ -10002,6 +10200,8 @@ function showPasswordResetModal(prefillEmail = "") {
             method: "POST",
             body: JSON.stringify({ email: resetEmail, code: resetCode, newPassword, confirmPassword }),
           });
+          const firebaseConfig = await getFirebaseConfig();
+          if (firebaseConfig.enabled) await firebaseSignIn(resetEmail, newPassword);
           state.user = data.user;
           state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
           if (state.adminUser) state.adminTab = getSafeAdminTab(state.adminTab);
@@ -10230,11 +10430,16 @@ function showChangePasswordModal() {
     submitBtn.textContent = isVi ? "Đang cập nhật..." : "正在更新...";
 
     try {
-      await apiRequest(`/api/users/${encodeURIComponent(state.user.id)}/password`, {
-        method: "PATCH",
-        headers: { "X-User-Id": state.user.id },
-        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
-      });
+      const firebaseConfig = await getFirebaseConfig();
+      if (firebaseConfig.enabled) {
+        await firebaseUpdatePassword(currentPassword, newPassword);
+      } else {
+        await apiRequest(`/api/users/${encodeURIComponent(state.user.id)}/password`, {
+          method: "PATCH",
+          headers: { "X-User-Id": state.user.id },
+          body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+        });
+      }
       message.textContent = isVi ? "Đã đổi mật khẩu thành công." : "密码修改成功。";
       message.classList.add("success");
       recordUserActivity("password");
@@ -20592,6 +20797,32 @@ function warmStartupDataAfterFirstPaint() {
   });
 }
 
+async function reconcileFirebaseSessionAtStartup() {
+  const config = await getFirebaseConfig();
+  if (!config.enabled) return;
+  const session = readFirebaseSession();
+  if (!session?.idToken) {
+    if (state.user || state.adminUser) {
+      state.user = null;
+      state.adminUser = null;
+      saveState();
+      renderAll();
+    }
+    return;
+  }
+  try {
+    await getFirebaseIdToken();
+    await refreshCurrentUserStatus();
+  } catch (error) {
+    console.warn("Firebase session restore failed:", error);
+    state.user = null;
+    state.adminUser = null;
+    clearAllAuthStorage();
+    saveState();
+    renderAll();
+  }
+}
+
 function applyRouteFromLocation() {
   const pathname = window.location.pathname;
   const options = {};
@@ -20666,6 +20897,7 @@ function init() {
     console.warn("Home coin startup refresh failed:", error);
   });
   warmStartupDataAfterFirstPaint();
+  void reconcileFirebaseSessionAtStartup();
   
 }
 

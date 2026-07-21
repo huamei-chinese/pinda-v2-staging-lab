@@ -2116,6 +2116,15 @@ async function sendSmtpEmail(to, subject, html) {
 }
 
 async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
+  const deliveryMode = env("EMAIL_DELIVERY_MODE").trim().toLowerCase();
+  if (deliveryMode === "dev") {
+    if (isProduction()) {
+      throw apiError("EMAIL_DELIVERY_MODE=dev is not allowed in production.", 503);
+    }
+    console.log(`[${logPrefix}] ${email}: ${code}`);
+    return "dev";
+  }
+
   if (env("SMTP_USER") && env("SMTP_PASS")) {
     try {
       await sendSmtpEmail(email, subject, html);
@@ -2129,6 +2138,9 @@ async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
   const resendApiKey = env("RESEND_API_KEY");
   const from = env("EMAIL_FROM") || "HuaMei <no-reply@huamei.vn>";
   if (!resendApiKey) {
+    if (isProduction()) {
+      throw apiError("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.", 503);
+    }
     console.log(`[${logPrefix}] ${email}: ${code}`);
     return "dev";
   }

@@ -12,6 +12,7 @@ const databaseServiceSource = fs.readFileSync(path.join(root, "src", "database",
 const mainSource = fs.readFileSync(path.join(root, "src", "main.ts"), "utf8");
 const standaloneServerSource = fs.readFileSync(path.join(root, "server.js"), "utf8");
 const netlifyApiSource = fs.readFileSync(path.join(root, "netlify", "functions", "api.mjs"), "utf8");
+const netlifyMailSource = fs.readFileSync(path.join(root, "netlify", "mail-functions", "mail.mjs"), "utf8");
 const envExampleSource = fs.readFileSync(path.join(root, ".env.example"), "utf8");
 
 test("login modal exposes a forgot-password entry point", () => {
@@ -31,6 +32,15 @@ test("password reset frontend uses the three-step backend flow", () => {
   assert.match(appSource, /passwordResetCodeInput/);
   assert.match(appSource, /passwordResetNewPassword/);
   assert.match(appSource, /state\.user = data\.user/);
+});
+
+test("Gmail OTP remains the password-reset path when Firebase authentication is enabled", () => {
+  const resetModal = appSource.match(/function showPasswordResetModal[\s\S]*?\n}\r?\n\r?\nfunction showEmailVerificationModal/)?.[0] || "";
+  assert.match(resetModal, /\/api\/password-reset\/request/);
+  assert.doesNotMatch(resetModal, /firebaseSendPasswordResetEmail/);
+  assert.match(resetModal, /firebaseSignIn\(resetEmail, newPassword\)/);
+  assert.match(authServiceSource, /firebaseAuth\.ensureUser\(user\.email, user\.full_name, password\)/);
+  assert.match(authServiceSource, /firebaseAuth\.revokeUserSessions\(firebaseUid\)/);
 });
 
 test("local frontend-only ports send API requests to the Nest backend port", () => {
@@ -77,6 +87,28 @@ test("email codes support Gmail app-password SMTP configuration", () => {
   assert.match(netlifyApiSource, /SMTP_PASS/);
   assert.match(envExampleSource, /SMTP_HOST=smtp\.gmail\.com/);
   assert.match(envExampleSource, /SMTP_PASS=your_google_app_password_without_spaces/);
+});
+
+test("Railway delegates transactional email to a protected Netlify mail function", () => {
+  for (const source of [authServiceSource, standaloneServerSource]) {
+    assert.match(source, /MAIL_SERVICE_URL/);
+    assert.match(source, /MAIL_SERVICE_SECRET/);
+    assert.match(source, /Authorization: `Bearer \$\{mailServiceSecret\}`/);
+    assert.match(source, /JSON\.stringify\(\{ email, type: logPrefix, code \}\)/);
+  }
+  assert.match(netlifyMailSource, /timingSafeEqual/);
+  assert.match(netlifyMailSource, /request\.method !== "POST"/);
+  assert.match(netlifyMailSource, /type === "password-reset"/);
+  assert.match(netlifyMailSource, /type === "email-verification"/);
+  assert.doesNotMatch(netlifyMailSource, /body\.html|body\.subject/);
+});
+
+test("development OTP logging is explicit and forbidden in production", () => {
+  for (const source of [authServiceSource, standaloneServerSource, netlifyApiSource]) {
+    assert.match(source, /EMAIL_DELIVERY_MODE/);
+    assert.match(source, /EMAIL_DELIVERY_MODE=dev is not allowed in production/);
+    assert.match(source, /Chưa cấu hình dịch vụ gửi email/);
+  }
 });
 
 test("local .env loader lets later duplicate keys win without overriding deployment env", () => {
