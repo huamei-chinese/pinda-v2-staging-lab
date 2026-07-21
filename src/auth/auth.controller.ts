@@ -22,38 +22,6 @@ export class AuthController {
     return this.authService.login(email, password);
   }
 
-  @Get('auth/firebase-config')
-  firebaseConfig() {
-    return this.authService.firebaseConfig();
-  }
-
-  @Post('auth/firebase-session')
-  async syncFirebaseSession(
-    @Body() body: any,
-    @Headers() headers: Record<string, string | string[] | undefined>,
-  ) {
-    return this.authService.syncFirebaseSession(body, headers);
-  }
-
-  @Post('auth/firebase-can-register')
-  async canRegisterFirebase(@Body() body: any) {
-    const email = String(body.email || '').trim().toLowerCase();
-    return this.authService.canRegisterFirebase(email);
-  }
-
-  @Post('auth/firebase-migrate')
-  async migrateLegacyUserToFirebase(@Body() body: any) {
-    const email = String(body.email || '').trim().toLowerCase();
-    const password = String(body.password || '');
-    return this.authService.migrateLegacyUserToFirebase(email, password);
-  }
-
-  @Post('auth/firebase-prepare-reset')
-  async prepareFirebasePasswordReset(@Body() body: any) {
-    const email = String(body.email || '').trim().toLowerCase();
-    return this.authService.prepareFirebasePasswordReset(email);
-  }
-
   @Post('password-reset/request')
   async requestPasswordReset(@Body() body: any) {
     const email = String(body.email || '').trim().toLowerCase();

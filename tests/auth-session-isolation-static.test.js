@@ -37,7 +37,7 @@ test("student and admin logout paths are separated", () => {
 
 test("frontend logout clears every persisted auth identity before reload", () => {
   assert.match(appSource, /function clearAllAuthStorage\(\)/);
-  assert.match(appSource, /STUDENT_USER_STORAGE_KEY,[\s\S]*ADMIN_USER_STORAGE_KEY,[\s\S]*STUDENT_TOKEN_STORAGE_KEY,[\s\S]*ADMIN_TOKEN_STORAGE_KEY/);
+  assert.match(appSource, /STUDENT_USER_STORAGE_KEY,[\s\S]*ADMIN_USER_STORAGE_KEY,[\s\S]*"huamei_student_token",[\s\S]*"huamei_admin_token"/);
   assert.match(appSource, /function removeAuthStorageKey\(key\)[\s\S]*localStorage\.removeItem\(key\)[\s\S]*sessionStorage\.removeItem\(key\)/);
   assert.match(
     appSource,

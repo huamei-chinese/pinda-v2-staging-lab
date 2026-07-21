@@ -29,19 +29,19 @@ test("password reset frontend uses the three-step backend flow", () => {
   assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/request"/);
   assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/verify"/);
   assert.match(appSource, /passwordResetApiRequest\("\/api\/password-reset\/confirm"/);
-  assert.match(appSource, /\{ \.\.\.options, auth: false \}/);
+  assert.match(appSource, /return apiRequest\(`\$\{PASSWORD_RESET_API_BASE_URL\}\$\{path\}`, options\)/);
   assert.match(appSource, /passwordResetCodeInput/);
   assert.match(appSource, /passwordResetNewPassword/);
   assert.match(appSource, /state\.user = data\.user/);
 });
 
-test("Gmail OTP remains the password-reset path when Firebase authentication is enabled", () => {
+test("Gmail OTP resets the PostgreSQL password without an external auth provider", () => {
   const resetModal = appSource.match(/function showPasswordResetModal[\s\S]*?\n}\r?\n\r?\nfunction showEmailVerificationModal/)?.[0] || "";
   assert.match(resetModal, /\/api\/password-reset\/request/);
-  assert.doesNotMatch(resetModal, /firebaseSendPasswordResetEmail/);
-  assert.match(resetModal, /firebaseSignIn\(resetEmail, newPassword\)/);
-  assert.match(authServiceSource, /firebaseAuth\.ensureUser\(user\.email, user\.full_name, password\)/);
-  assert.match(authServiceSource, /firebaseAuth\.revokeUserSessions\(firebaseUid\)/);
+  assert.match(resetModal, /state\.user = data\.user/);
+  assert.match(authServiceSource, /SET password_hash = \$1/);
+  assert.doesNotMatch(resetModal, /firebase/i);
+  assert.doesNotMatch(authServiceSource, /firebase/i);
 });
 
 test("local frontend-only ports send API requests to the Nest backend port", () => {
@@ -111,8 +111,9 @@ test("Railway delegates transactional email to the protected Netlify mail functi
     assert.match(source, /MAIL_SERVICE_URL/);
     assert.match(source, /MAIL_SERVICE_SECRET/);
     assert.match(source, /Authorization: `Bearer \$\{mailServiceSecret\}`/);
-    assert.match(source, /JSON\.stringify\(\{ email, type: logPrefix, code \}\)/);
   }
+  assert.match(authServiceSource, /JSON\.stringify\(\{ email, type: logPrefix, code, subject, html \}\)/);
+  assert.match(standaloneServerSource, /JSON\.stringify\(\{ email, type: logPrefix, code \}\)/);
   assert.match(envExampleSource, /MAIL_SERVICE_URL=https:\/\/servermail222\.netlify\.app\/\.netlify\/functions\/mail/);
   assert.match(envExampleSource, /MAIL_SERVICE_SECRET=replace_with_at_least_32_random_characters/);
 });

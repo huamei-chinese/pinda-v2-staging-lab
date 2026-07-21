@@ -216,24 +216,10 @@ function applyLanguage(nextLang = currentLang) {
 }
 
 async function apiRequest(path, options = {}) {
-  let firebaseIdToken = "";
-  try {
-    if (window.parent !== window && typeof window.parent.getFirebaseIdToken === "function") {
-      firebaseIdToken = await window.parent.getFirebaseIdToken();
-    } else {
-      const session = JSON.parse(localStorage.getItem("huamei_student_token") || "null");
-      if (session?.idToken && Number(session.expiresAt || 0) > Date.now()) {
-        firebaseIdToken = session.idToken;
-      }
-    }
-  } catch {
-    firebaseIdToken = "";
-  }
   const response = await fetch(path, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),
       ...(options.headers || {}),
     },
   });

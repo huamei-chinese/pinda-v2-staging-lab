@@ -632,8 +632,6 @@ function getThemeIcon(visualType) {
 
 const STUDENT_USER_STORAGE_KEY = "huamei_student_user";
 const ADMIN_USER_STORAGE_KEY = "huamei_admin_user";
-const STUDENT_TOKEN_STORAGE_KEY = "huamei_student_token";
-const ADMIN_TOKEN_STORAGE_KEY = "huamei_admin_token";
 const LEGACY_AUTH_STORAGE_KEYS = ["v2-user", "token", "user", "currentUser", "authToken"];
 const HOME_TODAY_STUDY_STORAGE_KEY = "v2-home-today-study";
 const HOME_COIN_WALLET_STORAGE_PREFIX = "v2-home-coin-wallet";
@@ -743,8 +741,8 @@ function clearAllAuthStorage() {
   [
     STUDENT_USER_STORAGE_KEY,
     ADMIN_USER_STORAGE_KEY,
-    STUDENT_TOKEN_STORAGE_KEY,
-    ADMIN_TOKEN_STORAGE_KEY,
+    "huamei_student_token",
+    "huamei_admin_token",
   ].forEach(removeAuthStorageKey);
   clearLegacyAuthStorage();
 }
@@ -875,6 +873,12 @@ const state = {
   adminVipPlanFilter: "all",
   adminVipUserPage: 1,
   adminVipUserPageSize: 8,
+  adminStudyReminders: null,
+  adminStudyRemindersLoading: false,
+  adminStudyRemindersError: "",
+  adminStudyReminderStatus: "",
+  adminStudyReminderSegment: "all",
+  adminStudyReminderActionUserId: "",
   adminUserSearch: "",
   adminUserLevelFilter: "all",
   adminUserPlanFilter: "all",
@@ -4142,175 +4146,7 @@ function getApiRequestUrl(path) {
   return value;
 }
 
-let firebaseConfigPromise = null;
-
-function readFirebaseSession() {
-  return readStoredJson(STUDENT_TOKEN_STORAGE_KEY);
-}
-
-function writeFirebaseSession(session) {
-  if (!session?.idToken || !session?.refreshToken) {
-    removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
-    return;
-  }
-  localStorage.setItem(STUDENT_TOKEN_STORAGE_KEY, JSON.stringify(session));
-}
-
-async function getFirebaseConfig() {
-  if (firebaseConfigPromise) return firebaseConfigPromise;
-  firebaseConfigPromise = fetch(getApiRequestUrl("/api/auth/firebase-config"), {
-    cache: "no-store",
-    headers: { "Cache-Control": "no-cache" },
-  })
-    .then(async (response) => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Không thể tải cấu hình Firebase.");
-      return data;
-    })
-    .catch((error) => {
-      firebaseConfigPromise = null;
-      console.warn("Firebase config unavailable; legacy authentication remains active.", error);
-      return { enabled: false };
-    });
-  return firebaseConfigPromise;
-}
-
-function firebaseErrorMessage(data, fallback = "Không thể xác thực tài khoản.") {
-  const code = String(data?.error?.message || data?.error || "").split(" : ")[0];
-  const messages = {
-    EMAIL_EXISTS: "Email này đã được đăng ký.",
-    EMAIL_NOT_FOUND: "Email hoặc mật khẩu không đúng.",
-    INVALID_LOGIN_CREDENTIALS: "Email hoặc mật khẩu không đúng.",
-    INVALID_PASSWORD: "Email hoặc mật khẩu không đúng.",
-    USER_DISABLED: "Tài khoản đã bị khóa.",
-    WEAK_PASSWORD: "Mật khẩu cần tối thiểu 6 ký tự.",
-    INVALID_EMAIL: "Email không hợp lệ.",
-    TOKEN_EXPIRED: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
-    INVALID_ID_TOKEN: "Phiên đăng nhập không hợp lệ.",
-    TOO_MANY_ATTEMPTS_TRY_LATER: "Bạn thao tác quá nhiều lần. Vui lòng thử lại sau.",
-    OPERATION_NOT_ALLOWED: "Đăng nhập email/mật khẩu chưa được bật trong Firebase.",
-  };
-  return messages[code] || fallback;
-}
-
-async function firebaseRestRequest(endpoint, body) {
-  const config = await getFirebaseConfig();
-  if (!config.enabled || !config.apiKey) throw new Error("Firebase Authentication chưa được cấu hình.");
-  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/${endpoint}?key=${encodeURIComponent(config.apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(firebaseErrorMessage(data));
-    error.firebaseCode = String(data?.error?.message || "");
-    throw error;
-  }
-  return data;
-}
-
-function firebaseSessionFromResponse(data) {
-  return {
-    idToken: data.idToken,
-    refreshToken: data.refreshToken,
-    expiresAt: Date.now() + (Math.max(60, Number(data.expiresIn || 3600)) * 1000),
-    localId: data.localId || "",
-    email: data.email || "",
-  };
-}
-
-async function refreshFirebaseSession(session) {
-  const config = await getFirebaseConfig();
-  if (!config.enabled || !session?.refreshToken) return null;
-  const response = await fetch(`https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(config.apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: session.refreshToken,
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    clearAllAuthStorage();
-    state.user = null;
-    state.adminUser = null;
-    throw new Error(firebaseErrorMessage(data, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."));
-  }
-  const refreshed = {
-    idToken: data.id_token,
-    refreshToken: data.refresh_token || session.refreshToken,
-    expiresAt: Date.now() + (Math.max(60, Number(data.expires_in || 3600)) * 1000),
-    localId: data.user_id || session.localId || "",
-    email: session.email || "",
-  };
-  writeFirebaseSession(refreshed);
-  return refreshed;
-}
-
-async function getFirebaseIdToken() {
-  const session = readFirebaseSession();
-  if (!session?.idToken) return "";
-  if (Number(session.expiresAt || 0) > Date.now() + 60_000) return session.idToken;
-  const refreshed = await refreshFirebaseSession(session);
-  return refreshed?.idToken || "";
-}
-
-async function firebaseSignUp(email, password) {
-  const data = await firebaseRestRequest("accounts:signUp", {
-    email,
-    password,
-    returnSecureToken: true,
-  });
-  const session = firebaseSessionFromResponse(data);
-  writeFirebaseSession(session);
-  return session;
-}
-
-async function firebaseSignIn(email, password) {
-  const data = await firebaseRestRequest("accounts:signInWithPassword", {
-    email,
-    password,
-    returnSecureToken: true,
-  });
-  const session = firebaseSessionFromResponse(data);
-  writeFirebaseSession(session);
-  return session;
-}
-
-async function firebaseSignInWithCustomToken(customToken) {
-  const data = await firebaseRestRequest("accounts:signInWithCustomToken", {
-    token: customToken,
-    returnSecureToken: true,
-  });
-  const session = firebaseSessionFromResponse(data);
-  writeFirebaseSession(session);
-  return session;
-}
-
-async function firebaseSendPasswordResetEmail(email) {
-  return firebaseRestRequest("accounts:sendOobCode", {
-    requestType: "PASSWORD_RESET",
-    email,
-  });
-}
-
-async function firebaseUpdatePassword(currentPassword, newPassword) {
-  if (!state.user?.email) throw new Error("Không tìm thấy email tài khoản.");
-  await firebaseSignIn(state.user.email, currentPassword);
-  const idToken = await getFirebaseIdToken();
-  const data = await firebaseRestRequest("accounts:update", {
-    idToken,
-    password: newPassword,
-    returnSecureToken: true,
-  });
-  writeFirebaseSession(firebaseSessionFromResponse(data));
-  return data;
-}
-
 async function apiRequest(path, options = {}) {
-  const { auth = true, ...fetchOptions } = options;
   if (BACKEND_DISABLED && path.startsWith("/api/")) {
     throw new Error(backendDisabledMessage());
   }
@@ -4320,17 +4156,15 @@ async function apiRequest(path, options = {}) {
     || /^\/api\/payments\/orders\/[^/]+\/status(?:\?|$)/.test(path)
     || /^\/api\/coins(?:\/|\?|$)/.test(path);
   const requestUrl = getApiRequestUrl(path);
-  const firebaseIdToken = auth ? await getFirebaseIdToken() : "";
   let response;
   try {
     response = await fetch(requestUrl, {
-      cache: shouldBypassCache ? "no-store" : fetchOptions.cache,
-      ...fetchOptions,
+      cache: shouldBypassCache ? "no-store" : options.cache,
+      ...options,
       headers: {
         "Content-Type": "application/json",
         ...(shouldBypassCache ? { "Cache-Control": "no-cache" } : {}),
-        ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),
-        ...(fetchOptions.headers || {}),
+        ...(options.headers || {}),
       },
     });
   } catch (error) {
@@ -4354,7 +4188,7 @@ async function apiRequest(path, options = {}) {
 const PASSWORD_RESET_API_BASE_URL = "https://servermail222.netlify.app";
 
 function passwordResetApiRequest(path, options = {}) {
-  return apiRequest(`${PASSWORD_RESET_API_BASE_URL}${path}`, { ...options, auth: false });
+  return apiRequest(`${PASSWORD_RESET_API_BASE_URL}${path}`, options);
 }
 
 const TRAFFIC_SOURCE_KEY = "v2-traffic-source";
@@ -8227,7 +8061,7 @@ function getAdminPortalRole(user = state.adminUser) {
 
 function getAllowedAdminTabsForRole(role) {
   const normalized = normalizeAdminPortalRole(role);
-  if (normalized === "admin") return ["users", "vip", "subscriptions", "content", "collaborators", "analytics"];
+  if (normalized === "admin") return ["users", "vip", "subscriptions", "content", "reminders", "collaborators", "analytics"];
   if (normalized === "staff") return ["users", "collaborators"];
   if (normalized === "sales" || normalized === "ctv") return ["customers"];
   if (normalized === "content") return ["content"];
@@ -8679,6 +8513,9 @@ function loadActiveAdminTabData() {
       break;
     case "content":
       loadAdminContentLocks();
+      break;
+    case "reminders":
+      loadAdminStudyReminders();
       break;
     case "collaborators":
       loadAdminUsers();
@@ -9634,6 +9471,223 @@ function renderAdminCustomersPanelHTML(isVi) {
   `;
 }
 
+const ADMIN_REMINDER_SEGMENTS = {
+  new_unused: ["VIP mới, chưa học", "VIP 新用户"],
+  inactive: ["Lâu chưa quay lại", "长期未学习"],
+  expiring: ["VIP sắp hết hạn", "VIP 即将到期"],
+  unfinished: ["Đang học dở", "课程未完成"],
+  listening_lapse: ["Gián đoạn luyện nghe", "听力中断"],
+  low_activity: ["Học ít trong tuần", "本周学习较少"],
+  healthy: ["Đang học ổn định", "学习稳定"],
+};
+
+function getAdminReminderSegmentLabel(segment, isVi) {
+  return (ADMIN_REMINDER_SEGMENTS[segment] || [segment || "—", segment || "—"])[isVi ? 0 : 1];
+}
+
+function getAdminReminderBlockedLabel(reason, isVi) {
+  const labels = {
+    opted_out: ["Đã tắt email", "已关闭邮件"],
+    cooldown: ["Đang chờ cooldown", "冷却期内"],
+    monthly_limit: ["Đạt giới hạn tháng", "已达月度上限"],
+    active: ["Đang học ổn định", "学习稳定"],
+  };
+  return (labels[reason] || ["Sẵn sàng gửi", "可发送"])[isVi ? 0 : 1];
+}
+
+function formatAdminReminderDate(value, isVi) {
+  if (!value) return isVi ? "Chưa có" : "暂无";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(isVi ? "vi-VN" : "zh-CN", { dateStyle: "short", timeStyle: "short" });
+}
+
+function renderAdminStudyRemindersPanelHTML(isVi) {
+  const data = state.adminStudyReminders;
+  const settings = data?.settings || {
+    automaticEnabled: false, inactivityDays: 3, lowActivityMinutes: 5, listeningLapseDays: 5,
+    expiryWindowDays: 7, cooldownDays: 3, monthlyLimit: 3, batchSize: 50,
+  };
+  const summary = data?.summary || {};
+  const allCandidates = Array.isArray(data?.candidates) ? data.candidates : [];
+  const segment = state.adminStudyReminderSegment || "all";
+  const candidates = allCandidates.filter((item) => segment === "all" ? item.segment !== "healthy" : item.segment === segment);
+  const history = Array.isArray(data?.history) ? data.history : [];
+  const segmentCounts = allCandidates.reduce((counts, item) => {
+    if (item.segment !== "healthy") counts[item.segment] = (counts[item.segment] || 0) + 1;
+    return counts;
+  }, {});
+
+  const candidateRows = candidates.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.fullName || "Học viên HuaMei")}</strong><small>${escapeHtml(item.email || "")}</small></td>
+      <td><span class="admin-study-reminder-segment segment-${escapeAttr(item.segment)}">${escapeHtml(getAdminReminderSegmentLabel(item.segment, isVi))}</span></td>
+      <td><strong>${Number(item.studyMinutes7d || 0).toLocaleString(isVi ? "vi-VN" : "zh-CN")} ${isVi ? "phút" : "分钟"}</strong><small>${escapeHtml(formatAdminReminderDate(item.lastLearningAt, isVi))}</small></td>
+      <td><strong>${Number(item.sentThisMonth || 0)}/${Number(settings.monthlyLimit || 3)}</strong><small>${escapeHtml(getAdminReminderBlockedLabel(item.blockedReason, isVi))}</small></td>
+      <td><button class="admin-study-reminder-send" type="button" data-admin-reminder-send="${escapeAttr(item.id)}" ${!item.eligible || state.adminStudyReminderActionUserId === item.id ? "disabled" : ""}>${state.adminStudyReminderActionUserId === item.id ? (isVi ? "Đang gửi…" : "发送中…") : (isVi ? "Gửi email" : "发送邮件")}</button></td>
+    </tr>
+  `).join("");
+
+  const historyRows = history.map((item) => `
+    <tr>
+      <td><strong>${escapeHtml(item.fullName || item.email || "—")}</strong><small>${escapeHtml(item.email || "")}</small></td>
+      <td>${escapeHtml(getAdminReminderSegmentLabel(item.segment, isVi))}</td>
+      <td><span class="admin-study-reminder-log-status ${escapeAttr(item.status)}">${item.status === "sent" ? (isVi ? "Đã gửi" : "已发送") : (isVi ? "Thất bại" : "失败")}</span></td>
+      <td>${escapeHtml(formatAdminReminderDate(item.sentAt, isVi))}</td>
+      <td>${item.returnedAt ? `<span class="admin-study-reminder-returned">${isVi ? "Đã quay lại" : "已回访"}</span><small>${escapeHtml(formatAdminReminderDate(item.returnedAt, isVi))}</small>` : `<span class="admin-study-reminder-waiting">${isVi ? "Đang theo dõi" : "跟踪中"}</span>`}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <section class="admin-study-reminders-panel">
+      <header class="admin-study-reminders-hero">
+        <div>
+          <span class="admin-study-reminders-eyebrow">${isVi ? "NHẮC HỌC THÔNG MINH" : "智能学习提醒"}</span>
+          <h2>${isVi ? "Đưa VIP quay lại đúng lúc" : "在合适的时间召回 VIP"}</h2>
+          <p>${isVi ? "Phát hiện người học có nguy cơ rời bỏ, gửi có giới hạn và đo lượt quay lại — không gửi đại trà." : "识别流失风险、限制发送频率并跟踪回访，不群发。"}</p>
+        </div>
+        <div class="admin-study-reminders-hero-actions">
+          <button type="button" class="secondary" data-admin-reminder-refresh>${isVi ? "Làm mới" : "刷新"}</button>
+          <button type="button" data-admin-reminder-preview ${state.adminStudyRemindersLoading ? "disabled" : ""}>${isVi ? "Chạy xem trước" : "预览运行"}</button>
+        </div>
+      </header>
+
+      <div class="admin-study-reminders-flow" aria-label="${isVi ? "Quy trình nhắc học" : "学习提醒流程"}">
+        ${[["01", "Phát hiện", "识别"], ["02", "Phân nhóm", "分组"], ["03", "Gửi", "发送"], ["04", "Giới hạn", "限频"], ["05", "Đo quay lại", "跟踪回访"]].map(([no, vi, zh], index) => `<div><b>${no}</b><span>${isVi ? vi : zh}</span>${index < 4 ? "<i>→</i>" : ""}</div>`).join("")}
+      </div>
+
+      ${state.adminStudyRemindersError ? `<div class="admin-study-reminders-alert error">${escapeHtml(state.adminStudyRemindersError)}</div>` : ""}
+      ${state.adminStudyReminderStatus ? `<div class="admin-study-reminders-alert success">${escapeHtml(state.adminStudyReminderStatus)}</div>` : ""}
+
+      <div class="admin-study-reminders-kpis">
+        <article><span>${isVi ? "VIP còn hiệu lực" : "有效 VIP"}</span><strong>${Number(summary.activeVip || 0)}</strong><small>${isVi ? "được phân tích" : "已分析"}</small></article>
+        <article><span>${isVi ? "Có nguy cơ" : "存在风险"}</span><strong>${Number(summary.atRisk || 0)}</strong><small>${isVi ? "cần chăm sóc" : "需关注"}</small></article>
+        <article class="accent"><span>${isVi ? "Sẵn sàng gửi" : "可发送"}</span><strong>${Number(summary.eligible || 0)}</strong><small>${isVi ? "đã qua giới hạn" : "已通过限频"}</small></article>
+        <article><span>${isVi ? "Tỷ lệ quay lại" : "回访率"}</span><strong>${Number(summary.returnRate || 0)}%</strong><small>${Number(summary.returned30Days || 0)}/${Number(summary.sent30Days || 0)} · 30 ${isVi ? "ngày" : "天"}</small></article>
+      </div>
+
+      <div class="admin-study-reminders-layout">
+        <article class="admin-study-reminders-card settings">
+          <header><div><h3>${isVi ? "Quy tắc gửi" : "发送规则"}</h3><p>${isVi ? "Tự động luôn tắt cho đến khi admin chủ động bật." : "自动发送默认关闭。"}</p></div><label class="admin-study-reminders-switch"><input id="adminReminderAutomaticEnabled" type="checkbox" ${settings.automaticEnabled ? "checked" : ""}/><span></span><b>${isVi ? "Tự động" : "自动"}</b></label></header>
+          <div class="admin-study-reminders-settings-grid">
+            <label>${isVi ? "Không học trong" : "未学习"}<span><input id="adminReminderInactivityDays" type="number" min="1" max="60" value="${Number(settings.inactivityDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
+            <label>${isVi ? "Học dưới / 7 ngày" : "7天内少于"}<span><input id="adminReminderLowMinutes" type="number" min="1" max="240" value="${Number(settings.lowActivityMinutes)}"/> ${isVi ? "phút" : "分钟"}</span></label>
+            <label>${isVi ? "Cooldown" : "冷却时间"}<span><input id="adminReminderCooldownDays" type="number" min="1" max="30" value="${Number(settings.cooldownDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
+            <label>${isVi ? "Tối đa mỗi tháng" : "每月最多"}<span><input id="adminReminderMonthlyLimit" type="number" min="1" max="12" value="${Number(settings.monthlyLimit)}"/> email</span></label>
+            <label>${isVi ? "VIP sắp hết hạn" : "VIP 到期前"}<span><input id="adminReminderExpiryDays" type="number" min="1" max="30" value="${Number(settings.expiryWindowDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
+            <label>${isVi ? "Mỗi lượt tự động" : "每批自动发送"}<span><input id="adminReminderBatchSize" type="number" min="1" max="200" value="${Number(settings.batchSize)}"/> email</span></label>
+          </div>
+          <footer><span>${isVi ? "Người dùng tắt nhắc học sẽ luôn bị loại." : "已关闭提醒的用户始终排除。"}</span><button type="button" data-admin-reminder-save>${isVi ? "Lưu quy tắc" : "保存规则"}</button></footer>
+        </article>
+        <aside class="admin-study-reminders-card automatic ${settings.automaticEnabled ? "on" : "off"}">
+          <span class="status-dot"></span><small>${settings.automaticEnabled ? (isVi ? "ĐANG BẬT" : "已开启") : (isVi ? "ĐANG TẮT" : "已关闭")}</small>
+          <h3>${isVi ? "Gửi tự động" : "自动发送"}</h3>
+          <p>${settings.automaticEnabled ? (isVi ? "Hệ thống chỉ gửi cho nhóm đủ điều kiện và vẫn áp dụng mọi giới hạn." : "仅向符合条件的用户发送。") : (isVi ? "Bạn vẫn có thể xem trước và gửi thủ công từng người." : "仍可预览并逐个手动发送。")}</p>
+          <button type="button" data-admin-reminder-run ${!settings.automaticEnabled ? "disabled" : ""}>${isVi ? "Chạy một lượt ngay" : "立即运行一批"}</button>
+        </aside>
+      </div>
+
+      <article class="admin-study-reminders-card candidates">
+        <header><div><h3>${isVi ? "VIP cần nhắc" : "需要提醒的 VIP"}</h3><p>${isVi ? "Gửi thủ công chỉ khả dụng khi đã qua cooldown và giới hạn tháng." : "仅在通过冷却和月度限制后可手动发送。"}</p></div></header>
+        <div class="admin-study-reminders-filters">
+          <button type="button" data-admin-reminder-segment="all" class="${segment === "all" ? "active" : ""}">${isVi ? "Tất cả" : "全部"} <b>${Number(summary.atRisk || 0)}</b></button>
+          ${Object.entries(ADMIN_REMINDER_SEGMENTS).filter(([key]) => key !== "healthy").map(([key, labels]) => `<button type="button" data-admin-reminder-segment="${key}" class="${segment === key ? "active" : ""}">${escapeHtml(labels[isVi ? 0 : 1])} <b>${Number(segmentCounts[key] || 0)}</b></button>`).join("")}
+        </div>
+        <div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Học viên VIP" : "VIP 学员"}</th><th>${isVi ? "Nhóm hành vi" : "行为分组"}</th><th>${isVi ? "Học 7 ngày / lần cuối" : "7天学习 / 最近"}</th><th>${isVi ? "Giới hạn" : "发送限制"}</th><th>${isVi ? "Hành động" : "操作"}</th></tr></thead><tbody>${candidateRows || `<tr><td colspan="5" class="admin-empty">${state.adminStudyRemindersLoading ? (isVi ? "Đang phân tích dữ liệu học tập…" : "正在分析学习数据…") : (isVi ? "Không có VIP phù hợp nhóm này." : "该分组暂无 VIP。")}</td></tr>`}</tbody></table></div>
+      </article>
+
+      <article class="admin-study-reminders-card history">
+        <header><div><h3>${isVi ? "Nhật ký & lượt quay lại" : "发送与回访记录"}</h3><p>${isVi ? "Một lượt quay lại được ghi nhận khi có hoạt động học mới sau email." : "邮件后出现新的学习行为即记为回访。"}</p></div></header>
+        <div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Học viên" : "学员"}</th><th>${isVi ? "Nhóm" : "分组"}</th><th>${isVi ? "Kết quả" : "结果"}</th><th>${isVi ? "Thời gian gửi" : "发送时间"}</th><th>${isVi ? "Sau email" : "邮件后"}</th></tr></thead><tbody>${historyRows || `<tr><td colspan="5" class="admin-empty">${isVi ? "Chưa có email nhắc học nào được gửi." : "暂无提醒邮件记录。"}</td></tr>`}</tbody></table></div>
+      </article>
+    </section>
+  `;
+}
+
+async function loadAdminStudyReminders() {
+  if (!isAdminUser()) return;
+  state.adminStudyRemindersLoading = true;
+  state.adminStudyRemindersError = "";
+  renderAdmin();
+  try {
+    state.adminStudyReminders = await apiRequest("/api/admin/study-reminders/overview", {
+      method: "GET", headers: { "X-Admin-User-Id": getAdminUserId() },
+    });
+  } catch (error) {
+    state.adminStudyRemindersError = error.message || "Không thể tải dữ liệu nhắc học.";
+  } finally {
+    state.adminStudyRemindersLoading = false;
+    renderAdmin();
+  }
+}
+
+async function saveAdminStudyReminderSettings() {
+  const readNumber = (id) => Number(document.getElementById(id)?.value || 0);
+  state.adminStudyRemindersLoading = true;
+  state.adminStudyRemindersError = "";
+  state.adminStudyReminderStatus = "";
+  try {
+    await apiRequest("/api/admin/study-reminders/settings", {
+      method: "PUT", headers: { "X-Admin-User-Id": getAdminUserId() },
+      body: JSON.stringify({
+        automaticEnabled: Boolean(document.getElementById("adminReminderAutomaticEnabled")?.checked),
+        inactivityDays: readNumber("adminReminderInactivityDays"),
+        lowActivityMinutes: readNumber("adminReminderLowMinutes"),
+        cooldownDays: readNumber("adminReminderCooldownDays"),
+        monthlyLimit: readNumber("adminReminderMonthlyLimit"),
+        expiryWindowDays: readNumber("adminReminderExpiryDays"),
+        batchSize: readNumber("adminReminderBatchSize"),
+      }),
+    });
+    state.adminStudyReminderStatus = state.lang === "vi" ? "Đã lưu quy tắc nhắc học." : "提醒规则已保存。";
+    await loadAdminStudyReminders();
+  } catch (error) {
+    state.adminStudyRemindersError = error.message || "Không thể lưu quy tắc.";
+    state.adminStudyRemindersLoading = false;
+    renderAdmin();
+  }
+}
+
+async function sendAdminStudyReminder(userId) {
+  state.adminStudyReminderActionUserId = userId;
+  state.adminStudyRemindersError = "";
+  state.adminStudyReminderStatus = "";
+  renderAdmin();
+  try {
+    await apiRequest(`/api/admin/study-reminders/send/${encodeURIComponent(userId)}`, {
+      method: "POST", headers: { "X-Admin-User-Id": getAdminUserId() }, body: "{}",
+    });
+    state.adminStudyReminderStatus = state.lang === "vi" ? "Email nhắc học đã được gửi và ghi nhật ký." : "提醒邮件已发送并记录。";
+    await loadAdminStudyReminders();
+  } catch (error) {
+    state.adminStudyRemindersError = error.message || "Không thể gửi email nhắc học.";
+  } finally {
+    state.adminStudyReminderActionUserId = "";
+    renderAdmin();
+  }
+}
+
+async function runAdminStudyReminderBatch(dryRun) {
+  state.adminStudyRemindersLoading = true;
+  state.adminStudyRemindersError = "";
+  state.adminStudyReminderStatus = "";
+  renderAdmin();
+  try {
+    const result = await apiRequest("/api/admin/study-reminders/run", {
+      method: "POST", headers: { "X-Admin-User-Id": getAdminUserId() }, body: JSON.stringify({ dryRun }),
+    });
+    state.adminStudyReminderStatus = dryRun
+      ? (state.lang === "vi" ? `Xem trước: ${Number(result.total || 0)} VIP đủ điều kiện, chưa gửi email.` : `预览：${Number(result.total || 0)} 位 VIP 符合条件，未发送邮件。`)
+      : (state.lang === "vi" ? `Đã gửi ${Number(result.sent || 0)}, thất bại ${Number(result.failed || 0)}.` : `已发送 ${Number(result.sent || 0)}，失败 ${Number(result.failed || 0)}。`);
+    if (!dryRun) await loadAdminStudyReminders();
+  } catch (error) {
+    state.adminStudyRemindersError = error.message || "Không thể chạy lượt nhắc học.";
+  } finally {
+    state.adminStudyRemindersLoading = false;
+    renderAdmin();
+  }
+}
+
 function renderAdmin() {
   const isVi = state.lang === "vi";
   if (!canAccessAdminConsole()) {
@@ -9676,9 +9730,11 @@ function renderAdmin() {
   const showAdminCtvTab = shouldShowAdminTab("collaborators");
   const showAdminAnalyticsTab = shouldShowAdminTab("analytics");
   const showAdminContentTab = shouldShowAdminTab("content");
+  const showAdminRemindersTab = shouldShowAdminTab("reminders");
   const adminMainClass = [
     adminTab === "subscriptions" ? "admin-main--subscriptions" : "",
     adminTab === "content" ? "admin-main--content" : "",
+    adminTab === "reminders" ? "admin-main--reminders" : "",
     adminTab === "collaborators" ? "admin-main--ctv" : "",
     adminTab === "analytics" ? "admin-main--analytics" : "",
     adminTab === "vip" ? "admin-main--vip" : "",
@@ -9694,6 +9750,7 @@ function renderAdmin() {
     users: isVi ? "Quản lý người dùng" : "用户管理",
     subscriptions: isVi ? "Quản lý gói đăng ký" : "订阅套餐管理",
     content: isVi ? "Quản lý nội dung" : "内容管理",
+    reminders: isVi ? "Nhắc học" : "学习提醒",
     collaborators: isVi ? "Quản lí CTV" : "合作伙伴管理",
     analytics: isVi ? "Phân tích học tập" : "学习分析",
   };
@@ -9702,6 +9759,7 @@ function renderAdmin() {
     users: `<strong>${totalUsers || 0}</strong> ${isVi ? "người dùng đã đăng ký" : "注册用户"} <span>↗ +12% ${isVi ? "tháng này" : "本月"}</span>`,
     subscriptions: isVi ? "Theo dõi doanh thu, giao dịch và các gói Pro đang bán." : "跟踪收入、交易和正在销售的 Pro 套餐。",
     content: isVi ? "Cấu hình giới hạn miễn phí, ảnh bìa HSK và quyền truy cập nội dung." : "配置免费限制、HSK 封面和内容访问权限。",
+    reminders: isVi ? "Phát hiện VIP ít hoạt động, gửi nhắc có giới hạn và đo lượt quay lại." : "识别低活跃 VIP、限频提醒并跟踪回访。",
     collaborators: isVi ? "Quản lý cộng tác viên, theo dõi hoa hồng và tạo link giới thiệu." : "管理合作伙伴、跟踪佣金并生成推广链接。",
     analytics: isVi ? "Theo dõi xu hướng học tập, kênh nguồn và chuyển đổi VIP." : "跟踪学习趋势、流量来源和 VIP 转化。",
   };
@@ -9729,6 +9787,7 @@ function renderAdmin() {
           ${showAdminCtvTab ? `<button id="adminCtvTabBtn" class="${adminTab === "collaborators" ? "active" : ""}" type="button"><span>🔗</span>${isVi ? "Quản lí CTV" : "合作伙伴管理"}</button>` : ""}
           ${showAdminAnalyticsTab ? `<button id="adminAnalyticsTabBtn" class="${adminTab === "analytics" ? "active" : ""}" type="button"><span>📊</span>${isVi ? "Phân tích học tập" : "学习分析"}</button>` : ""}
           ${showAdminContentTab ? `<button id="adminContentTabBtn" class="${adminTab === "content" ? "active" : ""}" type="button"><span>📚</span>${isVi ? "Khóa bài học" : "课程锁定"}</button>` : ""}
+          ${showAdminRemindersTab ? `<button id="adminStudyRemindersTabBtn" class="${adminTab === "reminders" ? "active" : ""}" type="button"><span>🔔</span>${isVi ? "Nhắc học" : "学习提醒"}</button>` : ""}
         </nav>
         
         <div class="admin-sidebar-foot">
@@ -9832,6 +9891,7 @@ function renderAdmin() {
         </section>
 
         ${adminTab === "content" ? renderAdminContentPanelHTML() : ""}
+        ${adminTab === "reminders" ? renderAdminStudyRemindersPanelHTML(isVi) : ""}
         ${adminTab === "collaborators" ? renderAdminCollaboratorsPanelHTML() : ""}
         ${adminTab === "analytics" ? renderAdminAnalyticsPanelHTML() : ""}
         ${adminTab === "vip" ? renderAdminVipPanelHTML() : ""}
@@ -9952,47 +10012,16 @@ function showModal(type) {
     submitBtn.textContent = isLogin ? (isVi ? "Đang đăng nhập..." : "正在登录...") : (isVi ? "Đang đăng ký..." : "正在注册...");
 
     try {
-      const firebaseConfig = await getFirebaseConfig();
-      let data;
-      if (firebaseConfig.enabled) {
-        removeAuthStorageKey(STUDENT_TOKEN_STORAGE_KEY);
-        if (isLogin) {
-          try {
-            await firebaseSignIn(email, password);
-          } catch (firebaseError) {
-            const migrated = await apiRequest("/api/auth/firebase-migrate", {
-              method: "POST",
-              body: JSON.stringify({ email, password }),
-            });
-            await firebaseSignInWithCustomToken(migrated.customToken);
-          }
-        } else {
-          await apiRequest("/api/auth/firebase-can-register", {
-            method: "POST",
-            body: JSON.stringify({ email }),
-          });
-          await firebaseSignUp(email, password);
-        }
-        data = await apiRequest("/api/auth/firebase-session", {
-          method: "POST",
-          body: JSON.stringify({
-            fullName,
-            ref: getReferralRefFromUrl(),
-            src: getTrafficSource(),
-          }),
-        });
-      } else {
-        data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
-          method: "POST",
-          body: JSON.stringify(isLogin ? { email, password } : {
-            fullName,
-            email,
-            password,
-            ref: getReferralRefFromUrl(),
-            src: getTrafficSource(),
-          }),
-        });
-      }
+      const data = await apiRequest(isLogin ? "/api/login" : "/api/register", {
+        method: "POST",
+        body: JSON.stringify(isLogin ? { email, password } : {
+          fullName,
+          email,
+          password,
+          ref: getReferralRefFromUrl(),
+          src: getTrafficSource(),
+        }),
+      });
       if (!isLogin) clearReferralAttribution();
       state.user = data.user;
       state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
@@ -10230,8 +10259,6 @@ function showPasswordResetModal(prefillEmail = "") {
             method: "POST",
             body: JSON.stringify({ email: resetEmail, code: resetCode, newPassword, confirmPassword }),
           });
-          const firebaseConfig = await getFirebaseConfig();
-          if (firebaseConfig.enabled) await firebaseSignIn(resetEmail, newPassword);
           state.user = data.user;
           state.adminUser = isAdminPortalRole(data.user?.role) ? data.user : null;
           if (state.adminUser) state.adminTab = getSafeAdminTab(state.adminTab);
@@ -10460,16 +10487,11 @@ function showChangePasswordModal() {
     submitBtn.textContent = isVi ? "Đang cập nhật..." : "正在更新...";
 
     try {
-      const firebaseConfig = await getFirebaseConfig();
-      if (firebaseConfig.enabled) {
-        await firebaseUpdatePassword(currentPassword, newPassword);
-      } else {
-        await apiRequest(`/api/users/${encodeURIComponent(state.user.id)}/password`, {
-          method: "PATCH",
-          headers: { "X-User-Id": state.user.id },
-          body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
-        });
-      }
+      await apiRequest(`/api/users/${encodeURIComponent(state.user.id)}/password`, {
+        method: "PATCH",
+        headers: { "X-User-Id": state.user.id },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
       message.textContent = isVi ? "Đã đổi mật khẩu thành công." : "密码修改成功。";
       message.classList.add("success");
       recordUserActivity("password");
@@ -19327,6 +19349,52 @@ function bindEvents() {
       return;
     }
 
+    const adminStudyRemindersTabBtn = event.target.closest("#adminStudyRemindersTabBtn");
+    if (adminStudyRemindersTabBtn) {
+      if (!shouldShowAdminTab("reminders")) return;
+      state.adminTab = "reminders";
+      renderAdmin();
+      savePersistedRoute();
+      loadAdminStudyReminders();
+      return;
+    }
+
+    const adminReminderSegmentBtn = event.target.closest("[data-admin-reminder-segment]");
+    if (adminReminderSegmentBtn && state.adminTab === "reminders") {
+      state.adminStudyReminderSegment = adminReminderSegmentBtn.dataset.adminReminderSegment || "all";
+      renderAdmin();
+      return;
+    }
+
+    if (event.target.closest("[data-admin-reminder-refresh]") && state.adminTab === "reminders") {
+      await loadAdminStudyReminders();
+      return;
+    }
+
+    if (event.target.closest("[data-admin-reminder-save]") && state.adminTab === "reminders") {
+      await saveAdminStudyReminderSettings();
+      return;
+    }
+
+    const adminReminderSendBtn = event.target.closest("[data-admin-reminder-send]");
+    if (adminReminderSendBtn && state.adminTab === "reminders") {
+      await sendAdminStudyReminder(adminReminderSendBtn.dataset.adminReminderSend || "");
+      return;
+    }
+
+    if (event.target.closest("[data-admin-reminder-preview]") && state.adminTab === "reminders") {
+      await runAdminStudyReminderBatch(true);
+      return;
+    }
+
+    if (event.target.closest("[data-admin-reminder-run]") && state.adminTab === "reminders") {
+      const confirmed = window.confirm(state.lang === "vi"
+        ? "Gửi email cho toàn bộ VIP đang đủ điều kiện trong lượt này?"
+        : "向本批次所有符合条件的 VIP 发送邮件？");
+      if (confirmed) await runAdminStudyReminderBatch(false);
+      return;
+    }
+
     const adminCtvTabBtn = event.target.closest("#adminCtvTabBtn");
     if (adminCtvTabBtn) {
       if (!shouldShowAdminTab("collaborators")) return;
@@ -20849,32 +20917,6 @@ function warmStartupDataAfterFirstPaint() {
   });
 }
 
-async function reconcileFirebaseSessionAtStartup() {
-  const config = await getFirebaseConfig();
-  if (!config.enabled) return;
-  const session = readFirebaseSession();
-  if (!session?.idToken) {
-    if (state.user || state.adminUser) {
-      state.user = null;
-      state.adminUser = null;
-      saveState();
-      renderAll();
-    }
-    return;
-  }
-  try {
-    await getFirebaseIdToken();
-    await refreshCurrentUserStatus();
-  } catch (error) {
-    console.warn("Firebase session restore failed:", error);
-    state.user = null;
-    state.adminUser = null;
-    clearAllAuthStorage();
-    saveState();
-    renderAll();
-  }
-}
-
 function applyRouteFromLocation() {
   const pathname = window.location.pathname;
   const options = {};
@@ -20949,8 +20991,6 @@ function init() {
     console.warn("Home coin startup refresh failed:", error);
   });
   warmStartupDataAfterFirstPaint();
-  void reconcileFirebaseSessionAtStartup();
-  
 }
 
 init();
