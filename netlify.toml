@@ -3,7 +3,7 @@
   command = ""
 
 [functions]
-  directory = "netlify/mail-functions"
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 [[headers]]

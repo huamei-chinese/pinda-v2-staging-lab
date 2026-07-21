@@ -11,6 +11,45 @@ const { Pool } = pg;
 let pool;
 let schemaReady;
 
+const DEFAULT_CORS_ORIGINS = new Set([
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+]);
+
+function allowedCorsOrigins() {
+  const configured = String(env("CORS_ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return new Set([...DEFAULT_CORS_ORIGINS, ...configured]);
+}
+
+function corsHeaders(req) {
+  const origin = String(req.headers.get("origin") || "").trim();
+  const headers = {
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, Cache-Control",
+    "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
+  };
+  if (origin && allowedCorsOrigins().has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
+
+function withCors(response, req) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(corsHeaders(req))) {
+    headers.set(name, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 function normalizeDurationUnit(value) {
   return value === "days" ? "days" : "months";
 }
@@ -4426,12 +4465,17 @@ async function route(req) {
 }
 
 export default async function handler(req) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204 });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
+  }
   try {
-    return await route(req);
+    return withCors(await route(req), req);
   } catch (error) {
     console.error(error);
-    return json(error.payload || { error: error.message || "Lỗi server." }, error.status || 500);
+    return withCors(
+      json(error.payload || { error: error.message || "Lỗi server." }, error.status || 500),
+      req,
+    );
   }
 }
 
