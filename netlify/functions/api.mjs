@@ -11,6 +11,28 @@ const { Pool } = pg;
 let pool;
 let schemaReady;
 
+// Keep these paths statically enumerable for Netlify's function bundler.
+// A dynamic `path.join(process.cwd(), "public", fileName)` makes dependency
+// tracing treat the whole public directory as a possible function dependency,
+// including generated lesson files that are tens of megabytes each.
+const HIGH_FREQUENCY_PUBLIC_SCRIPTS = Object.freeze({
+  "lesson-high-frequency-v1-27-topics.js": path.join(
+    process.cwd(),
+    "public",
+    "lesson-high-frequency-v1-27-topics.js",
+  ),
+  "lesson-high-frequency-topics.js": path.join(
+    process.cwd(),
+    "public",
+    "lesson-high-frequency-topics.js",
+  ),
+  "lesson-high-frequency-topic-unit.js": path.join(
+    process.cwd(),
+    "public",
+    "lesson-high-frequency-topic-unit.js",
+  ),
+});
+
 const DEFAULT_CORS_ORIGINS = new Set([
   "http://localhost:4173",
   "http://127.0.0.1:4173",
@@ -3272,7 +3294,8 @@ function dailyThemeTitle(theme) {
 }
 
 function loadHighFrequencyTopicsFromPublicScript(fileName, seed = []) {
-  const filePath = path.join(process.cwd(), "public", fileName);
+  const filePath = HIGH_FREQUENCY_PUBLIC_SCRIPTS[fileName];
+  if (!filePath) return [];
   if (!fs.existsSync(filePath)) return [];
 
   try {
