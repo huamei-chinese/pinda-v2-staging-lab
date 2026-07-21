@@ -1454,85 +1454,26 @@ async function sendSmtpEmail(to, subject, html) {
   }
 }
 
-async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
-  const deliveryMode = String(process.env.EMAIL_DELIVERY_MODE || "").trim().toLowerCase();
-  if (deliveryMode === "dev") {
-    if (process.env.NODE_ENV === "production") {
-      const error = new Error("EMAIL_DELIVERY_MODE=dev is not allowed in production.");
-      error.status = 503;
-      throw error;
-    }
-    console.log(`[${logPrefix}] ${email}: ${code}`);
-    return "dev";
+async function sendTransactionalEmail(email, subject, html, logPrefix) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    const configError = new Error(
+      "Chưa cấu hình Gmail SMTP. Vui lòng cấu hình SMTP_USER và SMTP_PASS bằng Google App Password.",
+    );
+    configError.status = 503;
+    throw configError;
   }
 
-  const mailServiceUrl = String(process.env.MAIL_SERVICE_URL || "").trim();
-  if (mailServiceUrl) {
-    const mailServiceSecret = String(process.env.MAIL_SERVICE_SECRET || "");
-    if (!mailServiceSecret) {
-      const error = new Error("MAIL_SERVICE_SECRET is required when MAIL_SERVICE_URL is configured.");
-      error.status = 503;
-      throw error;
-    }
-    try {
-      const response = await fetch(mailServiceUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${mailServiceSecret}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, type: logPrefix, code }),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!response.ok) throw new Error(`Mail service returned HTTP ${response.status}.`);
-      return "sent";
-    } catch (error) {
-      console.warn(`[${logPrefix}] Netlify mail service failed:`, error instanceof Error ? error.message : error);
-      const mailError = new Error("Không thể gửi email qua mail server. Vui lòng thử lại sau.");
-      mailError.status = 502;
-      throw mailError;
-    }
+  try {
+    await sendSmtpEmail(email, subject, html);
+    return "sent";
+  } catch (error) {
+    console.warn(`[${logPrefix}] Gmail SMTP failed:`, error instanceof Error ? error.message : error);
+    const smtpError = new Error(
+      "Không thể gửi email qua Gmail SMTP. Vui lòng kiểm tra SMTP_USER, SMTP_PASS (Google App Password) và SMTP_FROM.",
+    );
+    smtpError.status = 502;
+    throw smtpError;
   }
-
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      await sendSmtpEmail(email, subject, html);
-      return "sent";
-    } catch (error) {
-      console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
-      const smtpError = new Error("Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.");
-      smtpError.status = 502;
-      throw smtpError;
-    }
-  }
-
-  const resendApiKey = process.env.RESEND_API_KEY || "";
-  const from = process.env.EMAIL_FROM || "HuaMei <no-reply@huamei.vn>";
-  if (!resendApiKey) {
-    if (process.env.NODE_ENV === "production") {
-      const error = new Error("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.");
-      error.status = 503;
-      throw error;
-    }
-    console.log(`[${logPrefix}] ${email}: ${code}`);
-    return "dev";
-  }
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to: email, subject, html }),
-  });
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
-    const error = new Error("Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.");
-    error.status = 502;
-    throw error;
-  }
-  return "sent";
 }
 
 async function sendPasswordResetEmail(email, code) {
@@ -1548,7 +1489,6 @@ async function sendPasswordResetEmail(email, code) {
         </div>
       `,
     "password-reset",
-    code,
   );
 }
 
@@ -1629,7 +1569,6 @@ async function handlePasswordResetRequest(req, res) {
     ok: true,
     delivery,
     expiresAt: expiresAt.toISOString(),
-    devCode: delivery === "dev" && process.env.NODE_ENV !== "production" ? code : undefined,
   });
 }
 

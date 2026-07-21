@@ -4266,13 +4266,6 @@ async function firebaseSignInWithCustomToken(customToken) {
   return session;
 }
 
-async function firebaseSendPasswordResetEmail(email) {
-  return firebaseRestRequest("accounts:sendOobCode", {
-    requestType: "PASSWORD_RESET",
-    email,
-  });
-}
-
 async function firebaseUpdatePassword(currentPassword, newPassword) {
   if (!state.user?.email) throw new Error("Không tìm thấy email tài khoản.");
   await firebaseSignIn(state.user.email, currentPassword);
@@ -10003,7 +9996,6 @@ function showPasswordResetModal(prefillEmail = "") {
   let resetStep = "email";
   let resetEmail = String(prefillEmail || "").trim().toLowerCase();
   let resetCode = "";
-  let devCode = "";
   let statusText = "";
   let statusType = "";
 
@@ -10050,7 +10042,6 @@ function showPasswordResetModal(prefillEmail = "") {
             <div class="form-group">
               <label for="passwordResetCodeInput">${isVi ? "Mã xác minh" : "验证码"}</label>
               <input class="password-reset-code-input" type="text" id="passwordResetCodeInput" inputmode="numeric" maxlength="6" value="${escapeAttr(resetCode)}" placeholder="000000" required />
-              ${devCode ? `<small class="password-reset-dev-code">${isVi ? "Mã dev:" : "开发验证码:"} <strong>${escapeHtml(devCode)}</strong></small>` : ""}
             </div>
             <p class="auth-form-message ${statusType}" id="passwordResetMessage" role="status">${escapeHtml(statusText)}</p>
             <div class="password-reset-actions">
@@ -10099,7 +10090,6 @@ function showPasswordResetModal(prefillEmail = "") {
         method: "POST",
         body: JSON.stringify({ email: resetEmail }),
       });
-      devCode = data.devCode || "";
       resetStep = "code";
       statusType = "success";
       statusText = isVi ? "Đã gửi mã. Vui lòng kiểm tra email của bạn." : "验证码已发送，请查看邮箱。";
@@ -10295,9 +10285,7 @@ function showEmailVerificationModal() {
       });
       state.emailVerificationStatus = data.alreadyVerified
         ? (isVi ? "Email đã được xác minh." : "邮箱已验证。")
-        : data.delivery === "dev" && data.devCode
-          ? (isVi ? `Đã tạo mã xác minh. Mã dev: ${data.devCode}` : `已生成验证码。开发码：${data.devCode}`)
-          : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
+        : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
       message.textContent = state.emailVerificationStatus;
       message.classList.add("success");
     } catch (error) {
@@ -10626,9 +10614,7 @@ async function sendAccountEmailVerificationCode() {
     });
     state.emailVerificationStatus = data.alreadyVerified
       ? (isVi ? "Email đã được xác minh." : "邮箱已验证。")
-      : data.delivery === "dev" && data.devCode
-        ? (isVi ? `Đã tạo mã xác minh. Mã dev: ${data.devCode}` : `已生成验证码。开发码：${data.devCode}`)
-        : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
+      : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
     showToast(state.emailVerificationStatus);
   } catch (error) {
     state.emailVerificationStatus = error.message || (isVi ? "Không thể gửi mã xác minh." : "无法发送验证码。");

@@ -327,42 +327,6 @@ export class AuthService {
     return { customToken };
   }
 
-  async prepareFirebasePasswordReset(email: string) {
-    const normalizedEmail = String(email || '').trim().toLowerCase();
-    const genericResult = {
-      ok: true,
-      message: 'Nếu email đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu.',
-    };
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return genericResult;
-
-    const result = await this.db.query(
-      'SELECT id, full_name, email, firebase_uid, is_active FROM users WHERE email = $1 LIMIT 1',
-      [normalizedEmail],
-    );
-    const user = result.rows[0];
-    if (!user?.is_active) return genericResult;
-
-    // Linked accounts can receive the reset email through the public Firebase
-    // API. Avoid an unnecessary Admin SDK call that could fail first.
-    if (user.firebase_uid) return genericResult;
-
-    try {
-      const firebaseUser = await this.firebaseAuth.ensureUser(user.email, user.full_name);
-      await this.db.query(
-        'UPDATE users SET firebase_uid = $1, updated_at = NOW() WHERE id = $2',
-        [firebaseUser.uid, user.id],
-      );
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      console.error('Firebase legacy password-reset preparation failed:', error);
-      throw new HttpException(
-        'Dịch vụ đặt lại mật khẩu đang tạm thời gián đoạn. Vui lòng thử lại sau.',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-    return genericResult;
-  }
-
   async getCurrentUser(id: string, headers: Record<string, string | string[] | undefined>) {
     const headerValue = headers['x-user-id'];
     const requesterId = Array.isArray(headerValue) ? headerValue[0] : headerValue;
@@ -675,93 +639,29 @@ export class AuthService {
     }
   }
 
-  private async sendTransactionalEmail(email: string, subject: string, html: string, logPrefix: string, code: string): Promise<'sent' | 'dev'> {
-    const deliveryMode = String(process.env.EMAIL_DELIVERY_MODE || '').trim().toLowerCase();
-    if (deliveryMode === 'dev') {
-      if (process.env.NODE_ENV === 'production') {
-        throw new HttpException(
-          'EMAIL_DELIVERY_MODE=dev is not allowed in production.',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      }
-      console.log(`[${logPrefix}] ${email}: ${code}`);
-      return 'dev';
-    }
-
-    const mailServiceUrl = String(process.env.MAIL_SERVICE_URL || '').trim();
-    if (mailServiceUrl) {
-      const mailServiceSecret = String(process.env.MAIL_SERVICE_SECRET || '');
-      if (!mailServiceSecret) {
-        throw new HttpException(
-          'MAIL_SERVICE_SECRET is required when MAIL_SERVICE_URL is configured.',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      }
-      try {
-        const response = await fetch(mailServiceUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${mailServiceSecret}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, type: logPrefix, code }),
-          signal: AbortSignal.timeout(20_000),
-        });
-        if (!response.ok) {
-          throw new Error(`Mail service returned HTTP ${response.status}.`);
-        }
-        return 'sent';
-      } catch (error) {
-        console.warn(`[${logPrefix}] Netlify mail service failed:`, error instanceof Error ? error.message : error);
-        throw new HttpException(
-          'Không thể gửi email qua mail server. Vui lòng thử lại sau.',
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-    }
-
+  private async sendTransactionalEmail(email: string, subject: string, html: string, logPrefix: string): Promise<'sent'> {
     const smtpUser = process.env.SMTP_USER || '';
     const smtpPass = process.env.SMTP_PASS || '';
-    if (smtpUser && smtpPass) {
-      try {
-        await this.sendSmtpEmail(email, subject, html);
-        return 'sent';
-      } catch (error) {
-        console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
-        throw new HttpException('Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.', HttpStatus.BAD_GATEWAY);
-      }
+    if (!smtpUser || !smtpPass) {
+      throw new HttpException(
+        'Chưa cấu hình Gmail SMTP. Vui lòng cấu hình SMTP_USER và SMTP_PASS bằng Google App Password.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY || '';
-    const from = process.env.EMAIL_FROM || 'HuaMei <no-reply@huamei.vn>';
-    if (!resendApiKey) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new HttpException(
-          'Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      }
-      console.log(`[${logPrefix}] ${email}: ${code}`);
-      return 'dev';
+    try {
+      await this.sendSmtpEmail(email, subject, html);
+      return 'sent';
+    } catch (error) {
+      console.warn(`[${logPrefix}] Gmail SMTP failed:`, error instanceof Error ? error.message : error);
+      throw new HttpException(
+        'Không thể gửi email qua Gmail SMTP. Vui lòng kiểm tra SMTP_USER, SMTP_PASS (Google App Password) và SMTP_FROM.',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
-
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from, to: email, subject, html }),
-    });
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
-      throw new HttpException('Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.', HttpStatus.BAD_GATEWAY);
-    }
-    return 'sent';
   }
 
-  private async sendVerificationEmail(email: string, code: string): Promise<'sent' | 'dev'> {
+  private async sendVerificationEmail(email: string, code: string): Promise<'sent'> {
     return this.sendTransactionalEmail(
       email,
       'Ma xac minh email HuaMei',
@@ -774,11 +674,10 @@ export class AuthService {
           </div>
         `,
       'email-verification',
-      code,
     );
   }
 
-  private async sendPasswordResetEmail(email: string, code: string): Promise<'sent' | 'dev'> {
+  private async sendPasswordResetEmail(email: string, code: string): Promise<'sent'> {
     return this.sendTransactionalEmail(
       email,
       'Ma dat lai mat khau HuaMei',
@@ -791,7 +690,6 @@ export class AuthService {
           </div>
         `,
       'password-reset',
-      code,
     );
   }
 
@@ -820,7 +718,6 @@ export class AuthService {
       ok: true,
       delivery,
       expiresAt: expiresAt.toISOString(),
-      devCode: delivery === 'dev' && process.env.NODE_ENV !== 'production' ? code : undefined,
     };
   }
 
@@ -892,7 +789,6 @@ export class AuthService {
       ok: true,
       delivery,
       expiresAt: expiresAt.toISOString(),
-      devCode: delivery === 'dev' && process.env.NODE_ENV !== 'production' ? code : undefined,
     };
   }
 

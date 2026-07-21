@@ -4768,9 +4768,7 @@ function showEmailVerificationModal() {
       });
       state.emailVerificationStatus = data.alreadyVerified
         ? (isVi ? "Email đã được xác minh." : "邮箱已验证。")
-        : data.delivery === "dev" && data.devCode
-          ? (isVi ? `Đã tạo mã xác minh. Mã dev: ${data.devCode}` : `已生成验证码。开发码：${data.devCode}`)
-          : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
+        : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
       message.textContent = state.emailVerificationStatus;
       message.classList.add("success");
     } catch (error) {
@@ -5094,9 +5092,7 @@ async function sendAccountEmailVerificationCode() {
     });
     state.emailVerificationStatus = data.alreadyVerified
       ? (isVi ? "Email đã được xác minh." : "邮箱已验证。")
-      : data.delivery === "dev" && data.devCode
-        ? (isVi ? `Đã tạo mã xác minh. Mã dev: ${data.devCode}` : `已生成验证码。开发码：${data.devCode}`)
-        : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
+      : (isVi ? "Đã gửi mã xác minh tới email của bạn." : "验证码已发送至你的邮箱。");
     showToast(state.emailVerificationStatus);
   } catch (error) {
     state.emailVerificationStatus = error.message || (isVi ? "Không thể gửi mã xác minh." : "无法发送验证码。");

@@ -2176,49 +2176,24 @@ async function sendSmtpEmail(to, subject, html) {
   }
 }
 
-async function sendTransactionalEmail(email, subject, html, logPrefix, code) {
-  const deliveryMode = env("EMAIL_DELIVERY_MODE").trim().toLowerCase();
-  if (deliveryMode === "dev") {
-    if (isProduction()) {
-      throw apiError("EMAIL_DELIVERY_MODE=dev is not allowed in production.", 503);
-    }
-    console.log(`[${logPrefix}] ${email}: ${code}`);
-    return "dev";
+async function sendTransactionalEmail(email, subject, html, logPrefix) {
+  if (!env("SMTP_USER") || !env("SMTP_PASS")) {
+    throw apiError(
+      "Chưa cấu hình Gmail SMTP. Vui lòng cấu hình SMTP_USER và SMTP_PASS bằng Google App Password.",
+      503,
+    );
   }
 
-  if (env("SMTP_USER") && env("SMTP_PASS")) {
-    try {
-      await sendSmtpEmail(email, subject, html);
-      return "sent";
-    } catch (error) {
-      console.warn(`[${logPrefix}] SMTP email failed:`, error instanceof Error ? error.message : error);
-      throw apiError("Khong the gui email qua SMTP. Vui long kiem tra SMTP_USER, SMTP_PASS va SMTP_FROM.", 502);
-    }
+  try {
+    await sendSmtpEmail(email, subject, html);
+    return "sent";
+  } catch (error) {
+    console.warn(`[${logPrefix}] Gmail SMTP failed:`, error instanceof Error ? error.message : error);
+    throw apiError(
+      "Không thể gửi email qua Gmail SMTP. Vui lòng kiểm tra SMTP_USER, SMTP_PASS (Google App Password) và SMTP_FROM.",
+      502,
+    );
   }
-
-  const resendApiKey = env("RESEND_API_KEY");
-  const from = env("EMAIL_FROM") || "HuaMei <no-reply@huamei.vn>";
-  if (!resendApiKey) {
-    if (isProduction()) {
-      throw apiError("Chưa cấu hình dịch vụ gửi email. Vui lòng cấu hình Gmail SMTP hoặc Resend.", 503);
-    }
-    console.log(`[${logPrefix}] ${email}: ${code}`);
-    return "dev";
-  }
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to: email, subject, html }),
-  });
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.warn(`[${logPrefix}] Resend email failed ${response.status}: ${detail.slice(0, 500)}`);
-    throw apiError("Khong the gui email qua Resend. Vui long cau hinh SMTP_USER/SMTP_PASS hoac kiem tra RESEND_API_KEY va EMAIL_FROM.", 502);
-  }
-  return "sent";
 }
 
 async function sendVerificationEmail(email, code) {
@@ -2234,7 +2209,6 @@ async function sendVerificationEmail(email, code) {
         </div>
       `,
     "email-verification",
-    code,
   );
 }
 
@@ -2251,7 +2225,6 @@ async function sendPasswordResetEmail(email, code) {
         </div>
       `,
     "password-reset",
-    code,
   );
 }
 
@@ -2280,7 +2253,6 @@ async function sendEmailVerificationCode(req, id) {
     ok: true,
     delivery,
     expiresAt: expiresAt.toISOString(),
-    devCode: delivery === "dev" && env("NODE_ENV") !== "production" ? code : undefined,
   });
 }
 
@@ -2344,7 +2316,6 @@ async function requestPasswordReset(body) {
     ok: true,
     delivery,
     expiresAt: expiresAt.toISOString(),
-    devCode: delivery === "dev" && env("NODE_ENV") !== "production" ? code : undefined,
   });
 }
 

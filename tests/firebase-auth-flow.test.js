@@ -12,11 +12,11 @@ const databaseSource = fs.readFileSync(path.join(root, "src", "database", "datab
 const mainSource = fs.readFileSync(path.join(root, "src", "main.ts"), "utf8");
 const envExample = fs.readFileSync(path.join(root, ".env.example"), "utf8");
 
-test("Firebase frontend supports signup, login, token refresh, and password reset", () => {
+test("Firebase frontend supports signup, login, and token refresh without a reset-email flow", () => {
   assert.match(appSource, /accounts:signUp/);
   assert.match(appSource, /accounts:signInWithPassword/);
   assert.match(appSource, /accounts:signInWithCustomToken/);
-  assert.match(appSource, /accounts:sendOobCode/);
+  assert.doesNotMatch(appSource, /accounts:sendOobCode/);
   assert.match(appSource, /securetoken\.googleapis\.com/);
   assert.match(appSource, /Authorization: `Bearer \$\{firebaseIdToken\}`/);
 });
@@ -32,11 +32,10 @@ test("Firebase auth routes support session sync and safe legacy migration", () =
   assert.match(controllerSource, /auth\/firebase-config/);
   assert.match(controllerSource, /auth\/firebase-session/);
   assert.match(controllerSource, /auth\/firebase-migrate/);
-  assert.match(controllerSource, /auth\/firebase-prepare-reset/);
+  assert.doesNotMatch(controllerSource, /auth\/firebase-prepare-reset/);
   assert.match(authServiceSource, /verifyPassword\(password, user\.password_hash\)/);
   assert.match(authServiceSource, /createCustomToken/);
-  assert.match(authServiceSource, /if \(user\.firebase_uid\) return genericResult/);
-  assert.match(authServiceSource, /Dịch vụ đặt lại mật khẩu đang tạm thời gián đoạn/);
+  assert.doesNotMatch(authServiceSource, /prepareFirebasePasswordReset/);
 });
 
 test("PostgreSQL schema stores a unique Firebase UID without removing legacy passwords", () => {

@@ -10150,20 +10150,6 @@ p {
   letter-spacing: 0.28em;
 }
 
-.password-reset-dev-code {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-  margin-top: 8px;
-  padding: 6px 9px;
-  border-radius: 999px;
-  background: #fef3c7;
-  color: #92400e;
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .password-reset-actions {
   display: grid;
   grid-template-columns: 1fr 1fr 1.35fr;

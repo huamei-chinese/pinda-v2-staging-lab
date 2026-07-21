@@ -48,12 +48,6 @@ export class AuthController {
     return this.authService.migrateLegacyUserToFirebase(email, password);
   }
 
-  @Post('auth/firebase-prepare-reset')
-  async prepareFirebasePasswordReset(@Body() body: any) {
-    const email = String(body.email || '').trim().toLowerCase();
-    return this.authService.prepareFirebasePasswordReset(email);
-  }
-
   @Post('password-reset/request')
   async requestPasswordReset(@Body() body: any) {
     const email = String(body.email || '').trim().toLowerCase();

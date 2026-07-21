@@ -81,48 +81,11 @@ SMTP_FROM=HuaMei <your_email@gmail.com>
 PASSWORD_RESET_SECRET=replace_with_a_long_random_secret
 ```
 
-Không đặt `EMAIL_DELIVERY_MODE=dev` trong production. Chế độ này chỉ dành cho
-máy phát triển và backend sẽ từ chối khởi động luồng gửi mã nếu phát hiện nó ở
-production.
-
 Sau khi lưu biến môi trường, redeploy backend. Có thể kiểm tra luồng từ nút
 **Quên mật khẩu?** trên màn hình đăng nhập. Nếu Gmail từ chối xác thực, kiểm tra
 lại xác minh 2 bước, App Password và đảm bảo `SMTP_USER` trùng với địa chỉ trong
 `SMTP_FROM`.
 
-### 3. Tách mail server sang Netlify
-
-Nhánh `email` có Netlify Function chuyên gửi mail tại:
-
-```text
-/.netlify/functions/mail
-```
-
-Function này không truy cập PostgreSQL và không nhận subject hoặc HTML tùy ý.
-Nó chỉ nhận hai loại thư `password-reset` và `email-verification`, đồng thời yêu
-cầu Bearer token dùng chung giữa Railway và Netlify. Cấu hình `netlify.toml`
-trên nhánh này chỉ deploy thư mục `netlify/mail-functions`; frontend và các
-function API/database khác không được đóng gói vào mail site.
-
-Trên **Netlify**, deploy nhánh `email` và cấu hình:
-
-```env
-MAIL_SERVICE_SECRET=replace_with_at_least_32_random_characters
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_google_app_password_without_spaces
-SMTP_FROM=HuaMei <your_email@gmail.com>
-```
-
-Trên **Railway**, không cần cấu hình `SMTP_USER` hoặc `SMTP_PASS`. Chỉ cấu hình:
-
-```env
-MAIL_SERVICE_URL=https://your-mail-site.netlify.app/.netlify/functions/mail
-MAIL_SERVICE_SECRET=replace_with_the_same_secret_as_netlify
-PASSWORD_RESET_SECRET=replace_with_a_different_long_random_secret
-```
-
-`MAIL_SERVICE_SECRET` phải giống nhau ở hai server. `PASSWORD_RESET_SECRET` là
-secret khác, chỉ dùng tại Railway để hash OTP trong PostgreSQL. Railway tạo và
-lưu OTP, gọi Netlify để gửi mail, sau đó tự xác minh OTP và đổi mật khẩu.
+Không có mail relay, Resend, Firebase reset email hoặc chế độ trả OTP dev trong
+luồng này. Backend đang phục vụ `/api/password-reset/*` phải được cấu hình SMTP
+trực tiếp.
