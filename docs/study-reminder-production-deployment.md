@@ -106,16 +106,6 @@ Ví dụ kết quả sau khi worker hoàn thành:
 `202 Accepted` từ Background Function chỉ xác nhận Netlify đã nhận request.
 Server 1 hoặc màn hình quản trị dùng API báo cáo trên để biết kết quả cuối cùng.
 
-Người dùng bật/tắt riêng email Nhắc học tự động qua Server 1:
-
-```http
-PATCH /api/users/:id/study-reminder-settings
-X-User-Id: :id
-Content-Type: application/json
-
-{"enabled": false}
-```
-
 Payload mặc định theo màn hình quản trị:
 
 ```json
@@ -131,9 +121,9 @@ Payload mặc định theo màn hình quản trị:
 }
 ```
 
-Người nhận phải đang hoạt động, chưa tắt email Nhắc học tự động
-(`study_reminder_enabled = true`), có email hợp lệ, không vướng cooldown và chưa
-đạt giới hạn tháng. Ngoài ra họ phải thỏa ít nhất một trigger:
+Người nhận phải đang hoạt động, có email hợp lệ, không vướng cooldown và chưa đạt
+giới hạn tháng. Ngoài ra họ phải thỏa ít nhất một trigger. Người dùng không cần
+bật và không có công tắc tắt email theo quy tắc:
 
 - không có hoạt động học trong 3 ngày;
 - có phiên học trong 7 ngày nhưng tổng thời gian dưới 5 phút;
@@ -174,7 +164,7 @@ công và các biến môi trường của site reminder đã được thiết l
 
 - Request không có đúng Bearer secret không được gửi email.
 - Chỉ method `POST` được worker xử lý.
-- Người dùng tắt email Nhắc học tự động sau lúc enqueue sẽ được đánh dấu `skipped`.
+- Người dùng bị khóa hoặc đổi email sau lúc enqueue sẽ được đánh dấu `skipped`.
 - Job `processing` bị gián đoạn có thể được claim lại sau 20 phút.
 - Mỗi delivery được thử tối đa ba lần.
 - Worker không còn giới hạn cố định 500 tài khoản.

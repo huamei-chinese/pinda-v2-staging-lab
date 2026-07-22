@@ -14,9 +14,6 @@ const rulesController = fs.readFileSync(path.join(root, 'src/reminders/reminder-
 const reportsController = fs.readFileSync(path.join(root, 'src/reminders/reminder-reports.controller.ts'), 'utf8');
 const reportsService = fs.readFileSync(path.join(root, 'src/reminders/reminder-reports.service.ts'), 'utf8');
 const database = fs.readFileSync(path.join(root, 'src/database/database.service.ts'), 'utf8');
-const authController = fs.readFileSync(path.join(root, 'src/auth/auth.controller.ts'), 'utf8');
-const authService = fs.readFileSync(path.join(root, 'src/auth/auth.service.ts'), 'utf8');
-const legacyApi = fs.readFileSync(path.join(root, 'netlify/functions/api.mjs'), 'utf8');
 const envExample = fs.readFileSync(path.join(root, '.env.example'), 'utf8');
 
 test('rule-based study reminders use an authenticated Netlify background function', () => {
@@ -85,7 +82,7 @@ test('study reminder worker reuses Gmail SMTP sessions without a fixed 500-user 
 });
 
 test('reminder eligibility applies all admin rules before enqueueing users', () => {
-  assert.match(worker, /u\.study_reminder_enabled = TRUE/);
+  assert.doesNotMatch(worker, /study_reminder_enabled/);
   assert.match(worker, /last_learning_activity/);
   assert.match(worker, /NOW\(\) - \(\$2 \* INTERVAL '1 day'\)/);
   assert.match(worker, /recent_study/);
@@ -99,13 +96,11 @@ test('reminder eligibility applies all admin rules before enqueueing users', () 
   assert.match(worker, /applying current database rules/);
 });
 
-test('rule-based study reminders have a dedicated user preference', () => {
-  assert.match(database, /study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE/);
+test('rule-based study reminders are controlled by admin without a user opt-out', () => {
   assert.match(database, /study_reminder_last_sent_on DATE/);
-  assert.match(authController, /users\/:id\/study-reminder-settings/);
-  assert.match(authService, /SET study_reminder_enabled = \$1/);
-  assert.match(legacyApi, /study-reminder-settings/);
-  assert.match(legacyApi, /SET study_reminder_enabled = \$1/);
+  assert.doesNotMatch(database, /study_reminder_enabled/);
+  assert.match(worker, /WHERE u\.is_active = TRUE/);
+  assert.doesNotMatch(worker, /study-reminder-settings/);
 });
 
 test('admin reminder rules default to the screenshot values and are persisted through a protected API', () => {
@@ -150,7 +145,7 @@ test('each dispatch persists a completion report exposed by protected Server 1 A
 test('Server 2 bootstraps the reminder schema before processing the request', () => {
   assert.match(worker, /async function ensureReminderSchema\(initialRules\)/);
   assert.match(worker, /pg_advisory_lock/);
-  assert.match(worker, /ALTER TABLE users[\s\S]*study_reminder_enabled/);
+  assert.match(worker, /ALTER TABLE users[\s\S]*study_reminder_last_sent_on/);
   assert.match(worker, /CREATE TABLE IF NOT EXISTS study_reminder_rules/);
   assert.match(worker, /CREATE TABLE IF NOT EXISTS study_reminder_runs/);
   assert.match(worker, /CREATE TABLE IF NOT EXISTS study_reminder_deliveries/);

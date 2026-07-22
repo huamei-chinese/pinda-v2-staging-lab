@@ -162,7 +162,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
-        study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         study_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
@@ -209,9 +208,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
-    `);
-    await this.pool.query(`
-      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;
@@ -295,7 +291,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
-        study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         study_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
@@ -345,9 +340,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
-    `);
-    await this.pool.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;

@@ -42,8 +42,6 @@ async function ensureReminderSchema(initialRules) {
     await client.query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
     await client.query(`
       ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
-      ALTER TABLE users
       ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;
 
       CREATE TABLE IF NOT EXISTS study_reminder_rules (
@@ -306,7 +304,7 @@ function reminderEmailHtml(user) {
         Vào học ngay
       </a>
       <p style="margin-top:24px;font-size:12px;line-height:1.5;color:#94a3b8">
-        Bạn nhận thư vì đã bật Nhắc học. Bạn có thể tắt tính năng này trong trang Cá nhân của HuaMei.
+        Email này được gửi tự động từ hệ thống Nhắc học của HuaMei dựa trên hoạt động học tập của bạn.
       </p>
     </div>
   `;
@@ -505,7 +503,6 @@ async function enqueueEligibleUsers(dispatchId, reminderDate, rules) {
        LEFT JOIN last_learning_activity a ON a.user_id = u.id
        LEFT JOIN recent_study s ON s.user_id = u.id
        WHERE u.is_active = TRUE
-         AND u.study_reminder_enabled = TRUE
          AND u.email IS NOT NULL
          AND btrim(u.email) <> ''
          AND u.email ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
@@ -557,11 +554,11 @@ async function enqueueEligibleUsers(dispatchId, reminderDate, rules) {
   return result.rowCount || 0;
 }
 
-async function skipUsersWhoDisabledStudyReminders(dispatchId, reminderDate) {
+async function skipUsersWhoBecameIneligible(dispatchId, reminderDate) {
   const result = await getPool().query(
     `UPDATE study_reminder_deliveries d
      SET status = 'skipped',
-         last_error = 'User inactive, disabled automated study reminders, or changed email.',
+         last_error = 'User inactive or changed email.',
          locked_at = NULL,
          updated_at = NOW()
      FROM users u
@@ -569,7 +566,7 @@ async function skipUsersWhoDisabledStudyReminders(dispatchId, reminderDate) {
        AND d.reminder_date = $1::date
        AND d.dispatch_id = $2::uuid
        AND d.status IN ('pending', 'failed')
-       AND (u.is_active <> TRUE OR u.study_reminder_enabled <> TRUE OR lower(u.email) <> lower(d.email))`,
+       AND (u.is_active <> TRUE OR lower(u.email) <> lower(d.email))`,
     [reminderDate, dispatchId],
   );
   return result.rowCount || 0;
@@ -589,7 +586,6 @@ async function claimBatch(dispatchId, reminderDate, maxEmailsPerRun) {
            OR (d.status = 'processing' AND d.locked_at < NOW() - ($3 * INTERVAL '1 minute'))
          )
          AND u.is_active = TRUE
-         AND u.study_reminder_enabled = TRUE
          AND lower(u.email) = lower(d.email)
        ORDER BY d.created_at ASC, d.id ASC
        FOR UPDATE OF d SKIP LOCKED
@@ -655,7 +651,7 @@ async function markDeliveryFailed(delivery, error) {
 async function processRuleBasedStudyReminders(dispatchId, rules) {
   const reminderDate = vietnamDate();
   const enqueued = await enqueueEligibleUsers(dispatchId, reminderDate, rules);
-  const skipped = await skipUsersWhoDisabledStudyReminders(dispatchId, reminderDate);
+  const skipped = await skipUsersWhoBecameIneligible(dispatchId, reminderDate);
   let sent = 0;
   let failed = 0;
   let abort = false;

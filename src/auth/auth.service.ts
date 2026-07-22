@@ -885,24 +885,4 @@ export class AuthService {
     return { user: this.publicUser(result.rows[0]) };
   }
 
-  async updateOwnStudyReminderSettings(id: string, body: any, headers: Record<string, string | string[] | undefined>) {
-    const headerValue = headers['x-user-id'];
-    const requesterId = Array.isArray(headerValue) ? headerValue[0] : headerValue;
-    if (!requesterId || requesterId !== id) {
-      throw new HttpException('Bạn không có quyền cập nhật nhắc học của tài khoản này.', HttpStatus.FORBIDDEN);
-    }
-
-    const enabled = body.enabled !== false;
-    const result = await this.db.query(
-      `UPDATE users
-       SET study_reminder_enabled = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id`,
-      [enabled, id],
-    );
-    if (!result.rows[0]) {
-      throw new HttpException('Không tìm thấy tài khoản.', HttpStatus.NOT_FOUND);
-    }
-    return { ok: true, studyReminderEnabled: enabled };
-  }
 }
