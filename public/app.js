@@ -879,6 +879,8 @@ const state = {
   adminStudyReminderStatus: "",
   adminStudyReminderSegment: "all",
   adminStudyReminderActionUserId: "",
+  adminStudyReminderSelectedReport: null,
+  adminStudyReminderDispatching: false,
   adminUserSearch: "",
   adminUserLevelFilter: "all",
   adminUserPlanFilter: "all",
@@ -9471,30 +9473,12 @@ function renderAdminCustomersPanelHTML(isVi) {
   `;
 }
 
-const ADMIN_REMINDER_SEGMENTS = {
-  new_unused: ["VIP mới, chưa học", "VIP 新用户"],
-  inactive: ["Lâu chưa quay lại", "长期未学习"],
-  expiring: ["VIP sắp hết hạn", "VIP 即将到期"],
-  unfinished: ["Đang học dở", "课程未完成"],
-  listening_lapse: ["Gián đoạn luyện nghe", "听力中断"],
-  low_activity: ["Học ít trong tuần", "本周学习较少"],
-  healthy: ["Đang học ổn định", "学习稳定"],
-};
-
-function getAdminReminderSegmentLabel(segment, isVi) {
-  return (ADMIN_REMINDER_SEGMENTS[segment] || [segment || "—", segment || "—"])[isVi ? 0 : 1];
+function formatAdminReminderDate(value, isVi) {
+  if (!value) return isVi ? "Chưa có" : "暂无";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(isVi ? "vi-VN" : "zh-CN", { dateStyle: "short", timeStyle: "short" });
 }
-
-function getAdminReminderBlockedLabel(reason, isVi) {
-  const labels = {
-    opted_out: ["Đã tắt email", "已关闭邮件"],
-    cooldown: ["Đang chờ cooldown", "冷却期内"],
-    monthly_limit: ["Đạt giới hạn tháng", "已达月度上限"],
-    active: ["Đang học ổn định", "学习稳定"],
-  };
-  return (labels[reason] || ["Sẵn sàng gửi", "可发送"])[isVi ? 0 : 1];
-}
-
 function formatAdminReminderDate(value, isVi) {
   if (!value) return isVi ? "Chưa có" : "暂无";
   const date = new Date(value);
@@ -9502,106 +9486,131 @@ function formatAdminReminderDate(value, isVi) {
   return date.toLocaleString(isVi ? "vi-VN" : "zh-CN", { dateStyle: "short", timeStyle: "short" });
 }
 
-function renderAdminStudyRemindersPanelHTML(isVi) {
-  const data = state.adminStudyReminders;
-  const settings = data?.settings || {
-    automaticEnabled: false, inactivityDays: 3, lowActivityMinutes: 5, listeningLapseDays: 5,
-    expiryWindowDays: 7, cooldownDays: 3, monthlyLimit: 3, batchSize: 50,
+function getAdminReminderReportStatus(status, isVi) {
+  const labels = {
+    processing: ["Đang xử lý", "处理中"],
+    completed: ["Hoàn thành", "已完成"],
+    failed: ["Thất bại", "失败"],
+    skipped: ["Đã bỏ qua", "已跳过"],
   };
-  const summary = data?.summary || {};
-  const allCandidates = Array.isArray(data?.candidates) ? data.candidates : [];
-  const segment = state.adminStudyReminderSegment || "all";
-  const candidates = allCandidates.filter((item) => segment === "all" ? item.segment !== "healthy" : item.segment === segment);
-  const history = Array.isArray(data?.history) ? data.history : [];
-  const segmentCounts = allCandidates.reduce((counts, item) => {
-    if (item.segment !== "healthy") counts[item.segment] = (counts[item.segment] || 0) + 1;
-    return counts;
-  }, {});
+  return (labels[String(status || "").toLowerCase()] || [status || "—", status || "—"])[isVi ? 0 : 1];
+}
 
-  const candidateRows = candidates.map((item) => `
-    <tr>
-      <td><strong>${escapeHtml(item.fullName || "Học viên HuaMei")}</strong><small>${escapeHtml(item.email || "")}</small></td>
-      <td><span class="admin-study-reminder-segment segment-${escapeAttr(item.segment)}">${escapeHtml(getAdminReminderSegmentLabel(item.segment, isVi))}</span></td>
-      <td><strong>${Number(item.studyMinutes7d || 0).toLocaleString(isVi ? "vi-VN" : "zh-CN")} ${isVi ? "phút" : "分钟"}</strong><small>${escapeHtml(formatAdminReminderDate(item.lastLearningAt, isVi))}</small></td>
-      <td><strong>${Number(item.sentThisMonth || 0)}/${Number(settings.monthlyLimit || 3)}</strong><small>${escapeHtml(getAdminReminderBlockedLabel(item.blockedReason, isVi))}</small></td>
-      <td><button class="admin-study-reminder-send" type="button" data-admin-reminder-send="${escapeAttr(item.id)}" ${!item.eligible || state.adminStudyReminderActionUserId === item.id ? "disabled" : ""}>${state.adminStudyReminderActionUserId === item.id ? (isVi ? "Đang gửi…" : "发送中…") : (isVi ? "Gửi email" : "发送邮件")}</button></td>
-    </tr>
-  `).join("");
+function getAdminReminderDeliveryStatus(status, isVi) {
+  const labels = {
+    pending: ["Đang chờ", "等待中"],
+    queued: ["Đã xếp hàng", "已入队"],
+    claimed: ["Đang gửi", "发送中"],
+    processing: ["Đang gửi", "发送中"],
+    sent: ["Đã gửi", "已发送"],
+    failed: ["Thất bại", "失败"],
+    skipped: ["Bỏ qua", "已跳过"],
+  };
+  return (labels[String(status || "").toLowerCase()] || [status || "—", status || "—"])[isVi ? 0 : 1];
+}
 
-  const historyRows = history.map((item) => `
-    <tr>
-      <td><strong>${escapeHtml(item.fullName || item.email || "—")}</strong><small>${escapeHtml(item.email || "")}</small></td>
-      <td>${escapeHtml(getAdminReminderSegmentLabel(item.segment, isVi))}</td>
-      <td><span class="admin-study-reminder-log-status ${escapeAttr(item.status)}">${item.status === "sent" ? (isVi ? "Đã gửi" : "已发送") : (isVi ? "Thất bại" : "失败")}</span></td>
-      <td>${escapeHtml(formatAdminReminderDate(item.sentAt, isVi))}</td>
-      <td>${item.returnedAt ? `<span class="admin-study-reminder-returned">${isVi ? "Đã quay lại" : "已回访"}</span><small>${escapeHtml(formatAdminReminderDate(item.returnedAt, isVi))}</small>` : `<span class="admin-study-reminder-waiting">${isVi ? "Đang theo dõi" : "跟踪中"}</span>`}</td>
-    </tr>
-  `).join("");
+function normalizeAdminReminderRules(payload) {
+  const rules = payload?.rules || payload || {};
+  return {
+    autoEnabled: Boolean(rules.autoEnabled),
+    inactiveDays: Number(rules.inactiveDays ?? 3),
+    lowStudyMinutes: Number(rules.lowStudyMinutes ?? 5),
+    lowStudyWindowDays: Number(rules.lowStudyWindowDays ?? 7),
+    cooldownDays: Number(rules.cooldownDays ?? 3),
+    maxEmailsPerMonth: Number(rules.maxEmailsPerMonth ?? 3),
+    vipExpiryDays: Number(rules.vipExpiryDays ?? 7),
+    maxEmailsPerRun: Number(rules.maxEmailsPerRun ?? 50),
+    updatedAt: rules.updatedAt || null,
+  };
+}
 
-  return `
-    <section class="admin-study-reminders-panel">
-      <header class="admin-study-reminders-hero">
-        <div>
-          <span class="admin-study-reminders-eyebrow">${isVi ? "NHẮC HỌC THÔNG MINH" : "智能学习提醒"}</span>
-          <h2>${isVi ? "Đưa VIP quay lại đúng lúc" : "在合适的时间召回 VIP"}</h2>
-          <p>${isVi ? "Phát hiện người học có nguy cơ rời bỏ, gửi có giới hạn và đo lượt quay lại — không gửi đại trà." : "识别流失风险、限制发送频率并跟踪回访，不群发。"}</p>
-        </div>
-        <div class="admin-study-reminders-hero-actions">
-          <button type="button" class="secondary" data-admin-reminder-refresh>${isVi ? "Làm mới" : "刷新"}</button>
-          <button type="button" data-admin-reminder-preview ${state.adminStudyRemindersLoading ? "disabled" : ""}>${isVi ? "Chạy xem trước" : "预览运行"}</button>
-        </div>
-      </header>
+function normalizeAdminReminderReports(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.reports)) return payload.reports;
+  return [];
+}
 
-      <div class="admin-study-reminders-flow" aria-label="${isVi ? "Quy trình nhắc học" : "学习提醒流程"}">
-        ${[["01", "Phát hiện", "识别"], ["02", "Phân nhóm", "分组"], ["03", "Gửi", "发送"], ["04", "Giới hạn", "限频"], ["05", "Đo quay lại", "跟踪回访"]].map(([no, vi, zh], index) => `<div><b>${no}</b><span>${isVi ? vi : zh}</span>${index < 4 ? "<i>→</i>" : ""}</div>`).join("")}
-      </div>
-
-      ${state.adminStudyRemindersError ? `<div class="admin-study-reminders-alert error">${escapeHtml(state.adminStudyRemindersError)}</div>` : ""}
-      ${state.adminStudyReminderStatus ? `<div class="admin-study-reminders-alert success">${escapeHtml(state.adminStudyReminderStatus)}</div>` : ""}
-
-      <div class="admin-study-reminders-kpis">
-        <article><span>${isVi ? "VIP còn hiệu lực" : "有效 VIP"}</span><strong>${Number(summary.activeVip || 0)}</strong><small>${isVi ? "được phân tích" : "已分析"}</small></article>
-        <article><span>${isVi ? "Có nguy cơ" : "存在风险"}</span><strong>${Number(summary.atRisk || 0)}</strong><small>${isVi ? "cần chăm sóc" : "需关注"}</small></article>
-        <article class="accent"><span>${isVi ? "Sẵn sàng gửi" : "可发送"}</span><strong>${Number(summary.eligible || 0)}</strong><small>${isVi ? "đã qua giới hạn" : "已通过限频"}</small></article>
-        <article><span>${isVi ? "Tỷ lệ quay lại" : "回访率"}</span><strong>${Number(summary.returnRate || 0)}%</strong><small>${Number(summary.returned30Days || 0)}/${Number(summary.sent30Days || 0)} · 30 ${isVi ? "ngày" : "天"}</small></article>
-      </div>
-
-      <div class="admin-study-reminders-layout">
-        <article class="admin-study-reminders-card settings">
-          <header><div><h3>${isVi ? "Quy tắc gửi" : "发送规则"}</h3><p>${isVi ? "Tự động luôn tắt cho đến khi admin chủ động bật." : "自动发送默认关闭。"}</p></div><label class="admin-study-reminders-switch"><input id="adminReminderAutomaticEnabled" type="checkbox" ${settings.automaticEnabled ? "checked" : ""}/><span></span><b>${isVi ? "Tự động" : "自动"}</b></label></header>
-          <div class="admin-study-reminders-settings-grid">
-            <label>${isVi ? "Không học trong" : "未学习"}<span><input id="adminReminderInactivityDays" type="number" min="1" max="60" value="${Number(settings.inactivityDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
-            <label>${isVi ? "Học dưới / 7 ngày" : "7天内少于"}<span><input id="adminReminderLowMinutes" type="number" min="1" max="240" value="${Number(settings.lowActivityMinutes)}"/> ${isVi ? "phút" : "分钟"}</span></label>
-            <label>${isVi ? "Cooldown" : "冷却时间"}<span><input id="adminReminderCooldownDays" type="number" min="1" max="30" value="${Number(settings.cooldownDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
-            <label>${isVi ? "Tối đa mỗi tháng" : "每月最多"}<span><input id="adminReminderMonthlyLimit" type="number" min="1" max="12" value="${Number(settings.monthlyLimit)}"/> email</span></label>
-            <label>${isVi ? "VIP sắp hết hạn" : "VIP 到期前"}<span><input id="adminReminderExpiryDays" type="number" min="1" max="30" value="${Number(settings.expiryWindowDays)}"/> ${isVi ? "ngày" : "天"}</span></label>
-            <label>${isVi ? "Mỗi lượt tự động" : "每批自动发送"}<span><input id="adminReminderBatchSize" type="number" min="1" max="200" value="${Number(settings.batchSize)}"/> email</span></label>
-          </div>
-          <footer><span>${isVi ? "Người dùng tắt nhắc học sẽ luôn bị loại." : "已关闭提醒的用户始终排除。"}</span><button type="button" data-admin-reminder-save>${isVi ? "Lưu quy tắc" : "保存规则"}</button></footer>
-        </article>
-        <aside class="admin-study-reminders-card automatic ${settings.automaticEnabled ? "on" : "off"}">
-          <span class="status-dot"></span><small>${settings.automaticEnabled ? (isVi ? "ĐANG BẬT" : "已开启") : (isVi ? "ĐANG TẮT" : "已关闭")}</small>
-          <h3>${isVi ? "Gửi tự động" : "自动发送"}</h3>
-          <p>${settings.automaticEnabled ? (isVi ? "Hệ thống chỉ gửi cho nhóm đủ điều kiện và vẫn áp dụng mọi giới hạn." : "仅向符合条件的用户发送。") : (isVi ? "Bạn vẫn có thể xem trước và gửi thủ công từng người." : "仍可预览并逐个手动发送。")}</p>
-          <button type="button" data-admin-reminder-run ${!settings.automaticEnabled ? "disabled" : ""}>${isVi ? "Chạy một lượt ngay" : "立即运行一批"}</button>
-        </aside>
-      </div>
-
-      <article class="admin-study-reminders-card candidates">
-        <header><div><h3>${isVi ? "VIP cần nhắc" : "需要提醒的 VIP"}</h3><p>${isVi ? "Gửi thủ công chỉ khả dụng khi đã qua cooldown và giới hạn tháng." : "仅在通过冷却和月度限制后可手动发送。"}</p></div></header>
-        <div class="admin-study-reminders-filters">
-          <button type="button" data-admin-reminder-segment="all" class="${segment === "all" ? "active" : ""}">${isVi ? "Tất cả" : "全部"} <b>${Number(summary.atRisk || 0)}</b></button>
-          ${Object.entries(ADMIN_REMINDER_SEGMENTS).filter(([key]) => key !== "healthy").map(([key, labels]) => `<button type="button" data-admin-reminder-segment="${key}" class="${segment === key ? "active" : ""}">${escapeHtml(labels[isVi ? 0 : 1])} <b>${Number(segmentCounts[key] || 0)}</b></button>`).join("")}
-        </div>
-        <div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Học viên VIP" : "VIP 学员"}</th><th>${isVi ? "Nhóm hành vi" : "行为分组"}</th><th>${isVi ? "Học 7 ngày / lần cuối" : "7天学习 / 最近"}</th><th>${isVi ? "Giới hạn" : "发送限制"}</th><th>${isVi ? "Hành động" : "操作"}</th></tr></thead><tbody>${candidateRows || `<tr><td colspan="5" class="admin-empty">${state.adminStudyRemindersLoading ? (isVi ? "Đang phân tích dữ liệu học tập…" : "正在分析学习数据…") : (isVi ? "Không có VIP phù hợp nhóm này." : "该分组暂无 VIP。")}</td></tr>`}</tbody></table></div>
-      </article>
-
-      <article class="admin-study-reminders-card history">
-        <header><div><h3>${isVi ? "Nhật ký & lượt quay lại" : "发送与回访记录"}</h3><p>${isVi ? "Một lượt quay lại được ghi nhận khi có hoạt động học mới sau email." : "邮件后出现新的学习行为即记为回访。"}</p></div></header>
-        <div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Học viên" : "学员"}</th><th>${isVi ? "Nhóm" : "分组"}</th><th>${isVi ? "Kết quả" : "结果"}</th><th>${isVi ? "Thời gian gửi" : "发送时间"}</th><th>${isVi ? "Sau email" : "邮件后"}</th></tr></thead><tbody>${historyRows || `<tr><td colspan="5" class="admin-empty">${isVi ? "Chưa có email nhắc học nào được gửi." : "暂无提醒邮件记录。"}</td></tr>`}</tbody></table></div>
-      </article>
+function renderAdminStudyRemindersPanelHTML(isVi) {
+  const rules = normalizeAdminReminderRules(state.adminStudyReminders?.rules);
+  const reports = normalizeAdminReminderReports(state.adminStudyReminders?.reports);
+  const selected = state.adminStudyReminderSelectedReport;
+  const totals = reports.reduce((summary, item) => {
+    const counts = item?.counts || {};
+    summary.sent += Number(counts.sent || 0);
+    summary.failed += Number(counts.failed || 0);
+    summary.skipped += Number(counts.skipped || 0);
+    return summary;
+  }, { sent: 0, failed: 0, skipped: 0 });
+  const reportRows = reports.map((item) => {
+    const counts = item?.counts || {};
+    const status = String(item.status || "processing").toLowerCase();
+    return `<tr>
+      <td><strong>${escapeHtml(formatAdminReminderDate(item.startedAt, isVi))}</strong><small>${escapeHtml(item.dispatchId || "—")}</small></td>
+      <td><span class="admin-study-reminder-log-status ${escapeAttr(status)}">${escapeHtml(getAdminReminderReportStatus(status, isVi))}</span></td>
+      <td><strong>${Number(counts.sent || 0)}</strong><small>${isVi ? "đã gửi" : "已发送"}</small></td>
+      <td><strong>${Number(counts.failed || 0)}</strong><small>${isVi ? "thất bại" : "失败"}</small></td>
+      <td><strong>${Number(counts.skipped || 0)}</strong><small>${isVi ? "bỏ qua" : "跳过"}</small></td>
+      <td><button class="admin-study-reminder-send secondary" type="button" data-admin-reminder-report="${escapeAttr(item.dispatchId || "")}">${isVi ? "Xem chi tiết" : "查看详情"}</button></td>
+    </tr>`;
+  }).join("");
+  const deliveries = Array.isArray(selected?.deliveries) ? selected.deliveries : [];
+  const deliveryRows = deliveries.map((item) => {
+    const status = String(item.status || "pending").toLowerCase();
+    return `<tr>
+      <td><strong>${escapeHtml(item.email || "—")}</strong><small>${escapeHtml(item.fullName || "")}</small></td>
+      <td><span class="admin-study-reminder-log-status ${escapeAttr(status)}">${escapeHtml(getAdminReminderDeliveryStatus(status, isVi))}</span>${item.error ? `<small class="admin-study-reminder-delivery-error">${escapeHtml(item.error)}</small>` : ""}</td>
+      <td><strong>${Number(item.attempts || 0)}</strong><small>${isVi ? "lần thử" : "次尝试"}</small></td>
+      <td>${escapeHtml(formatAdminReminderDate(item.sentAt || item.createdAt, isVi))}</td>
+    </tr>`;
+  }).join("");
+  const detail = selected ? `<article class="admin-study-reminders-card report-detail">
+    <header><div><h3>${isVi ? "Kết quả lượt gửi" : "发送批次结果"}</h3><p>${escapeHtml(selected.dispatchId || "")}</p></div><span class="admin-study-reminder-log-status ${escapeAttr(selected.status || "processing")}">${escapeHtml(getAdminReminderReportStatus(selected.status, isVi))}</span></header>
+    <div class="admin-study-reminder-report-counts">
+      ${[["enqueued", "Đã xếp hàng", "已入队"], ["claimed", "Đã nhận", "已领取"], ["sent", "Thành công", "成功"], ["failed", "Thất bại", "失败"], ["skipped", "Bỏ qua", "跳过"]].map(([key, vi, zh]) => `<div><span>${isVi ? vi : zh}</span><strong>${Number(selected.counts?.[key] || 0)}</strong></div>`).join("")}
+    </div>
+    ${selected.error ? `<div class="admin-study-reminders-alert error">${escapeHtml(selected.error)}</div>` : ""}
+    <section class="admin-study-reminder-deliveries">
+      <div class="admin-study-reminder-deliveries-heading"><div><h4>${isVi ? "Danh sách email trong lượt gửi" : "本批次邮件列表"}</h4><p>${deliveries.length} ${isVi ? "người nhận" : "位收件人"}</p></div></div>
+      <div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Email / Học viên" : "邮箱 / 学员"}</th><th>${isVi ? "Kết quả" : "结果"}</th><th>${isVi ? "Số lần thử" : "尝试次数"}</th><th>${isVi ? "Thời gian" : "时间"}</th></tr></thead><tbody>${deliveryRows || `<tr><td colspan="4" class="admin-empty">${isVi ? "Lượt gửi này chưa có email nào." : "本批次暂无邮件。"}</td></tr>`}</tbody></table></div>
     </section>
-  `;
+    <footer><span>${isVi ? "Bắt đầu" : "开始"}: ${escapeHtml(formatAdminReminderDate(selected.startedAt, isVi))} · ${isVi ? "Hoàn tất" : "完成"}: ${escapeHtml(formatAdminReminderDate(selected.completedAt, isVi))}</span></footer>
+  </article>` : "";
+
+  return `<section class="admin-study-reminders-panel">
+    <header class="admin-study-reminders-hero">
+      <div><span class="admin-study-reminders-eyebrow">${isVi ? "NHẮC HỌC THỦ CÔNG" : "手动学习提醒"}</span><h2>${isVi ? "Chọn đúng lúc để gửi" : "在合适的时机发送"}</h2><p>${isVi ? "Lưu điều kiện người nhận, sau đó bấm Gửi khi bạn muốn bắt đầu một lượt nhắc học." : "保存收件人规则，需要时点击发送即可开始一批学习提醒。"}</p></div>
+      <div class="admin-study-reminders-hero-actions"><button type="button" class="secondary" data-admin-reminder-refresh ${state.adminStudyRemindersLoading || state.adminStudyReminderDispatching ? "disabled" : ""}>${state.adminStudyRemindersLoading ? (isVi ? "Đang tải…" : "加载中…") : (isVi ? "Làm mới" : "刷新")}</button><button type="button" data-admin-reminder-dispatch ${state.adminStudyRemindersLoading || state.adminStudyReminderDispatching ? "disabled" : ""}>${state.adminStudyReminderDispatching ? (isVi ? "Đang gửi…" : "发送中…") : (isVi ? "Gửi" : "发送")}</button></div>
+    </header>
+    <div class="admin-study-reminders-flow" aria-label="${isVi ? "Quy trình nhắc học" : "学习提醒流程"}">
+      ${[["01", "Lưu quy tắc", "保存规则"], ["02", "Bấm Gửi", "点击发送"], ["03", "Dịch vụ gửi email", "邮件服务发送"], ["04", "Ghi báo cáo", "记录报告"]].map(([no, vi, zh], index) => `<div><b>${no}</b><span>${isVi ? vi : zh}</span>${index < 3 ? "<i>→</i>" : ""}</div>`).join("")}
+    </div>
+    ${state.adminStudyRemindersError ? `<div class="admin-study-reminders-alert error">${escapeHtml(state.adminStudyRemindersError)}</div>` : ""}
+    ${state.adminStudyReminderStatus ? `<div class="admin-study-reminders-alert success">${escapeHtml(state.adminStudyReminderStatus)}</div>` : ""}
+    <div class="admin-study-reminders-kpis">
+      <article class="accent"><span>${isVi ? "Chế độ gửi" : "发送模式"}</span><strong>${isVi ? "Thủ công" : "手动"}</strong><small>${isVi ? "chỉ gửi khi admin bấm Gửi" : "仅管理员点击后发送"}</small></article>
+      <article><span>${isVi ? "Đã gửi · 20 lượt gần nhất" : "最近20批已发送"}</span><strong>${totals.sent}</strong><small>email</small></article>
+      <article><span>${isVi ? "Thất bại" : "失败"}</span><strong>${totals.failed}</strong><small>email</small></article>
+      <article><span>${isVi ? "Bị bỏ qua" : "已跳过"}</span><strong>${totals.skipped}</strong><small>email</small></article>
+    </div>
+    <div class="admin-study-reminders-layout">
+      <article class="admin-study-reminders-card settings">
+        <header><div><h3>${isVi ? "Quy tắc gửi" : "发送规则"}</h3><p>${isVi ? "Lưu cấu hình không gửi email ngay. Hãy bấm Gửi khi đã sẵn sàng." : "保存配置不会立即发送邮件，准备好后请点击发送。"}</p></div></header>
+        <div class="admin-study-reminders-settings-grid">
+          <label>${isVi ? "Không học trong" : "未学习"}<span><input id="adminReminderInactiveDays" type="number" min="1" max="60" value="${rules.inactiveDays}"/> ${isVi ? "ngày" : "天"}</span></label>
+          <label>${isVi ? "Học dưới" : "学习少于"}<span><input id="adminReminderLowStudyMinutes" type="number" min="1" max="240" value="${rules.lowStudyMinutes}"/> ${isVi ? "phút" : "分钟"}</span></label>
+          <label>${isVi ? "Cửa sổ học ít" : "低学习窗口"}<span><input id="adminReminderLowStudyWindowDays" type="number" min="1" max="30" value="${rules.lowStudyWindowDays}"/> ${isVi ? "ngày" : "天"}</span></label>
+          <label>Cooldown<span><input id="adminReminderCooldownDays" type="number" min="1" max="30" value="${rules.cooldownDays}"/> ${isVi ? "ngày" : "天"}</span></label>
+          <label>${isVi ? "Tối đa mỗi tháng" : "每月最多"}<span><input id="adminReminderMaxEmailsPerMonth" type="number" min="1" max="31" value="${rules.maxEmailsPerMonth}"/> email</span></label>
+          <label>${isVi ? "VIP sắp hết hạn" : "VIP 到期前"}<span><input id="adminReminderVipExpiryDays" type="number" min="1" max="30" value="${rules.vipExpiryDays}"/> ${isVi ? "ngày" : "天"}</span></label>
+          <label>${isVi ? "Tối đa mỗi lượt" : "每批最多"}<span><input id="adminReminderMaxEmailsPerRun" type="number" min="1" max="500" value="${rules.maxEmailsPerRun}"/> email</span></label>
+        </div>
+        <footer><span>${isVi ? "Cập nhật lần cuối" : "最后更新"}: ${escapeHtml(formatAdminReminderDate(rules.updatedAt, isVi))}</span><button type="button" data-admin-reminder-save ${state.adminStudyRemindersLoading ? "disabled" : ""}>${isVi ? "Lưu quy tắc" : "保存规则"}</button></footer>
+      </article>
+      <aside class="admin-study-reminders-card automatic on"><span class="status-dot"></span><small>${isVi ? "SẴN SÀNG" : "已就绪"}</small><h3>${isVi ? "Bạn quyết định thời điểm gửi" : "由你决定发送时间"}</h3><p>${isVi ? "Nút Gửi sẽ yêu cầu Server 1 kích hoạt worker. Secret dịch vụ không được đưa xuống trình duyệt." : "发送按钮由 Server 1 安全触发后台服务，密钥不会暴露给浏览器。"}</p></aside>
+    </div>
+    ${detail}
+    <article class="admin-study-reminders-card history"><header><div><h3>${isVi ? "Lịch sử các lượt gửi" : "发送批次历史"}</h3><p>${isVi ? "Theo dõi các lượt đang xử lý, hoàn thành, thất bại hoặc bị bỏ qua." : "查看处理中、完成、失败或跳过的批次。"}</p></div></header><div class="admin-study-reminders-table-wrap"><table><thead><tr><th>${isVi ? "Thời gian / Dispatch ID" : "时间 / Dispatch ID"}</th><th>${isVi ? "Trạng thái" : "状态"}</th><th>${isVi ? "Đã gửi" : "已发送"}</th><th>${isVi ? "Thất bại" : "失败"}</th><th>${isVi ? "Bỏ qua" : "跳过"}</th><th>${isVi ? "Chi tiết" : "详情"}</th></tr></thead><tbody>${reportRows || `<tr><td colspan="6" class="admin-empty">${state.adminStudyRemindersLoading ? (isVi ? "Đang tải lịch sử…" : "正在加载…") : (isVi ? "Chưa có lượt gửi nào." : "暂无发送批次。")}</td></tr>`}</tbody></table></div></article>
+  </section>`;
 }
 
 async function loadAdminStudyReminders() {
@@ -9610,9 +9619,12 @@ async function loadAdminStudyReminders() {
   state.adminStudyRemindersError = "";
   renderAdmin();
   try {
-    state.adminStudyReminders = await apiRequest("/api/admin/study-reminders/overview", {
-      method: "GET", headers: { "X-Admin-User-Id": getAdminUserId() },
-    });
+    const headers = { "X-Admin-User-Id": getAdminUserId() };
+    const [rulesPayload, reportsPayload] = await Promise.all([
+      apiRequest("/api/admin/reminder-rules", { method: "GET", headers, cache: "no-store" }),
+      apiRequest("/api/admin/reminder-reports?limit=20", { method: "GET", headers, cache: "no-store" }),
+    ]);
+    state.adminStudyReminders = { rules: normalizeAdminReminderRules(rulesPayload), reports: normalizeAdminReminderReports(reportsPayload) };
   } catch (error) {
     state.adminStudyRemindersError = error.message || "Không thể tải dữ liệu nhắc học.";
   } finally {
@@ -9623,69 +9635,77 @@ async function loadAdminStudyReminders() {
 
 async function saveAdminStudyReminderSettings() {
   const readNumber = (id) => Number(document.getElementById(id)?.value || 0);
+  const body = {
+    autoEnabled: true,
+    inactiveDays: readNumber("adminReminderInactiveDays"),
+    lowStudyMinutes: readNumber("adminReminderLowStudyMinutes"),
+    lowStudyWindowDays: readNumber("adminReminderLowStudyWindowDays"),
+    cooldownDays: readNumber("adminReminderCooldownDays"),
+    maxEmailsPerMonth: readNumber("adminReminderMaxEmailsPerMonth"),
+    vipExpiryDays: readNumber("adminReminderVipExpiryDays"),
+    maxEmailsPerRun: readNumber("adminReminderMaxEmailsPerRun"),
+  };
   state.adminStudyRemindersLoading = true;
   state.adminStudyRemindersError = "";
   state.adminStudyReminderStatus = "";
+  renderAdmin();
   try {
-    await apiRequest("/api/admin/study-reminders/settings", {
-      method: "PUT", headers: { "X-Admin-User-Id": getAdminUserId() },
-      body: JSON.stringify({
-        automaticEnabled: Boolean(document.getElementById("adminReminderAutomaticEnabled")?.checked),
-        inactivityDays: readNumber("adminReminderInactivityDays"),
-        lowActivityMinutes: readNumber("adminReminderLowMinutes"),
-        cooldownDays: readNumber("adminReminderCooldownDays"),
-        monthlyLimit: readNumber("adminReminderMonthlyLimit"),
-        expiryWindowDays: readNumber("adminReminderExpiryDays"),
-        batchSize: readNumber("adminReminderBatchSize"),
-      }),
+    const payload = await apiRequest("/api/admin/reminder-rules", {
+      method: "PUT",
+      headers: { "X-Admin-User-Id": getAdminUserId() },
+      body: JSON.stringify(body),
     });
-    state.adminStudyReminderStatus = state.lang === "vi" ? "Đã lưu quy tắc nhắc học." : "提醒规则已保存。";
-    await loadAdminStudyReminders();
+    state.adminStudyReminders = {
+      ...(state.adminStudyReminders || {}),
+      rules: normalizeAdminReminderRules(payload),
+    };
+    state.adminStudyReminderStatus = state.lang === "vi" ? "Đã lưu quy tắc. Cấu hình sẽ được dùng trong lượt chạy kế tiếp." : "规则已保存，将在下一批次生效。";
   } catch (error) {
     state.adminStudyRemindersError = error.message || "Không thể lưu quy tắc.";
+  } finally {
     state.adminStudyRemindersLoading = false;
     renderAdmin();
   }
 }
 
-async function sendAdminStudyReminder(userId) {
-  state.adminStudyReminderActionUserId = userId;
+async function dispatchAdminStudyReminders() {
+  const confirmed = window.confirm(state.lang === "vi"
+    ? "Bắt đầu một lượt gửi email nhắc học theo các quy tắc hiện tại?"
+    : "按当前规则开始一批学习提醒邮件？");
+  if (!confirmed) return;
+  state.adminStudyReminderDispatching = true;
   state.adminStudyRemindersError = "";
   state.adminStudyReminderStatus = "";
   renderAdmin();
   try {
-    await apiRequest(`/api/admin/study-reminders/send/${encodeURIComponent(userId)}`, {
-      method: "POST", headers: { "X-Admin-User-Id": getAdminUserId() }, body: "{}",
+    const result = await apiRequest("/api/admin/reminder-dispatches", {
+      method: "POST",
+      headers: { "X-Admin-User-Id": getAdminUserId() },
+      body: "{}",
     });
-    state.adminStudyReminderStatus = state.lang === "vi" ? "Email nhắc học đã được gửi và ghi nhật ký." : "提醒邮件已发送并记录。";
-    await loadAdminStudyReminders();
+    state.adminStudyReminderStatus = state.lang === "vi"
+      ? `Đã bắt đầu lượt gửi ${result.dispatchId || ""}. Hãy làm mới lịch sử sau ít phút để xem kết quả.`
+      : `发送批次 ${result.dispatchId || ""} 已开始，请稍后刷新历史记录查看结果。`;
   } catch (error) {
-    state.adminStudyRemindersError = error.message || "Không thể gửi email nhắc học.";
+    state.adminStudyRemindersError = error.message || "Không thể bắt đầu lượt gửi nhắc học.";
   } finally {
-    state.adminStudyReminderActionUserId = "";
+    state.adminStudyReminderDispatching = false;
     renderAdmin();
   }
 }
 
-async function runAdminStudyReminderBatch(dryRun) {
-  state.adminStudyRemindersLoading = true;
+async function loadAdminStudyReminderReport(dispatchId) {
+  if (!dispatchId) return;
   state.adminStudyRemindersError = "";
-  state.adminStudyReminderStatus = "";
-  renderAdmin();
   try {
-    const result = await apiRequest("/api/admin/study-reminders/run", {
-      method: "POST", headers: { "X-Admin-User-Id": getAdminUserId() }, body: JSON.stringify({ dryRun }),
+    const payload = await apiRequest(`/api/admin/reminder-reports/${encodeURIComponent(dispatchId)}`, {
+      method: "GET", headers: { "X-Admin-User-Id": getAdminUserId() }, cache: "no-store",
     });
-    state.adminStudyReminderStatus = dryRun
-      ? (state.lang === "vi" ? `Xem trước: ${Number(result.total || 0)} VIP đủ điều kiện, chưa gửi email.` : `预览：${Number(result.total || 0)} 位 VIP 符合条件，未发送邮件。`)
-      : (state.lang === "vi" ? `Đã gửi ${Number(result.sent || 0)}, thất bại ${Number(result.failed || 0)}.` : `已发送 ${Number(result.sent || 0)}，失败 ${Number(result.failed || 0)}。`);
-    if (!dryRun) await loadAdminStudyReminders();
+    state.adminStudyReminderSelectedReport = payload?.report || payload;
   } catch (error) {
-    state.adminStudyRemindersError = error.message || "Không thể chạy lượt nhắc học.";
-  } finally {
-    state.adminStudyRemindersLoading = false;
-    renderAdmin();
+    state.adminStudyRemindersError = error.message || "Không thể tải kết quả lượt gửi.";
   }
+  renderAdmin();
 }
 
 function renderAdmin() {
@@ -19359,15 +19379,13 @@ function bindEvents() {
       return;
     }
 
-    const adminReminderSegmentBtn = event.target.closest("[data-admin-reminder-segment]");
-    if (adminReminderSegmentBtn && state.adminTab === "reminders") {
-      state.adminStudyReminderSegment = adminReminderSegmentBtn.dataset.adminReminderSegment || "all";
-      renderAdmin();
+    if (event.target.closest("[data-admin-reminder-refresh]") && state.adminTab === "reminders") {
+      await loadAdminStudyReminders();
       return;
     }
 
-    if (event.target.closest("[data-admin-reminder-refresh]") && state.adminTab === "reminders") {
-      await loadAdminStudyReminders();
+    if (event.target.closest("[data-admin-reminder-dispatch]") && state.adminTab === "reminders") {
+      await dispatchAdminStudyReminders();
       return;
     }
 
@@ -19376,22 +19394,9 @@ function bindEvents() {
       return;
     }
 
-    const adminReminderSendBtn = event.target.closest("[data-admin-reminder-send]");
-    if (adminReminderSendBtn && state.adminTab === "reminders") {
-      await sendAdminStudyReminder(adminReminderSendBtn.dataset.adminReminderSend || "");
-      return;
-    }
-
-    if (event.target.closest("[data-admin-reminder-preview]") && state.adminTab === "reminders") {
-      await runAdminStudyReminderBatch(true);
-      return;
-    }
-
-    if (event.target.closest("[data-admin-reminder-run]") && state.adminTab === "reminders") {
-      const confirmed = window.confirm(state.lang === "vi"
-        ? "Gửi email cho toàn bộ VIP đang đủ điều kiện trong lượt này?"
-        : "向本批次所有符合条件的 VIP 发送邮件？");
-      if (confirmed) await runAdminStudyReminderBatch(false);
+    const adminReminderReportBtn = event.target.closest("[data-admin-reminder-report]");
+    if (adminReminderReportBtn && state.adminTab === "reminders") {
+      await loadAdminStudyReminderReport(adminReminderReportBtn.dataset.adminReminderReport || "");
       return;
     }
 

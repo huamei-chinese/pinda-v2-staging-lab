@@ -7,55 +7,65 @@ const styles = fs.readFileSync("public/styles.css", "utf8");
 const moduleSource = fs.readFileSync("src/admin/admin.module.ts", "utf8");
 const controller = fs.readFileSync("src/admin/admin-study-reminders.controller.ts", "utf8");
 const service = fs.readFileSync("src/admin/study-reminder.service.ts", "utf8");
-const schedule = fs.readFileSync("netlify/functions/daily-reminders.mjs", "utf8");
+const netlifyConfig = fs.readFileSync("netlify.toml", "utf8");
 
-test("admin-only reminder box is directly below lesson lock navigation", () => {
+test("admin-only reminder tab stays directly below content management", () => {
   const contentButton = app.indexOf('id="adminContentTabBtn"');
   const reminderButton = app.indexOf('id="adminStudyRemindersTabBtn"');
   assert.ok(contentButton >= 0 && reminderButton > contentButton);
   assert.match(app, /normalized === "admin"\) return \[[^\]]*"content", "reminders"/);
   assert.doesNotMatch(app, /normalized === "staff"\) return \[[^\]]*"reminders"/);
-  assert.match(app, /adminTab === "reminders" \? renderAdminStudyRemindersPanelHTML/);
 });
 
-test("reminder UI keeps an isolated namespace and exposes phased controls", () => {
-  assert.match(styles, /\.admin-main--reminders \.admin-users-panel/);
+test("admin reminder UI manages rules reports and explicit manual dispatch", () => {
   assert.match(styles, /\.admin-study-reminders-panel/);
-  assert.match(app, /Phát hiện/);
-  assert.match(app, /Phân nhóm/);
-  assert.match(app, /Đo quay lại/);
-  assert.match(app, /data-admin-reminder-preview/);
-  assert.match(app, /data-admin-reminder-send/);
+  assert.match(app, /api\/admin\/reminder-rules/);
+  assert.match(app, /api\/admin\/reminder-reports\?limit=20/);
+  assert.match(app, /data-admin-reminder-report/);
   assert.match(app, /data-admin-reminder-save/);
+  assert.match(app, /data-admin-reminder-dispatch/);
+  assert.match(app, /api\/admin\/reminder-dispatches/);
+  assert.match(app, /Danh sách email trong lượt gửi/);
+  assert.match(app, /selected\?\.deliveries/);
+  assert.match(app, /Bắt đầu một lượt gửi email nhắc học theo các quy tắc hiện tại/);
+  assert.match(app, /async function saveAdminStudyReminderSettings\(\) \{[\s\S]*?const body = \{[\s\S]*?body: JSON\.stringify\(body\)/);
+  const activeRenderer = app.slice(app.lastIndexOf("function renderAdminStudyRemindersPanelHTML"), app.indexOf("function renderAdmin()"));
+  assert.doesNotMatch(activeRenderer, /data-admin-reminder-run|data-admin-reminder-preview|adminReminderSendTime/);
 });
 
-test("backend isolates reminder routes and protects all operations as admin", () => {
-  assert.match(controller, /@Controller\('api\/admin\/study-reminders'\)/);
-  assert.match(controller, /@Get\('overview'\)/);
-  assert.match(controller, /@Put\('settings'\)/);
-  assert.match(controller, /@Post\('send\/:userId'\)/);
-  assert.match(controller, /@Post\('run'\)/);
+test("backend exposes the exact rule and report API contract with admin protection", () => {
+  assert.match(controller, /@Controller\('api\/admin'\)/);
+  assert.match(controller, /@Get\('reminder-rules'\)/);
+  assert.match(controller, /@Put\('reminder-rules'\)/);
+  assert.match(controller, /@Get\('reminder-reports'\)/);
+  assert.match(controller, /@Get\('reminder-reports\/:dispatchId'\)/);
+  assert.match(controller, /@Post\('reminder-dispatches'\)/);
+  assert.match(controller, /@HttpCode\(HttpStatus\.ACCEPTED\)/);
   assert.match(service, /private async assertAdmin/);
   assert.match(service, /String\(requester\.role \|\| ''\)\.toLowerCase\(\) !== 'admin'/);
   assert.match(moduleSource, /AdminStudyRemindersController/);
-  assert.match(moduleSource, /StudyReminderService/);
+  assert.match(service, /lowStudyWindowDays/);
+  assert.match(service, /maxEmailsPerRun/);
+  assert.match(service, /FROM study_reminder_rules WHERE id = 1/);
+  assert.match(service, /FROM study_reminder_runs ORDER BY/);
+  assert.match(service, /SELECT \* FROM study_reminder_runs WHERE id::text = \$1/);
+  assert.match(service, /FROM study_reminder_deliveries/);
+  assert.match(service, /deliveries: deliveries\.rows\.map/);
+  assert.doesNotMatch(service, /FROM study_reminder_reports/);
+  assert.doesNotMatch(service, /FROM study_reminder_settings/);
 });
 
-test("smart sending respects active VIP opt-out cooldown monthly limit and return tracking", () => {
-  assert.match(service, /user\.is_premium = TRUE/);
-  assert.match(service, /user\.premium_until IS NULL OR user\.premium_until > NOW\(\)/);
-  assert.match(service, /row\.daily_reminder_enabled === false/);
-  assert.match(service, /settings\.cooldownDays/);
-  assert.match(service, /settings\.monthlyLimit/);
-  assert.match(service, /SET returned_at/);
-  assert.match(service, /automatic_enabled BOOLEAN NOT NULL DEFAULT FALSE/);
-});
-
-test("scheduled sender is opt-in and uses the same limits and log", () => {
-  assert.match(schedule, /if \(!settings\?\.automatic_enabled\)/);
-  assert.match(schedule, /users\.is_premium=TRUE/);
-  assert.match(schedule, /users\.daily_reminder_enabled=TRUE/);
-  assert.match(schedule, /settings\.cooldown_days/);
-  assert.match(schedule, /settings\.monthly_limit/);
-  assert.match(schedule, /INSERT INTO study_reminder_logs/);
+test("only the authenticated Server 1 manual route triggers the background worker", () => {
+  assert.match(service, /async dispatchNow/);
+  assert.match(service, /servermail222\.netlify\.app\/\.netlify\/functions\/study-reminders-background/);
+  assert.match(service, /process\.env\.REMINDER_SERVICE_SECRET/);
+  assert.match(service, /Authorization: `Bearer \$\{secret\}`/);
+  assert.match(service, /'X-HuaMei-Trigger': 'scheduled-rule-check'/);
+  assert.match(service, /response\.status !== HttpStatus\.ACCEPTED/);
+  assert.match(service, /workerStatus: response\.status/);
+  assert.match(service, /Reminder worker accepted dispatch/);
+  assert.match(service, /SET auto_enabled=TRUE/);
+  assert.doesNotMatch(netlifyConfig, /\[functions\."daily-reminders"\]/);
+  assert.equal(fs.existsSync("netlify/functions/daily-reminders.mjs"), false);
+  assert.doesNotMatch(service, /sendStudyReminderEmail|sendOne|runBatch/);
 });

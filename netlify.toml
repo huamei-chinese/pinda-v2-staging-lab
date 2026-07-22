@@ -6,9 +6,6 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-[functions."daily-reminders"]
-  schedule = "0 0 * * *"
-
 [[redirects]]
   from = "/listening-app"
   to = "/listening-app/index.html"

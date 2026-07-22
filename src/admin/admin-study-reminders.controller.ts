@@ -1,36 +1,42 @@
-import { Body, Controller, Get, Headers, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
 import { StudyReminderService } from './study-reminder.service';
 
-@Controller('api/admin/study-reminders')
+@Controller('api/admin')
 export class AdminStudyRemindersController {
   constructor(private readonly studyReminders: StudyReminderService) {}
 
-  @Get('overview')
-  getOverview(@Headers() headers: Record<string, string | string[] | undefined>) {
-    return this.studyReminders.getOverview(headers);
+  @Get('reminder-rules')
+  getRules(@Headers() headers: Record<string, string | string[] | undefined>) {
+    return this.studyReminders.getRules(headers);
   }
 
-  @Put('settings')
-  updateSettings(
+  @Put('reminder-rules')
+  updateRules(
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.studyReminders.updateSettings(headers, body);
+    return this.studyReminders.updateRules(headers, body);
   }
 
-  @Post('send/:userId')
-  sendOne(
+  @Get('reminder-reports')
+  getReports(
     @Headers() headers: Record<string, string | string[] | undefined>,
-    @Param('userId') userId: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.studyReminders.sendOne(headers, userId, 'manual');
+    return this.studyReminders.getReports(headers, limit);
   }
 
-  @Post('run')
-  runBatch(
+  @Get('reminder-reports/:dispatchId')
+  getReport(
     @Headers() headers: Record<string, string | string[] | undefined>,
-    @Body() body: { dryRun?: boolean },
+    @Param('dispatchId') dispatchId: string,
   ) {
-    return this.studyReminders.runBatch(headers, body?.dryRun !== false);
+    return this.studyReminders.getReport(headers, dispatchId);
+  }
+
+  @Post('reminder-dispatches')
+  @HttpCode(HttpStatus.ACCEPTED)
+  dispatchNow(@Headers() headers: Record<string, string | string[] | undefined>) {
+    return this.studyReminders.dispatchNow(headers);
   }
 }
