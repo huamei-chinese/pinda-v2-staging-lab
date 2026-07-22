@@ -162,6 +162,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
+        study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        study_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
@@ -207,6 +209,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;
     `);
     await this.ensureReminderDeliverySchema();
     await this.pool.query(`
@@ -287,6 +295,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
         vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
+        study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        study_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
@@ -335,6 +345,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     `);
     await this.pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+    await this.pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;
     `);
     await this.ensureReminderDeliverySchema();
     await this.pool.query(`
@@ -590,6 +606,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);
     `);
     await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_learning_events_user_created
+      ON learning_events(user_id, created_at DESC);
+    `);
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS coin_transactions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -617,12 +637,61 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private async ensureReminderDeliverySchema() {
     if (!this.pool) return;
     await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS daily_reminder_deliveries (
+      CREATE TABLE IF NOT EXISTS study_reminder_rules (
+        id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+        auto_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+        inactive_days INTEGER NOT NULL DEFAULT 3 CHECK (inactive_days BETWEEN 1 AND 90),
+        low_study_minutes INTEGER NOT NULL DEFAULT 5 CHECK (low_study_minutes BETWEEN 1 AND 1440),
+        low_study_window_days INTEGER NOT NULL DEFAULT 7 CHECK (low_study_window_days BETWEEN 1 AND 30),
+        cooldown_days INTEGER NOT NULL DEFAULT 3 CHECK (cooldown_days BETWEEN 1 AND 30),
+        max_emails_per_month INTEGER NOT NULL DEFAULT 3 CHECK (max_emails_per_month BETWEEN 1 AND 31),
+        vip_expiry_days INTEGER NOT NULL DEFAULT 7 CHECK (vip_expiry_days BETWEEN 1 AND 90),
+        max_emails_per_run INTEGER NOT NULL DEFAULT 50 CHECK (max_emails_per_run BETWEEN 1 AND 100),
+        updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      INSERT INTO study_reminder_rules (id)
+      VALUES (1)
+      ON CONFLICT (id) DO NOTHING;
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS study_reminder_runs (
+        id UUID PRIMARY KEY,
+        reminder_date DATE,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued'
+          CHECK (status IN ('queued', 'processing', 'completed', 'failed', 'skipped')),
+        rules_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+        enqueued_count INTEGER NOT NULL DEFAULT 0 CHECK (enqueued_count >= 0),
+        claimed_count INTEGER NOT NULL DEFAULT 0 CHECK (claimed_count >= 0),
+        sent_count INTEGER NOT NULL DEFAULT 0 CHECK (sent_count >= 0),
+        failed_count INTEGER NOT NULL DEFAULT 0 CHECK (failed_count >= 0),
+        skipped_count INTEGER NOT NULL DEFAULT 0 CHECK (skipped_count >= 0),
+        aborted BOOLEAN NOT NULL DEFAULT FALSE,
+        error TEXT,
+        requested_at TIMESTAMPTZ NOT NULL,
+        started_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_study_reminder_runs_created
+      ON study_reminder_runs (created_at DESC);
+    `);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS study_reminder_deliveries (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        dispatch_id UUID REFERENCES study_reminder_runs(id) ON DELETE SET NULL,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         reminder_date DATE NOT NULL,
         email TEXT NOT NULL,
         full_name TEXT,
+        trigger_reason TEXT,
+        rules_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
         status TEXT NOT NULL DEFAULT 'pending'
           CHECK (status IN ('pending', 'processing', 'sent', 'failed', 'skipped')),
         attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
@@ -636,8 +705,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       );
     `);
     await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_daily_reminder_deliveries_dispatch
-      ON daily_reminder_deliveries (reminder_date, status, created_at);
+      ALTER TABLE study_reminder_deliveries
+      ADD COLUMN IF NOT EXISTS trigger_reason TEXT;
+    `);
+    await this.pool.query(`
+      ALTER TABLE study_reminder_deliveries
+      ADD COLUMN IF NOT EXISTS rules_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb;
+    `);
+    await this.pool.query(`
+      ALTER TABLE study_reminder_deliveries
+      ADD COLUMN IF NOT EXISTS dispatch_id UUID REFERENCES study_reminder_runs(id) ON DELETE SET NULL;
+    `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_study_reminder_deliveries_dispatch
+      ON study_reminder_deliveries (reminder_date, status, created_at);
+    `);
+    await this.pool.query(`
+      DO $$
+      BEGIN
+        IF to_regclass('public.learning_events') IS NOT NULL THEN
+          CREATE INDEX IF NOT EXISTS idx_learning_events_user_created
+          ON learning_events(user_id, created_at DESC);
+        END IF;
+      END $$;
     `);
   }
 

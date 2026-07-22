@@ -957,6 +957,8 @@ async function ensureSchema() {
         vip_plan_id TEXT,
         daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         daily_reminder_last_sent_on DATE,
+        study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        study_reminder_last_sent_on DATE,
         email_verified_at TIMESTAMPTZ,
         email_verification_code_hash TEXT,
         email_verification_expires_at TIMESTAMPTZ,
@@ -979,6 +981,8 @@ async function ensureSchema() {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS vip_trial_used BOOLEAN NOT NULL DEFAULT FALSE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_reminder_last_sent_on DATE;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_enabled BOOLEAN NOT NULL DEFAULT TRUE;");
+    await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS study_reminder_last_sent_on DATE;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_code_hash TEXT;");
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expires_at TIMESTAMPTZ;");
@@ -1192,6 +1196,7 @@ async function ensureSchema() {
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_lesson ON learning_events(lesson_id);`);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_source ON learning_events(source);`);
     await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_user ON learning_events(user_id);`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_learning_events_user_created ON learning_events(user_id, created_at DESC);`);
     await db.query(`
       CREATE TABLE IF NOT EXISTS coin_transactions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2062,6 +2067,24 @@ async function updateOwnReminderSettings(req, id, body) {
   );
   if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
   return json({ user: publicUser(result.rows[0]) });
+}
+
+async function updateOwnStudyReminderSettings(req, id, body) {
+  const requesterId = req.headers.get("x-user-id");
+  if (!requesterId || requesterId !== id) {
+    throw apiError("Bạn không có quyền cập nhật nhắc học của tài khoản này.", 403);
+  }
+
+  const enabled = body.enabled !== false;
+  const result = await query(
+    `UPDATE users
+     SET study_reminder_enabled = $1, updated_at = NOW()
+     WHERE id = $2
+     RETURNING id`,
+    [enabled, id],
+  );
+  if (!result.rows[0]) throw apiError("Không tìm thấy tài khoản.", 404);
+  return json({ ok: true, studyReminderEnabled: enabled });
 }
 
 function emailVerificationHash(userId, email, code) {
@@ -4421,6 +4444,8 @@ async function route(req) {
   if (emailVerificationConfirmMatch && req.method === "POST") return confirmEmailVerificationCode(req, decodeURIComponent(emailVerificationConfirmMatch[1]), body);
   const ownReminderMatch = path.match(/^\/api\/users\/([^/]+)\/reminder-settings$/);
   if (ownReminderMatch && req.method === "PATCH") return updateOwnReminderSettings(req, decodeURIComponent(ownReminderMatch[1]), body);
+  const ownStudyReminderMatch = path.match(/^\/api\/users\/([^/]+)\/study-reminder-settings$/);
+  if (ownStudyReminderMatch && req.method === "PATCH") return updateOwnStudyReminderSettings(req, decodeURIComponent(ownStudyReminderMatch[1]), body);
   const ownProfileMatch = path.match(/^\/api\/users\/([^/]+)\/profile$/);
   if (ownProfileMatch && req.method === "PATCH") return updateOwnProfile(req, decodeURIComponent(ownProfileMatch[1]), body);
   if (req.method === "GET" && path === "/api/admin/users") return listUsers(req);

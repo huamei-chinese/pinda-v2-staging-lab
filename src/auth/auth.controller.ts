@@ -130,4 +130,13 @@ export class AuthController {
   ) {
     return this.authService.updateOwnReminderSettings(id, body, headers);
   }
+
+  @Patch('users/:id/study-reminder-settings')
+  async updateOwnStudyReminderSettings(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ) {
+    return this.authService.updateOwnStudyReminderSettings(id, body, headers);
+  }
 }

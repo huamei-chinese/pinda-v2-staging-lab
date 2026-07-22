@@ -1,4 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { ReminderRulesService } from './reminder-rules.service';
 
 const VIETNAM_UTC_OFFSET_HOURS = 7;
 const DEFAULT_DISPATCH_HOUR_VIETNAM = 7;
@@ -9,9 +11,11 @@ export class ReminderDispatchService implements OnApplicationBootstrap, OnModule
   private timer: NodeJS.Timeout | null = null;
   private dispatching = false;
 
+  constructor(private readonly rulesService: ReminderRulesService) {}
+
   onApplicationBootstrap() {
     if (!this.isEnabled()) {
-      this.logger.log('Daily reminder dispatcher is disabled.');
+      this.logger.log('Rule-based study reminder dispatcher is disabled.');
       return;
     }
 
@@ -55,10 +59,10 @@ export class ReminderDispatchService implements OnApplicationBootstrap, OnModule
   private scheduleNext() {
     const next = this.nextDispatchAt();
     const delay = Math.max(1000, next.getTime() - Date.now());
-    this.logger.log(`Next daily reminder dispatch: ${next.toISOString()} (${this.dispatchHour()}:00 Asia/Ho_Chi_Minh).`);
+    this.logger.log(`Next rule-based study reminder dispatch: ${next.toISOString()} (${this.dispatchHour()}:00 Asia/Ho_Chi_Minh).`);
     this.timer = setTimeout(async () => {
       try {
-        await this.dispatch('daily-schedule');
+        await this.dispatch('scheduled-rule-check');
       } finally {
         this.scheduleNext();
       }
@@ -73,7 +77,14 @@ export class ReminderDispatchService implements OnApplicationBootstrap, OnModule
     }
 
     this.dispatching = true;
+    const dispatchId = randomUUID();
     try {
+      const rules = await this.rulesService.getCurrentRules();
+      if (!rules.autoEnabled) {
+        this.logger.log(`Skipped reminder dispatch (${reason}): automatic sending is disabled by admin.`);
+        return;
+      }
+      const requestedAt = new Date().toISOString();
       const response = await fetch(String(process.env.REMINDER_SERVICE_URL), {
         method: 'POST',
         headers: {
@@ -81,16 +92,16 @@ export class ReminderDispatchService implements OnApplicationBootstrap, OnModule
           'Content-Type': 'application/json',
           'X-HuaMei-Trigger': reason,
         },
-        body: JSON.stringify({ reason, requestedAt: new Date().toISOString() }),
+        body: JSON.stringify({ dispatchId, reason, requestedAt, rules }),
         signal: AbortSignal.timeout(15000),
       });
       if (response.status !== 202 && !response.ok) {
         throw new Error(`Netlify reminder service returned HTTP ${response.status}.`);
       }
-      this.logger.log(`Netlify accepted reminder dispatch (${reason}), HTTP ${response.status}.`);
+      this.logger.log(`Netlify accepted reminder dispatch ${dispatchId} (${reason}), HTTP ${response.status}.`);
     } catch (error) {
       this.logger.error(
-        `Cannot trigger Netlify reminder service (${reason}): ${error instanceof Error ? error.message : String(error)}`,
+        `Cannot trigger Netlify reminder service ${dispatchId} (${reason}): ${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       this.dispatching = false;
