@@ -1831,10 +1831,7 @@ function selectUpgradePlansForDisplay(apiPlans = []) {
   const oneMonth = plans.find((plan) => plan.id === "30d" && isOneMonthVipPlan(plan))
     || plans.find(isOneMonthVipPlan)
     || LOCAL_DEFAULT_PAYMENT_PLANS[1];
-  const threeMonth = plans.find((plan) => plan.id === "90d" && isThreeMonthVipPlan(plan))
-    || plans.find(isThreeMonthVipPlan)
-    || LOCAL_DEFAULT_PAYMENT_PLANS[2];
-  return [threeDay, oneMonth, threeMonth];
+  return [threeDay, oneMonth];
 }
 
 function buildDisplayPlans(apiPlans, isVi) {
@@ -5614,6 +5611,7 @@ function showUpgradePlansModal() {
     const grid = modalDiv.querySelector(".upgrade-plans-grid");
     if (!grid) return;
     grid.classList.toggle("upgrade-plans-grid--single", plans.length === 1);
+    grid.classList.toggle("upgrade-plans-grid--double", plans.length === 2);
     modalDiv.querySelector(".upgrade-mobile-benefits")?.remove();
     grid.innerHTML = plans.map((plan) => {
       const introPlanUsed = isIntroVipPlanId(plan.id) && hasUsedIntroVipPlan();

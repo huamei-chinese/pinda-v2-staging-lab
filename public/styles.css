@@ -13293,6 +13293,11 @@ p {
   justify-content: center;
 }
 
+.upgrade-plans-grid.upgrade-plans-grid--double {
+  grid-template-columns: repeat(2, minmax(0, 280px));
+  justify-content: center;
+}
+
 .upgrade-plans-loading {
   grid-column: 1 / -1;
   margin: 0;
@@ -13539,7 +13544,8 @@ p {
     margin-inline: auto;
   }
 
-  .upgrade-plans-grid.upgrade-plans-grid--single {
+  .upgrade-plans-grid.upgrade-plans-grid--single,
+  .upgrade-plans-grid.upgrade-plans-grid--double {
     grid-template-columns: 1fr;
   }
 
@@ -13582,13 +13588,7 @@ p {
   }
 
   .upgrade-plan-kicker {
-    grid-column: 1;
-    grid-row: 2;
-    margin: 0;
-    color: #667085;
-    font-size: 10px;
-    text-transform: none;
-    font-weight: 750;
+    display: none;
   }
 
   .upgrade-plan-card.popular .upgrade-plan-kicker,
@@ -13605,7 +13605,7 @@ p {
 
   .upgrade-plan-price {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
@@ -13618,16 +13618,16 @@ p {
   }
 
   .upgrade-plan-price span {
-    color: #111827;
+    color: #667085;
     font-size: 10px;
-    text-decoration: line-through;
   }
 
   .upgrade-plan-note {
-    grid-column: 1;
+    grid-column: 2;
     grid-row: 2;
     margin: 0;
     font-size: 10px;
+    text-align: right;
   }
 
   .upgrade-plan-card ul,
