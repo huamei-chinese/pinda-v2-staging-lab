@@ -5516,7 +5516,79 @@ function renderAccount() {
   `, "app-desktop-shell--account", "account");
 }
 
+const VIP_PURCHASES_PAUSED = true;
+
+function showVipPurchasesPausedModal() {
+  const isVi = state.lang === "vi";
+  const existing = document.getElementById("vipPurchasePausedModal");
+  if (existing) {
+    existing.querySelector(".vip-pause-close")?.focus();
+    return;
+  }
+
+  document.querySelector("#closeTransferInfoModal")?.click();
+  document.getElementById("upgradePlansModal")?.remove();
+
+  const previouslyFocused = document.activeElement;
+  const modalDiv = document.createElement("div");
+  modalDiv.id = "vipPurchasePausedModal";
+  modalDiv.className = "vip-pause-overlay";
+  modalDiv.innerHTML = `
+    <section class="vip-pause-modal" role="dialog" aria-modal="true" aria-labelledby="vipPauseTitle" aria-describedby="vipPauseDescription">
+      <button class="vip-pause-close" type="button" aria-label="${isVi ? "Đóng" : "关闭"}">&times;</button>
+      <div class="vip-pause-content">
+        <h2 id="vipPauseTitle">${isVi ? "Tính năng mua gói VIP đang tạm ngưng." : "VIP 套餐购买功能暂时关闭。"}</h2>
+        <p id="vipPauseDescription">
+          ${isVi
+            ? "Chúng tôi sẽ mở lại trong thời gian tới.<br />Cảm ơn bạn đã thông cảm!"
+            : "我们将在近期重新开放。<br />感谢您的理解！"}
+        </p>
+        <button class="vip-pause-acknowledge" type="button">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />
+          </svg>
+          <span>${isVi ? "Cảm ơn bạn!" : "谢谢您！"}</span>
+        </button>
+      </div>
+      <div class="vip-pause-decoration" aria-hidden="true">
+        <span class="vip-pause-dot vip-pause-dot--ring-one"></span>
+        <span class="vip-pause-dot vip-pause-dot--ring-two"></span>
+        <span class="vip-pause-dot vip-pause-dot--solid-one"></span>
+        <span class="vip-pause-dot vip-pause-dot--solid-two"></span>
+        <svg class="vip-pause-waves" viewBox="0 0 1440 260" preserveAspectRatio="none">
+          <path d="M0 76C190 82 284 236 514 224C744 212 802 70 1040 128C1194 165 1318 174 1440 132V260H0Z" fill="rgba(203, 244, 224, .34)" />
+          <path d="M0 166C166 100 292 238 488 244C686 250 800 140 1002 150C1194 160 1298 238 1440 214V260H0Z" fill="rgba(195, 239, 218, .30)" />
+          <path d="M0 206C160 166 276 252 456 254C660 256 756 204 936 210C1130 216 1260 250 1440 222V260H0Z" fill="rgba(183, 233, 208, .24)" />
+        </svg>
+      </div>
+    </section>
+  `;
+
+  const closeModal = () => {
+    modalDiv.remove();
+    if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+      previouslyFocused.focus();
+    }
+  };
+
+  modalDiv.querySelector(".vip-pause-close").onclick = closeModal;
+  modalDiv.querySelector(".vip-pause-acknowledge").onclick = closeModal;
+  modalDiv.onclick = (event) => {
+    if (event.target === modalDiv) closeModal();
+  };
+  modalDiv.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeModal();
+  });
+
+  document.body.appendChild(modalDiv);
+  modalDiv.querySelector(".vip-pause-close")?.focus();
+}
+
 function showUpgradePlansModal() {
+  if (VIP_PURCHASES_PAUSED) {
+    showVipPurchasesPausedModal();
+    return;
+  }
   const isVi = state.lang === "vi";
   const existing = document.getElementById("upgradePlansModal");
   if (existing) existing.remove();
@@ -5706,6 +5778,10 @@ function showUpgradePlansModal() {
 }
 
 async function showTransferInfoModal(planId) {
+  if (VIP_PURCHASES_PAUSED) {
+    showVipPurchasesPausedModal();
+    return;
+  }
   const isVi = state.lang === "vi";
   planId = isIntroVipPlanId(planId) ? "3d" : planId;
   if (state.activePaymentOrderPlanId) return;
