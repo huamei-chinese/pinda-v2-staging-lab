@@ -1,0 +1,54 @@
+#recruitmentPopup {
+  width: min(680px, calc(100vw - 32px), calc(100vh - 32px));
+  width: min(680px, calc(100vw - 32px), calc(100dvh - 32px));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: 0 20px 80px rgb(0 0 0 / 30%);
+  overflow: visible;
+}
+
+#recruitmentPopup::backdrop {
+  background: rgb(0 0 0 / 60%);
+  cursor: pointer;
+}
+
+#recruitmentPopupLink,
+#recruitmentPopupLink img {
+  display: block;
+  width: 100%;
+}
+
+#recruitmentPopupLink img {
+  height: auto;
+}
+
+#recruitmentPopupClose {
+  position: absolute;
+  top: 1.2%;
+  right: 1.2%;
+  width: 7.8%;
+  height: 7.8%;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+#recruitmentPopupClose:focus-visible {
+  outline: 3px solid #ffdf00;
+  outline-offset: 2px;
+}
+
+#recruitmentPopupLink:focus-visible {
+  outline: 3px solid #ffdf00;
+  outline-offset: 3px;
+}

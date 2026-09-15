@@ -35,6 +35,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=ipad-performance-20260720" />
   <link rel="stylesheet" href="mobile.css?v=listening-vip-lock-orange-20260715" media="(max-width: 640px)" />
+  <link rel="stylesheet" href="recruitment-popup.css?v=20260915" />
   <script>
     (function () {
       function loadClarity() {
@@ -247,6 +248,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <span class="mobile-bottom-nav-label">Cá nhân</span>
     </button>
   </nav>
+  <dialog id="recruitmentPopup" aria-label="Tuyển dụng thực tập sinh tiếng Trung">
+    <a id="recruitmentPopupLink"
+      href="https://docs.google.com/document/d/1uNXmU0IbaKbSK3HTasfdgGViHgjIe43p/edit#heading=h.xk5f4zr5lo4k"
+      aria-label="Xem thông tin và ứng tuyển thực tập sinh tiếng Trung">
+      <img src="assets/recruitment-internship-20260915.png" width="1254" height="1254"
+        alt="Bản tin tuyển dụng thực tập sinh tiếng Trung. Yêu cầu HSK4 trở lên. Làm việc tại Lê Thị Hồng, Gò Vấp, TP.HCM. Hotline: 083 957 2134. Ứng tuyển ngay."
+        fetchpriority="high" />
+    </a>
+    <button id="recruitmentPopupClose" type="button" aria-label="Đóng popup tuyển dụng" autofocus></button>
+  </dialog>
+  <script src="recruitment-popup.js?v=20260915" defer></script>
   <script src="practice-rules.js?v=static-cache-20260714" defer></script>
   <script src="practice-answer-rules.js?v=static-cache-20260714" defer></script>
   <script src="asset-config.js" defer></script>
