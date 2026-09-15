@@ -5,7 +5,7 @@
   if (!popup || !closeButton || !applicationLink) return;
 
   const page = document.documentElement;
-  const previousOverflow = page.style.overflow;
+  let previousOverflow;
 
   closeButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -24,6 +24,17 @@
     page.style.overflow = previousOverflow;
   });
 
-  popup.showModal();
-  page.style.overflow = "hidden";
+  function schedulePopup() {
+    window.setTimeout(() => {
+      previousOverflow = page.style.overflow;
+      popup.showModal();
+      page.style.overflow = "hidden";
+    }, 5000);
+  }
+
+  if (document.readyState === "complete") {
+    schedulePopup();
+  } else {
+    window.addEventListener("load", schedulePopup, { once: true });
+  }
 })();

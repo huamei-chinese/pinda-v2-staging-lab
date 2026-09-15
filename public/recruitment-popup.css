@@ -1,6 +1,6 @@
 #recruitmentPopup {
-  width: min(680px, calc(100vw - 32px), calc(100vh - 32px));
-  width: min(680px, calc(100vw - 32px), calc(100dvh - 32px));
+  width: min(340px, calc(50vw - 16px), calc(50vh - 16px));
+  width: min(340px, calc(50vw - 16px), calc(50dvh - 16px));
   max-width: none;
   max-height: none;
   margin: auto;
